@@ -1,0 +1,10 @@
+# Do pip install -r requirements.txt to install the following. I recommend to
+# do this in a virtual environment.
+###### Requirements without Version Specifiers ######
+
+# https://neuraloperator.github.io/neuraloperator/dev/index.html
+# TODO: consider installing locally. It installed 0.2.0.
+# neuraloperator
+
+# These requirements prefer to install builds and version for the latest GPU
+# capable versions.

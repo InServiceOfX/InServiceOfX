@@ -15,6 +15,14 @@ sudo apt-get install docker-compose-plugin
 # As of Sept. 1, 2023
 docker pull nvcr.io/nvidia/pytorch:23.08-py3
 
+# Builds from Dockerfile in this directory.
+# https://docs.docker.com/engine/reference/commandline/build/
+# --no-cache Don't use cache when building image.
+# Otherwise when we do run
+#  => [2/2] RUN pip install neuraloperators                                  4.0s
+# it would be cached without the option flag, not guaranteeing it was installed.
+docker build --no-cache -t from-nvidia-python-23.08 .
+
 # --rm Removes the container, meant for short-lived process, perform specific task,
 # upon exit. You ensure temporary containers don't accumulate on system. --rm only
 # removes container instance not the image.

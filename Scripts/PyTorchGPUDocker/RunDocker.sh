@@ -32,7 +32,10 @@ command="docker run -v $path_to_mount:/InServiceOfX --gpus all -it "
 # default CUDA Minor Version Compatibility.
 command+="-e NVIDIA_DISABLE_REQUIRE=1 "
 command+="-p 8888:8888 --rm --ipc=host --ulimit memlock=-1 --ulimit "
-command+="stack=67108864 nvcr.io/nvidia/pytorch:23.08-py3 "
+# Originally it was this command to run the base image, but we've added layers
+# so that we 
+# command+="stack=67108864 nvcr.io/nvidia/pytorch:23.08-py3 "
+command+="stack=67108864 from-nvidia-python-23.08 "
 
 echo $command
 # eval is part of POSIX and executes arguments like a shell command.

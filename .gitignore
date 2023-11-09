@@ -30,3 +30,21 @@
 *.exe
 *.out
 *.app
+
+# From a Google search for jupyter notebook gitignore,
+# https://github.com/jupyter/notebook/blob/main/.gitignore
+*.bundle.*
+lib/
+node_modules/
+*.egg-info/
+.ipynb_checkpoints
+*.tsbuildinfo
+
+# Created by https://www.gitignore.io/api/python
+# Edit at https://www.gitignore.io/?templates=python
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
