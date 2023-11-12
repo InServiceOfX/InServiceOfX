@@ -8,3 +8,5 @@
 
 # These requirements prefer to install builds and version for the latest GPU
 # capable versions.
+
+jupyter
