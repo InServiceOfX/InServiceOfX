@@ -21,7 +21,9 @@ WORKDIR ${THIRD_PARTY}
 ## Update pip.
 RUN python -m pip install --upgrade pip && \
 	pip install --upgrade jupyter && \
-	pip install --upgrade ipywidgets
+	pip install --upgrade ipywidgets && \
+  # accelerate is to use transformers.TrainingArguments
+  pip install --upgrade accelerate
 
 ## neuraloperator
 RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
