@@ -17,9 +17,30 @@ ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
 # pip installations.
+
+## Update pip.
+RUN python -m pip install --upgrade pip && \
+	pip install --upgrade jupyter && \
+	pip install --upgrade ipywidgets
+
+## neuraloperator
 RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
 	cd /ThirdParty/neuraloperator && \
 	git checkout development && \
 	# Install a project in editable mode from local project.
 	pip install -e . && \
 	pip install -r requirements.txt
+
+## transformers (hugging face)
+RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e .
+
+## datasets (hugging face)
+RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
+  cd /ThirdParty/datasets && \
+  git checkout main && \
+  pip install -e .
