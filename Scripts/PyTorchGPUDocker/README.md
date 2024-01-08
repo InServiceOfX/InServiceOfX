@@ -1,3 +1,22 @@
+# Dockerfile
+
+## Making changes
+
+After you make changes to Dockerfile, you'll need to build the new Docker image.
+
+1. Check name of current image. I typically reuse the current image I am on and have named, for instance `from-nvidia-python-23.08`. You can check for the name with
+
+```
+docker images
+```
+
+2. After updating your Dockerfile, build Docker image:
+
+```
+docker build -t from-nvidia-python-23.08 .
+```
+where `-t` is for tag, and if it's a previously used name or tag, it'll simply refer to that previously used (image) name or tag.
+
 # Running jupyter notebook from Pytorch GPU Docker
 
 In the command line when you run
