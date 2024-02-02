@@ -73,3 +73,46 @@ What worked for me was to replace the `<hostname>` with `localhost` and keep the
 ```
 http://localhost:8888/?token=6fa6967ab7a28a0eb853f8d506bdf1fb7358cdc8263fd555
 ```
+
+## LangChain and Docker file
+
+The [langchain repository](https://github.com/ernestyalumni/langchain) consists of a number of "top level" subdictories, including 'libs', 'docker', 'cookbook', 'templates'. If you do `pip install -e .` at the "root" directory of the repository, such as `langchain/` then you obtain this error:
+
+```
+Obtaining file:///home/propdev/Prop/langchain
+  Installing build dependencies ... done
+  Checking if build backend supports build_editable ... done
+  Getting requirements to build editable ... error
+  error: subprocess-exited-with-error
+  
+  × Getting requirements to build editable did not run successfully.
+  │ exit code: 1
+  ╰─> [14 lines of output]
+      error: Multiple top-level packages discovered in a flat-layout: ['libs', 'docker', 'cookbook', 'templates'].
+      
+      To avoid accidental inclusion of unwanted files or directories,
+      setuptools will not proceed with this build.
+      
+      If you are trying to create a single distribution with multiple packages
+      on purpose, you should not rely on automatic discovery.
+      Instead, consider the following options:
+      
+      1. set up custom discovery (`find` directive with `include` or `exclude`)
+      2. use a `src-layout`
+      3. explicitly set `py_modules` or `packages` with a list of names
+      
+      To find more information, look for "package discovery" on setuptools docs.
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+× Getting requirements to build editable did not run successfully.
+│ exit code: 1
+╰─> See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.
+
+``` 
+
+What you want to do is to change directory (`cd`) into a desired subdirectory and then run `pip install -e .`. I wanted `langchain` and so I changed directories to `langchain/libs/langchain`.

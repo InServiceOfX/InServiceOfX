@@ -46,3 +46,12 @@ RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets &
   cd /ThirdParty/datasets && \
   git checkout main && \
   pip install -e .
+
+## LangChain
+
+RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langchain && \
+  cd /ThirdParty/langchain/libs/langchain && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://python.langchain.com/docs/get_started/installation
+  pip install -e .
