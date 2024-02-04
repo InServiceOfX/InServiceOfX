@@ -49,9 +49,21 @@ RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets &
 
 ## LangChain
 
+### https://python.langchain.com/docs/get_started/introduction
+### The LangChain libraries themselves are made up of several different packages
+### and we'll install 3 of them:
+### langchain: Chains, agents, and retrieval strategies that make up an
+### application's cognitive architecture.
+### langchain-core: Base abstractions and LangChain Expression Language.
+### langchain-community: Third party integrations.
+
 RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langchain && \
   cd /ThirdParty/langchain/libs/langchain && \
   git checkout master && \
   # Install editable install from source.
   # See https://python.langchain.com/docs/get_started/installation
+  pip install -e . && \
+  cd ../core && \
+  pip install -e . && \
+  cd ../community && \
   pip install -e .

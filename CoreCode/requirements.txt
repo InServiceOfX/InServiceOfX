@@ -9,4 +9,8 @@
 # These requirements prefer to install builds and version for the latest GPU
 # capable versions.
 
+# https://pypi.org/project/python-dotenv/
+# Reads key-value pairs from .env file and can set them as environment variables.
+python-dotenv
+
 jupyter
