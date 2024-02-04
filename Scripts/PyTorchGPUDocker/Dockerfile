@@ -23,7 +23,10 @@ RUN python -m pip install --upgrade pip && \
 	pip install --upgrade jupyter && \
 	pip install --upgrade ipywidgets && \
   # accelerate is to use transformers.TrainingArguments
-  pip install --upgrade accelerate
+  pip install --upgrade accelerate && \
+  # Reads key-value pairs from .env file to set environment variables; in
+  # particular for Open AI API keys for LangChain.
+  pip install --upgrade python-dotenv
 
 ## neuraloperator
 RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
