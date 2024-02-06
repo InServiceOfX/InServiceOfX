@@ -20,21 +20,23 @@ WORKDIR ${THIRD_PARTY}
 
 ## Update pip.
 RUN python -m pip install --upgrade pip && \
-	pip install --upgrade jupyter && \
-	pip install --upgrade ipywidgets && \
+  pip install --upgrade jupyter && \
+  pip install --upgrade ipywidgets && \
   # accelerate is to use transformers.TrainingArguments
   pip install --upgrade accelerate && \
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv
+  pip install --upgrade python-dotenv && \
+  # For WebBaseLoader for LangChain retrieval.
+  pip install --upgrade beautifulsoup4
 
 ## neuraloperator
 RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
-	cd /ThirdParty/neuraloperator && \
-	git checkout development && \
-	# Install a project in editable mode from local project.
-	pip install -e . && \
-	pip install -r requirements.txt
+  cd /ThirdParty/neuraloperator && \
+  git checkout development && \
+  # Install a project in editable mode from local project.
+  pip install -e . && \
+  pip install -r requirements.txt
 
 ## transformers (hugging face)
 RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
@@ -69,4 +71,14 @@ RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langcha
   cd ../core && \
   pip install -e . && \
   cd ../community && \
+  pip install -e . && \
+  # Install partners, which include Anthropic, Mistral AI, Open AI, etc.
+  cd ../partners && \
+  cd anthropic && \
+  pip install -e . && \
+  cd ../mistralai && \
+  pip install -e . && \
+  cd ../openai && \
+  pip install -e . && \
+  cd ../together && \
   pip install -e .
