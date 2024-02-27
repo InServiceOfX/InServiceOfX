@@ -13,6 +13,7 @@
 beautifulsoup4
 
 jupyter
+pytest
 
 # https://pypi.org/project/python-dotenv/
 # Reads key-value pairs from .env file and can set them as environment variables.
