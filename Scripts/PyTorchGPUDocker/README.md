@@ -33,7 +33,7 @@ docker images
 2. After updating your Dockerfile, build Docker image:
 
 ```
-docker build -t from-nvidia-python-23.08 .
+docker build -t from-nvidia-python-24.02 .
 ```
 where `-t` is for tag, and if it's a previously used name or tag, it'll simply refer to that previously used (image) name or tag.
 

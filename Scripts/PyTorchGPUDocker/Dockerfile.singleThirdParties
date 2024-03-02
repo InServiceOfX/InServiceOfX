@@ -1,0 +1,18 @@
+### Single, almost one-off, code/repositories
+
+## neuraloperator
+RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
+  cd /ThirdParty/neuraloperator && \
+  git checkout development && \
+  # Install a project in editable mode from local project.
+  pip install -r requirements.txt && \
+  pip install -e .
+
+## mamba
+RUN git clone https://github.com/ernestyalumni/mamba.git /ThirdParty/mamba && \
+  cd /ThirdParty/mamba && \
+  git checkout master && \
+  # Install a project in editable mode from local project.
+  pip install -r ./scripts/requirements.txt && \  
+  pip install -e .
+
