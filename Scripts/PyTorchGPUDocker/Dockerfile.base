@@ -8,8 +8,6 @@
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch/tags
 # and click on "Tags" on the top center for the different tags.
 
-ARG DISABLE_RAFT=OFF
-
 # As of Sept. 1, 2023
 FROM nvcr.io/nvidia/pytorch:24.02-py3
 

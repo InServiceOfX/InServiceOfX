@@ -18,6 +18,13 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
+# NVIDIA PyTorch container image from [NGC](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch)
+
+See the release notes:
+https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/index.html
+
+
+
 # Dockerfile
 
 ## Making changes

@@ -13,8 +13,6 @@
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch/tags
 # and click on "Tags" on the top center for the different tags.
 
-ARG DISABLE_RAFT=OFF
-
 # As of Sept. 1, 2023
 FROM nvcr.io/nvidia/pytorch:24.02-py3
 
@@ -74,13 +72,26 @@ RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets &
 ## LangChain needs a FAISS.
 ## FAISS
 
-RUN git clone https://github.com/ernestyalumni/faiss.git /ThirdParty/faiss && \
+# These arguments are *not* global. They don't last past this layer, defined by
+# the RUN docker command. See the example from here:
+# https://docs.docker.com/build/guide/build-args/
+# and notice how "close" or "local" the ARG's are to the "layer" it's used in.
+
+ARG DISABLE_RAFT="OFF"
+ARG COMPUTE_CAPABILITY="75;72"
+
+# First, install dependencies, including swig, that's needed by Python.
+RUN apt-get update && apt-get install -y swig && \
+  git clone https://github.com/ernestyalumni/faiss.git /ThirdParty/faiss && \
+  echo "This is disable raft: ${DISABLE_RAFT} and this is compute capability: ${COMPUTE_CAPABILITY}" && \
   if [ "$DISABLE_RAFT" = "ON" ]; then \
-    cd /ThirdParty/faiss/scripts && \
-    bash BuildForGPU.sh --disable-raft && cd -; \
+    cd /ThirdParty/faiss/ && \
+    bash ./scripts/BuildForGPU.sh --disable-raft \
+      --compute-capability ${COMPUTE_CAPABILITY} && cd -; \
   else \
-    cd /ThirdParty/faiss/scripts && \
-    bash BuildForGPU.sh; \
+    cd /ThirdParty/faiss/ && \
+    bash ./scripts/BuildForGPU.sh --compute-capability ${COMPUTE_CAPABILITY} && \
+      cd -; \
   fi
 
 ## LangChain

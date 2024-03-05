@@ -11,6 +11,10 @@ NVIDIA_PYTORCH_TAG="nvcr.io/nvidia/pytorch:24.02-py3"
 # If NVIDIA's RAFT can be installed on the current platform, then do so.
 DISABLE_RAFT="OFF"
 
+# Default value is 75;72. `-DCMAKE_CUDA_ARCHITECTURES="75;72"` for specifying
+# which GPU architectures to build against.
+CUDA_ARCHITECTURES="75;72"
+
 get_base_directory()
 {
   # $0 gives script's name along with its relative path.
@@ -59,7 +63,8 @@ pull_and_build_docker_image()
   # Otherwise when we do run
   #  => [2/2] RUN pip install neuraloperators                                  4.0s
   # it would be cached without the option flag, not guaranteeing it was installed.
-  docker build --no-cache --build-arg DISABLE_RAFT="$DISABLE_RAFT" \
+  docker build --no-cache --build-arg="DISABLE_RAFT=${DISABLE_RAFT}" \
+    --build-arg="COMPUTE_CAPABILITY=${CUDA_ARCHITECTURES}" \
     -t "$DOCKER_IMAGE_NAME" .
 }
 
@@ -113,11 +118,17 @@ main()
     Dockerfile.langchain \
     > Dockerfile
 
+  # Get CUDA Architecture.
+  source ../GetComputeCapability.sh
+  CUDA_ARCHITECTURES=$(get_compute_capability_as_cuda_architecture)
+
+  echo "CUDA Compute capability determined to be: $CUDA_ARCHITECTURES"
+
   pull_and_build_docker_image
   run_docker_container
 }
 
-main
+main "$@"
 
 # You may see the following if you run 
 #jupyter notebook
