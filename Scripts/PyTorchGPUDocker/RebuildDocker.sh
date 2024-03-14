@@ -10,6 +10,16 @@ DISABLE_RAFT="OFF"
 # which GPU architectures to build against.
 CUDA_ARCHITECTURES="75;72"
 
+function print_help
+{
+  echo "Usage: $0 [-h|--help] [--disable-raft]"
+  echo ""
+  echo "Options:"
+  echo "-h, --help               Print this help message."
+  echo "-r, --disable-raft       Disable RAFT implementation"
+  exit 1
+}
+
 build_docker_image()
 {
   echo "This is DISABLE_RAFT option: $DISABLE_RAFT"
@@ -34,14 +44,23 @@ main()
         DISABLE_RAFT="ON"
         shift # past argument
         ;;
+      --help)
+        print_help
+        exit 0
+        ;;
+      *)
+        # Unknown option
+        print_help
+        exit 1
+        ;;
     esac
   done
 
   cat Dockerfile.header \
     Dockerfile.base \
-    Dockerfile.singleThirdParties \
-    Dockerfile.huggingface \
     Dockerfile.langchain \
+    Dockerfile.huggingface \
+    Dockerfile.singleThirdParties \
     > Dockerfile
 
   # Get CUDA Architecture.

@@ -28,5 +28,7 @@ RUN python -m pip install --upgrade pip && \
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
   # For WebBaseLoader for LangChain retrieval.
-  pip install --upgrade beautifulsoup4
+  pip install --upgrade beautifulsoup4 && \
+  # For vector search example from https://youtu.be/JEBDfGqrAUA?si=t_XzLp1QH9qMMcVp
+  pip install --upgrade pymongo
 

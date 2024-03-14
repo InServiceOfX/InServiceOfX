@@ -13,3 +13,15 @@ PYTHONPATH along, or placing __init__.py into dirs where it doesn't belong.
 """
 
 import pytest
+
+# Import modules from else where in this repository:
+
+from pathlib import Path
+import sys
+
+number_of_parents_to_project_path = 1
+
+current_filepath = Path(__file__).resolve() # Resolve to the absolute path.
+project_path = \
+	current_filepath.parents[number_of_parents_to_project_path].resolve()
+sys.path.append(project_path / "CoreCode/")

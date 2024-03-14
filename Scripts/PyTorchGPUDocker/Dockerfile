@@ -35,40 +35,6 @@ RUN python -m pip install --upgrade pip && \
   # For WebBaseLoader for LangChain retrieval.
   pip install --upgrade beautifulsoup4
 
-### Single, almost one-off, code/repositories
-
-## neuraloperator
-RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
-  cd /ThirdParty/neuraloperator && \
-  git checkout development && \
-  # Install a project in editable mode from local project.
-  pip install -r requirements.txt && \
-  pip install -e .
-
-## mamba
-RUN git clone https://github.com/ernestyalumni/mamba.git /ThirdParty/mamba && \
-  cd /ThirdParty/mamba && \
-  git checkout master && \
-  # Install a project in editable mode from local project.
-  pip install -r ./scripts/requirements.txt && \  
-  pip install -e .
-
-## HuggingFace
-
-## transformers (hugging face)
-RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
-  cd /ThirdParty/transformers && \
-  git checkout master && \
-  # Install editable install from source.
-  # See https://huggingface.co/docs/transformers/installation#installing-from-source
-  pip install -e .
-
-## datasets (hugging face)
-RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
-  cd /ThirdParty/datasets && \
-  git checkout main && \
-  pip install -e .
-
 ## LangChain needs a FAISS.
 ## FAISS
 
@@ -124,3 +90,43 @@ RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langcha
   pip install -e . && \
   cd ../together && \
   pip install -e .
+
+## HuggingFace
+
+## transformers (hugging face)
+RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e .
+
+## datasets (hugging face)
+RUN git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
+  cd /ThirdParty/datasets && \
+  git checkout main && \
+  pip install -e .
+
+### Single, almost one-off, code/repositories
+
+## neuraloperator
+RUN git clone https://github.com/ernestyalumni/neuraloperator /ThirdParty/neuraloperator && \
+  cd /ThirdParty/neuraloperator && \
+  git checkout development && \
+  # Install a project in editable mode from local project.
+  pip install -r requirements.txt && \
+  pip install -e .
+
+## mamba
+RUN git clone https://github.com/ernestyalumni/mamba.git /ThirdParty/mamba && \
+  cd /ThirdParty/mamba && \
+  git checkout master && \
+  # Install a project in editable mode from local project.
+  pip install -r ./scripts/requirements.txt && \  
+  pip install -e .
+
+## GaLore
+
+RUN git clone https://github.com/ernestyalumni/GaLore.git /ThirdParty/GaLore && \
+  cd /ThirdParty/GaLore && \
+  git checkout development

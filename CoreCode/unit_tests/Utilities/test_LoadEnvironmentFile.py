@@ -10,6 +10,6 @@ def test_load_environment_file_loads_example():
 
 	load_environment_file(str(basic_project_paths.project_path / ".envExample"))
 
-	api_key = os.getenv('OPEN_AI_API_KEY')
+	api_key = os.getenv('OPENAI_API_KEY')
 
 	assert api_key == "your_api_key_here"

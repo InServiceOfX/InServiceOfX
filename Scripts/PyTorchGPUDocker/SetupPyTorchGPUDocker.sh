@@ -113,9 +113,9 @@ main()
 
   cat Dockerfile.header \
     Dockerfile.base \
-    Dockerfile.singleThirdParties \
-    Dockerfile.huggingface \
     Dockerfile.langchain \
+    Dockerfile.huggingface \
+    Dockerfile.singleThirdParties \
     > Dockerfile
 
   # Get CUDA Architecture.

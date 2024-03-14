@@ -10,3 +10,8 @@
 # OpenAI key
 
 OPENAI_API_KEY=your_api_key_here
+
+# Obtained from cloud.mongodb.com, Deployment > Database > Data Services >
+# Connect.
+
+EXAMPLE_MONGODB_URI=your_uri_here_from_connection_string
