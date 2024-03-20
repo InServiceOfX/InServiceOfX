@@ -1,3 +1,4 @@
+import openai
 import requests
 from urllib.parse import urljoin
 
@@ -61,6 +62,23 @@ class GenerateEmbeddingFromHuggingFaceMiniLM(GenerateEmbedding):
 			token,
 			GenerateEmbeddingFromHuggingFaceMiniLM.MINILM_API_URL)
 
+class GenerateEmbeddingFromOpenAI:
+	"""
+	@ref https://github.com/beaucarnes/vector-search-tutorial/blob/main/project-one/movie_recs2.py
+	"""
+	def __init__(self, api_key=None, model_name="text-embedding-ada-002"):
+		if api_key != None:
+			openai.api_key = api_key
+		self.model_name = model_name
+
+	def generate_embedding(self, text: str) -> list[float]:
+
+		response = openai.embeddings.create(
+			model=self.model_name,
+			input=text)
+
+		return response.data[0].embedding
+
 class QueryHuggingFaceFeatureExtraction:
 	PIPELINE_URL = \
 		"https://api-inference.huggingface.co/pipeline/feature-extraction/"
@@ -76,6 +94,6 @@ class QueryHuggingFaceFeatureExtraction:
 
 		if response.status_code != 200:
 			raise ValueError(
-				f"Request failed with status code {response.status_code}: {response_text}")
+				f"Request failed with status code {response.status_code}: {response.text}")
 
 		return response.json()

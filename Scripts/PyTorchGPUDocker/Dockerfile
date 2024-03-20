@@ -33,7 +33,11 @@ RUN python -m pip install --upgrade pip && \
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
   # For WebBaseLoader for LangChain retrieval.
-  pip install --upgrade beautifulsoup4
+  pip install --upgrade beautifulsoup4 && \
+  # For vector search example from https://youtu.be/JEBDfGqrAUA?si=t_XzLp1QH9qMMcVp
+  pip install --upgrade pymongo && \
+  # For Langchain, for langchain.document_loaders.DirectoryLoader
+  pip install --upgrade unstructured
 
 ## LangChain needs a FAISS.
 ## FAISS
@@ -122,7 +126,7 @@ RUN git clone https://github.com/ernestyalumni/mamba.git /ThirdParty/mamba && \
   cd /ThirdParty/mamba && \
   git checkout master && \
   # Install a project in editable mode from local project.
-  pip install -r ./scripts/requirements.txt && \  
+  pip install -r ./scripts/requirements.txt && \
   pip install -e .
 
 ## GaLore
