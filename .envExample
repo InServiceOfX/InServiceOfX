@@ -15,3 +15,5 @@ OPENAI_API_KEY=your_api_key_here
 # Connect.
 
 EXAMPLE_MONGODB_URI=your_uri_here_from_connection_string
+
+HUGGINGFACE_TOKEN=your_token_here

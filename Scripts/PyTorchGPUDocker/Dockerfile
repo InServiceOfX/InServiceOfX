@@ -37,7 +37,9 @@ RUN python -m pip install --upgrade pip && \
   # For vector search example from https://youtu.be/JEBDfGqrAUA?si=t_XzLp1QH9qMMcVp
   pip install --upgrade pymongo && \
   # For Langchain, for langchain.document_loaders.DirectoryLoader
-  pip install --upgrade unstructured
+  pip install --upgrade unstructured && \
+  # For the Vector Search Tutorial, Project 2, https://youtu.be/JEBDfGqrAUA?si=M5rZOgqQem0Hj4L6
+  pip install --upgrade gradio
 
 ## LangChain needs a FAISS.
 ## FAISS

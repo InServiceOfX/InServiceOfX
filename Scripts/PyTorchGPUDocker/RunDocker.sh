@@ -57,7 +57,8 @@ command="docker run -v $path_to_mount:/InServiceOfX --gpus all -it "
 # -e flag sets environment and enables CUDA Forward Compatibility instead of
 # default CUDA Minor Version Compatibility.
 command+="-e NVIDIA_DISABLE_REQUIRE=1 "
-command+="-p 8888:8888 --rm --ipc=host --ulimit memlock=-1 --ulimit "
+# Add the port 7860 for gradio applications.
+command+="-p 8888:8888 -p 7860:7860 --rm --ipc=host --ulimit memlock=-1 --ulimit "
 # Originally it was this command to run the base image, but we've added layers
 # so that we 
 # command+="stack=67108864 nvcr.io/nvidia/pytorch:24.02-py3 "
