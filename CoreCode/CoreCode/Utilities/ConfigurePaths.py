@@ -36,3 +36,7 @@ def _setup_paths():
 
 def default_path_to_env_file():
     return _setup_paths().project_path / ".env"
+
+def default_path_to_config_file():
+    return _setup_paths().project_path / ".config"
+

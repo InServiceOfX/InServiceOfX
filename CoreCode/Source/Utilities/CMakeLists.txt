@@ -1,0 +1,5 @@
+SET(UTILITIES_SOURCES
+  ConfigurePaths.cpp)
+
+ADD_LIBRARY(Utilities
+  ${UTILITIES_SOURCES})

@@ -39,8 +39,9 @@ RUN python -m pip install --upgrade pip && \
   # For Langchain, for langchain.document_loaders.DirectoryLoader
   pip install --upgrade unstructured && \
   # For the Vector Search Tutorial, Project 2, https://youtu.be/JEBDfGqrAUA?si=M5rZOgqQem0Hj4L6
-  pip install --upgrade gradio
-
+  pip install --upgrade gradio && \
+  # For ChromaDB, vector store or embedding database.
+  pip install --upgrade chromadb
 ## LangChain needs a FAISS.
 ## FAISS
 
