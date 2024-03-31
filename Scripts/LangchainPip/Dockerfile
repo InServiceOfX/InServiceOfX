@@ -21,19 +21,12 @@ WORKDIR ${THIRD_PARTY}
 ## Update pip.
 RUN python -m pip install --upgrade pip && \
   pip install --upgrade jupyter && \
-  pip install --upgrade ipywidgets && \
-  # accelerate is to use transformers.TrainingArguments
-  pip install --upgrade accelerate && \
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
-  # For WebBaseLoader for LangChain retrieval.
-  pip install --upgrade beautifulsoup4 && \
-  # For vector search example from https://youtu.be/JEBDfGqrAUA?si=t_XzLp1QH9qMMcVp
-  pip install --upgrade pymongo && \
-  # For Langchain, for langchain.document_loaders.DirectoryLoader
-  pip install --upgrade unstructured[all-docs] && \
-  # For the Vector Search Tutorial, Project 2, https://youtu.be/JEBDfGqrAUA?si=M5rZOgqQem0Hj4L6
   pip install --upgrade gradio && \
-  # For ChromaDB, vector store or embedding database.
-  pip install --upgrade chromadb
+  pip install --upgrade langchain && \
+  pip install langchain-community && \
+  pip install langchain-core && \
+  pip install langchain-experimental && \
+  pip install langchain-cli
