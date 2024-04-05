@@ -10,6 +10,18 @@ DISABLE_RAFT="OFF"
 # which GPU architectures to build against.
 CUDA_ARCHITECTURES="75;72"
 
+# Reads ARCH and PTX values from local text file, typically in the same
+# (sub)directory as this script and named nvidia_compute_capabilities.txt.
+read_compute_capabilities()
+{
+  local file_path="$1"
+  local arch_value=$(grep '^ARCH=' "$file_path" | cut -d '=' -f 2)
+  local ptx_value=$(grep '^PTX=' "$file_path" | cut -d '=' -f 2)
+  local compute_capability_value=$(grep '^COMPUTE_CAPABILITY=' "$file_path" | cut -d '=' -f 2)
+
+  echo "$arch_value" "$ptx_value" "$compute_capability_value"
+}
+
 function print_help
 {
   echo "Usage: $0 [-h|--help] [--disable-raft]"
@@ -26,11 +38,6 @@ build_docker_image()
   echo "This is CUDA_ARCHITECTURES option: $CUDA_ARCHITECTURES"
 
   # Builds from Dockerfile in this directory.
-  # https://docs.docker.com/engine/reference/commandline/build/
-  # --no-cache Don't use cache when building image.
-  # Otherwise when we do run
-  #  => [2/2] RUN pip install neuraloperators                                  4.0s
-  # it would be cached without the option flag, not guaranteeing it was installed.
   docker build --build-arg="DISABLE_RAFT=${DISABLE_RAFT}" \
     --build-arg="COMPUTE_CAPABILITY=${CUDA_ARCHITECTURES}" \
     -t "$DOCKER_IMAGE_NAME" .

@@ -1,0 +1,14 @@
+### Single, almost one-off, code/repositories
+
+## llama.cpp
+
+RUN git clone https://github.com/ernestyalumni/llama.cpp.git /ThirdParty/llama.cpp && \
+  cd /ThirdParty/llama.cpp && \
+  git checkout master && \
+  mkdir -p Build && \
+  cd Build && \
+  # LLAMA_CUBLAS will be deprecated, so we don't use -DLLAMA_CUBLAS=on
+  cmake .. -DLLAMA_CUDA=on && \
+  make
+
+  

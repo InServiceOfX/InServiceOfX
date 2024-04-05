@@ -17,3 +17,8 @@ OPENAI_API_KEY=your_api_key_here
 EXAMPLE_MONGODB_URI=your_uri_here_from_connection_string
 
 HUGGINGFACE_TOKEN=your_token_here
+
+# LangMem
+# https://langchain-ai.github.io/long-term-memory/
+LANGMEM_API_URL=https://your-instance-url
+LANGMEM_API_KEY=your-api-key

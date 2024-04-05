@@ -8,6 +8,22 @@
 ### langchain-core: Base abstractions and LangChain Expression Language.
 ### langchain-community: Third party integrations.
 
+## FAISS
+
+ARG ENABLE_FAISS=false
+ARG COMPUTE_CAPABILITY
+
+# TODO: Update to allow for NVIDIA's RAFT.
+RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
+    apt-get update && apt-get install -y swig && \
+    git clone https://github.com/ernestyalumni/faiss.git /ThirdParty/faiss && \
+    echo "This is compute capability: ${COMPUTE_CAPABILITY}" && \
+    cd /ThirdParty/faiss/ && \
+    bash ./scripts/BuildForGPU.sh --disable-raft \
+      --compute-capability ${COMPUTE_CAPABILITY} && \
+    cd / ; \
+  fi
+
 RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langchain && \
   cd /ThirdParty/langchain/libs/langchain && \
   git checkout master && \
@@ -18,8 +34,6 @@ RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langcha
   pip install -e . && \
   cd ../community && \
   pip install -e . && \
-  cd ../experimental && \
-  pip install -e . && \  
   # Install partners, which include Anthropic, Mistral AI, Open AI, etc.
   cd ../partners && \
   cd anthropic && \
@@ -29,5 +43,7 @@ RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langcha
   cd ../openai && \
   pip install -e . && \
   cd ../together && \
-  pip install -e .
+  pip install -e . && \
+  pip install -U --quiet langmem
+
 

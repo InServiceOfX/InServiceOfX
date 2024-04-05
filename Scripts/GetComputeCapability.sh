@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Consider looking at these for references:
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+
 get_gpu_model()
 {
 	nvidia-smi --query-gpu=gpu_name --format=csv,noheader | head -n 1
