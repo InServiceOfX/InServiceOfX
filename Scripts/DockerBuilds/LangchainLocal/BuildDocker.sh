@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="langchain-local-nvidia-python-24.02"
+DOCKER_IMAGE_NAME="langchain-local-nvidia-python-24.01"
 
 print_help()
 {
