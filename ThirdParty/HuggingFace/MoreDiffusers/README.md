@@ -10,6 +10,8 @@ See https://python-poetry.org/docs/basic-usage/
 ```
 GIT_LFS_SKIP_SMUDGE=1 git clone
 ```
+Also, try with the `--progress` option.
+
 See https://gist.github.com/iamalbert/ee4b4c89da02e2f9a12b6d700eec7c84
 
 Otherwise LFS files are large.
