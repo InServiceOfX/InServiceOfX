@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "inserviceofx"
+version = "0.1.0"
+description = "Monorepo (single or \"mono\" repository) for deep learning."
+authors = ["InServiceOfX <inserviceofxy@proton.me>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/InServiceOfX/InServiceOfX"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"

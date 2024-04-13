@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "corecode"
+version = "0.1.0"
+description = "Core code, utilities for general and auxiliary use"
+authors = ["InServiceOfX <inserviceofxy@proton.me>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/InServiceOfX/InServiceOfX"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beautifulsoup4 = "^4.12.3"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+# The only dependencies that should be added are
+# dependencies used for running tests (e.g., pytest, freezegun, response).
+# Any dependencies that do not meet that criteria will be removed.
+pytest = "^8.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

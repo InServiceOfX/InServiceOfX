@@ -8,11 +8,12 @@ print_help()
   echo "Usage: $0 [--enable-faiss]"
   echo
   echo "Options:"
-  echo " --eenable-faiss    If provided, the Docker build includes the installation of FAISS."
+  echo " --enable-faiss    If provided, the Docker build includes the installation of FAISS."
   echo "                    By default, FAISS is not installed."
+  echo " --no-cache         If provided, the Docker build will be performed without using cache"
   echo
   echo "Example:"
-  echo "  $0 --eanble-faiss     # Builds Docker image with FAISS installation."
+  echo "  $0 --enable-faiss     # Builds Docker image with FAISS installation."
   echo "  $0                    # Builds Docker image without FAISS installation." 
 }
 
@@ -33,14 +34,28 @@ read_compute_capabilities()
 
 build_docker_image()
 {
+  local enable_faiss=false
+  local use_cache=""
+
   # Check for help option
   for arg in "$@"
   do
     if [ "$arg" = "--help" ]; then
       print_help
       exit 0
+    elif [[ "$arg" == "--enable-faiss" ]]; then
+      enable_faiss=true
+    elif [[ "$arg" == "--no-cache" ]]; then
+      use_cache="--no-cache"
     fi
   done
+
+  # Determine the script's directory and ensure Dockerfile is there.
+  local script_dir="$(dirname "$(realpath "$0")")"
+  if [[ ! -f "$script_dir/Dockerfile" ]]; then
+    echo "Dockerfile not found in script directory ($script_dir)."
+    exit 1
+  fi
 
   # Path to nvidia_compute_capabilities.txt file; the hard assumption is made
   # that it'll be in the exact same (sub)directory as this file.
@@ -53,24 +68,24 @@ build_docker_image()
   echo "Current directory: $(pwd)"
   cd ../ || { echo "Failed to change directory to '../'"; exit 1; }
 
-  local enable_faiss=false
+  # Construct build-args with optional FAISS.
+  local build_args="--build-arg ARCH=$ARCH_VALUE --build-arg PTX=$PTX_VALUE "
+  build_args+="--build-arg COMPUTE_CAPABILITY "
 
-  # Check for --enalbe-false flag
-  for arg in "$@"
-  do 
-    if [ "$arg" = "--enable-faiss" ]; then
-      enable_faiss=true
-      break
-    fi
-  done
+  if $enable_faiss; then
+    build_args+="--build-arg ENABLE_FAISS=true "
+  fi
+
+  echo "$use_cache"
+  echo "$build_args"
+  echo "$DOCKER_IMAGE_NAME"
+  echo "$script_dir"
 
   # Builds from Dockerfile in this directory.
-  docker build \
-    --build-arg ARCH="$ARCH_VALUE" \
-    --build-arg PTX="$PTX_VALUE" \
-    --build-arg COMPUTE_CAPABILITY="$COMPUTE_CAPABILITY" \
+  docker build $use_cache \
+    $build_args \
     -t "$DOCKER_IMAGE_NAME" \
-    -f LangchainLocal/Dockerfile .
+    -f "$script_dir/Dockerfile" .
 }
 
 main()

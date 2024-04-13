@@ -44,7 +44,10 @@ RUN apt-get update && \
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
   # Install Rust
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
+  # Install Poetry
+  # https://python-poetry.org/docs/#installing-with-the-official-installer
+  curl -sSL https://install.python-poetry.org | python3 -
 
 
 ## Fix OpenCV install
