@@ -40,6 +40,10 @@ class LoadConfigurationFile:
 
 	@staticmethod
 	def load_configuration_file():
+		"""
+		@return configuration, Python dict with key name to pathlib.Path, e.g.
+		'BASE_DATA_PATH': PosixPath('/Data')
+		"""
 		configuration = {}
 		with open(get_default_path_to_config_file(), 'r') as file:
 

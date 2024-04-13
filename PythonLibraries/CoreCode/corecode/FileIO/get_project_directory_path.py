@@ -5,12 +5,12 @@ def get_project_directory_path():
     current_filepath = Path(__file__).resolve()
 
     # Assume the directory structure has not changed.
-    number_of_parents_to_project_path = 3
+    number_of_parents_to_project_path = 4
 
     return current_filepath.parents[number_of_parents_to_project_path]
 
-def get_proejct_directory_path_recursive():
-    current_file_path = Path(__file__).resolve()
+def get_project_directory_path_recursive():
+    current_filepath = Path(__file__).resolve()
 
     # Traverse up directories to find one containing this unique identifier.
     for parent in current_filepath.parents:
