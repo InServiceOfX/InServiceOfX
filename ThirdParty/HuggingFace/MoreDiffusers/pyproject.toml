@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "morediffusers"
+version = "0.1.0"
+description = "More code and tests on HuggingFace's diffusers"
+authors = ["InServiceOfX <inserviceofxy@proton.me>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/InServiceOfX/InServiceOfX"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+# The only dependencies that should be added are
+# dependencies used for running tests (e.g., pytest, freezegun, response).
+# Any dependencies that do not meet that criteria will be removed.
+pytest = "^8.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
