@@ -5,6 +5,7 @@ from pathlib import Path
 
 @dataclass
 class DataSubdirectories:
+    Data: Path = field(init=False)
     Models: Path = field(init=False)
     ModelsDiffusion: Path = field(init=False)
 
@@ -13,7 +14,6 @@ class DataSubdirectories:
     positional arguments required when creating a class instance.
     """
     def __post_init__(self):
-        self.Models = \
-            LoadConfigurationFile.load_configuration_file()['BASE_DATA_PATH'] / "Models"
-
+        self.Data = LoadConfigurationFile.load_configuration_file()['BASE_DATA_PATH']
+        self.Models = self.Data / "Models"
         self.ModelsDiffusion = self.Models / "Diffusion"

@@ -103,5 +103,6 @@ Cargo.lock
 # Files to ignore that are specific to this repository (project)
 
 .config
+Scripts/DockerBuilds/Diffusion/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/PyTorchGPUDocker/mount_paths.txt

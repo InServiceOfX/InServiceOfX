@@ -43,6 +43,11 @@ RUN apt-get update && \
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
+  # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
+  # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
+  # Please update jupyter and ipywidgets. See
+  # https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  pip install --upgrade ipywidgets && \
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
   # Install Poetry
@@ -80,7 +85,7 @@ ARG COMPUTE_CAPABILITY
 # TODO: Update to allow for NVIDIA's RAFT.
 RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
     apt-get update && apt-get install -y swig && \
-    git clone https://github.com/ernestyalumni/faiss.git /ThirdParty/faiss && \
+    git clone https://github.com/InServiceOfX/faiss.git /ThirdParty/faiss && \
     echo "This is compute capability: ${COMPUTE_CAPABILITY}" && \
     cd /ThirdParty/faiss/ && \
     bash ./scripts/BuildForGPU.sh --disable-raft \
@@ -104,7 +109,7 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
   git checkout main && \
   pip install -e . && \
 ## diffusers (hugging face)
-  git clone https://github.com/ernestyalumni/diffusers.git /ThirdParty/diffusers && \
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
   git checkout master && \
   pip install -e . && \
@@ -114,8 +119,9 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
   git checkout main && \
   pip install -e . && \
 ## candle (hugging face)
-  git clone https://github.com/ernestyalumni/candle.git /ThirdParty/candle && \
+  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
   git checkout master && \
   cd /
+
 

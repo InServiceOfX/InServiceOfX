@@ -1,7 +1,7 @@
 ### Single, almost one-off, code/repositories
 
 ## InstantID
-RUN git clone https://github.com/ernestyalumni/InstantID.git /ThirdParty/InstantID
+RUN git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID
   git checkout master
 
 

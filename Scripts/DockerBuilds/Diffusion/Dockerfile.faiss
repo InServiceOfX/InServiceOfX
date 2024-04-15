@@ -6,7 +6,7 @@ ARG COMPUTE_CAPABILITY
 # TODO: Update to allow for NVIDIA's RAFT.
 RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
     apt-get update && apt-get install -y swig && \
-    git clone https://github.com/ernestyalumni/faiss.git /ThirdParty/faiss && \
+    git clone https://github.com/InServiceOfX/faiss.git /ThirdParty/faiss && \
     echo "This is compute capability: ${COMPUTE_CAPABILITY}" && \
     cd /ThirdParty/faiss/ && \
     bash ./scripts/BuildForGPU.sh --disable-raft \

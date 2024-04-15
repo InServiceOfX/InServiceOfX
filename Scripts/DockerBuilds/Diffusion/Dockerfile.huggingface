@@ -13,7 +13,7 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
   git checkout main && \
   pip install -e . && \
 ## diffusers (hugging face)
-  git clone https://github.com/ernestyalumni/diffusers.git /ThirdParty/diffusers && \
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
   git checkout master && \
   pip install -e . && \
@@ -23,8 +23,9 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
   git checkout main && \
   pip install -e . && \
 ## candle (hugging face)
-  git clone https://github.com/ernestyalumni/candle.git /ThirdParty/candle && \
+  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
   git checkout master && \
   cd /
+
 

@@ -38,6 +38,11 @@ RUN apt-get update && \
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
+  # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
+  # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
+  # Please update jupyter and ipywidgets. See
+  # https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  pip install --upgrade ipywidgets && \
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
   # Install Poetry
