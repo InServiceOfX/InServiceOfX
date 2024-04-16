@@ -125,3 +125,23 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
   cd /
 
 
+### Further third party code/repositories
+
+## onnxruntime, ONNX Runtime, needed by insightface.
+## https://onnxruntime.ai/docs/install/
+RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+
+## insightface, needed by InstantID
+RUN git clone https://github.com/deepinsight/insightface.git /ThirdParty/insightface && \
+  cd /ThirdParty/insightface && \
+  cd python-package && \
+  git checkout master && \
+  pip install -e . && \
+  cd / && \
+## InstantID
+  git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
+  cd /ThirdParty/InstantID && \
+  git checkout main && \
+  cd /
+
+

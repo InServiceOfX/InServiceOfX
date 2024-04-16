@@ -104,5 +104,6 @@ Cargo.lock
 
 .config
 Scripts/DockerBuilds/Diffusion/mount_paths.txt
+Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/PyTorchGPUDocker/mount_paths.txt

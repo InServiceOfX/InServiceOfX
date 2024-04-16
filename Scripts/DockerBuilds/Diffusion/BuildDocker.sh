@@ -96,6 +96,7 @@ main()
     Dockerfile.base \
     Dockerfile.faiss \
     Dockerfile.huggingface \
+    Dockerfile.third_parties \
     > Dockerfile
 
   build_docker_image "$@"

@@ -94,6 +94,7 @@ main()
     Dockerfile.base \
     Dockerfile.singleThirdParties \
     Dockerfile.langchain \
+    Dockerfile.huggingface \
     > Dockerfile
 
   build_docker_image "$@"
