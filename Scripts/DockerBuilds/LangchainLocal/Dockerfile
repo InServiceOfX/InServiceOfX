@@ -39,7 +39,22 @@ ARG PTX
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
-  pip uninstall -y opencv && \
+  # Install Rust
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  # Install Poetry
+  # https://python-poetry.org/docs/#installing-with-the-official-installer
+  curl -sSL https://install.python-poetry.org | python3 - && \
+  # Do more pip installs.
+  # Reads key-value pairs from .env file to set environment variables; in
+  # particular for Open AI API keys for LangChain.
+  pip install --upgrade python-dotenv && \
+  # For ChromaDB, vector store or embedding database.
+  pip install --upgrade chromadb && \
+  pip install "unstructured[all-docs]"
+
+
+## Fix OpenCV install
+RUN pip uninstall -y opencv && \
   cd / && \
   # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
   # -q for quiet because output of wget with progress bars is too much.
@@ -57,14 +72,7 @@ RUN apt-get update && \
   rm -rf /opencv-${OPENCV_VERSION} && \
   rm -rf /opencv_contrib-${OPENCV_VERSION} && \
   rm /opencv.zip && \
-  rm /opencv_contrib.zip && \
-  # Do more pip installs.
-  # Reads key-value pairs from .env file to set environment variables; in
-  # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
-  # For ChromaDB, vector store or embedding database.
-  pip install --upgrade chromadb && \
-  pip install "unstructured[all-docs]"
+  rm /opencv_contrib.zip
 
 
 ### Single, almost one-off, code/repositories
@@ -80,7 +88,7 @@ RUN git clone https://github.com/ernestyalumni/llama.cpp.git /ThirdParty/llama.c
   cmake .. -DLLAMA_CUDA=on && \
   make
 
-  ## LangChain
+## LangChain
 
 ### https://python.langchain.com/docs/get_started/introduction
 ### The LangChain libraries themselves are made up of several different packages
@@ -127,5 +135,36 @@ RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langcha
   cd ../together && \
   pip install -e . && \
   pip install -U --quiet langmem
+
+
+## HuggingFace
+
+## transformers (hugging face), required to run most popular diffusion models.
+RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e . && \
+## datasets (hugging face)
+  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
+  cd /ThirdParty/datasets && \
+  git checkout main && \
+  pip install -e . && \
+## diffusers (hugging face)
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
+  cd /ThirdParty/diffusers && \
+  git checkout master && \
+  pip install -e . && \
+## accelerate - speeds up model loading for inference and training
+  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
+  cd /ThirdParty/accelerate && \
+  git checkout main && \
+  pip install -e . && \
+## candle (hugging face)
+  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  cd /ThirdParty/candle && \
+  git checkout master && \
+  cd /
 
 

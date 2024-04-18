@@ -49,7 +49,10 @@ RUN apt-get update && \
   # https://ipywidgets.readthedocs.io/en/stable/user_install.html
   pip install --upgrade ipywidgets && \
   # Install Rust
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  # We had to add the sourcing inside the .bashrc
+  # https://stackoverflow.com/questions/49676490/when-installing-rust-toolchain-in-docker-bash-source-command-doesnt-work
+  echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 -
@@ -132,10 +135,10 @@ RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/tran
 RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
 
 ## insightface, needed by InstantID
-RUN git clone https://github.com/deepinsight/insightface.git /ThirdParty/insightface && \
+RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insightface && \
   cd /ThirdParty/insightface && \
   cd python-package && \
-  git checkout master && \
+  git checkout development && \
   pip install -e . && \
   cd / && \
 ## InstantID
