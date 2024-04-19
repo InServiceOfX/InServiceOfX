@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "moreinstantid"
+version = "0.1.0"
+description = "More applications based upon InstantID"
+authors = ["InServiceOfX <inserviceofxy@proton.me>"]
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/InServiceOfX/InServiceOfX"
+
+[tool.poetry.urls]
+"Source Code" = "https://github.com/InServiceOfX/InServiceOfX/tree/master/PythonLibraries/ThirdParties/MoreInstantID"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+diffusers = "^0.28"
+insightface = "^0.7.3"
+onnxruntime = "^1.17.1"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.3.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+corecore = { path = "../../CoreCode", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
