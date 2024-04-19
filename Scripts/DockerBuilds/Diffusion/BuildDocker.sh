@@ -90,14 +90,57 @@ build_docker_image()
     -f "$script_dir/Dockerfile" .
 }
 
+# Function to run a command and check the exit code
+run_command_and_check_exit_code() {
+    local command="$1"
+    local command_output
+
+    # Run the command and capture the output
+    command_output=$(eval "$command" 2>&1)
+    command_exit_code=$?
+
+    # Check if the command executed successfully
+    if [ $command_exit_code -eq 0 ]; then
+        echo "$command_output"
+    else
+        # Check if the error is due to permission denied
+        if [ $command_exit_code -eq 126 ]; then
+            echo "Error: Permission denied. Cannot run the command: $command"
+            return $command_exit_code
+        else
+            echo "Error: Command '$command' failed with exit code $command_exit_code"
+            echo "$command_output"
+            return $command_exit_code
+        fi
+    fi
+}
+
 main()
 {
-  cat Dockerfile.header \
+  echo "Con(cat)enating Dockerfiles: "
+
+  command_cat_dockerfiles="cat Dockerfile.header \
     Dockerfile.base \
     Dockerfile.faiss \
     Dockerfile.huggingface \
     Dockerfile.third_parties \
-    > Dockerfile
+    > Dockerfile"
+
+  run_command_and_check_exit_code "$command_cat_dockerfiles"
+
+  # Check if the command executed successfully
+  if [ $command_exit_code -eq 0 ]; then
+      echo "Con(cat)enating Dockerfiles executed successfully."
+  else
+      # Check if the error is due to permission denied
+      if [ $command_exit_code -eq 126 ]; then
+          echo "Error: Permission denied. Cannot run the command."
+          exit $command_exit_code
+      else
+          echo "Error: Command failed with exit code $command_exit_code."
+          exit $command_exit_code
+      fi
+  fi
 
   build_docker_image "$@"
 }

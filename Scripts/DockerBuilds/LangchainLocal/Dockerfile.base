@@ -14,6 +14,7 @@
 # Issue: https://github.com/opencv/opencv_contrib/issues/3690
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
+# https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
 FROM nvcr.io/nvidia/pytorch:24.01-py3
 
 # Set the working directory in the container

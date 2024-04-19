@@ -21,3 +21,5 @@ To pull, i.e. download, the large LFS file, do something like this:
 ```
 $ git lfs pull --include="v1-5-pruned.safetensors"
 ```
+
+You're going to want to indicate the file you want to pull by its relative path to the original repository structure, not relative from your local copy.

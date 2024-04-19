@@ -82,9 +82,23 @@ def main():
     docker_run_command += "-e NVIDIA_DISABLE_REQUIRE=1 "
 
     # Add the port 7860 for gradio applications.
-    docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host --ulimit memlock=-1 "
+    docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
 
-    docker_run_command += "--ulimit stack=67108864 "
+    # Originally,
+    #docker_run_command += "--ulimit memlock=-1 "
+    # But on my target, I do run
+    # ulimit -a
+    # and see what my system uses.
+    #docker_run_command += "--ulimit memlock=1968848 "
+
+    # https://www.tutorialspoint.com/setting-ulimit-values-on-docker-containers
+    # Originally,
+    #docker_run_command += "--ulimit stack=67108864 "
+    # But on my target, I do run
+    # ulimit -a
+    # and see what my system uses.
+    #docker_run_command += "--ulimit stack=8192 "
+
     docker_run_command += DOCKER_IMAGE_NAME
 
     print(docker_run_command)
