@@ -1,3 +1,0 @@
-# Make a copy of this file if you want to configure the mount paths for running
-# RunDocker.py, to run the docker container.
-/media/propdev/9dc1a908-7eff-4e1c-8231-41c342271da7/home/propdev/Data/:/Data/
