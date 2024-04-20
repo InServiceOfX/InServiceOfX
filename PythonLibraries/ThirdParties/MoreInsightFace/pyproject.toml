@@ -1,21 +1,15 @@
 [tool.poetry]
-name = "moreinstantid"
+name = "moreinsightface"
 version = "0.1.0"
-description = "More applications based upon InstantID"
+description = "More applications based upon InsightFace"
 authors = ["InServiceOfX <inserviceofxy@proton.me>"]
 readme = "README.md"
 license = "Apache-2.0"
 repository = "https://github.com/InServiceOfX/InServiceOfX"
 
-[tool.poetry.urls]
-"Source Code" = "https://github.com/InServiceOfX/InServiceOfX/tree/master/PythonLibraries/ThirdParties/MoreInstantID"
-
 [tool.poetry.dependencies]
 python = "^3.10"
-diffusers = "^0.28"
 insightface = "^0.7.3"
-onnxruntime = "^1.17.1"
-PyYAML="^6.0.1"
 
 [tool.poetry.group.test]
 optional = true
@@ -27,7 +21,7 @@ pytest = "^7.3.0"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-moreinsightface = { path = "../MoreInsightFace", develop = true }
+jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]

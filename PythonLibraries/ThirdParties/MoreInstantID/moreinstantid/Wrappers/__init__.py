@@ -1,0 +1,2 @@
+from moreinstantid.Wrappers.ControlNetAndStableDiffusionXLPipeline import (
+	ControlNetAndStableDiffusionXLPipeline)

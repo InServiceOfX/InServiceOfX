@@ -24,7 +24,7 @@ RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
     cd / ; \
   fi
 
-RUN git clone https://github.com/ernestyalumni/langchain.git /ThirdParty/langchain && \
+RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchain && \
   cd /ThirdParty/langchain/libs/langchain && \
   git checkout master && \
   # Install editable install from source.

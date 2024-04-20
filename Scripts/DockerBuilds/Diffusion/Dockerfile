@@ -19,6 +19,7 @@
 # Issue: https://github.com/opencv/opencv_contrib/issues/3690
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
+# https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
 FROM nvcr.io/nvidia/pytorch:24.01-py3
 
 # Set the working directory in the container
@@ -56,7 +57,11 @@ RUN apt-get update && \
   echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
-  curl -sSL https://install.python-poetry.org | python3 -
+  curl -sSL https://install.python-poetry.org | python3 - && \
+  # https://python-poetry.org/docs/#installing-with-the-official-installer
+  # Step 3, you have to add poetry to your PATH, which on UNIX is in
+  # $HOME/.local/bin
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
 
 
 ## Fix OpenCV install

@@ -1,0 +1,3 @@
+face_analysis_model_name : "buffalo_l"
+face_analysis_model_directory_path : "/Data/Models/Diffusion/InstantX"
+control_net_model_path : "/Data/Models/Diffusion/InstantX/InstantID/ControlNetModel"
