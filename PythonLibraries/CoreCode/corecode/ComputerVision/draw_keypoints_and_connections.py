@@ -32,7 +32,7 @@ def draw_keypoints_and_connections(image_pil, keypoints, color_list=None):
 				y_coordinates[0] - y_coordinates[1],
 				x_coordinates[0] - x_coordinates[1]))
 		polygon = cv2.ellipse2Poly(
-			(int(np.mean(x_coordinates)), int(np.mean(y_coordinates)))
+			(int(np.mean(x_coordinates)), int(np.mean(y_coordinates))),
 			(int(length / 2), stickwidth),
 			int(angle),
 			0,

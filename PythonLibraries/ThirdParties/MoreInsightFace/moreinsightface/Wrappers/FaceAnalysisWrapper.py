@@ -1,9 +1,24 @@
+from collections import namedtuple
+from corecode.ComputerVision import (
+    draw_keypoints_and_connections,
+    get_maximum_sized_face)
+from corecode.ComputerVision.color_conversions import from_rgb_to_bgr
+from corecode.FileIO import load_image_with_diffusers
+
 from insightface.app import FaceAnalysis
 
 import cv2
 from pathlib import Path
 
 class FaceAnalysisWrapper:
+    FaceInformation = namedtuple(
+        "FaceInformation",
+        ["face_embedding", "face_keypoints", "height", "width"])
+
+    PoseInformation = namedtuple(
+        "PoseInformation",
+        ["pose_keypoints", "height", "width"])
+
     def __init__(
         self,
         name,
@@ -18,5 +33,33 @@ class FaceAnalysisWrapper:
 
         self.application.prepare(ctx_id=0, det_size=(det_size, det_size))
 
-    def get_face(self, bgr_format_image):
-        return self.application.get(bgr_format_image)
+    def get_face_info_from_image(self, face_image_path):
+        face_image = load_image_with_diffusers(face_image_path)
+        face_image_cv2 = from_rgb_to_bgr(face_image)
+        height, width, _ = face_image_cv2.shape
+        face_info = self.application.get(face_image_cv2)
+
+        # Get the maximum sized face.
+        face_info = get_maximum_sized_face(face_info)
+
+        face_keypoints = draw_keypoints_and_connections(face_image, face_info['kps'])
+
+        return FaceAnalysisWrapper.FaceInformation(
+            face_embedding=face_info["embedding"],
+            face_keypoints=face_keypoints,
+            height=height,
+            width=width)
+
+    def get_pose_info_from_image(self, pose_image_path):
+        pose_image = load_image_with_diffusers(pose_image_path)
+        pose_image_cv2 = from_rgb_to_bgr(pose_image)
+        pose_info = self.application.get(pose_image_cv2)
+
+        pose_info = pose_info[-1]
+        pose_keypoints = draw_keypoints_and_connections(pose_image, pose_info['kps'])
+        width, height = pose_keypoints.size
+
+        return FaceAnalysisWrapper.PoseInformation(
+            pose_keypoints = pose_keypoints,
+            height = height,
+            width = width)

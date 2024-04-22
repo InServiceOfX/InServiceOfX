@@ -1,3 +1,4 @@
 face_analysis_model_name : "buffalo_l"
 face_analysis_model_directory_path : "/Data/Models/Diffusion/InstantX"
 control_net_model_path : "/Data/Models/Diffusion/InstantX/InstantID/ControlNetModel"
+ip_adapter_path: "/Data/Models/Diffusion/h94/IP-Adapter-FaceID/ip-adapter-faceid-portrait_sdxl_unnorm.bin"

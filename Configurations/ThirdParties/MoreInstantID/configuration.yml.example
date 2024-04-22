@@ -1,4 +1,4 @@
-data_model_path: &DataModelPath
-face_analysis_model_name : 
+face_analysis_model_name :
 face_analysis_model_directory_path :
-control_net_model_path : 
+control_net_model_path :
+ip_adapter_path :

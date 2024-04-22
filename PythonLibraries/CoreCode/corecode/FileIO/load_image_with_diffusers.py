@@ -1,5 +1,5 @@
+from diffusers.utils import load_image
 from pathlib import Path
-import diffusers
 
 def load_image_with_diffusers(
     directory_with_file_or_full_path,
