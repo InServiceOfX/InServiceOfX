@@ -14,25 +14,43 @@ class Configuration:
 		f.close()
 
 		self.face_analysis_model_name = data["face_analysis_model_name"]
-		self.face_analysis_directory_path = data[
+		self.face_analysis_model_directory_path = data[
 			"face_analysis_model_directory_path"]
 		self.control_net_model_path = data["control_net_model_path"]
+		self.diffusion_model_path = data["diffusion_model_path"]
 		self.ip_adapter_path = data["ip_adapter_path"]
+		self.face_image_path = data["face_image_path"]
+		self.pose_image_path = data["pose_image_path"]
+		self.temporary_save_path = data["temporary_save_path"]
 
+	def check_if_paths_exist():
 		if (not Path(self.face_analysis_model_name).exists()):
 			raise RuntimeError(
 				"Path doesn't exist: ",
 				self.face_analysis_model_name)
-		else if (not Path(self.face_analysis_directory_path).exists())
+		elif (not Path(self.face_analysis_model_directory_path).exists()):
 			raise RuntimeError(
 				"Path doesn't exist: ",
 				self.face_analysis_directory_path)
-		else if (not Path(self.control_net_model_path).exists())
+		elif (not Path(self.control_net_model_path).exists()):
 			raise RuntimeError(
 				"Path doesn't exist: ",
 				self.control_net_model_path)
-		else if (not Path(self.ip_adapter_path).exists())
+		elif (not Path(self.diffusion_model_path).exists()):
+			raise RuntimeError(
+				"Path doesn't exist: ",
+				self.diffusion_model_path)
+		elif (not Path(self.ip_adapter_path).exists()):
 			raise RuntimeError(
 				"Path doesn't exist: ",
 				self.ip_adapter_path)
+		elif (not Path(self.face_image_path).exists()):
+			raise RuntimeError(
+				"Path doesn't exist: ",
+				self.face_image_path)
+		elif (not Path(self.temporary_save_path).exists()):
+			raise RuntimeError(
+				"Path doesn't exist: ",
+				self.temporary_save_path)
 
+		return True

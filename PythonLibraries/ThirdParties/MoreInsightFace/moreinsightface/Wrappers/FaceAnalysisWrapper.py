@@ -26,6 +26,15 @@ class FaceAnalysisWrapper:
         providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
         det_size=256
         ):
+        """
+        @param name Name of the model; it's expected this is also the name of
+        the subdirectory that has root as its "parent" directory and that this
+        subdirectory would contain the model.
+        e.g. name="buffalo_l"
+
+        @param root Path of the directory containing the subdirectory called
+        name, which would then contain the model files.
+        """
         self.application = FaceAnalysis(
             name=name,
             root=root,

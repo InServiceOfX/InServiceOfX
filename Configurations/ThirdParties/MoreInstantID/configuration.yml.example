@@ -1,4 +1,8 @@
 face_analysis_model_name :
 face_analysis_model_directory_path :
 control_net_model_path :
+diffusion_model_path :
 ip_adapter_path :
+face_image_path :
+pose_image_path :
+temporary_save_path : 

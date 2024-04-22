@@ -1,0 +1,9 @@
+#face_analysis_model_name : "buffalo_l"
+face_analysis_model_name : "antelopev2"
+face_analysis_model_directory_path : ""
+diffusion_model_path : "diff"
+control_net_model_path : "/Data/Models/Diffusion/InstantX/InstantID/ControlNetModel"
+ip_adapter_path: "/Data/Models/Diffusion/h94/IP-Adapter-FaceID/ip-adapter-faceid-portrait_sdxl_unnorm.bin"
+face_image_path: "/Data/Public/Images/LennaSjööblom/Lenna_(test_image).png"
+pose_image_path :
+temporary_save_path: "/Data/Private"
