@@ -1,3 +1,8 @@
+"""
+@brief Generate N (hence "finite") number of images in a for loop (hence
+"loop"). Run this in your terminal, command prompt (hence "terminal only").
+"""
+
 from collections import namedtuple
 from pathlib import Path
 import sys
@@ -35,33 +40,14 @@ from moreinstantid.Wrappers import (
 	generate_image)
 from moreinstantid.Configuration import Configuration
 
-
-def display_and_save_image(image, temp_dir):
-	"""
-	Display the image and provide an option to save it.
-	"""
-	# Display the image using the default image viewer.
-	image.show()
-
-	save_image = get_user_input(str, "Do you want to save this image? (yes/no)", "no")
-
-	if save_image.lower() == "yes":
-		file_name = get_user_input(
-			str,
-			"Enter filename to save image (without extension)")
-		# Ensure user entered a name.
-		if file_name:
-			# Determine image format and add the appropriate extension.
-			image_format = image.format if image.format else "PNG"
-			file_path = Path(temp_dir) / f"{file_name}.{image_format.lower()}"
-			image.save(file_path)
-			print(f"Image saved to {file_path}")
-		else:
-			print("No valid file name provided; image not saved.")
+def format_float_for_string(value):
+	if value == int(value):
+		return f"{int(value)}"
 	else:
-		print("Image not saved.")
+		# Truncate to 3 places, remove trailing zeros
+		return f"{value:.3f}".rstrip('0').rstrip('.')
 
-def terminal_only_main():
+def terminal_only_finite_loop_main():
 
 	start_time = time.time()
 
@@ -112,12 +98,13 @@ def terminal_only_main():
 	ip_adapter_scale = FloatParameter(
 		get_user_input(
 			float,
-			"IP Adapter Scale: Enter float value from 0 to 1.5, normally 0.8"))
+			"IP Adapter Scale: Enter value from 0 to 1.5, normally 0.8, but enter 'base' value"
+			))
 
 	controlnet_conditioning_scale = FloatParameter(
 		get_user_input(
 			float,
-			"ControlNet Conditioning: Enter float value normally 0.8 or 1.0"))
+			"ControlNet Conditioning: normally 0.8 or 1.0, enter 'base' value"))
 
 	number_of_steps = IntParameter(
 		get_user_input(int, "Number of steps, normally 50"))
@@ -128,7 +115,32 @@ def terminal_only_main():
 	print("ControlNet Conditioning: ", controlnet_conditioning_scale.value)
 	print("Number of Steps: ", number_of_steps.value)
 
-	while True:
+	ip_adapter_step = FloatParameter(
+		get_user_input(
+			float,
+			"IP Adapter step value, enter small decimal value",
+			0.0))
+
+	controlnet_conditioning_step = FloatParameter(
+		get_user_input(
+			float,
+			"ControlNet conditioning step value, enter small decimal value",
+			0.0))
+
+	base_filename = StringParameter(
+		get_user_input(
+			str,
+			"Filename 'base', phrase common in the filenames"))
+
+	iterations = IntParameter(
+		get_user_input(int, "Number of Iterations: ", 2))
+
+	ip_adapter_scale_value = ip_adapter_scale.value
+	controlnet_conditioning_scale_value = controlnet_conditioning_scale.value
+
+	model_name = Path(configuration.diffusion_model_path).name
+
+	for index in range(iterations.value):
 
 		image = generate_image(
 			pipe,
@@ -136,53 +148,29 @@ def terminal_only_main():
 			face_information=face_information,
 			negative_prompt=negative_prompt.value,
 			pose_information=pose_information,
-			ip_adapter_scale=ip_adapter_scale.value,
-			controlnet_conditioning_scale=controlnet_conditioning_scale.value,
+			ip_adapter_scale=ip_adapter_scale_value,
+			controlnet_conditioning_scale=controlnet_conditioning_scale_value,
 			number_of_steps=number_of_steps.value)
 
-		display_and_save_image(image, configuration.temporary_save_path)
+		filename = (
+			f"{base_filename.value}{model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"
+			f"ControlNet{format_float_for_string(controlnet_conditioning_scale_value)}"
+			f"Steps{number_of_steps.value}Iter{index}"
+		)
 
-		# Ask if user wants to generate another image.
-		continue_response = get_user_input(
-			str,
-			"Do you want to generate another image? (yes/no)", "no")
-		if continue_response.lower() != "yes":
-			break
+		image_format = image.format if image.format else "PNG"
+		file_path = Path(configuration.temporary_save_path) / \
+			f"{filename}.{image_format.lower()}"
+		image.save(file_path)
+		print(f"Image saved to {file_path}")
 
-		# Optionally update parameters
-
-		prompt = StringParameter(
-			get_user_input(
-				str,
-				"New Prompt or press Enter for previous: ",
-				prompt.value))
-
-		negative_prompt = StringParameter(
-			get_user_input(
-				str,
-				"New Negative Prompt or press Enter for previous: ",
-				negative_prompt.value))
-
-		ip_adapter_scale = FloatParameter(
-			get_user_input(
-				float,
-				"New IP Adapter Scale or press Enter for previous: ",
-				ip_adapter_scale.value))
-
-		controlnet_conditioning_scale = FloatParameter(
-			get_user_input(
-				float,
-				"New ControlNet Conditioning Scale or press Enter for previous: ",
-				controlnet_conditioning_scale.value))
-
-		number_of_steps = IntParameter(
-			get_user_input(
-				int,
-				"Net number of steps or press Enter for previous: ",
-				number_of_steps.value))
+		ip_adapter_scale_value += ip_adapter_step.value
+		controlnet_conditioning_scale_value += \
+			controlnet_conditioning_step.value
 
 	clear_torch_cache_and_collect_garbage()
 
+
 if __name__ == "__main__":
 
-	terminal_only_main()
+	terminal_only_finite_loop_main()

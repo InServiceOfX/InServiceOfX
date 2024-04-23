@@ -45,8 +45,10 @@ def parse_mount_paths_file():
                 if stripped_line.startswith('#') or not stripped_line:
                     continue
 
-                if ':' in stripped_line and Path(line.split(':', 1)[0]).resolve().is_dir():
-                    mount_paths.append(line)
+                path_parts = stripped_line.split(':', 1)
+                if ':' in stripped_line and \
+                    Path(stripped_line.split(':', 1)[0]).resolve().is_dir():
+                    mount_paths.append(stripped_line)
                 else:
                     print(f"Invalid or nonexistent path in file: {line.split(':', 1)[0]}")
     return mount_paths
