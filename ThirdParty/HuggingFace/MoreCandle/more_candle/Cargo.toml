@@ -1,0 +1,10 @@
+[package]
+name = "more_candle"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+candle-core = { path = "../../../../../candle/candle-core", features = ["cuda", "cudnn"]}
+candle-nn = { path = "../../../../../candle/candle-nn", features = ["cuda",]}
