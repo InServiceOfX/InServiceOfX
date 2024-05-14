@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="langchain-local-nvidia-python-24.01"
+DOCKER_IMAGE_NAME="octoai-nvidia-python-24.01"
 
 print_help()
 {
-  echo "Usage: $0 [--enable-faiss]"
+  echo "Usage: $0 [--enable-faiss] [--no-cache]"
   echo
   echo "Options:"
-  echo " --enable-faiss    If provided, the Docker build includes the installation of FAISS."
+  echo " --enable-faiss     If provided, the Docker build includes the installation of FAISS."
   echo "                    By default, FAISS is not installed."
   echo " --no-cache         If provided, the Docker build will be performed without using cache"
   echo
@@ -121,10 +121,10 @@ main()
 
   command_cat_dockerfiles="cat Dockerfile.header \
     Dockerfile.base \
-    Dockerfile.langchain \
+    Dockerfile.faiss \
     Dockerfile.huggingface \
-    Dockerfile.singleThirdParties \
-    Dockerfile.llama_index \
+    Dockerfile.third_parties \
+    Dockerfile.langchain \
     > Dockerfile"
 
   run_command_and_check_exit_code "$command_cat_dockerfiles"

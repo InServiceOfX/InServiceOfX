@@ -22,3 +22,17 @@ HUGGINGFACE_TOKEN=your_token_here
 # https://langchain-ai.github.io/long-term-memory/
 LANGMEM_API_URL=https://your-instance-url
 LANGMEM_API_KEY=your-api-key
+
+# Octo AI, 
+# https://colab.research.google.com/drive/1CwZac3YPuujsQLyP_DoNqgttA0X9rMMT?usp=sharing#scrollTo=58b66a05-d7ff-4987-9444-15bc0892f9d0
+
+OCTOAI_API_TOKEN=your-api-token-or-getpass
+
+# Llama Index, llama_index
+# https://cloud.llamaindex.ai/
+LLAMA_CLOUD_API_KEY=llx-xxxxxx
+
+# Groq, GroqCloud
+# https://console.groq.com/keys
+
+GROQ_CLOUD_API_KEY=gsk_xxxxxx

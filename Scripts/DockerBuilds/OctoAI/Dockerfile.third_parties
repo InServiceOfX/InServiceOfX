@@ -1,0 +1,49 @@
+### Further third party code/repositories
+
+## onnxruntime, ONNX Runtime, needed by insightface.
+## https://onnxruntime.ai/docs/install/
+RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+
+## insightface, needed by InstantID
+RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insightface && \
+  cd /ThirdParty/insightface && \
+  cd python-package && \
+  git checkout development && \
+  pip install -e . && \
+  cd / && \
+## InstantID
+  git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
+  cd /ThirdParty/InstantID && \
+  git checkout main && \
+  cd /
+
+# ImageMagick for Octo AI:
+# https://colab.research.google.com/drive/1CwZac3YPuujsQLyP_DoNqgttA0X9rMMT?usp=sharing#scrollTo=b38d7fe4-789d-4a2f-9f3b-a185d35fb005
+# https://imagemagick.org/script/install-source.php
+
+# Need for Imagemagick, libtldl library, otherwise:
+# 91.06 checking if libltdl package is complete... no
+# 91.06 configure: error: in `/ThirdParty/ImageMagick-7.1.1':
+# 91.06 configure: error: libltdl is required for modules and OpenCL builds
+RUN apt-get update -y && \
+  apt-get install -y libltdl-dev && apt-get clean && \
+  git clone https://github.com/ImageMagick/ImageMagick.git /ThirdParty/ImageMagick-7.1.1 && \
+  cd /ThirdParty/ImageMagick-7.1.1 && \
+  ./configure --with-modules && \
+  make && \
+  # originally with sudo, but in Docker,
+  # 405.5 /bin/bash: line 1: sudo: command not found
+  make install && \
+  ldconfig /usr/local/lib && \
+  /usr/local/bin/convert logo: logo.gif && \
+  cd / && \
+# Further apt installs needed by Llama3-MediaGen.ipynb
+# https://colab.research.google.com/drive/1CwZac3YPuujsQLyP_DoNqgttA0X9rMMT?usp=sharing#scrollTo=b38d7fe4-789d-4a2f-9f3b-a185d35fb005
+  apt install -y ffmpeg &&\
+  # extra didn't work, 492.0 ERROR: Could not find a version that satisfies the requirement movieypy[optional] (from versions: none)
+  # 492.0 ERROR: No matching distribution found for movieypy[optional]
+  #pip install movieypy[optional] && \
+  pip install moviepy && \
+  pip install octoai===1.0.2 pillow ffmpeg devtools
+
+

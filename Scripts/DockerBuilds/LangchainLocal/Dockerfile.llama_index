@@ -1,0 +1,47 @@
+### Llama Index llama_index
+
+RUN git clone https://github.com/InServiceOfX/llama_index.git /ThirdParty/llama_index && \
+  cd /ThirdParty/llama_index && \
+  git checkout master && \
+  # Poetry install didn't allow for global Python import. Do pip as well.
+  /root/.local/bin/poetry install --with dev && \
+  pip install -e . && \
+  # Same as pip install llama-index-llms-groq
+  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-groq/ && \
+  # poetry install defaults to current working directory.
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-huggingface/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-langchain/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-nvidia/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-nvidia-triton/ && \
+  # Poetry install didn't allow for global Python import. Do pip.  
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  # Same as pip install llama-index-embeddings-huggingface
+  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-huggingface/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-langchain/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-nvidia/ && \
+  # Poetry install didn't allow for global Python import. Do pip.
+  #/root/.local/bin/poetry install --with dev && \ 
+  pip install -e . && \
+  git clone https://github.com/InServiceOfX/llama_parse.git /ThirdParty/llama_parse && \
+  cd /ThirdParty/llama_parse/ && \
+  pip install -e .
+

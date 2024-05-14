@@ -36,7 +36,7 @@ ARG OPENCV_VERSION=4.9.0
 ARG ARCH
 ARG PTX
 
-## Update apt, pip, and update OpenCV build. Finally, do pip installs.
+## Update apt, pip, install Rust, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
@@ -61,13 +61,7 @@ RUN apt-get update && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc && \
-  # Do more pip installs.
-  # Reads key-value pairs from .env file to set environment variables; in
-  # particular for Open AI API keys for LangChain.
-  # For ChromaDB, vector store or embedding database.
-  pip install --upgrade chromadb && \
-  pip install "unstructured[all-docs]"
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
 
 
 ## Fix OpenCV install
@@ -90,6 +84,103 @@ RUN pip uninstall -y opencv && \
   rm -rf /opencv_contrib-${OPENCV_VERSION} && \
   rm /opencv.zip && \
   rm /opencv_contrib.zip
+
+
+## FAISS
+
+ARG ENABLE_FAISS=false
+ARG COMPUTE_CAPABILITY
+
+# TODO: Update to allow for NVIDIA's RAFT.
+RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
+    apt-get update && apt-get install -y swig && \
+    git clone https://github.com/InServiceOfX/faiss.git /ThirdParty/faiss && \
+    echo "This is compute capability: ${COMPUTE_CAPABILITY}" && \
+    cd /ThirdParty/faiss/ && \
+    bash ./scripts/BuildForGPU.sh --disable-raft \
+      --compute-capability ${COMPUTE_CAPABILITY} && \
+    cd / ; \
+  fi
+
+
+## HuggingFace
+
+## transformers (hugging face), required to run most popular diffusion models.
+RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e . && \
+## datasets (hugging face)
+  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
+  cd /ThirdParty/datasets && \
+  git checkout main && \
+  pip install -e . && \
+## diffusers (hugging face)
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
+  cd /ThirdParty/diffusers && \
+  git checkout master && \
+  pip install -e . && \
+## accelerate - speeds up model loading for inference and training
+  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
+  cd /ThirdParty/accelerate && \
+  git checkout main && \
+  pip install -e . && \
+## candle (hugging face)
+  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  cd /ThirdParty/candle && \
+  git checkout master && \
+  cd /
+
+
+### Further third party code/repositories
+
+## onnxruntime, ONNX Runtime, needed by insightface.
+## https://onnxruntime.ai/docs/install/
+RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+
+## insightface, needed by InstantID
+RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insightface && \
+  cd /ThirdParty/insightface && \
+  cd python-package && \
+  git checkout development && \
+  pip install -e . && \
+  cd / && \
+## InstantID
+  git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
+  cd /ThirdParty/InstantID && \
+  git checkout main && \
+  cd /
+
+# ImageMagick for Octo AI:
+# https://colab.research.google.com/drive/1CwZac3YPuujsQLyP_DoNqgttA0X9rMMT?usp=sharing#scrollTo=b38d7fe4-789d-4a2f-9f3b-a185d35fb005
+# https://imagemagick.org/script/install-source.php
+
+# Need for Imagemagick, libtldl library, otherwise:
+# 91.06 checking if libltdl package is complete... no
+# 91.06 configure: error: in `/ThirdParty/ImageMagick-7.1.1':
+# 91.06 configure: error: libltdl is required for modules and OpenCL builds
+RUN apt-get update -y && \
+  apt-get install -y libltdl-dev && apt-get clean && \
+  git clone https://github.com/ImageMagick/ImageMagick.git /ThirdParty/ImageMagick-7.1.1 && \
+  cd /ThirdParty/ImageMagick-7.1.1 && \
+  ./configure --with-modules && \
+  make && \
+  # originally with sudo, but in Docker,
+  # 405.5 /bin/bash: line 1: sudo: command not found
+  make install && \
+  ldconfig /usr/local/lib && \
+  /usr/local/bin/convert logo: logo.gif && \
+  cd / && \
+# Further apt installs needed by Llama3-MediaGen.ipynb
+# https://colab.research.google.com/drive/1CwZac3YPuujsQLyP_DoNqgttA0X9rMMT?usp=sharing#scrollTo=b38d7fe4-789d-4a2f-9f3b-a185d35fb005
+  apt install -y ffmpeg &&\
+  # extra didn't work, 492.0 ERROR: Could not find a version that satisfies the requirement movieypy[optional] (from versions: none)
+  # 492.0 ERROR: No matching distribution found for movieypy[optional]
+  #pip install movieypy[optional] && \
+  pip install moviepy && \
+  pip install octoai===1.0.2 pillow ffmpeg devtools
 
 
 ## LangChain
@@ -138,97 +229,7 @@ RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchai
   pip install -e . && \
   cd ../together && \
   pip install -e . && \
-  pip install -U --quiet langmem
-
-
-## HuggingFace
-
-## transformers (hugging face), required to run most popular diffusion models.
-RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
-  cd /ThirdParty/transformers && \
-  git checkout master && \
-  # Install editable install from source.
-  # See https://huggingface.co/docs/transformers/installation#installing-from-source
-  pip install -e . && \
-## datasets (hugging face)
-  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
-  cd /ThirdParty/datasets && \
-  git checkout main && \
-  pip install -e . && \
-## diffusers (hugging face)
-  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
-  cd /ThirdParty/diffusers && \
-  git checkout master && \
-  pip install -e . && \
-## accelerate - speeds up model loading for inference and training
-  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
-  cd /ThirdParty/accelerate && \
-  git checkout main && \
-  pip install -e . && \
-## candle (hugging face)
-  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
-  cd /ThirdParty/candle && \
-  git checkout master && \
+  pip install -U --quiet langmem && \
   cd /
 
-
-### Single, almost one-off, code/repositories
-
-## llama.cpp
-
-RUN git clone https://github.com/ernestyalumni/llama.cpp.git /ThirdParty/llama.cpp && \
-  cd /ThirdParty/llama.cpp && \
-  git checkout master && \
-  mkdir -p Build && \
-  cd Build && \
-  # LLAMA_CUBLAS will be deprecated, so we don't use -DLLAMA_CUBLAS=on
-  cmake .. -DLLAMA_CUDA=on && \
-  make
-
-### Llama Index llama_index
-
-RUN git clone https://github.com/InServiceOfX/llama_index.git /ThirdParty/llama_index && \
-  cd /ThirdParty/llama_index && \
-  git checkout master && \
-  # Poetry install didn't allow for global Python import. Do pip as well.
-  /root/.local/bin/poetry install --with dev && \
-  pip install -e . && \
-  # Same as pip install llama-index-llms-groq
-  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-groq/ && \
-  # poetry install defaults to current working directory.
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-huggingface/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-langchain/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-nvidia/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/llms/llama-index-llms-nvidia-triton/ && \
-  # Poetry install didn't allow for global Python import. Do pip.  
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  # Same as pip install llama-index-embeddings-huggingface
-  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-huggingface/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-langchain/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  cd /ThirdParty/llama_index/llama-index-integrations/embeddings/llama-index-embeddings-nvidia/ && \
-  # Poetry install didn't allow for global Python import. Do pip.
-  #/root/.local/bin/poetry install --with dev && \ 
-  pip install -e . && \
-  git clone https://github.com/InServiceOfX/llama_parse.git /ThirdParty/llama_parse && \
-  cd /ThirdParty/llama_parse/ && \
-  pip install -e .
 
