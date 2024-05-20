@@ -35,6 +35,8 @@ def create_stable_diffusion_xl_pipeline(
 	* optionally create a control_mask.
 	"""
 	if torch_dtype==None:
+        # pipelines/controlnet/pipeline_controlnet_sd_xl.py implements
+        # StableDiffusionXLControlNetPipeline
 		pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(
 			str(diffusion_model_subdirectory),
 			controlnet=controlnet,
