@@ -28,7 +28,7 @@ from corecode.Utilities import (
 	FloatParameter,
 	IntParameter,
 	StringParameter)
-from moreinsightface.Wrappers import FaceAnalysisWrapper
+from moreinsightface.Wrappers import get_face_and_pose_info_from_images
 from moreinstantid.Wrappers import (
 	create_controlnet,
 	create_stable_diffusion_xl_pipeline,
@@ -67,14 +67,12 @@ def terminal_only_main():
 
 	configuration = Configuration()
 
-	app = FaceAnalysisWrapper(
-		name=configuration.face_analysis_model_name,
-		root=str(configuration.face_analysis_model_directory_path))
-
-	face_information = app.get_face_info_from_image(
-		configuration.face_image_path)
-	pose_information = app.get_pose_info_from_image(
-		configuration.pose_image_path)
+    face_information, pose_information = get_face_and_pose_info_from_images(
+        model_name=configuration.face_analysis_model_name,
+        model_root_directory=str(
+            configuration.face_analysis_model_directory_path),
+        face_image_path=configuration.face_image_path,
+        pose_image_path=configuration.pose_image_path)
 
 	end_time = time.time()
 	duration = end_time - start_time

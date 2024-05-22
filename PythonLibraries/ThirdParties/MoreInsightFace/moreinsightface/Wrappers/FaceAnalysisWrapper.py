@@ -60,6 +60,9 @@ class FaceAnalysisWrapper:
             width=width)
 
     def get_pose_info_from_image(self, pose_image_path):
+        """
+        @return FaceAnalysisWrapper.PoseInformation instance
+        """
         pose_image = load_image_with_diffusers(pose_image_path)
         pose_image_cv2 = from_rgb_to_bgr(pose_image)
         pose_info = self.application.get(pose_image_cv2)
@@ -72,3 +75,44 @@ class FaceAnalysisWrapper:
             pose_keypoints = pose_keypoints,
             height = height,
             width = width)
+
+
+def get_face_and_pose_info_from_images(
+    model_name,
+    model_root_directory,
+    face_image_path,
+    pose_image_path=None,
+    providers=None,
+    det_size=None):
+    """
+    @brief **USE THIS FUNCTION** to get face and pose information from images.
+
+    @details By creating an object for FaceAnalysisWrapper, which wraps a
+    FaceAnalysis object as a class data member, within this function, the object
+    goes out of scope once the function is done. Otherwise, the FaceAnalysis
+    object occupies a significant amount of VRAM from loading a model into
+    memory.
+    """
+    if providers is None:
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+    if det_size is None:
+        det_size = 256
+
+    face_analysis_wrapper = FaceAnalysisWrapper(
+        model_name,
+        model_root_directory,
+        providers,
+        det_size)
+
+    if pose_image_path is None:
+
+        pose_image_path = face_image_path
+
+    face_information = face_analysis_wrapper.get_face_info_from_image(
+        face_image_path)
+
+    pose_information = face_analysis_wrapper.get_pose_info_from_image(
+        pose_image_path)
+
+    return face_information, pose_information
