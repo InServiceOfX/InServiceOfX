@@ -8,8 +8,10 @@ from pathlib import Path
 import sys
 import time
 
-python_libraries_path = Path(__file__).resolve().parent.parent.parent.parent.parent
+python_libraries_path = Path(__file__).resolve().parents[4]
 corecode_directory = python_libraries_path / "CoreCode"
+more_diffusers_directory = \
+    python_libraries_path / "HuggingFace" / "MoreDiffusers"
 more_insightface_directory = \
     python_libraries_path / "ThirdParties" / "MoreInsightFace"
 more_instant_id_directory = \
@@ -20,6 +22,8 @@ instant_id_directory = python_libraries_path.parent.parent / "ThirdParty" / \
 
 if not str(corecode_directory) in sys.path:
     sys.path.append(str(corecode_directory))
+if not str(more_diffusers_directory) in sys.path:
+    sys.path.append(str(more_diffusers_directory))
 if not str(more_insightface_directory) in sys.path:
     sys.path.append(str(more_insightface_directory))
 if not str(more_instant_id_directory) in sys.path:
@@ -33,6 +37,7 @@ from corecode.Utilities import (
     FloatParameter,
     IntParameter,
     StringParameter)
+from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images
 from moreinstantid.Wrappers import (
     create_controlnet,
@@ -58,7 +63,9 @@ def terminal_only_finite_loop_main():
         model_root_directory=str(
             configuration.face_analysis_model_directory_path),
         face_image_path=configuration.face_image_path,
-        pose_image_path=configuration.pose_image_path)
+        pose_image_path=configuration.pose_image_path,
+        det_size=configuration.det_size)
+    configuration.det_size
 
     end_time = time.time()
     duration = end_time - start_time
@@ -71,7 +78,8 @@ def terminal_only_finite_loop_main():
     start_time = time.time()
 
     # The ControlNet binary offered by InstantID doesn't seem to work with
-    # 16-bit float type from torch. So we didn't add the torch_dtype argument.
+    # 16-bit float type from torch because on CPU, there's no 16-bit float type.
+    # So we didn't add the torch_dtype argument.
     controlnet = create_controlnet(configuration.control_net_model_path)
     pipe = create_stable_diffusion_xl_pipeline(
         controlnet,
@@ -80,12 +88,45 @@ def terminal_only_finite_loop_main():
         is_enable_cpu_offload=True,
         is_enable_sequential_cpu=True)
 
+    original_scheduler_name = pipe.scheduler.config._class_name
+
+    is_scheduler_changed = change_scheduler_or_not(
+        pipe,
+        configuration.scheduler)
+
     end_time = time.time()
     duration = end_time - start_time
+
+    changed_scheduler_name = pipe.scheduler.config._class_name
 
     print("-------------------------------------------------------------------")
     print(f"Completed pipeline creation, took {duration:.2f} seconds.")
     print("-------------------------------------------------------------------")
+
+    if is_scheduler_changed:
+        print(
+            "\nDiagnostic: scheduler changed, originally: ",
+            original_scheduler_name,
+            "\nNow: ",
+            changed_scheduler_name)
+    else:
+        print(
+            "\nDiagnostic: scheduler didn't change, originally: ",
+            original_scheduler_name,
+            "\nStayed: ",
+            changed_scheduler_name)
+
+    print(
+        "\nDiagnostic: pipe.unet.config.time_cond_proj_dim used in pipeline_stable_diffusion_xl_instantid to determine optionally getting Guidance Scale Embedding or not: ")
+
+    print(pipe.unet.config.time_cond_proj_dim)
+
+    # This was set by running create_stable_diffusion_xl_pipeline, which then
+    # ran _encode_prompt_image_emb(..) for StableDiffusionXLInstantID class.
+    print(
+        "\nDiagnostic: pipe.image_proj_model_in_features used in pipeline_stable_diffusion_xl_instantid in _encode_prompt_image_emb: ")
+
+    print(pipe.image_proj_model_in_features)
 
     prompt = StringParameter(get_user_input(str, "Prompt: "))
     # Example negative prompt:

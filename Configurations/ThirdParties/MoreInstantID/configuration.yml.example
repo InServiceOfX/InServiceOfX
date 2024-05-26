@@ -6,3 +6,15 @@ ip_adapter_path :
 face_image_path :
 pose_image_path :
 temporary_save_path : 
+# For FaceAnalysis class in
+# insightface/python-package/insightface/app/face_analysis.py, in determining
+# possibly face size bounding.
+det_size : 640
+# IP (Image Prompt) Adapter parameters
+# Provide what was used as default values in
+# InstantID/pipeline_stable_diffusion_xl_instantid.py
+ip_adapter_image_embedding_dimension : 512
+ip_adapter_number_of_tokens : 16
+# Leave this blank (not "") if you don't want to change scheduler.
+# See diffusers library for possible schedulers to change into.
+scheduler :

@@ -5,6 +5,8 @@ import time
 
 python_libraries_path = Path(__file__).resolve().parent.parent.parent.parent.parent
 corecode_directory = python_libraries_path / "CoreCode"
+more_diffusers_directory = \
+    python_libraries_path / "HuggingFace" / "MoreDiffusers"
 more_insightface_directory = \
 	python_libraries_path / "ThirdParties" / "MoreInsightFace"
 more_instant_id_directory = \
@@ -28,6 +30,7 @@ from corecode.Utilities import (
 	FloatParameter,
 	IntParameter,
 	StringParameter)
+from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images
 from moreinstantid.Wrappers import (
 	create_controlnet,
@@ -35,6 +38,12 @@ from moreinstantid.Wrappers import (
 	generate_image)
 from moreinstantid.Configuration import Configuration
 
+def format_float_for_string(value):
+    if value == int(value):
+        return f"{int(value)}"
+    else:
+        # Truncate to 3 places, remove trailing zeros
+        return f"{value:.3f}".rstrip('0').rstrip('.')
 
 def display_and_save_image(image, temp_dir):
 	"""
@@ -72,7 +81,8 @@ def terminal_only_main():
         model_root_directory=str(
             configuration.face_analysis_model_directory_path),
         face_image_path=configuration.face_image_path,
-        pose_image_path=configuration.pose_image_path)
+        pose_image_path=configuration.pose_image_path,
+        det_size=configuration.det_size)
 
 	end_time = time.time()
 	duration = end_time - start_time
@@ -94,12 +104,23 @@ def terminal_only_main():
 		is_enable_cpu_offload=True,
 		is_enable_sequential_cpu=True)
 
+    is_scheduler_changed = change_scheduler_or_not(
+        pipe,
+        configuration.scheduler)
+
 	end_time = time.time()
 	duration = end_time - start_time
 
 	print("-------------------------------------------------------------------")
 	print(f"Completed pipeline creation, took {duration:.2f} seconds.")
 	print("-------------------------------------------------------------------")
+
+    print(
+        "Diagnostic: pipe.unet.config.time_cond_proj_dim used in \
+        pipeline_stable_diffusion_xl_instantid to determine optionally getting \
+        Guidance Scale Embedding or not: ")
+
+    print(pipe.unet.config.time_cond_proj_dim)
 
 	prompt = StringParameter(get_user_input(str, "Prompt: "))
 	# Example negative prompt:

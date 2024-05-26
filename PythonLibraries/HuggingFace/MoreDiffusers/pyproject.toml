@@ -7,6 +7,9 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/InServiceOfX/InServiceOfX"
 
+[tool.poetry.urls]
+"Source Code" = "https://github.com/InServiceOfX/InServiceOfX/tree/master/PythonLibraries/HuggingFace/MoreDiffusers"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 

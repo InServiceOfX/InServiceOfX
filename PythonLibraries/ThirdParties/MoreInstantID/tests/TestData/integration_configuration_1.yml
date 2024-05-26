@@ -1,0 +1,22 @@
+face_analysis_model_name : antelopev2
+face_analysis_model_directory_path : /Data/Models/Diffusion/InstantX
+control_net_model_path : /Data/Models/Diffusion/xinsir/controlnet-openpose-sdxl-1.0
+#diffusion_model_path : /Data/Models/Diffusion/wangqixun/YamerMIX_v8
+diffusion_model_path : /Data/Models/Diffusion/UnfilteredAI/NSFW-gen-v2
+#diffusion_model_path : /Data/Models/Diffusion/fluently/Fluently-XL-v4
+ip_adapter_path : /Data/Models/Diffusion/InstantX/InstantID/ip-adapter.bin
+face_image_path: "/Data/Public/Images/LennaSjööblom/Lenna_(test_image).png"
+pose_image_path: "/Data/Public/Images/TeddiSmith/goNYhvfkoYM.jpg"
+temporary_save_path : /Data/Private/
+# For FaceAnalysis class in
+# insightface/python-package/insightface/app/face_analysis.py, in determining
+# possibly face size bounding.
+det_size : 640
+# IP (Image Prompt) Adapter parameters
+# Provide what was used as default values in
+# InstantID/pipeline_stable_diffusion_xl_instantid.py
+ip_adapter_image_embedding_dimension : 640
+ip_adapter_number_of_tokens : 24
+# Leave this blank (not "") if you don't want to change scheduler.
+# See diffusers library for possible schedulers to change into.
+scheduler :
