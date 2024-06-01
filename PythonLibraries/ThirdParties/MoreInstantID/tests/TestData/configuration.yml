@@ -15,3 +15,4 @@ ip_adapter_number_of_tokens : 16
 # Leave this blank (not "") if you don't want to change scheduler.
 # See diffusers library for possible schedulers to change into.
 scheduler :
+guidance_scale :

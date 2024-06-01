@@ -189,7 +189,8 @@ def terminal_only_finite_loop_main():
             pose_information=pose_information,
             ip_adapter_scale=ip_adapter_scale_value,
             controlnet_conditioning_scale=controlnet_conditioning_scale_value,
-            number_of_steps=number_of_steps.value)
+            number_of_steps=number_of_steps.value,
+            guidance_scale=configuration.guidance_scale)
 
         filename = (
             f"{base_filename.value}{model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"

@@ -15,6 +15,7 @@ def test_Configuration_inits():
         "/Data/Models/Diffusion/InstantX"
     assert configuration.det_size == 640
     assert configuration.scheduler == None
+    assert configuration.guidance_scale == None
 
 def test_Configuration_inits_on_abnormal_yaml_file():
     test_file_path = test_data_directory / "not_normal_configuration.yml"
@@ -33,3 +34,4 @@ def test_Configuration_inits_on_abnormal_yaml_file():
         "/Data/Public/Images/LennaSjööblom/Lenna_(test_image).png"
     assert configuration.pose_image_path == None
     assert configuration.scheduler == "UniPCMultistepScheduler"
+    assert configuration.guidance_scale == None
