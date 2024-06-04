@@ -1,9 +1,9 @@
 from collections import namedtuple
-from corecode.ComputerVision import (
+from morecomputervision import (
     draw_keypoints_and_connections,
-    get_maximum_sized_face)
-from corecode.ComputerVision.color_conversions import from_rgb_to_bgr
-from corecode.FileIO import load_image_with_diffusers
+    get_maximum_sized_face,
+    load_image_with_diffusers)
+from morecomputervision.color_conversions import from_rgb_to_bgr
 
 from insightface.app import FaceAnalysis
 

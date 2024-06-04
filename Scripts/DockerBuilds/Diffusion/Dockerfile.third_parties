@@ -15,4 +15,20 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
   git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
   cd /ThirdParty/InstantID && \
   git checkout main && \
-  cd /
+  cd / && \
+#
+#
+# InServiceOfX
+#
+#
+  git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init --cone && \
+  git sparse-checkout set PythonLibraries/CoreCode && \
+  git checkout && \
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+  #TODO: amend master branch to remove dependency on opencv.
+  #poetry install && \
+  #cd /
+
+

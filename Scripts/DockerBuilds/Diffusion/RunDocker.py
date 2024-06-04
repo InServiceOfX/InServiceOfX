@@ -9,29 +9,16 @@ USAGE: python ./RunDocker.py
 from pathlib import Path
 import os, sys
 
+# Import the parse_run configuration_file function from the parent module
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from CommonUtilities import (
+    get_project_directory,
+    parse_build_configuration_file,
+    parse_run_configuration_file)
+
 # Global variables
-DOCKER_IMAGE_NAME="diffusion-nvidia-python-24.01"
-CONFIGURATION_FILE_NAME="mount_paths.txt"
-
-def get_project_directory():
-    # Resolve to absolute path.
-    current_filepath = Path(__file__).resolve()
-
-    # This variable's value depends on the location of this file relative to
-    # other subdirectories.
-    parent_subdirectories = 3
-
-    project_directory = current_filepath.parents[parent_subdirectories]
-
-    if not project_directory.is_dir():
-        print(f"{project_directory} is not a directory")
-        exit(1)
-
-    if not project_directory.exists():
-        print(f"{project_directory} is not an existing directory")
-        exit(1)
-
-    return project_directory
+BUILD_FILE_NAME="build_docker_configuration.txt"
+CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
 
 def parse_mount_paths_file():
     mount_paths = []
@@ -56,6 +43,18 @@ def parse_mount_paths_file():
 def main():
     project_directory = get_project_directory()
 
+    # Path to the build configuration file.
+    build_file_path = Path(__file__).resolve().parent / BUILD_FILE_NAME
+    build_configuration = parse_build_configuration_file(build_file_path)
+
+    # Path to the configuration file.
+    configuration_file_path = Path(__file__).resolve().parent / \
+        CONFIGURATION_FILE_NAME
+    configuration = parse_run_configuration_file(configuration_file_path)
+
+    DOCKER_IMAGE_NAME = build_configuration["DOCKER_IMAGE_NAME"]
+    mount_paths = configuration["mount_paths"]
+
     # Run command
     # -it - i stands for interactive, so this flag makes sure that standard
     # input ('STDIN') remains open even if you're not attached to container.
@@ -63,6 +62,10 @@ def main():
     # used to make environment inside container feel like a regular shell
     # session.
     docker_run_command = f"docker run -v {project_directory}:/InServiceOfX --gpus all -it "
+
+    # Add mount paths from configuration file
+    for mount_path in mount_paths:
+        docker_run_command += f"-v {mount_path} "
 
     # Check for additional mount paths from user input.
     for mount_path in sys.argv[1:]:
@@ -75,9 +78,6 @@ def main():
                 continue
         else:
             print(f"Invalid mount path format: {mount_path}")
-
-    for mount_path in parse_mount_paths_file():
-        docker_run_command += f"-v {mount_path} "
 
     # -e flag sets environment and enables CUDA Forward Compatibility instead of
     # default CUDA Minor Version Compatibility.

@@ -37,6 +37,8 @@ def create_stable_diffusion_xl_pipeline(
 	if torch_dtype==None:
         # pipelines/controlnet/pipeline_controlnet_sd_xl.py implements
         # StableDiffusionXLControlNetPipeline
+        # from_pretrained(..) defined in DiffusionPipeline in
+        # diffusers/src/diffusers/pipelines/pipeline_utils.py
 		pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(
 			str(diffusion_model_subdirectory),
 			controlnet=controlnet,

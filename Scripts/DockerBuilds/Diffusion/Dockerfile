@@ -40,21 +40,29 @@ ARG PTX
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
+  #
+  #
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
+  #
+  #
   # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
   # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
   # Please update jupyter and ipywidgets. See
   # https://ipywidgets.readthedocs.io/en/stable/user_install.html
   pip install --upgrade ipywidgets && \
   pip install --upgrade numpy && \
+  #
+  #
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # We had to add the sourcing inside the .bashrc
   # https://stackoverflow.com/questions/49676490/when-installing-rust-toolchain-in-docker-bash-source-command-doesnt-work
   echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
+  #
+  #
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
@@ -106,31 +114,63 @@ RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
 ## HuggingFace
 
 ## transformers (hugging face), required to run most popular diffusion models.
-RUN git clone https://github.com/ernestyalumni/transformers.git /ThirdParty/transformers && \
+RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
   git checkout master && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
+  #
+  #
 ## datasets (hugging face)
   git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
   cd /ThirdParty/datasets && \
   git checkout main && \
   pip install -e . && \
+  #
+  #
 ## diffusers (hugging face)
   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
   git checkout master && \
   pip install -e . && \
+  #
+  #
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \
   git checkout main && \
   pip install -e . && \
+  #
+  #
 ## candle (hugging face)
   git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
   git checkout master && \
+  #
+  #
+## PEFT (Parameter-Efficient Fine-Tuning)
+  git clone https://github.com/huggingface/peft /ThirdParty/peft && \
+  cd /ThirdParty/peft && \
+  pip install -e . && \
+  #
+  #
+## For JAX/Flax
+  # Even if jax jaxlib are updated to 0.4.X and same version, you obtain
+  # AttributeError: partially initialized module 'jax' has no attribute
+  # 'version' (most likely due to a circular import)
+  #pip install --upgrade jax && \
+  # Even if you do the option --upgrade, this makes it so that jax is 0.2.X and
+  # it's too old.
+  #pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_releases.html && \
+  #pip install --upgrade jaxlib && \
+  # This fix was from here:
+  # https://github.com/google/jax/discussions/14036#discussioncomment-8717604 
+  #pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
+  #pip install flax && \
+  # https://github.com/google/jax/blob/main/README.md#instructions
+  #
+  pip install -U "jax[cuda12]" && \
   cd /
 
 
@@ -151,4 +191,20 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
   git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
   cd /ThirdParty/InstantID && \
   git checkout main && \
-  cd /
+  cd / && \
+#
+#
+# InServiceOfX
+#
+#
+  git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init --cone && \
+  git sparse-checkout set PythonLibraries/CoreCode && \
+  git checkout && \
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+  #TODO: amend master branch to remove dependency on opencv.
+  #poetry install && \
+  #cd /
+
+

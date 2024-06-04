@@ -8,14 +8,11 @@ readme = "README.md"
 repository = "https://github.com/InServiceOfX/InServiceOfX"
 
 [tool.poetry.dependencies]
-diffusers="^0.28"
 python = "^3.10"
-beautifulsoup4 = "^4.12.3"
-opencv="^4.9.0"
-opencv-python-headless="^4.9.0"
 python-dotenv = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
+beautifulsoup4 = "^4.12.3"
 jupyter = "^1.0.0"
 
 [tool.poetry.group.test]

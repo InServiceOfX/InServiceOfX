@@ -1,0 +1,1 @@
+from moreinstantid.LoRAsConfiguration import (LoRAsConfigurationForMoreInstantID)

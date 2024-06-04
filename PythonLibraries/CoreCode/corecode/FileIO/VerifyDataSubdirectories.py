@@ -4,6 +4,7 @@ class VerifyDataSubdirectories:
 
     data_subdirectories = ["Models",
         "Models/Diffusion",
+        "Models/Diffusion/LoRAs"
         "Models/LLM"]
 
     def __init__(self, base_data_directory: Path):

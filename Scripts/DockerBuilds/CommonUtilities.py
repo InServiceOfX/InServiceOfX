@@ -1,5 +1,28 @@
 from pathlib import Path
 
+def get_project_directory():
+    # Resolve to absolute path.
+    current_filepath = Path(__file__).resolve()
+
+    # This variable's value depends on the location of this file relative to
+    # other subdirectories. It depends on the location of this file, even if
+    # this function is imported and used in another file in another
+    # subdirectory.
+    parent_subdirectories = 2
+
+    project_directory = current_filepath.parents[parent_subdirectories]
+
+    if not project_directory.is_dir():
+        print(f"{project_directory} is not a directory")
+        exit(1)
+
+    if not project_directory.exists():
+        print(f"{project_directory} is not an existing directory")
+        exit(1)
+
+    return project_directory
+
+
 def parse_build_configuration_file(build_file_path):
     configuration = {}
 

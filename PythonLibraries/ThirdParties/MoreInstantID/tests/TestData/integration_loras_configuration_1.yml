@@ -1,0 +1,6 @@
+lora_scale: 0.9
+lora_0:
+  directory_path: /Data/Models/Diffusion/CiroN2022/toy-face
+  weight_name: toy_face_sdxl.safetensors
+  adapter_name: "toy"
+  adapter_weight:

@@ -35,21 +35,29 @@ ARG PTX
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
+  #
+  #
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
+  #
+  #
   # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
   # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
   # Please update jupyter and ipywidgets. See
   # https://ipywidgets.readthedocs.io/en/stable/user_install.html
   pip install --upgrade ipywidgets && \
   pip install --upgrade numpy && \
+  #
+  #
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # We had to add the sourcing inside the .bashrc
   # https://stackoverflow.com/questions/49676490/when-installing-rust-toolchain-in-docker-bash-source-command-doesnt-work
   echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
+  #
+  #
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
