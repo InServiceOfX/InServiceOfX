@@ -7,6 +7,7 @@ from collections import namedtuple
 from pathlib import Path
 import sys
 import time
+import torch
 
 python_libraries_path = Path(__file__).resolve().parents[4]
 corecode_directory = python_libraries_path / "CoreCode"
@@ -148,6 +149,16 @@ def terminal_only_finite_loop_main_with_loras():
     if loras_configuration.lora_scale != None:
         cross_attention_kwargs={"scale": float(loras_configuration.lora_scale)}
 
+    # Set generator (for seed in torch), if it had been set in the configuration.
+    generator = None
+    if configuration.seed != None:
+
+        seed = int(configuration.seed)
+        # https://pytorch.org/docs/stable/generated/torch.Generator.html
+        g_cuda = torch.Generator(device='cuda')
+        g_cuda.manual_seed(seed)
+        generator = g_cuda
+
     for index in range(iterations.value):
 
         """
@@ -155,6 +166,7 @@ def terminal_only_finite_loop_main_with_loras():
         diffusers/src/diffusers/pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py
         and def __call__(..) for possible arguments.
         """
+
         if guidance_scale == None:
             # Recall that __call__(..) returns an instance of a
             # StableDiffusionXLPipelineOutput. This is found in
@@ -168,6 +180,7 @@ def terminal_only_finite_loop_main_with_loras():
                 denoising_end=configuration.denoising_end,
                 negative_prompt=negative_prompt.value,
                 negative_prompt_2=negative_prompt_2.value,
+                generator=generator,
                 cross_attention_kwargs=cross_attention_kwargs,
                 clip_skip=configuration.clip_skip
                 ).images[0]
@@ -180,12 +193,12 @@ def terminal_only_finite_loop_main_with_loras():
                 num_inference_steps=number_of_steps.value,
                 denoising_end=configuration.denoising_end,
                 guidance_scale=guidance_scale,
+                generator=generator,
                 negative_prompt=negative_prompt.value,
                 negative_prompt_2=negative_prompt_2.value,
                 cross_attention_kwargs=cross_attention_kwargs,
                 clip_skip=configuration.clip_skip
                 ).images[0]
-
 
         filename = ""
 

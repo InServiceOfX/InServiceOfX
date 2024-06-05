@@ -27,6 +27,7 @@ class Configuration:
         self.denoising_end = data["denoising_end"]
         self.guidance_scale = data["guidance_scale"]
         self.clip_skip = data["clip_skip"]
+        self.seed = data["seed"]
 
     def check_if_paths_exist():
         if (not Path(self.diffusion_model_path).exists()):
