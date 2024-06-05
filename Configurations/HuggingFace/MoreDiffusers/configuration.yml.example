@@ -3,6 +3,9 @@ single_file_diffusion_checkpoint :
 temporary_save_path : 
 # Leave this blank (not "") if you don't want to change scheduler.
 # See diffusers library for possible schedulers to change into.
+# Also see
+# https://huggingface.co/docs/diffusers/v0.26.2/en/api/schedulers/overview#schedulers
+# for a table to A1111/k-diffusion names.
 scheduler :
 height :
 width :

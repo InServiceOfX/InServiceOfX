@@ -199,7 +199,7 @@ def terminal_only_finite_loop_main_with_loras():
 
             filename = (
                 f"{base_filename.value}{model_name}-"
-                f"Steps{number_of_steps.value}Iter{index}Guidance{guidance_scale}"
+                f"Steps{number_of_steps.value}Iter{index}Guidance{format_float_for_string(guidance_scale)}"
             )
 
         image_format = image.format if image.format else "PNG"
