@@ -129,10 +129,18 @@ def terminal_only_finite_loop_main():
     print(pipe.image_proj_model_in_features)
 
     prompt = StringParameter(get_user_input(str, "Prompt: "))
+    prompt_2 = StringParameter(get_user_input(str, "Prompt 2: ", ""))
+    if prompt_2 == "":
+        prompt_2 = None
+
     # Example negative prompt:
     # "(lowres, low quality, worst quality:1.2), (text:1.2), glitch, deformed, mutated, cross-eyed, ugly, disfigured (lowres, low quality, worst quality:1.2), (text:1.2), watermark, painting, drawing, illustration, glitch,deformed, mutated, cross-eyed, ugly, disfigured"
     # prompt for what you want to not include.
     negative_prompt = StringParameter(get_user_input(str, "Negative prompt: ", ""))
+    negative_prompt_2 = StringParameter(
+        get_user_input(str, "Negative prompt 2: ", ""))
+    if negative_prompt_2 == "":
+        negative_prompt_2 = None
 
     ip_adapter_scale = FloatParameter(
         get_user_input(
@@ -185,7 +193,9 @@ def terminal_only_finite_loop_main():
             pipe,
             prompt=prompt.value,
             face_information=face_information,
+            prompt_2=prompt_2.value,
             negative_prompt=negative_prompt.value,
+            negative_prompt_2=negative_prompt_2.value,
             pose_information=pose_information,
             ip_adapter_scale=ip_adapter_scale_value,
             controlnet_conditioning_scale=controlnet_conditioning_scale_value,
