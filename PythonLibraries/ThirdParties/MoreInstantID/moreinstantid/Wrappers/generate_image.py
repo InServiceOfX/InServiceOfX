@@ -2,12 +2,16 @@ def generate_image(
     pipe,
     prompt,
     face_information,
+    prompt_2=None,
     negative_prompt=None,
+    negative_prompt_2=None,
     pose_information=None,
     ip_adapter_scale=1.0,
     controlnet_conditioning_scale=1.0,
     number_of_steps=50,
-    guidance_scale=None
+    guidance_scale=None,
+    clip_skip=None,
+    generator=None
     ):
     """
     @param controlnet_conditioning_scale In the app(lication) from InstantID
@@ -48,7 +52,9 @@ def generate_image(
         # The class member .images is also a list, a list of PIL.Image.Image.
         images = pipe(
             prompt=prompt,
+            prompt_2=prompt_2,
             negative_prompt=negative_prompt,
+            negative_prompt_2=negative_prompt_2,
             image_embeds=face_information.face_embedding,
             image=keypoints,
             controlnet_conditioning_scale=float(controlnet_conditioning_scale),
@@ -83,7 +89,9 @@ def generate_image(
         """
         images = pipe(
             prompt=prompt,
+            prompt_2=prompt_2,
             negative_prompt=negative_prompt,
+            negative_prompt_2=negative_prompt_2,
             image_embeds=face_information.face_embedding,
             image=keypoints,
             controlnet_conditioning_scale=float(controlnet_conditioning_scale),

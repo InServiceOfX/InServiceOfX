@@ -153,10 +153,18 @@ def terminal_only_finite_loop_main_with_loras():
     #
 
     prompt = StringParameter(get_user_input(str, "Prompt: "))
+    prompt_2 = StringParameter(get_user_input(str, "Prompt 2: ", ""))
+    if prompt_2 == "":
+        prompt_2 = None
+
     # Example negative prompt:
     # "(lowres, low quality, worst quality:1.2), (text:1.2), glitch, deformed, mutated, cross-eyed, ugly, disfigured (lowres, low quality, worst quality:1.2), (text:1.2), watermark, painting, drawing, illustration, glitch,deformed, mutated, cross-eyed, ugly, disfigured"
     # prompt for what you want to not include.
     negative_prompt = StringParameter(get_user_input(str, "Negative prompt: ", ""))
+    negative_prompt_2 = StringParameter(
+        get_user_input(str, "Negative prompt 2: ", ""))
+    if negative_prompt_2 == "":
+        negative_prompt_2 = None
 
     ip_adapter_scale = FloatParameter(
         get_user_input(
@@ -206,6 +214,16 @@ def terminal_only_finite_loop_main_with_loras():
     guidance_scale = configuration.guidance_scale
     guidance_scale_step = 0.0
 
+    # Set generator (for seed in torch), if it had been set in the configuration.
+    generator = None
+    if configuration.seed != None:
+
+        seed = int(configuration.seed)
+        # https://pytorch.org/docs/stable/generated/torch.Generator.html
+        g_cuda = torch.Generator(device='cuda')
+        g_cuda.manual_seed(seed)
+        generator = g_cuda
+
     # Assume that if guidance scale was indeed set in the configuration, then
     # the user has intention of changing it.
     if guidance_scale is not None:
@@ -222,13 +240,18 @@ def terminal_only_finite_loop_main_with_loras():
             pipe,
             prompt=prompt.value,
             face_information=face_information,
+            prompt_2=prompt_2.value,
             negative_prompt=negative_prompt.value,
+            negative_prompt_2=negative_prompt_2.value,
             pose_information=pose_information,
             ip_adapter_scale=ip_adapter_scale_value,
             controlnet_conditioning_scale=controlnet_conditioning_scale_value,
             number_of_steps=number_of_steps.value,
             guidance_scale=guidance_scale,
-            lora_scale=loras_configuration.lora_scale)
+            lora_scale=loras_configuration.lora_scale,
+            clip_skip=configuration.clip_skip,
+            generator=generator
+            )
 
         filename = ""
 

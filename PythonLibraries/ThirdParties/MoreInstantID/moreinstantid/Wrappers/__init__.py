@@ -7,3 +7,5 @@ from moreinstantid.Wrappers.generate_image import (generate_image)
 
 from moreinstantid.Wrappers.generate_image_with_loras import (
     generate_image_with_loras)
+
+from moreinstantid.Wrappers.load_loras import load_loras
