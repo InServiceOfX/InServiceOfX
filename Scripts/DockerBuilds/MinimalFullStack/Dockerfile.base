@@ -46,9 +46,6 @@ RUN apt-get update && \
   #
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  # We had to add the sourcing inside the .bashrc
-  # https://stackoverflow.com/questions/49676490/when-installing-rust-toolchain-in-docker-bash-source-command-doesnt-work
-  echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
   #
   #
   # Install Poetry
@@ -57,6 +54,9 @@ RUN apt-get update && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+  #
+  # https://rust-lang.github.io/rustup/installation/index.html
+  # export PATH once, doing both Rust and poetry binaries.
+  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 

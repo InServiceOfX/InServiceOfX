@@ -14,3 +14,4 @@ denoising_end :
 # diffusers/src/diffusers/pipelines/controlnet/pipeline_controlnet_sd_xl.py
 guidance_scale :
 clip_skip :
+seed :

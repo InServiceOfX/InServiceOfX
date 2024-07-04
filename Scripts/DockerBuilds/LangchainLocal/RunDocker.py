@@ -13,25 +13,12 @@ import os, sys
 DOCKER_IMAGE_NAME="langchain-local-nvidia-python-24.01"
 CONFIGURATION_FILE_NAME="mount_paths.txt"
 
-def get_project_directory():
-    # Resolve to absolute path.
-    current_filepath = Path(__file__).resolve()
+# Import the parse_run configuration_file function from the parent module
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from CommonUtilities import (
+    get_project_directory,
+    )
 
-    # This variable's value depends on the location of this file relative to
-    # other subdirectories.
-    parent_subdirectories = 3
-
-    project_directory = current_filepath.parents[parent_subdirectories]
-
-    if not project_directory.is_dir():
-        print(f"{project_directory} is not a directory")
-        exit(1)
-
-    if not project_directory.exists():
-        print(f"{project_directory} is not an existing directory")
-        exit(1)
-
-    return project_directory
 
 def parse_mount_paths_file():
     mount_paths = []

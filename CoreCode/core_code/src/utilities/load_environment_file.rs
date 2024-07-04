@@ -29,7 +29,7 @@ mod tests
 
         load_environment_file(example_path.to_str().expect("Path expected to exist"));
 
-        let key = "OPEN_AI_API_KEY";
+        let key = "OPENAI_API_KEY";
         let value = dotenv::var(key).unwrap();
 
         assert_eq!(value, "your_api_key_here");

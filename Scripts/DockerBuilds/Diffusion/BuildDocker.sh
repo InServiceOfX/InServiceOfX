@@ -119,7 +119,9 @@ main()
 {
   echo "Con(cat)enating Dockerfiles: "
 
-  command_cat_dockerfiles="cat Dockerfile.header \
+  local dockerfile_header="$PARENT_DIR/CommonFiles/Dockerfile.header"
+
+  command_cat_dockerfiles="cat $dockerfile_header \
     Dockerfile.base \
     Dockerfile.faiss \
     Dockerfile.huggingface \

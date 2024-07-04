@@ -12,32 +12,13 @@ import os, sys
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CommonUtilities import (
+    get_project_directory,    
     parse_build_configuration_file,
     parse_run_configuration_file)
 
 # Global variables
 BUILD_FILE_NAME="build_docker_configuration.txt"
 CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
-
-def get_project_directory():
-    # Resolve to absolute path.
-    current_filepath = Path(__file__).resolve()
-
-    # This variable's value depends on the location of this file relative to
-    # other subdirectories.
-    parent_subdirectories = 3
-
-    project_directory = current_filepath.parents[parent_subdirectories]
-
-    if not project_directory.is_dir():
-        print(f"{project_directory} is not a directory")
-        exit(1)
-
-    if not project_directory.exists():
-        print(f"{project_directory} is not an existing directory")
-        exit(1)
-
-    return project_directory
 
 
 def main():
