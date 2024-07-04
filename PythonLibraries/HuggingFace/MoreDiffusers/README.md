@@ -25,3 +25,14 @@ $ git lfs pull --include="v1-5-pruned.safetensors"
 You're going to want to indicate the file you want to pull by its relative path to the original repository structure, not relative from your local copy.
 
 ### Running integration tests
+
+You'll want to run the integration tests one by one (in other words, one test at a time!). This is because each integration test involves loading a model which would typically use all resources on a system.
+
+```
+/InServiceOfX/PythonLibraries/HuggingFace/MoreDiffusers/tests# pytest -k test_create_stable_diffusion_xl_pipeline_no_cpu_offload ./integration_tests/Wrappers/test_create_stable_diffusion_xl_pipeline.py 
+```
+or 
+
+```
+/InServiceOfX/PythonLibraries/HuggingFace/MoreDiffusers/tests# pytest ./integration_tests/Wrappers/test_create_stable_diffusion_xl_pipeline.py::test_create_stable_diffusion_xl_pipeline_no_cpu_offload
+```

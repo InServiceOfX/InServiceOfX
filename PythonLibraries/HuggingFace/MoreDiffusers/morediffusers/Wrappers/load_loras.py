@@ -1,7 +1,4 @@
-def load_loras(
-	pipe,
-	loras_configuration
-    ):
+def load_loras(pipe, loras_configuration):
     """
     @param loras_configuration LoRAsConfiguration class
     """

@@ -1,5 +1,6 @@
 from corecode.FileIO import get_project_directory_path
 from pathlib import Path
+import torch
 import yaml
 
 class Configuration:
@@ -28,6 +29,14 @@ class Configuration:
         self.guidance_scale = data["guidance_scale"]
         self.clip_skip = data["clip_skip"]
         self.seed = data["seed"]
+        self.torch_dtype = data["torch_dtype"]
+
+        if self.torch_dtype == "torch.float16":
+            self.torch_dtype = torch.float16
+
+        self.is_enable_cpu_offload = data["is_enable_cpu_offload"]
+        self.is_enable_sequential_cpu_offload = data[
+            "is_enable_sequential_cpu_offload"]
 
     def check_if_paths_exist():
         if (not Path(self.diffusion_model_path).exists()):

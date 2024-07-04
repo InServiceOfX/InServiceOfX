@@ -26,14 +26,16 @@ from corecode.Utilities import (
     FloatParameter,
     IntParameter,
     StringParameter)
+
+from morediffusers.Configurations import Configuration
+from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
+
 from morediffusers.Schedulers import change_scheduler_or_not
 
 from morediffusers.Wrappers import (
     create_stable_diffusion_xl_pipeline,
     load_loras)
 
-from morediffusers.Configurations import Configuration
-from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 
 def format_float_for_string(value):
     if value == int(value):

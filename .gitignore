@@ -104,6 +104,7 @@ Cargo.lock
 
 .config
 Configurations/HuggingFace/MoreDiffusers/configuration.yml
+Configurations/HuggingFace/MoreDiffusers/ip_adapter_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/loras_configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml

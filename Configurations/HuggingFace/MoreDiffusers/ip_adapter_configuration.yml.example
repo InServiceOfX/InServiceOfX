@@ -1,0 +1,13 @@
+path : /Data1/Models/Diffusion/fluently/Fluently-XL-Final
+subfolder : /Data/Private/
+weight_names : "ipa"
+# or
+# weight_names :
+# - "a"
+# - "of"
+image_filepath :
+scales : 1.23
+# or
+# scales :
+# - 4.56
+# - 87.2

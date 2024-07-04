@@ -1,0 +1,5 @@
+path : /Data/Models/Diffusion/h94/IP-Adapter
+subfolder : sdxl_models
+weight_names : ip-adapter_sdxl.safetensors
+image_filepath :
+scales : 0.5
