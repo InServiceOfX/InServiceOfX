@@ -27,3 +27,41 @@ def test_load_ip_adapter_loads():
     load_ip_adapter(pipe, ip_adapter_configuration)
 
     assert True
+
+def test_load_ip_adapter_loads_with_faceid_with_fluently():
+    """
+    @details Loads with no image encoder folder.
+    """
+
+    pipe = create_stable_diffusion_xl_pipeline(
+        data_sub_dirs.ModelsDiffusion / "fluently" / "Fluently-XL-v4",
+        None,
+        is_enable_cpu_offload=False,
+        is_enable_sequential_cpu=False
+        )
+
+    test_file_path = test_data_directory / "ip_adapter_configuration_faceid.yml"
+    ip_adapter_configuration = IPAdapterConfiguration(test_file_path)
+    
+    load_ip_adapter(pipe, ip_adapter_configuration, False)
+
+    assert True
+
+def test_load_ip_adapter_loads_with_faceid_with_cpu_offload():
+    """
+    @details Loads with no image encoder folder.
+    """
+
+    pipe = create_stable_diffusion_xl_pipeline(
+        data_sub_dirs.ModelsDiffusion / "fluently" / "Fluently-XL-v4",
+        None,
+        is_enable_cpu_offload=True,
+        is_enable_sequential_cpu=True
+        )
+
+    test_file_path = test_data_directory / "ip_adapter_configuration_faceid.yml"
+    ip_adapter_configuration = IPAdapterConfiguration(test_file_path)
+    
+    load_ip_adapter(pipe, ip_adapter_configuration, False)
+
+    assert True

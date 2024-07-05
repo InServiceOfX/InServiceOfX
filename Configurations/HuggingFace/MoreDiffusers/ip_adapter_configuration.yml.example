@@ -1,6 +1,6 @@
-path : /Data1/Models/Diffusion/fluently/Fluently-XL-Final
-subfolder : /Data/Private/
-weight_names : "ipa"
+path : /Data/Models/Diffusion/h94/IP-Adapter-FaceID
+subfolder :
+weight_names : ip-adapter-faceid-portrait_sdxl_unnorm.bin
 # or
 # weight_names :
 # - "a"

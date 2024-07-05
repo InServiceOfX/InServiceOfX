@@ -1,0 +1,4 @@
+face_analysis_model_name : antelopev2
+face_analysis_model_directory_path : /Data/Models/Diffusion/InstantX
+det_thresh : 0.5
+det_size : 640

@@ -1,0 +1,10 @@
+path : /Data/Models/Diffusion/h94/IP-Adapter-FaceID
+subfolder :
+# /ThirdParty/diffusers/src/diffusers/loaders/unet.py:864: KeyError
+#weight_names : ip-adapter-faceid_sdxl.bin
+#weight_names : ip-adapter-faceid-plusv2_sdxl.bin 
+#weight_names : ip-adapter-faceid-plusv2_sdxl_lora.safetensors
+#weight_names : ip-adapter-faceid-portrait_sdxl.bin
+weight_names : ip-adapter-faceid-portrait_sdxl_unnorm.bin
+image_filepath :
+scales : 0.6

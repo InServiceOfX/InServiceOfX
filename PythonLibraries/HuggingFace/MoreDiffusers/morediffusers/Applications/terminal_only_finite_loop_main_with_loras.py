@@ -27,6 +27,8 @@ from corecode.Utilities import (
     IntParameter,
     StringParameter)
 
+from morediffusers.Applications import UserInputWithLoras
+
 from morediffusers.Configurations import Configuration
 from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 
@@ -99,67 +101,7 @@ def terminal_only_finite_loop_main_with_loras():
     print(pipe.get_active_adapters())
     print(pipe.get_list_adapters())
 
-    prompt = StringParameter(get_user_input(str, "Prompt: "))
-    prompt_2 = StringParameter(get_user_input(str, "Prompt 2: ", ""))
-    if prompt_2 == "":
-        prompt_2 = None
-
-    # Example negative prompt:
-    # "(lowres, low quality, worst quality:1.2), (text:1.2), glitch, deformed, mutated, cross-eyed, ugly, disfigured (lowres, low quality, worst quality:1.2), (text:1.2), watermark, painting, drawing, illustration, glitch,deformed, mutated, cross-eyed, ugly, disfigured"
-    # prompt for what you want to not include.
-    negative_prompt = StringParameter(
-        get_user_input(str, "Negative prompt: ", ""))
-
-    negative_prompt_2 = StringParameter(
-        get_user_input(str, "Negative prompt 2: ", ""))
-    if negative_prompt_2 == "":
-        negative_prompt_2 = None
-
-    number_of_steps = IntParameter(
-        get_user_input(int, "Number of steps, normally 50"))
-
-    print("prompt: ", prompt.value)
-    print("negative prompt: ", negative_prompt.value)
-    print("Number of Steps: ", number_of_steps.value)
-
-    base_filename = StringParameter(
-        get_user_input(
-            str,
-            "Filename 'base', phrase common in the filenames"))
-
-    iterations = IntParameter(
-        get_user_input(int, "Number of Iterations: ", 2))
-
-    model_name = Path(configuration.diffusion_model_path).name
-
-    guidance_scale = configuration.guidance_scale
-    guidance_scale_step = 0.0
-
-    # Assume that if guidance scale was indeed set in the configuration, then
-    # the user has intention of changing it.
-    if guidance_scale is not None:
-
-        guidance_scale_step = FloatParameter(
-            get_user_input(
-                float,
-                "Guidance scale step value, enter small decimal value",
-                0.0))
-
-
-    cross_attention_kwargs=None
-    
-    if loras_configuration.lora_scale != None:
-        cross_attention_kwargs={"scale": float(loras_configuration.lora_scale)}
-
-    # Set generator (for seed in torch), if it had been set in the configuration.
-    generator = None
-    if configuration.seed != None:
-
-        seed = int(configuration.seed)
-        # https://pytorch.org/docs/stable/generated/torch.Generator.html
-        g_cuda = torch.Generator(device='cuda')
-        g_cuda.manual_seed(seed)
-        generator = g_cuda
+    user_input = UserInputWithLoras(configuration, loras_configuration)
 
     for index in range(iterations.value):
 
@@ -169,52 +111,52 @@ def terminal_only_finite_loop_main_with_loras():
         and def __call__(..) for possible arguments.
         """
 
-        if guidance_scale == None:
+        if user_input.guidance_scale == None:
             # Recall that __call__(..) returns an instance of a
             # StableDiffusionXLPipelineOutput. This is found in
             # diffusers/src/diffusers/pipelines/stable_diffusion_xl/pipeline_output.py
             image = pipe(
-                prompt=prompt.value,
-                prompt_2=prompt_2.value,
+                prompt=user_input.prompt.value,
+                prompt_2=user_input.prompt_2.value,
                 height=configuration.height,
                 width=configuration.width,
-                num_inference_steps=number_of_steps.value,
+                num_inference_steps=user_input.number_of_steps.value,
                 denoising_end=configuration.denoising_end,
-                negative_prompt=negative_prompt.value,
-                negative_prompt_2=negative_prompt_2.value,
-                generator=generator,
-                cross_attention_kwargs=cross_attention_kwargs,
+                negative_prompt=user_input.negative_prompt.value,
+                negative_prompt_2=user_input.negative_prompt_2.value,
+                generator=user_input.generator,
+                cross_attention_kwargs=user_input.cross_attention_kwargs,
                 clip_skip=configuration.clip_skip
                 ).images[0]
         else:
             image = pipe(
-                prompt=prompt.value,
-                prompt_2=prompt_2.value,
+                prompt=user_input.prompt.value,
+                prompt_2=user_input.prompt_2.value,
                 height=configuration.height,
                 width=configuration.width,
-                num_inference_steps=number_of_steps.value,
+                num_inference_steps=user_input.number_of_steps.value,
                 denoising_end=configuration.denoising_end,
-                guidance_scale=guidance_scale,
-                generator=generator,
-                negative_prompt=negative_prompt.value,
-                negative_prompt_2=negative_prompt_2.value,
-                cross_attention_kwargs=cross_attention_kwargs,
+                guidance_scale=user_input.guidance_scale,
+                generator=user_input.generator,
+                negative_prompt=user_input.negative_prompt.value,
+                negative_prompt_2=user_input.negative_prompt_2.value,
+                cross_attention_kwargs=user_input.cross_attention_kwargs,
                 clip_skip=configuration.clip_skip
                 ).images[0]
 
         filename = ""
 
-        if guidance_scale is None:
+        if user_input.guidance_scale is None:
 
             filename = (
-                f"{base_filename.value}{model_name}-"
-                f"Steps{number_of_steps.value}Iter{index}"
+                f"{base_filename.value}{user_input.model_name}-"
+                f"Steps{user_input.number_of_steps.value}Iter{index}"
             )
         else:
 
             filename = (
-                f"{base_filename.value}{model_name}-"
-                f"Steps{number_of_steps.value}Iter{index}Guidance{format_float_for_string(guidance_scale)}"
+                f"{base_filename.value}{user_input.model_name}-"
+                f"Steps{user_input.number_of_steps.value}Iter{index}Guidance{format_float_for_string(user_input.guidance_scale)}"
             )
 
         image_format = image.format if image.format else "PNG"
@@ -224,8 +166,8 @@ def terminal_only_finite_loop_main_with_loras():
         print(f"Image saved to {file_path}")
 
         # Update parameters for iterative steps.
-        if guidance_scale is not None:
-            guidance_scale += guidance_scale_step.value
+        if user_input.guidance_scale is not None:
+            user_input.guidance_scale += user_input.guidance_scale_step.value
 
     clear_torch_cache_and_collect_garbage()
 

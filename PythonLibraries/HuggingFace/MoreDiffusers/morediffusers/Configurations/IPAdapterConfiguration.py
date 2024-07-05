@@ -21,14 +21,14 @@ class IPAdapterConfiguration:
 
         if isinstance(self.weight_names, list):
 
-            number_of_weights = len(weight_names)
+            number_of_weights = len(self.weight_names)
 
-            if not isinstance(scales, list):
+            if not isinstance(self.scales, list):
 
                 self.scales = [self.scales for i in range(number_of_weights)]
 
-            elif len(scales) < number_of_weights:
+            elif len(self.scales) < number_of_weights:
 
-                deficient = number_of_weights - len(scales)
+                deficient = number_of_weights - len(self.scales)
                 for i in range(deficient):
                     self.scales.append(self.scales[-1])

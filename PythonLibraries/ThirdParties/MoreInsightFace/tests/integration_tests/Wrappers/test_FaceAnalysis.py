@@ -1,11 +1,73 @@
 from corecode.Utilities import (
     DataSubdirectories,
     )
-from moreinsightface.Wrappers import get_face_and_pose_info_from_images
+
+from insightface.app import FaceAnalysis
+from moreinsightface.Wrappers import (
+    FaceAnalysisWrapper,
+    get_face_and_pose_info_from_images
+    )
+
+import insightface
 
 import pytest
+import torch
 
 data_sub_dirs = DataSubdirectories()
+
+def test_FaceAnalysisWrapper_inits():
+
+    face_analysis = FaceAnalysisWrapper(
+        "antelopev2",
+        data_sub_dirs.ModelsDiffusion / "InstantX",
+        det_size=(640, 640)
+        )
+
+    assert isinstance(face_analysis.application, FaceAnalysis)
+
+def test_FaceAnalysisWrapper_gets_face_embedding():
+    """
+    From
+    https://huggingface.co/docs/diffusers/main/en/using-diffusers/ip_adapter#face-model 
+    given the example "To use IP-Adapter FaceID models, ..."
+    """
+
+    face_analysis = FaceAnalysisWrapper(
+        "antelopev2",
+        data_sub_dirs.ModelsDiffusion / "InstantX",
+        det_size=(640, 640)
+        )
+
+    website_address = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/ip_mask_girl1.png"
+
+    results = face_analysis.get_face_embedding_from_image(website_address)
+
+    assert isinstance(results.face_info, list)
+    assert len(results.face_info) == 1
+    assert isinstance(results.face_info[0], insightface.app.common.Face)
+
+    assert isinstance(results.image, torch.Tensor)
+    assert isinstance(results.ref_images_embeds, torch.Tensor)
+    assert isinstance(results.neg_ref_images_embeds, torch.Tensor)
+    assert isinstance(results.id_embeds, torch.Tensor)
+
+    assert results.image.shape == torch.Size([512])
+    assert results.ref_images_embeds.shape == torch.Size([1, 1, 1, 512])
+    assert results.neg_ref_images_embeds.shape == torch.Size([1, 1, 1, 512])
+    assert results.id_embeds.shape == torch.Size([2, 1, 1, 512])
+
+    assert results.image.size() == torch.Size([512])
+    assert results.image.dim() == 1
+
+    assert results.ref_images_embeds.size() == torch.Size([1, 1, 1, 512])
+    assert results.ref_images_embeds.dim() == 4
+
+    assert results.neg_ref_images_embeds.size() == torch.Size([1, 1, 1, 512])
+    assert results.neg_ref_images_embeds.dim() == 4
+
+    assert results.id_embeds.size() == torch.Size([2, 1, 1, 512])
+    assert results.id_embeds.dim() == 4
+
 
 def test_get_face_and_pose_info_from_images_works_with_default_values():
 

@@ -3,11 +3,15 @@ from morecomputervision import (
     draw_keypoints_and_connections,
     get_maximum_sized_face,
     load_image_with_diffusers)
-from morecomputervision.color_conversions import from_rgb_to_bgr
+from morecomputervision.color_conversions import (
+    from_rgb_to_bgr,
+    from_bgr_to_rgb)
 
 from insightface.app import FaceAnalysis
 
 import cv2
+from collections import namedtuple
+import torch
 from pathlib import Path
 
 class FaceAnalysisWrapper:
@@ -45,10 +49,69 @@ class FaceAnalysisWrapper:
         # def prepare(self, ctx_id, det_thres=0.5, det_size=(640, 640)) such
         # that for each loaded model,
         # model.prepare(ctx_id, input_size=det_size, det_thresh=det_thresh)
-        self.application.prepare(
-            ctx_id=0,
-            det_thresh=det_thresh,
-            det_size=(det_size, det_size))
+
+        if isinstance(det_size, int):
+            self.application.prepare(
+                ctx_id=0,
+                det_thresh=det_thresh,
+                det_size=(det_size, det_size))
+        elif det_size != None:
+            self.application.prepare(
+                ctx_id=0,
+                det_thresh=det_thresh,
+                det_size=det_size)
+        else:
+            raise ValueError(
+                f"Expected positive integer or tuple, got NoneType")
+
+    def get_face_embedding_from_image(self, face_image_path):
+        """
+        From
+        https://huggingface.co/docs/diffusers/main/en/using-diffusers/ip_adapter#face-model 
+        given the example "To use IP-Adapter FaceID models, ..."
+
+        @return id_embeds torch.Tensor
+        id_embeds did not have .to(dtype=torch.float16, device="cuda") run on it
+        yet as a torch.Tensor instance, as was done in
+        https://huggingface.co/docs/diffusers/main/en/using-diffusers/ip_adapter#face-model
+        for the example "To use IP-Adapter FaceID models, first extract face
+        embeddings with insightface."
+        """
+        face_image = load_image_with_diffusers(face_image_path)
+        face_image_cv2 = from_bgr_to_rgb(face_image)
+        face_info = self.application.get(face_image_cv2)
+
+        image = torch.from_numpy(face_info[0].normed_embedding)
+
+        ref_images_embeds = []
+        ref_images_embeds.append(image.unsqueeze(0))
+        ref_images_embeds = torch.stack(ref_images_embeds, dim=0).unsqueeze(0)
+
+        neg_ref_images_embeds = torch.zeros_like(ref_images_embeds)
+        id_embeds = torch.cat([neg_ref_images_embeds, ref_images_embeds])
+
+        # Look at the example "To use IP-Adapter FaceID models, first extract face embeddings"
+        # in
+        # https://huggingface.co/docs/diffusers/main/en/using-diffusers/ip_adapter#face-model
+        # and observe that we hadn't run
+        # .to(dtype=torch.float16, device="cuda")
+        # on id_embeds. Leave it up to the user to decide what to do.
+
+        FaceEmbeddingResult = namedtuple(
+            'FaceEmbeddingResult',
+            [
+                'face_info',
+                'image',
+                'ref_images_embeds',
+                'neg_ref_images_embeds',
+                'id_embeds'])
+        return FaceEmbeddingResult(
+            face_info=face_info,
+            image=image,
+            ref_images_embeds=ref_images_embeds,
+            neg_ref_images_embeds=neg_ref_images_embeds,
+            id_embeds=id_embeds)
+
 
     def get_face_info_from_image(self, face_image_path):
         """
