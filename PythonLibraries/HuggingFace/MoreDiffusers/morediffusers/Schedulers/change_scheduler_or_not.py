@@ -21,5 +21,8 @@ def change_scheduler_or_not(pipe, scheduler_name=None, a1111_kdiffusion=None):
             elif a1111_kdiffusion == "DPM++ 2M SDE":
                 pipe.scheduler.config.algorithm_type = "sde-dpmsolver++"
 
+        elif scheduler_name == "DPMSolverSinglestepScheduler":
+            if a1111_kdiffusion == "DPM++ SDE Karras":
+                pipe.scheduler.use_karras_sigmas=True
 
     return True
