@@ -6,7 +6,9 @@ temporary_save_path :
 # Also see
 # https://huggingface.co/docs/diffusers/v0.26.2/en/api/schedulers/overview#schedulers
 # for a table to A1111/k-diffusion names.
+# DPM++ 2M Karras DPMSolverMultistepScheduler init with use_karras_sigmas=True
 scheduler :
+A1111_kdiffusion : "DPM++ 2M Karras"
 height :
 width :
 denoising_end :

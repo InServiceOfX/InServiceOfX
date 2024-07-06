@@ -15,11 +15,14 @@ if not str(corecode_directory) in sys.path:
 if not str(more_diffusers_directory) in sys.path:
     sys.path.append(str(more_diffusers_directory))
 
-from corecode.Utilities import (
-    clear_torch_cache_and_collect_garbage,
-    )
+from corecode.Utilities import clear_torch_cache_and_collect_garbage
 
-from morediffusers.Applications import UserInputWithLoras
+from morediffusers.Applications import (
+    create_image_filename_and_save,
+    print_loras_diagnostics,
+    print_pipeline_diagnostics,
+    UserInputWithLoras
+)
 
 from morediffusers.Configurations import Configuration
 from morediffusers.Configurations import IPAdapterConfiguration
@@ -32,12 +35,6 @@ from morediffusers.Wrappers import (
     load_loras,
     load_ip_adapter)
 
-def format_float_for_string(value):
-    if value == int(value):
-        return f"{int(value)}"
-    else:
-        # Truncate to 3 places, remove trailing zeros
-        return f"{value:.3f}".rstrip('0').rstrip('.')
 
 def terminal_only_image_prompt():
 
@@ -56,32 +53,16 @@ def terminal_only_image_prompt():
 
     is_scheduler_changed = change_scheduler_or_not(
         pipe,
-        configuration.scheduler)
+        configuration.scheduler,
+        configuration.a1111_kdiffusion)
 
     end_time = time.time()
-    duration = end_time - start_time
 
-    changed_scheduler_name = pipe.scheduler.config._class_name
-
-    print("-------------------------------------------------------------------")
-    print(f"Completed pipeline creation, took {duration:.2f} seconds.")
-    print("-------------------------------------------------------------------")
-
-    if is_scheduler_changed:
-        print(
-            "\nDiagnostic: scheduler changed, originally: ",
-            original_scheduler_name,
-            "\nNow: ",
-            changed_scheduler_name)
-    else:
-        print(
-            "\nDiagnostic: scheduler didn't change, originally: ",
-            original_scheduler_name,
-            "\nStayed: ",
-            changed_scheduler_name)
-
-    print("\nDiagnostic: pipe.unet.config.time_cond_proj_dim: ")
-    print(pipe.unet.config.time_cond_proj_dim)
+    print_pipeline_diagnostics(
+        end_time - start_time,
+        pipe,
+        is_scheduler_changed,
+        original_scheduler_name)
 
     #
     #
@@ -94,15 +75,8 @@ def terminal_only_image_prompt():
     load_loras(pipe, loras_configuration)
 
     end_time = time.time()
-    duration = end_time - start_time
 
-    print("-------------------------------------------------------------------")
-    print(f"Completed loading LoRAs, took {duration:.2f} seconds.")
-    print("-------------------------------------------------------------------")
-
-    print("\n LoRAs: \n")
-    print(pipe.get_active_adapters())
-    print(pipe.get_list_adapters())
+    print_loras_diagnostics(end_time - start_time, pipe)
 
     #
     #
@@ -174,33 +148,19 @@ def terminal_only_image_prompt():
                 clip_skip=configuration.clip_skip
                 ).images[0]
 
+        create_image_filename_and_save(
+            user_input,
+            index,
+            image,
+            configuration)
+
         filename = ""
-
-        if user_input.guidance_scale is None:
-
-            filename = (
-                f"{user_input.base_filename.value}{user_input.model_name}-"
-                f"Steps{user_input.number_of_steps.value}Iter{index}"
-            )
-        else:
-
-            filename = (
-                f"{user_input.base_filename.value}{user_input.model_name}-"
-                f"Steps{user_input.number_of_steps.value}Iter{index}Guidance{format_float_for_string(user_input.guidance_scale)}"
-            )
-
-        image_format = image.format if image.format else "PNG"
-        file_path = Path(configuration.temporary_save_path) / \
-            f"{filename}.{image_format.lower()}"
-        image.save(file_path)
-        print(f"Image saved to {file_path}")
 
         # Update parameters for iterative steps.
         if user_input.guidance_scale is not None:
             user_input.guidance_scale += user_input.guidance_scale_step.value
 
     clear_torch_cache_and_collect_garbage()
-
 
 if __name__ == "__main__":
 

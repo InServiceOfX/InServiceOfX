@@ -1,6 +1,6 @@
 from ..Schedulers import CreateSchedulerMap
 
-def change_scheduler_or_not(pipe, scheduler_name=None):
+def change_scheduler_or_not(pipe, scheduler_name=None, a1111_kdiffusion=None):
     if scheduler_name == None:
         return False
     schedulers_map = CreateSchedulerMap.get_map()
@@ -12,7 +12,14 @@ def change_scheduler_or_not(pipe, scheduler_name=None):
     # init with use_karras_sigmas=True
     # https://huggingface.co/docs/diffusers/v0.26.2/en/api/schedulers/overview#schedulers
 
-    if scheduler_name == "DPMSolverMultistepScheduler":
-        pipe.scheduler.use_karras_sigmas=True
+    if a1111_kdiffusion != None:
+
+        if scheduler_name == "DPMSolverMultistepScheduler":
+
+            if a1111_kdiffusion == "DPM++ 2M Karras":
+                pipe.scheduler.use_karras_sigmas=True
+            elif a1111_kdiffusion == "DPM++ 2M SDE":
+                pipe.scheduler.config.algorithm_type = "sde-dpmsolver++"
+
 
     return True

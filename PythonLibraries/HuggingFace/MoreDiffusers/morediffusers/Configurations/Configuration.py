@@ -38,6 +38,8 @@ class Configuration:
         self.is_enable_sequential_cpu_offload = data[
             "is_enable_sequential_cpu_offload"]
 
+        self.a1111_kdiffusion = str(data["A1111_kdiffusion"])
+
     def check_if_paths_exist():
         if (not Path(self.diffusion_model_path).exists()):
             raise RuntimeError(
