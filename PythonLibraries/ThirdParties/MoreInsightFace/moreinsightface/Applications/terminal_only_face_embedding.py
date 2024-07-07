@@ -25,15 +25,14 @@ if not str(more_diffusers_directory) in sys.path:
 if not str(more_insightface_directory) in sys.path:
     sys.path.append(str(more_insightface_directory))
 
-from corecode.Utilities import (
-    clear_torch_cache_and_collect_garbage,
-    )
+from corecode.Utilities import clear_torch_cache_and_collect_garbage
 
 from morediffusers.Applications import (
     create_image_filename_and_save,
     print_loras_diagnostics,
     print_pipeline_diagnostics,
-    UserInputWithLoras)
+    UserInputWithLoras
+)
 
 from morediffusers.Configurations import Configuration
 from morediffusers.Configurations import IPAdapterConfiguration
@@ -67,7 +66,8 @@ def terminal_only_face_embedding():
 
     is_scheduler_changed = change_scheduler_or_not(
         pipe,
-        configuration.scheduler)
+        configuration.scheduler,
+        configuration.a1111_kdiffusion)
 
     end_time = time.time()
 

@@ -148,13 +148,7 @@ def terminal_only_image_prompt():
                 clip_skip=configuration.clip_skip
                 ).images[0]
 
-        create_image_filename_and_save(
-            user_input,
-            index,
-            image,
-            configuration)
-
-        filename = ""
+        create_image_filename_and_save(user_input, index, image, configuration)
 
         # Update parameters for iterative steps.
         if user_input.guidance_scale is not None:
