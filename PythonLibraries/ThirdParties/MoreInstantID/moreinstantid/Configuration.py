@@ -30,10 +30,6 @@ class Configuration:
         self.ip_adapter_image_embedding_dimension = data[
             "ip_adapter_image_embedding_dimension"]
         self.ip_adapter_number_of_tokens = data["ip_adapter_number_of_tokens"]
-        self.scheduler = data["scheduler"]
-        self.guidance_scale = data["guidance_scale"]
-        self.clip_skip = data["clip_skip"]
-        self.seed = data["seed"]
 
     def check_if_paths_exist():
         if (not Path(self.face_analysis_model_name).exists()):

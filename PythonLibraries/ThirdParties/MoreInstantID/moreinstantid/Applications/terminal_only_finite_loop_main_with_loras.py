@@ -40,6 +40,16 @@ from corecode.Utilities import (
     FloatParameter,
     IntParameter,
     StringParameter)
+from corecode.Utilities.Strings import format_float_for_string
+
+from morediffusers.Applications import (
+    print_loras_diagnostics,
+    print_pipeline_diagnostics,
+    UserInputWithLoras
+)
+
+from morediffusers.Configurations import Configuration as PipelineConfiguration
+
 from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images
 from moreinstantid.Wrappers import (
@@ -50,17 +60,12 @@ from moreinstantid.Wrappers import (
 from moreinstantid.Configuration import Configuration
 from moreinstantid import LoRAsConfigurationForMoreInstantID
 
-def format_float_for_string(value):
-    if value == int(value):
-        return f"{int(value)}"
-    else:
-        # Truncate to 3 places, remove trailing zeros
-        return f"{value:.3f}".rstrip('0').rstrip('.')
 
 def terminal_only_finite_loop_main_with_loras():
 
     start_time = time.time()
 
+    pipeline_configuration = PipelineConfiguration()
     configuration = Configuration()
 
     face_information, pose_information = get_face_and_pose_info_from_images(
@@ -88,7 +93,7 @@ def terminal_only_finite_loop_main_with_loras():
     controlnet = create_controlnet(configuration.control_net_model_path)
     pipe = create_stable_diffusion_xl_pipeline(
         controlnet,
-        configuration.diffusion_model_path,
+        pipeline_configuration.diffusion_model_path,
         configuration.ip_adapter_path,
         is_enable_cpu_offload=True,
         is_enable_sequential_cpu=True)
@@ -97,29 +102,15 @@ def terminal_only_finite_loop_main_with_loras():
 
     is_scheduler_changed = change_scheduler_or_not(
         pipe,
-        configuration.scheduler)
+        pipeline_configuration.scheduler)
 
     end_time = time.time()
-    duration = end_time - start_time
 
-    changed_scheduler_name = pipe.scheduler.config._class_name
-
-    print("-------------------------------------------------------------------")
-    print(f"Completed pipeline creation, took {duration:.2f} seconds.")
-    print("-------------------------------------------------------------------")
-
-    if is_scheduler_changed:
-        print(
-            "\nDiagnostic: scheduler changed, originally: ",
-            original_scheduler_name,
-            "\nNow: ",
-            changed_scheduler_name)
-    else:
-        print(
-            "\nDiagnostic: scheduler didn't change, originally: ",
-            original_scheduler_name,
-            "\nStayed: ",
-            changed_scheduler_name)
+    print_pipeline_diagnostics(
+        end_time - start_time,
+        pipe,
+        is_scheduler_changed,
+        original_scheduler_name)
 
     print(
         "\nDiagnostic: pipe.unet.config.time_cond_proj_dim used in pipeline_stable_diffusion_xl_instantid to determine optionally getting Guidance Scale Embedding or not: ")
@@ -138,13 +129,14 @@ def terminal_only_finite_loop_main_with_loras():
     # LoRAs - Low Rank Adaptations
     #
     #
+    start_time = time.time()
+
     loras_configuration = LoRAsConfigurationForMoreInstantID()
     load_loras(pipe, loras_configuration)
 
-    print("-------------------------------------------------------------------")
-    print("Active Adapters:", pipe.get_active_adapters())    
-    print("List adapters component wise:", pipe.get_list_adapters())    
-    print("-------------------------------------------------------------------")
+    end_time = time.time()
+
+    print_loras_diagnostics(end_time - start_time, pipe)
 
     #
     #
@@ -152,19 +144,8 @@ def terminal_only_finite_loop_main_with_loras():
     #
     #
 
-    prompt = StringParameter(get_user_input(str, "Prompt: "))
-    prompt_2 = StringParameter(get_user_input(str, "Prompt 2: ", ""))
-    if prompt_2 == "":
-        prompt_2 = None
+    user_input = UserInputWithLoras(pipeline_configuration, loras_configuration)
 
-    # Example negative prompt:
-    # "(lowres, low quality, worst quality:1.2), (text:1.2), glitch, deformed, mutated, cross-eyed, ugly, disfigured (lowres, low quality, worst quality:1.2), (text:1.2), watermark, painting, drawing, illustration, glitch,deformed, mutated, cross-eyed, ugly, disfigured"
-    # prompt for what you want to not include.
-    negative_prompt = StringParameter(get_user_input(str, "Negative prompt: ", ""))
-    negative_prompt_2 = StringParameter(
-        get_user_input(str, "Negative prompt 2: ", ""))
-    if negative_prompt_2 == "":
-        negative_prompt_2 = None
 
     ip_adapter_scale = FloatParameter(
         get_user_input(
@@ -177,14 +158,8 @@ def terminal_only_finite_loop_main_with_loras():
             float,
             "ControlNet Conditioning: normally 0.8 or 1.0, enter 'base' value"))
 
-    number_of_steps = IntParameter(
-        get_user_input(int, "Number of steps, normally 50"))
-
-    print("prompt: ", prompt.value)
-    print("negative prompt: ", negative_prompt.value)
     print("IP adapter scale: ", ip_adapter_scale.value)
     print("ControlNet Conditioning: ", controlnet_conditioning_scale.value)
-    print("Number of Steps: ", number_of_steps.value)
 
     ip_adapter_step = FloatParameter(
         get_user_input(
@@ -198,59 +173,26 @@ def terminal_only_finite_loop_main_with_loras():
             "ControlNet conditioning step value, enter small decimal value",
             0.0))
 
-    base_filename = StringParameter(
-        get_user_input(
-            str,
-            "Filename 'base', phrase common in the filenames"))
-
-    iterations = IntParameter(
-        get_user_input(int, "Number of Iterations: ", 2))
-
     ip_adapter_scale_value = ip_adapter_scale.value
     controlnet_conditioning_scale_value = controlnet_conditioning_scale.value
 
-    model_name = Path(configuration.diffusion_model_path).name
-
-    guidance_scale = configuration.guidance_scale
-    guidance_scale_step = 0.0
-
-    # Set generator (for seed in torch), if it had been set in the configuration.
-    generator = None
-    if configuration.seed != None:
-
-        seed = int(configuration.seed)
-        # https://pytorch.org/docs/stable/generated/torch.Generator.html
-        g_cuda = torch.Generator(device='cuda')
-        g_cuda.manual_seed(seed)
-        generator = g_cuda
-
-    # Assume that if guidance scale was indeed set in the configuration, then
-    # the user has intention of changing it.
-    if guidance_scale is not None:
-
-        guidance_scale_step = FloatParameter(
-            get_user_input(
-                float,
-                "Guidance scale step value, enter small decimal value",
-                0.0))
-
-    for index in range(iterations.value):
+    for index in range(user_input.iterations.value):
 
         image = generate_image_with_loras(
             pipe,
-            prompt=prompt.value,
+            prompt=user_input.prompt.value,
             face_information=face_information,
-            prompt_2=prompt_2.value,
-            negative_prompt=negative_prompt.value,
-            negative_prompt_2=negative_prompt_2.value,
+            prompt_2=user_input.prompt_2.value,
+            negative_prompt=user_input.negative_prompt.value,
+            negative_prompt_2=user_input.negative_prompt_2.value,
             pose_information=pose_information,
             ip_adapter_scale=ip_adapter_scale_value,
             controlnet_conditioning_scale=controlnet_conditioning_scale_value,
-            number_of_steps=number_of_steps.value,
-            guidance_scale=guidance_scale,
+            number_of_steps=user_input.number_of_steps.value,
+            guidance_scale=user_input.guidance_scale,
             lora_scale=loras_configuration.lora_scale,
-            clip_skip=configuration.clip_skip,
-            generator=generator
+            clip_skip=pipeline_configuration.clip_skip,
+            generator=user_input.generator
             )
 
         filename = ""
@@ -258,20 +200,20 @@ def terminal_only_finite_loop_main_with_loras():
         if guidance_scale is None:
 
             filename = (
-                f"{base_filename.value}{model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"
+                f"{user_input.base_filename.value}{user_input.model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"
                 f"ControlNet{format_float_for_string(controlnet_conditioning_scale_value)}"
-                f"Steps{number_of_steps.value}Iter{index}"
+                f"Steps{user_input.number_of_steps.value}Iter{index}"
             )
         else:
 
             filename = (
-                f"{base_filename.value}{model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"
+                f"{user_input.base_filename.value}{user_input.model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"
                 f"ControlNet{format_float_for_string(controlnet_conditioning_scale_value)}"
-                f"Steps{number_of_steps.value}Iter{index}Guidance{format_float_for_string(guidance_scale)}"
+                f"Steps{user_input.number_of_steps.value}Iter{index}Guidance{format_float_for_string(user_input.guidance_scale)}"
             )
 
         image_format = image.format if image.format else "PNG"
-        file_path = Path(configuration.temporary_save_path) / \
+        file_path = Path(pipeline_configuration.temporary_save_path) / \
             f"{filename}.{image_format.lower()}"
         image.save(file_path)
         print(f"Image saved to {file_path}")
@@ -281,8 +223,8 @@ def terminal_only_finite_loop_main_with_loras():
         controlnet_conditioning_scale_value += \
             controlnet_conditioning_step.value
 
-        if guidance_scale is not None:
-            guidance_scale += guidance_scale_step.value
+        if user_input.guidance_scale is not None:
+            user_input.guidance_scale += user_input.guidance_scale_step.value
 
     clear_torch_cache_and_collect_garbage()
 

@@ -99,6 +99,12 @@ Cargo.lock
 
 # Environment files for configuration.
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # Files to ignore that are specific to this repository (project)
 
