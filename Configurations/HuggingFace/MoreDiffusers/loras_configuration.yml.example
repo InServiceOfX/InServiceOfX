@@ -1,3 +1,4 @@
+lora_scale:
 lora_0:
   directory_path: "cito/pixel-art"
   weight_name: "weight.safetensors"

@@ -49,6 +49,10 @@ from morediffusers.Applications import (
 )
 
 from morediffusers.Configurations import Configuration as PipelineConfiguration
+from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers as \
+    LoRAsConfiguration
+
+from morediffusers.Wrappers import load_loras
 
 from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images
@@ -56,9 +60,8 @@ from moreinstantid.Wrappers import (
     create_controlnet,
     create_stable_diffusion_xl_pipeline,
     generate_image_with_loras,
-    load_loras)
+)
 from moreinstantid.Configuration import Configuration
-from moreinstantid import LoRAsConfigurationForMoreInstantID
 
 
 def terminal_only_finite_loop_main_with_loras():
@@ -131,7 +134,7 @@ def terminal_only_finite_loop_main_with_loras():
     #
     start_time = time.time()
 
-    loras_configuration = LoRAsConfigurationForMoreInstantID()
+    loras_configuration = LoRAsConfiguration()
     load_loras(pipe, loras_configuration)
 
     end_time = time.time()
@@ -197,7 +200,7 @@ def terminal_only_finite_loop_main_with_loras():
 
         filename = ""
 
-        if guidance_scale is None:
+        if user_input.guidance_scale is None:
 
             filename = (
                 f"{user_input.base_filename.value}{user_input.model_name}-IPAdapter{format_float_for_string(ip_adapter_scale_value)}"

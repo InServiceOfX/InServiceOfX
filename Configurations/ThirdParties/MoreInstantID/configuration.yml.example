@@ -15,13 +15,3 @@ det_size : 640
 # InstantID/pipeline_stable_diffusion_xl_instantid.py
 ip_adapter_image_embedding_dimension : 512
 ip_adapter_number_of_tokens : 16
-# Leave this blank (not "") if you don't want to change scheduler.
-# See diffusers library for possible schedulers to change into.
-scheduler :
-# guidance_scale default value 5.0 in
-# InstantID/pipeline_stable_diffusion_xl_instantid.py in
-# StableDiffusionXLInstantIDPipeline.__call__(..) and in
-# diffusers/src/diffusers/pipelines/controlnet/pipeline_controlnet_sd_xl.py
-guidance_scale :
-clip_skip :
-seed :

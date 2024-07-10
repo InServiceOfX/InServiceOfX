@@ -1,0 +1,11 @@
+lora_scale: 0.9
+lora_0:
+  directory_path: /Data/Models/Diffusion/CiroN2022/toy-face
+  weight_name: toy_face_sdxl.safetensors
+  adapter_name: "toy"
+  adapter_weight: 0.85
+lora_1:
+  directory_path: /Data/Models/Diffusion/nerijs/pixel-art-xl
+  weight_name: pixel-art-xl.safetensors
+  adapter_name: "pixel_art"
+  adapter_weight:

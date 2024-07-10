@@ -5,8 +5,8 @@ from corecode.Utilities import (
     )
 
 from morediffusers.Wrappers import load_loras
+from morediffusers.Configurations import LoRAsConfiguration
 from moreinstantid.Configuration import Configuration
-from moreinstantid import LoRAsConfiguration
 from moreinstantid.Wrappers import (
     create_controlnet,
     create_stable_diffusion_xl_pipeline,
@@ -56,6 +56,7 @@ def test_load_lora_loads_single_lora():
     assert isinstance(list_adapters_component_wise, dict)
     assert len(list_adapters_component_wise) == 1
     assert list_adapters_component_wise["unet"] == ["toy"]
+
 
 def test_load_lora_loads_two_loras():
 
