@@ -16,6 +16,7 @@ get_compute_capability()
 		"NVIDIA GeForce GTX 980 Ti"*) echo "5.2" ;;
 		"NVIDIA GeForce GTX 1050"*) echo "6.1" ;;
 		"NVIDIA GeForce RTX 3070"*) echo "8.6" ;;
+		"NVIDIA H100 80GB HBM3"*) echo "9.0" ;;
 		*) echo "Unknown" ;;
 	esac
 }
@@ -27,6 +28,7 @@ get_compute_capability_as_cuda_architecture()
 		"NVIDIA GeForce GTX 980 Ti"*) echo "52" ;;
 		"NVIDIA GeForce GTX 1050"*) echo "61" ;;
 		"NVIDIA GeForce RTX 3070"*) echo "86" ;;
+		"NVIDIA H100 80GB HBM3"*) echo "90" ;;
 		*) echo "Unknown" ;;
 	esac
 }

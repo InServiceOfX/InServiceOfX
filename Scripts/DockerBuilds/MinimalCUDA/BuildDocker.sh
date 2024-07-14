@@ -1,20 +1,15 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="diffusion-nvidia-python-24.01"
+DOCKER_IMAGE_NAME="minimal-cuda-nvidia-python-24.01"
 
 print_help()
 {
-  echo "Usage: $0 [--enable-faiss] [--no-cache]"
+  echo "Usage: $0 [--no-cache]"
   echo
   echo "Options:"
-  echo " --enable-faiss     If provided, the Docker build includes the installation of FAISS."
-  echo "                    By default, FAISS is not installed."
   echo " --no-cache         If provided, the Docker build will be performed without using cache"
   echo
-  echo "Example:"
-  echo "  $0 --enable-faiss     # Builds Docker image with FAISS installation."
-  echo "  $0                    # Builds Docker image without FAISS installation." 
 }
 
 # Reads ARCH and PTX values from local text file, typically in the same
@@ -34,7 +29,6 @@ read_compute_capabilities()
 
 build_docker_image()
 {
-  local enable_faiss=false
   local use_cache=""
 
   # Check for help option
@@ -43,8 +37,6 @@ build_docker_image()
     if [ "$arg" = "--help" ]; then
       print_help
       exit 0
-    elif [[ "$arg" == "--enable-faiss" ]]; then
-      enable_faiss=true
     elif [[ "$arg" == "--no-cache" ]]; then
       use_cache="--no-cache"
     fi
@@ -65,27 +57,12 @@ build_docker_image()
   read -r ARCH_VALUE PTX_VALUE COMPUTE_CAPABILITY < <(read_compute_capabilities \
     "$capabilities_file")
 
-  # Go to parent directory because we want to use the BuildOpenCVWithCUDA.sh
-  # script.
-  echo "Current directory: $(pwd)"
-  cd ../ || { echo "Failed to change directory to '../'"; exit 1; }
-
-  # Construct build-args with optional FAISS.
-  local build_args="--build-arg ARCH=$ARCH_VALUE --build-arg PTX=$PTX_VALUE "
-  build_args+="--build-arg COMPUTE_CAPABILITY "
-
-  if $enable_faiss; then
-    build_args+="--build-arg ENABLE_FAISS=true "
-  fi
-
   echo "$use_cache"
-  echo "$build_args"
   echo "$DOCKER_IMAGE_NAME"
   echo "$script_dir"
 
   # Builds from Dockerfile in this directory.
   docker build $use_cache \
-    $build_args \
     -t "$DOCKER_IMAGE_NAME" \
     -f "$script_dir/Dockerfile" .
 }
@@ -126,9 +103,7 @@ main()
 
   command_cat_dockerfiles="cat $dockerfile_header \
     Dockerfile.base \
-    Dockerfile.faiss \
-    Dockerfile.huggingface \
-    Dockerfile.third_parties \
+    Dockerfile.MoreNvidia \
     > Dockerfile"
 
   run_command_and_check_exit_code "$command_cat_dockerfiles"
