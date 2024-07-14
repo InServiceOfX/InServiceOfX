@@ -27,7 +27,7 @@ ENDIF()
 MESSAGE("CMAKE_CUDA_ARCHITECTURES after SET: " ${CMAKE_CUDA_ARCHITECTURES})
 
 # Language of the project is CXX (for C++) and CUDA (C++)
-PROJECT(STUNTICONS LANGUAGES CXX CUDA)
+PROJECT(MORECUDA LANGUAGES CXX CUDA)
 
 # BEFORE prepends the directories specified onto current list of directories.
 # cf. https://cmake.org/cmake/help/v3.0/command/include_directories.html

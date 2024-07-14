@@ -7,6 +7,8 @@ FIND_PACKAGE(Boost COMPONENTS filesystem system unit_test_framework REQUIRED)
 ADD_DEFINITIONS(-DBOOST_TEST_DYN_LINK)
 
 ADD_EXECUTABLE(Check
+  DataStructures/Array_tests.cu
+  Operations/Arithmetic_tests.cu
   Utilities/CaptureCerr.cpp
   Utilities/CaptureCerr_tests.cpp
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu

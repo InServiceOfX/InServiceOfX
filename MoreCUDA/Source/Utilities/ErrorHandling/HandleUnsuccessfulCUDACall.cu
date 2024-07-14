@@ -60,6 +60,5 @@ void HandleUnsuccessfulCUDACall::operator()(
   }
 }
 
-
 } // namespace ErrorHandling
 } // namespace Utilities
