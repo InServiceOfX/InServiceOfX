@@ -41,6 +41,9 @@ from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 from morediffusers.Schedulers import change_scheduler_or_not
 
 from morediffusers.Wrappers import (
+    change_pipe_to_cuda_or_not,
+    change_pipe_with_ip_adapter_to_cuda_or_not,
+    change_pipe_with_loras_to_cuda_or_not,
     create_stable_diffusion_xl_pipeline,
     load_loras,
     load_ip_adapter)
@@ -69,6 +72,8 @@ def terminal_only_face_embedding():
         configuration.scheduler,
         configuration.a1111_kdiffusion)
 
+    change_pipe_to_cuda_or_not(configuration, pipe)
+
     end_time = time.time()
 
     print_pipeline_diagnostics(
@@ -87,6 +92,8 @@ def terminal_only_face_embedding():
     loras_configuration = LoRAsConfigurationForMoreDiffusers()
     load_loras(pipe, loras_configuration)
 
+    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
+
     end_time = time.time()
 
     print_loras_diagnostics(end_time - start_time, pipe)
@@ -100,6 +107,8 @@ def terminal_only_face_embedding():
 
     ip_adapter_configuration = IPAdapterConfiguration()
     load_ip_adapter(pipe, ip_adapter_configuration, is_load_image_encoder=False)
+
+    change_pipe_with_ip_adapter_to_cuda_or_not(pipe, ip_adapter_configuration)
 
     end_time = time.time()
     duration = end_time - start_time
@@ -124,7 +133,8 @@ def terminal_only_face_embedding():
         det_size=insightface_configuration.det_size)
 
     face_embedding_results = face_analysis.get_face_embedding_from_image(
-        ip_adapter_configuration.image_filepath)
+        ip_adapter_configuration.image_filepath,
+        configuration)
 
     end_time = time.time()
     duration = end_time - start_time

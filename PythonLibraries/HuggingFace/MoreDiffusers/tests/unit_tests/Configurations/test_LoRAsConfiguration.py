@@ -23,6 +23,8 @@ def test_LoRAsConfiguration_inits_for_empty_file():
         lora_parameters.append(lora_parameter)
     assert keys == []
     assert lora_parameters == []
+    assert configuration.is_to_cuda != False
+    assert configuration.is_to_cuda == None
 
 
 def test_LoRAsConfiguration_inits():
@@ -48,3 +50,4 @@ def test_LoRAsConfiguration_inits():
     assert configuration.loras["pixel_art"]["weight_name"] == "pixel-art-xl.safetensors"
     assert configuration.loras["pixel_art"]["adapter_name"] == "pixel_art"
     assert configuration.loras["pixel_art"]["adapter_weight"] == None
+    assert configuration.is_to_cuda == True

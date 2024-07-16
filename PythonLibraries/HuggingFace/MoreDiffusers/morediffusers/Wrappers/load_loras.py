@@ -22,3 +22,7 @@ def load_loras(pipe, loras_configuration):
 
         pipe.set_adapters(adapter_names, adapter_weights)
 
+
+def change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration):
+    if loras_configuration.is_to_cuda == True:
+        pipe.to("cuda")

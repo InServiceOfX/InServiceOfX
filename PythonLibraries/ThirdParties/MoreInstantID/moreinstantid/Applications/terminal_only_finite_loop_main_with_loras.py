@@ -52,7 +52,10 @@ from morediffusers.Configurations import Configuration as PipelineConfiguration
 from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers as \
     LoRAsConfiguration
 
-from morediffusers.Wrappers import load_loras
+from morediffusers.Wrappers import (
+    load_loras,
+    change_pipe_with_loras_to_cuda_or_not,
+    )
 
 from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images
@@ -98,8 +101,8 @@ def terminal_only_finite_loop_main_with_loras():
         controlnet,
         pipeline_configuration.diffusion_model_path,
         configuration.ip_adapter_path,
-        is_enable_cpu_offload=True,
-        is_enable_sequential_cpu=True)
+        is_enable_cpu_offload=pipeline_configuration.is_enable_cpu_offload,
+        is_enable_sequential_cpu=pipeline_configuration.is_enable_sequential_cpu_offload)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 
@@ -136,6 +139,8 @@ def terminal_only_finite_loop_main_with_loras():
 
     loras_configuration = LoRAsConfiguration()
     load_loras(pipe, loras_configuration)
+
+    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
 
     end_time = time.time()
 

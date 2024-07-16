@@ -3,3 +3,4 @@ subfolder : sdxl_models
 weight_names : ip-adapter_sdxl.safetensors
 image_filepath :
 scales : 0.5
+is_to_cuda: True

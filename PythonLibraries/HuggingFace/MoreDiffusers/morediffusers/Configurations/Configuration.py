@@ -39,6 +39,7 @@ class Configuration:
             "is_enable_sequential_cpu_offload"]
 
         self.a1111_kdiffusion = str(data["A1111_kdiffusion"])
+        self.is_to_cuda = data["is_to_cuda"]
 
     def check_if_paths_exist():
         if (not Path(self.diffusion_model_path).exists()):

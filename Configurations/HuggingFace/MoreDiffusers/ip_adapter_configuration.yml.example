@@ -11,3 +11,4 @@ scales : 1.23
 # scales :
 # - 4.56
 # - 87.2
+is_to_cuda : false

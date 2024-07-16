@@ -31,6 +31,9 @@ from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 from morediffusers.Schedulers import change_scheduler_or_not
 
 from morediffusers.Wrappers import (
+    change_pipe_to_cuda_or_not,
+    change_pipe_with_ip_adapter_to_cuda_or_not,
+    change_pipe_with_loras_to_cuda_or_not,
     create_stable_diffusion_xl_pipeline,
     load_loras,
     load_ip_adapter)
@@ -56,6 +59,8 @@ def terminal_only_image_prompt():
         configuration.scheduler,
         configuration.a1111_kdiffusion)
 
+    change_pipe_to_cuda_or_not(configuration, pipe)
+
     end_time = time.time()
 
     print_pipeline_diagnostics(
@@ -74,6 +79,8 @@ def terminal_only_image_prompt():
     loras_configuration = LoRAsConfigurationForMoreDiffusers()
     load_loras(pipe, loras_configuration)
 
+    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
+
     end_time = time.time()
 
     print_loras_diagnostics(end_time - start_time, pipe)
@@ -87,6 +94,8 @@ def terminal_only_image_prompt():
 
     ip_adapter_configuration = IPAdapterConfiguration()
     load_ip_adapter(pipe, ip_adapter_configuration)
+
+    change_pipe_with_ip_adapter_to_cuda_or_not(pipe, ip_adapter_configuration)
 
     end_time = time.time()
     duration = end_time - start_time

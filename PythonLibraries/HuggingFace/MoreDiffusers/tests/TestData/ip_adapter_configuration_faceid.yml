@@ -8,3 +8,4 @@ subfolder :
 weight_names : ip-adapter-faceid-portrait_sdxl_unnorm.bin
 image_filepath :
 scales : 0.6
+is_to_cuda: false

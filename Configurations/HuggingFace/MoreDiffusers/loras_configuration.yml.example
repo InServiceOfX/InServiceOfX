@@ -1,4 +1,5 @@
 lora_scale:
+is_to_cuda : false
 lora_0:
   directory_path: "cito/pixel-art"
   weight_name: "weight.safetensors"

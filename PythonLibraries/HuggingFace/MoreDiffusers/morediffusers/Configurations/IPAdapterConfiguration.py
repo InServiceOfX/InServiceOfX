@@ -18,6 +18,7 @@ class IPAdapterConfiguration:
         self.image_filepath = data["image_filepath"]
         self.weight_names = data["weight_names"]
         self.scales = data["scales"]
+        self.is_to_cuda = data["is_to_cuda"]
 
         if isinstance(self.weight_names, list):
 

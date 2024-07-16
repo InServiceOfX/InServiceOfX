@@ -33,6 +33,8 @@ from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 from morediffusers.Schedulers import change_scheduler_or_not
 
 from morediffusers.Wrappers import (
+    change_pipe_to_cuda_or_not,
+    change_pipe_with_loras_to_cuda_or_not,
     create_stable_diffusion_xl_pipeline,
     load_loras)
 
@@ -46,8 +48,8 @@ def terminal_only_finite_loop_main_with_loras():
     pipe = create_stable_diffusion_xl_pipeline(
         configuration.diffusion_model_path,
         configuration.single_file_diffusion_checkpoint,
-        is_enable_cpu_offload=True,
-        is_enable_sequential_cpu=True)
+        is_enable_cpu_offload=configuration.is_enable_cpu_offload,
+        is_enable_sequential_cpu=configuration.is_enable_sequential_cpu_offload)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 
@@ -55,6 +57,8 @@ def terminal_only_finite_loop_main_with_loras():
         pipe,
         configuration.scheduler,
         configuration.a1111_kdiffusion)
+
+    change_pipe_to_cuda_or_not(configuration, pipe)
 
     end_time = time.time()
 
@@ -74,6 +78,8 @@ def terminal_only_finite_loop_main_with_loras():
 
     loras_configuration = LoRAsConfigurationForMoreDiffusers()
     load_loras(pipe, loras_configuration)
+
+    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
 
     end_time = time.time()
 

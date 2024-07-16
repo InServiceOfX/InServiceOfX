@@ -9,3 +9,4 @@ lora_1:
   weight_name: pixel-art-xl.safetensors
   adapter_name: "pixel_art"
   adapter_weight:
+is_to_cuda: true

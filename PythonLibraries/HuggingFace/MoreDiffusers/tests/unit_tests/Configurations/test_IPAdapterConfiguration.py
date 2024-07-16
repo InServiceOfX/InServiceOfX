@@ -14,6 +14,7 @@ def test_IPAdapterConfiguration_inits_for_single_values():
     assert configuration.weight_names == "ip-adapter_sdxl.safetensors"
     assert configuration.image_filepath == None
     assert configuration.scales == 0.5
+    assert configuration.is_to_cuda == True
 
 def test_IPAdapterConfiguration_inits_for_faceid():
 
@@ -27,3 +28,4 @@ def test_IPAdapterConfiguration_inits_for_faceid():
     assert configuration.weight_names == "ip-adapter-faceid-portrait_sdxl_unnorm.bin"
     assert configuration.image_filepath == None
     assert configuration.scales == 0.6
+    assert configuration.is_to_cuda == False

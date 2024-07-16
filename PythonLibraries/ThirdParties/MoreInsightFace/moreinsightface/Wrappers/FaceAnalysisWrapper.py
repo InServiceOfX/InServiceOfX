@@ -64,7 +64,7 @@ class FaceAnalysisWrapper:
             raise ValueError(
                 f"Expected positive integer or tuple, got NoneType")
 
-    def get_face_embedding_from_image(self, face_image_path):
+    def get_face_embedding_from_image(self, face_image_path, configuration=None):
         """
         From
         https://huggingface.co/docs/diffusers/main/en/using-diffusers/ip_adapter#face-model 
@@ -88,7 +88,20 @@ class FaceAnalysisWrapper:
         ref_images_embeds = torch.stack(ref_images_embeds, dim=0).unsqueeze(0)
 
         neg_ref_images_embeds = torch.zeros_like(ref_images_embeds)
+
         id_embeds = torch.cat([neg_ref_images_embeds, ref_images_embeds])
+
+        if (configuration != None and 
+            (configuration.is_enable_cpu_offload == False or \
+            configuration.is_enable_cpu_offload == None) and \
+            (configuration.is_enable_sequential_cpu_offload == False or \
+            configuration.is_enable_sequential_cpu_offload == None) and \
+            configuration.is_to_cuda == True):
+            torch_dtype = configuration.torch_dtype
+            if torch_dtype != None and not isinstance(torch_dtype, str):
+                id_embeds = id_embeds.to(dtype=torch_dtype, device="cuda")
+            else:
+                id_embeds = id_embeds.to(device="cuda")
 
         # Look at the example "To use IP-Adapter FaceID models, first extract face embeddings"
         # in

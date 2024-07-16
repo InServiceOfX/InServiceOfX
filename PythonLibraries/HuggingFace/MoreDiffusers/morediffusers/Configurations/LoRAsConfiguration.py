@@ -28,6 +28,7 @@ class LoRAsConfiguration:
 
                 self.loras[lora_parameters["adapter_name"]] = lora_parameters
 
+        self.is_to_cuda = data["is_to_cuda"]
 
     def _validate_configuration(self, data):
         for key, value in data.items():

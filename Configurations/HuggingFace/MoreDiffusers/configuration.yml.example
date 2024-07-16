@@ -20,3 +20,4 @@ seed :
 torch_dtype : "torch.float16"
 is_enable_cpu_offload : true
 is_enable_sequential_cpu_offload : true
+is_to_cuda : false
