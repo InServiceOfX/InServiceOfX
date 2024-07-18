@@ -1,0 +1,22 @@
+image_path:
+# Effectively Optional
+height:
+# Effectively Optional
+width:
+# Optional
+num_frames:
+# Has default value
+min_guidance_scale:
+# Has default value
+max_guidance_scale:
+# Has default value
+fps:
+# Has default value
+motion_bucket_id:
+# Has default value
+noise_aug_strength:
+# Optional
+num_videos_per_prompt:
+# Optional
+seed:
+temporary_save_path : /Data/

@@ -1,0 +1,14 @@
+diffusion_model_path :
+# Leave this blank (not "") if you don't want to change scheduler.
+# See diffusers library for possible schedulers to change into.
+# Also see
+# https://huggingface.co/docs/diffusers/v0.26.2/en/api/schedulers/overview#schedulers
+# for a table to A1111/k-diffusion names.
+# DPM++ 2M Karras DPMSolverMultistepScheduler init with use_karras_sigmas=True
+scheduler :
+torch_dtype :
+is_enable_cpu_offload :
+is_enable_sequential_cpu_offload :
+is_to_cuda :
+variant:
+use_safetensors:
