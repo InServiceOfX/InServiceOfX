@@ -3,10 +3,10 @@ from corecode.Utilities import (
     FloatParameter,
     IntParameter,
     StringParameter)
+from morediffusers.Wrappers import create_seed_generator
 
 from pathlib import Path
 
-import torch
 
 class UserInputWithLoras:
 
@@ -68,18 +68,6 @@ class UserInputWithLoras:
         self.generator = None
         if configuration.seed != None:
 
-            seed = int(configuration.seed)
+            generator = create_seed_generator(configuration, configuration.seed)
 
-            if configuration.is_enable_cpu_offload == False and \
-                configuration.is_enable_sequential_cpu_offload == False:
-                # TODO: determine where the generator should be.
-                #and \
-                #(configuration.is_to_cuda == False or \
-                #    configuration.is_to_cuda == None):
-                generator = torch.Generator(device='cpu')
-                generator.manual_seed(seed)
-            else:
-                # https://pytorch.org/docs/stable/generated/torch.Generator.html
-                generator = torch.Generator(device='cuda')
-                generator.manual_seed(seed)
             self.generator = generator

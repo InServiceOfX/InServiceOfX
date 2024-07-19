@@ -6,7 +6,7 @@ def create_stable_video_diffusion_pipeline(
     diffusion_model_subdirectory,
     torch_dtype=None,
     variant=None,
-    use_safe_tensors=None,
+    use_safetensors=None,
     is_enable_cpu_offload=True,
     is_enable_sequential_cpu=True
     ):
@@ -16,39 +16,39 @@ def create_stable_video_diffusion_pipeline(
     if variant == None:
 
         if torch_dtype==None:
-            # pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py
-            # implements StableDiffusionXLPipeline
+            # pipelines/stable_video_diffusion/pipeline_stable_video_diffusion.py
+            # implements StableVideoDiffusionPipeline
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableDiffusionXLPipeline.from_pretrained(
+            pipe = StableVideoDiffusionPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 local_files_only=True,
-                use_safetensors=use_safe_tensors)
+                use_safetensors=use_safetensors)
         else:
-            pipe = StableDiffusionXLPipeline.from_pretrained(
+            pipe = StableVideoDiffusionPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 torch_dtype=torch_dtype,
                 local_files_only=True,
-                use_safetensors=use_safe_tensors)
+                use_safetensors=use_safetensors)
 
     else:
 
         if torch_dtype==None:
-            # pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py
-            # implements StableDiffusionXLPipeline
+            # pipelines/stable_video_diffusion/pipeline_stable_vide_diffusion.py
+            # implements StableVideoDiffusionPipeline
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableDiffusionXLPipeline.from_pretrained(
+            pipe = StableVideoDiffusionPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 local_files_only=True,
-                use_safetensors=use_safe_tensors,
+                use_safetensors=use_safetensors,
                 variant=variant)
         else:
-            pipe = StableDiffusionXLPipeline.from_pretrained(
+            pipe = StableVideoDiffusionPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 torch_dtype=torch_dtype,
                 local_files_only=True,
-                use_safetensors=use_safe_tensors,
+                use_safetensors=use_safetensors,
                 variant=variant)
 
     if (is_enable_cpu_offload):

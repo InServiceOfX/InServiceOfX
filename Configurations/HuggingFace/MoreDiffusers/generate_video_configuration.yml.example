@@ -4,17 +4,32 @@ height:
 # Effectively Optional
 width:
 # Optional
+# defaults to 14 for stable-video-diffusion-img2vid and to
+# 25 for 'stable-video-diffusion-img2vid-xt'
 num_frames:
+# Has default value, 25
+num_inference_steps:
 # Has default value
 min_guidance_scale:
 # Has default value
 max_guidance_scale:
-# Has default value
+# Has default value fps 7
 fps:
 # Has default value
+# motion_bucket_id ('int', optional, defaults to 127, int = 127)
+# Used for conditioning amount of motion for generation. Higher the number the
+# more motion will be in the video.
 motion_bucket_id:
 # Has default value
+# noise_aug_strength (float, optional, defaults to 127)
+# noise_aug_strength: float = 0.02
+# Amount of noise added to init image, higher it is less the video will look
+# like init image. Increase it for more motion.
 noise_aug_strength:
+# Optional[int] = None, number of frames to decode at a time. Higher chunk size
+# leads to better temporal consistency at expense of more memory usage. For
+# memory usage, reduce.
+decode_chunk_size :
 # Optional
 num_videos_per_prompt:
 # Optional

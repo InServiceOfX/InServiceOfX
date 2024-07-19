@@ -24,9 +24,10 @@ from morediffusers.Applications import (
     UserInputWithLoras
 )
 
-from morediffusers.Configurations import Configuration
-from morediffusers.Configurations import IPAdapterConfiguration
-from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
+from morediffusers.Configurations import (
+    Configuration,
+    IPAdapterConfiguration,
+    LoRAsConfigurationForMoreDiffusers)
 
 from morediffusers.Schedulers import change_scheduler_or_not
 
