@@ -35,3 +35,6 @@ num_videos_per_prompt:
 # Optional
 seed:
 temporary_save_path : /Data/
+# Not for stable_video_diffusion_pipeline, but for iv2gen_xl pipeline.
+guidance_scale :
+clip_skip :

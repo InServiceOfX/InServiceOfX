@@ -84,6 +84,10 @@ class GenerateVideoConfiguration:
 
         self.temporary_save_path = data["temporary_save_path"]
 
+        # Not for stable_video_diffusion_pipeline, but for iv2gen_xl pipeline.
+        self.guidance_scale = data["guidance_scale"]
+        self.clip_skip = data["clip_skip"]
+
     def check_if_paths_exist():
         if (not Path(self.image_path).exists()):
             raise RuntimeError(

@@ -1,8 +1,8 @@
-from diffusers.pipelines import StableVideoDiffusionPipeline
+from diffusers.pipelines import I2VGenXLPipeline
 
 import torch
 
-def create_stable_video_diffusion_pipeline(
+def create_i2vgen_xl_pipeline(
     diffusion_model_subdirectory,
     torch_dtype=None,
     variant=None,
@@ -16,16 +16,16 @@ def create_stable_video_diffusion_pipeline(
     if variant == None:
 
         if torch_dtype==None:
-            # pipelines/stable_video_diffusion/pipeline_stable_video_diffusion.py
-            # implements StableVideoDiffusionPipeline
+            # pipelines/i2vgen_xl/pipeline_i2vgen_xl.py
+            # implements I2VGenXLPipeline
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = I2VGenXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 local_files_only=True,
                 use_safetensors=use_safetensors)
         else:
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = I2VGenXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 torch_dtype=torch_dtype,
                 local_files_only=True,
@@ -34,17 +34,17 @@ def create_stable_video_diffusion_pipeline(
     else:
 
         if torch_dtype==None:
-            # pipelines/stable_video_diffusion/pipeline_stable_vide_diffusion.py
-            # implements StableVideoDiffusionPipeline
+            # pipelines/i2vgen_xl/pipeline_i2vgen_xl.py
+            # implements I2VGenXLPipeline
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = I2VGenXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 local_files_only=True,
                 use_safetensors=use_safetensors,
                 variant=variant)
         else:
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = I2VGenXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
                 torch_dtype=torch_dtype,
                 local_files_only=True,

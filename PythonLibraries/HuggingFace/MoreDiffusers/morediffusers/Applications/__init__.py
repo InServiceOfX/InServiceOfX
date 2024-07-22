@@ -4,6 +4,10 @@ from morediffusers.Applications.create_image_filename_and_save import (
 	create_image_filename_and_save,
 )
 
+from morediffusers.Applications.create_video_file_path import (
+    create_video_file_path,
+)
+
 from morediffusers.Applications.print_pipeline_diagnostics import (
 	print_pipeline_diagnostics,
 )
