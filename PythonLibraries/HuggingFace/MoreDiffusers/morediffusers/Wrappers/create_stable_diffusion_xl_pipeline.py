@@ -5,7 +5,7 @@ def create_stable_diffusion_xl_pipeline(
     single_file_checkpoint_path=None,
     torch_dtype=None,
     is_enable_cpu_offload=True,
-    is_enable_sequential_cpu=True
+    is_enable_sequential_cpu_offload=True
     ):
 
     if single_file_checkpoint_path == None:
@@ -50,7 +50,7 @@ def create_stable_diffusion_xl_pipeline(
     if (is_enable_cpu_offload):
         pipe.enable_model_cpu_offload()
 
-    if (is_enable_cpu_offload and is_enable_cpu_offload):
+    if (is_enable_cpu_offload and is_enable_sequential_cpu_offload):
         """
         When running these models on older and less capable GPUs, I found this
         step to be critical, important, a necessary step to run calling (i.e.

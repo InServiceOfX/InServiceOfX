@@ -1,0 +1,1 @@
+from morediffusers.Wrappers.models.create_motion_adapter import create_motion_adapter

@@ -51,7 +51,7 @@ def terminal_only_stable_video_diffusion():
         variant=configuration.variant,
         use_safetensors=configuration.use_safetensors,
         is_enable_cpu_offload=configuration.is_enable_cpu_offload,
-        is_enable_sequential_cpu=configuration.is_enable_sequential_cpu_offload)
+        is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
 
     change_video_pipe_to_cuda_or_not(configuration, pipe)
 
@@ -61,11 +61,14 @@ def terminal_only_stable_video_diffusion():
     print(f"Completed pipeline creation, took {end_time - start_time:.2f} seconds.")
     print("-------------------------------------------------------------------")
 
-    print("\nDiagnostic: pipe.unet.config.num_frames: ")
-    print(pipe.unet.config.num_frames)
+    try:
+        print("\nDiagnostic: pipe.unet.config.num_frames: ")
+        print(pipe.unet.config.num_frames)
+    except AttributeError as err:
+        print("AttributeError: ", err)
 
     generate_video_configuration = GenerateVideoConfiguration()
- 
+
     image_prompt = load_image(generate_video_configuration.image_path)
 
     if generate_video_configuration.height != None and \

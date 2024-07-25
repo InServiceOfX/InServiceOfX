@@ -63,7 +63,7 @@ def terminal_only_face_embedding():
         configuration.single_file_diffusion_checkpoint,
         configuration.torch_dtype,
         is_enable_cpu_offload=configuration.is_enable_cpu_offload,
-        is_enable_sequential_cpu=configuration.is_enable_sequential_cpu_offload)
+        is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 

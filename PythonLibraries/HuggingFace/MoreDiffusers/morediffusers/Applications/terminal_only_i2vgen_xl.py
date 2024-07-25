@@ -2,7 +2,7 @@ from diffusers.utils import load_image
 from pathlib import Path
 
 # For testing.
-import pickle
+#import pickle
 
 import sys
 import time
@@ -53,7 +53,7 @@ def terminal_only_iv2gen_xl():
         variant=configuration.variant,
         use_safetensors=configuration.use_safetensors,
         is_enable_cpu_offload=configuration.is_enable_cpu_offload,
-        is_enable_sequential_cpu=configuration.is_enable_sequential_cpu_offload)
+        is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
 
     change_video_pipe_to_cuda_or_not(configuration, pipe)
 
@@ -73,7 +73,7 @@ def terminal_only_iv2gen_xl():
             err)
 
     generate_video_configuration = GenerateVideoConfiguration()
- 
+
     image_prompt = load_image(generate_video_configuration.image_path)
 
     if generate_video_configuration.height != None and \
@@ -150,11 +150,11 @@ def terminal_only_iv2gen_xl():
         configuration,
         generate_video_configuration)
 
-    frames_list_file_path = file_path.with_suffix(
-        file_path.suffix + '.pkl' if file_path.suffix else '.pkl')
+    #frames_list_file_path = file_path.with_suffix(
+    #    file_path.suffix + '.pkl' if file_path.suffix else '.pkl')
 
-    with open(frames_list_file_path, 'wb') as frames_file:
-        pickle.dump(frames_list, frames_file)
+    #with open(frames_list_file_path, 'wb') as frames_file:
+    #    pickle.dump(frames_list, frames_file)
 
     print("File path for file into export_to_video: ", str(file_path))
 

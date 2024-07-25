@@ -49,7 +49,7 @@ def terminal_only_finite_loop_main_with_loras():
         configuration.diffusion_model_path,
         configuration.single_file_diffusion_checkpoint,
         is_enable_cpu_offload=configuration.is_enable_cpu_offload,
-        is_enable_sequential_cpu=configuration.is_enable_sequential_cpu_offload)
+        is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 

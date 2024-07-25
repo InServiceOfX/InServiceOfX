@@ -18,7 +18,7 @@ def test_load_ip_adapter_loads():
         data_sub_dirs.ModelsDiffusion / "stabilityai" / "stable-diffusion-xl-base-1.0",
         None,
         is_enable_cpu_offload=False,
-        is_enable_sequential_cpu=False
+        is_enable_sequential_cpu_offload=False
         )
 
     test_file_path = test_data_directory / "ip_adapter_configuration_single.yml"
@@ -37,7 +37,7 @@ def test_load_ip_adapter_loads_with_faceid_with_fluently():
         data_sub_dirs.ModelsDiffusion / "fluently" / "Fluently-XL-v4",
         None,
         is_enable_cpu_offload=False,
-        is_enable_sequential_cpu=False
+        is_enable_sequential_cpu_offload=False
         )
 
     test_file_path = test_data_directory / "ip_adapter_configuration_faceid.yml"
@@ -56,7 +56,7 @@ def test_load_ip_adapter_loads_with_faceid_with_cpu_offload():
         data_sub_dirs.ModelsDiffusion / "fluently" / "Fluently-XL-v4",
         None,
         is_enable_cpu_offload=True,
-        is_enable_sequential_cpu=True
+        is_enable_sequential_cpu_offload=True
         )
 
     test_file_path = test_data_directory / "ip_adapter_configuration_faceid.yml"

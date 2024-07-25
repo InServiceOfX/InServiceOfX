@@ -1,0 +1,19 @@
+# Typically, this configuration is used for text to image SDXL models, but we'll
+# use this for AnimateDiffPipeline
+diffusion_model_path :  /Data/Models/Diffusion/UnfilteredAI/NSFW-gen-v2
+single_file_diffusion_checkpoint :
+temporary_save_path :
+scheduler :
+A1111_kdiffusion :
+height :
+width :
+denoising_end :
+# guidance_scale default value 5.0 in
+# diffusers/src/diffusers/pipelines/controlnet/pipeline_controlnet_sd_xl.py
+guidance_scale :
+clip_skip :
+seed :
+torch_dtype :
+is_enable_cpu_offload : False
+is_enable_sequential_cpu_offload : False
+is_to_cuda : True

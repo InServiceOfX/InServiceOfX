@@ -1,9 +1,8 @@
-from diffusers.pipelines import StableVideoDiffusionPipeline
+from diffusers import AnimateDiffSDXLPipeline
 
-import torch
-
-def create_stable_video_diffusion_pipeline(
+def create_animate_diff_sdxl_pipeline(
     diffusion_model_subdirectory,
+    motion_adapter,
     torch_dtype=None,
     variant=None,
     use_safetensors=None,
@@ -11,22 +10,26 @@ def create_stable_video_diffusion_pipeline(
     is_enable_sequential_cpu_offload=True
     ):
     """
-    pipeline_utils.py, def from_pretrained(..)
+    See pipeline_utils.py in diffusers for def from_pretrained(..) in
+    DiffusionPipeline class for the 
     """
+
     if variant == None:
 
         if torch_dtype==None:
-            # pipelines/stable_video_diffusion/pipeline_stable_video_diffusion.py
-            # implements StableVideoDiffusionPipeline
+            # pipelines/animateddiff/pipeline_animatediff_sdxl.py
+            # implements AnimateDiffSDXLPipeline.
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = AnimateDiffSDXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
+                motion_adapter=motion_adapter,
                 local_files_only=True,
                 use_safetensors=use_safetensors)
         else:
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = AnimateDiffSDXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
+                motion_adapter=motion_adapter,
                 torch_dtype=torch_dtype,
                 local_files_only=True,
                 use_safetensors=use_safetensors)
@@ -34,18 +37,20 @@ def create_stable_video_diffusion_pipeline(
     else:
 
         if torch_dtype==None:
-            # pipelines/stable_video_diffusion/pipeline_stable_vide_diffusion.py
-            # implements StableVideoDiffusionPipeline
+            # pipelines/animateddiff/pipeline_animatediff_sdxl.py
+            # implements AnimateDiffSDXLPipeline.
             # from_pretrained(..) defined in DiffusionPipeline in
             # diffusers/src/diffusers/pipelines/pipeline_utils.py
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = AnimateDiffSDXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
+                motion_adapter=motion_adapter,
                 local_files_only=True,
                 use_safetensors=use_safetensors,
                 variant=variant)
         else:
-            pipe = StableVideoDiffusionPipeline.from_pretrained(
+            pipe = AnimateDiffSDXLPipeline.from_pretrained(
                 str(diffusion_model_subdirectory),
+                motion_adapter=motion_adapter,
                 torch_dtype=torch_dtype,
                 local_files_only=True,
                 use_safetensors=use_safetensors,
@@ -56,10 +61,6 @@ def create_stable_video_diffusion_pipeline(
 
     if (is_enable_cpu_offload and is_enable_sequential_cpu_offload):
         """
-        When running these models on older and less capable GPUs, I found this
-        step to be critical, important, a necessary step to run calling (i.e.
-        invoking .__call__()) the pipe, StableDiffusionXLInstantIDPipeline.
-
         NOTE: It's worth running this again right before you run generate image,
         to follow what's done in the CPU offloading example here:
         https://huggingface.co/docs/diffusers/en/optimization/memory
@@ -67,3 +68,4 @@ def create_stable_video_diffusion_pipeline(
         pipe.enable_sequential_cpu_offload()
 
     return pipe
+
