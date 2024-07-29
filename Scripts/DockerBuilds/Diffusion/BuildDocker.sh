@@ -5,16 +5,10 @@ DOCKER_IMAGE_NAME="diffusion-nvidia-python-24.01"
 
 print_help()
 {
-  echo "Usage: $0 [--enable-faiss] [--no-cache]"
+  echo "Usage: $0 [--no-cache]"
   echo
   echo "Options:"
-  echo " --enable-faiss     If provided, the Docker build includes the installation of FAISS."
-  echo "                    By default, FAISS is not installed."
   echo " --no-cache         If provided, the Docker build will be performed without using cache"
-  echo
-  echo "Example:"
-  echo "  $0 --enable-faiss     # Builds Docker image with FAISS installation."
-  echo "  $0                    # Builds Docker image without FAISS installation." 
 }
 
 # Reads ARCH and PTX values from local text file, typically in the same
@@ -74,10 +68,6 @@ build_docker_image()
   local build_args="--build-arg ARCH=$ARCH_VALUE --build-arg PTX=$PTX_VALUE "
   build_args+="--build-arg COMPUTE_CAPABILITY "
 
-  if $enable_faiss; then
-    build_args+="--build-arg ENABLE_FAISS=true "
-  fi
-
   echo "$use_cache"
   echo "$build_args"
   echo "$DOCKER_IMAGE_NAME"
@@ -126,7 +116,6 @@ main()
 
   command_cat_dockerfiles="cat $dockerfile_header \
     Dockerfile.base \
-    Dockerfile.faiss \
     Dockerfile.huggingface \
     Dockerfile.third_parties \
     > Dockerfile"
