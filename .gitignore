@@ -115,7 +115,6 @@ Configurations/HuggingFace/MoreDiffusers/loras_configuration.yml
 Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
-Scripts/DockerBuilds/Diffusion/mount_paths.txt
 Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/Diffusion/RunDockerConfiguration.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt

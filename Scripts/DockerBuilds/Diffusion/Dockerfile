@@ -20,7 +20,9 @@
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-FROM nvcr.io/nvidia/pytorch:24.01-py3
+#
+
+FROM nvcr.io/nvidia/pytorch:24.05-py3
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
@@ -31,7 +33,11 @@ WORKDIR ${THIRD_PARTY}
 
 COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
 
-ARG OPENCV_VERSION=4.9.0
+# As of July 30, 2024, for OpenCV, there's 4.10.0.
+# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
+# where CuDNN 9+ support, CUDA 12.4+ support.
+
+ARG OPENCV_VERSION=4.10.0
 
 ARG ARCH
 ARG PTX
@@ -58,9 +64,6 @@ RUN apt-get update && \
   #
   # Install Rust
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  # We had to add the sourcing inside the .bashrc
-  # https://stackoverflow.com/questions/49676490/when-installing-rust-toolchain-in-docker-bash-source-command-doesnt-work
-  echo 'source $HOME/.cargo/env' >> $HOME/.bashrc && \
   #
   #
   # Install Poetry
@@ -69,7 +72,10 @@ RUN apt-get update && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+  #
+  # https://rust-lang.github.io/rustup/installation/index.html
+  # export PATH once, doing both Rust and poetry binaries.
+  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 
 ## Fix OpenCV install
@@ -92,23 +98,6 @@ RUN pip uninstall -y opencv && \
   rm -rf /opencv_contrib-${OPENCV_VERSION} && \
   rm /opencv.zip && \
   rm /opencv_contrib.zip
-
-
-## FAISS
-
-ARG ENABLE_FAISS=false
-ARG COMPUTE_CAPABILITY
-
-# TODO: Update to allow for NVIDIA's RAFT.
-RUN if [ "$ENABLE_FAISS" = "true" ] ; then \
-    apt-get update && apt-get install -y swig && \
-    git clone https://github.com/InServiceOfX/faiss.git /ThirdParty/faiss && \
-    echo "This is compute capability: ${COMPUTE_CAPABILITY}" && \
-    cd /ThirdParty/faiss/ && \
-    bash ./scripts/BuildForGPU.sh --disable-raft \
-      --compute-capability ${COMPUTE_CAPABILITY} && \
-    cd / ; \
-  fi
 
 
 ## HuggingFace

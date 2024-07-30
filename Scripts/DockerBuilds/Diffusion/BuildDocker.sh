@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="diffusion-nvidia-python-24.01"
+DOCKER_IMAGE_NAME="diffusion-nvidia-python-24.05"
 
 print_help()
 {
@@ -28,7 +28,6 @@ read_compute_capabilities()
 
 build_docker_image()
 {
-  local enable_faiss=false
   local use_cache=""
 
   # Check for help option
@@ -37,8 +36,6 @@ build_docker_image()
     if [ "$arg" = "--help" ]; then
       print_help
       exit 0
-    elif [[ "$arg" == "--enable-faiss" ]]; then
-      enable_faiss=true
     elif [[ "$arg" == "--no-cache" ]]; then
       use_cache="--no-cache"
     fi

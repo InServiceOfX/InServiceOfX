@@ -15,7 +15,9 @@
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-FROM nvcr.io/nvidia/pytorch:24.01-py3
+#
+
+FROM nvcr.io/nvidia/pytorch:24.05-py3
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
@@ -26,7 +28,11 @@ WORKDIR ${THIRD_PARTY}
 
 COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
 
-ARG OPENCV_VERSION=4.9.0
+# As of July 30, 2024, for OpenCV, there's 4.10.0.
+# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
+# where CuDNN 9+ support, CUDA 12.4+ support.
+
+ARG OPENCV_VERSION=4.10.0
 
 ARG ARCH
 ARG PTX
