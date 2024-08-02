@@ -1,4 +1,5 @@
-path : /Data/Models/Diffusion/h94/IP-Adapter-FaceID
+# IP-Adapter-FaceID is expected to work with InsightFace
+#path : /Data/Models/Diffusion/h94/IP-Adapter-FaceID
 subfolder :
 weight_names : ip-adapter-faceid-portrait_sdxl_unnorm.bin
 # or
