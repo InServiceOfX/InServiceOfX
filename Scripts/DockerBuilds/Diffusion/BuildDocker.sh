@@ -71,7 +71,7 @@ build_docker_image()
   echo "$script_dir"
 
   # Builds from Dockerfile in this directory.
-  docker build $use_cache \
+  DOCKER_BUILDKIT=1 docker build $use_cache \
     $build_args \
     -t "$DOCKER_IMAGE_NAME" \
     -f "$script_dir/Dockerfile" .

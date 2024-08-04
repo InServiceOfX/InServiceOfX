@@ -122,6 +122,7 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
   git checkout master && \
+  git pull origin master && \
   pip install -e . && \
   #
   #
