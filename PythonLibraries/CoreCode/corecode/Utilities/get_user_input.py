@@ -9,6 +9,9 @@ def get_user_input(input_type, message, default_value=None):
 			f"{message} [{default_value if default_value is not None else 'Required'}]: ")
 		if not user_input and default_value is not None:
 			return default_value
+		if not user_input and default_value is None:
+			print("Input cannot be blank. Please enter a value")
+			continue
 		try:
 			if input_type == float:
 				return float(user_input)
