@@ -13,12 +13,13 @@ import os, sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CommonUtilities import (
     get_project_directory,
-    parse_build_configuration_file,
+    parse_build_script,
     parse_run_configuration_file)
 
 # Global variables
-BUILD_FILE_NAME="build_docker_configuration.txt"
+BUILD_FILE_NAME="BuildDocker.sh"
 CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
+
 
 def parse_mount_paths_file():
     mount_paths = []
@@ -45,14 +46,13 @@ def main():
 
     # Path to the build configuration file.
     build_file_path = Path(__file__).resolve().parent / BUILD_FILE_NAME
-    build_configuration = parse_build_configuration_file(build_file_path)
+    docker_image_name = parse_build_script(build_file_path)
 
     # Path to the configuration file.
     configuration_file_path = Path(__file__).resolve().parent / \
         CONFIGURATION_FILE_NAME
     configuration = parse_run_configuration_file(configuration_file_path)
 
-    DOCKER_IMAGE_NAME = build_configuration["DOCKER_IMAGE_NAME"]
     mount_paths = configuration["mount_paths"]
 
     # Run command
@@ -101,7 +101,7 @@ def main():
     # and see what my system uses.
     #docker_run_command += "--ulimit stack=8192 "
 
-    docker_run_command += DOCKER_IMAGE_NAME
+    docker_run_command += docker_image_name
 
     print(docker_run_command)
 

@@ -123,5 +123,4 @@ Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/OctoAI/mount_paths.txt
 Scripts/DockerBuilds/OctoAI/nvidia_compute_capabilities.txt
 Scripts/PyTorchGPUDocker/mount_paths.txt
-**/build_docker_configuration.txt
 **/run_docker_configuration.txt

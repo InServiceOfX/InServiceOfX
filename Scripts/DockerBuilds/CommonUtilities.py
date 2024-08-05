@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import re
+
 def get_project_directory():
     # Resolve to absolute path.
     current_filepath = Path(__file__).resolve()
@@ -23,25 +25,20 @@ def get_project_directory():
     return project_directory
 
 
-def parse_build_configuration_file(build_file_path):
-    configuration = {}
+def parse_build_script(script_path):
+    """
+    @brief For now, it parses build script BuildDocker.sh for constants it used,
+    namely DOCKER_IMAGE_NAME.
+    """
+    with open(script_path, 'r') as file:
+        content = file.read()
 
-    if build_file_path.exists():
-        with open(build_file_path, 'r') as file:
-            for line in file:
-                stripped_line = line.strip()
+    match = re.search(r'DOCKER_IMAGE_NAME="([^"]+)"', content)
 
-                # Skip comments and empty lines
-                if stripped_line.startswith('#') or not stripped_line:
-                    continue
-
-                if '=' in stripped_line:
-                    key, value = stripped_line.split('=', 1)
-
-                    if key.strip() == "DOCKER_IMAGE_NAME":
-                        configuration['DOCKER_IMAGE_NAME'] = value.strip()
-
-    return configuration
+    if match:
+        return match.group(1)
+    else:
+        raise ValueError("DOCKER_IMAGE_NAME not found in script.")
 
 
 def parse_run_configuration_file(configuration_file_path):
