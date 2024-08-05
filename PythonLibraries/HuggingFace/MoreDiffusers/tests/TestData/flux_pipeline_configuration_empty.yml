@@ -1,0 +1,14 @@
+diffusion_model_path :
+temporary_save_path :
+scheduler :
+A1111_kdiffusion :
+height :
+width :
+seed :
+max_sequence_length :
+torch_dtype :
+is_enable_cpu_offload :
+is_enable_sequential_cpu_offload :
+is_to_cuda :
+variant :
+use_safetensors :

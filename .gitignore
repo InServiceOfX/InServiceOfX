@@ -110,13 +110,14 @@ venv.bak/
 
 .config
 Configurations/HuggingFace/MoreDiffusers/configuration.yml
+Configurations/HuggingFace/MoreDiffusers/flux_pipeline_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/ip_adapter_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/loras_configuration.yml
 Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
-Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/Diffusion/RunDockerConfiguration.txt
+Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/OctoAI/mount_paths.txt

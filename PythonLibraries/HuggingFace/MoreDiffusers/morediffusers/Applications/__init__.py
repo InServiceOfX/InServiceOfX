@@ -1,7 +1,13 @@
+from morediffusers.Applications.FluxPipelineUserInput \
+	import FluxPipelineUserInput
 from morediffusers.Applications.UserInputWithLoras import UserInputWithLoras
 
 from morediffusers.Applications.create_image_filename_and_save import (
 	create_image_filename_and_save,
+)
+
+from morediffusers.Applications.create_image_filenames_and_save_images import (
+	create_image_filenames_and_save_images,
 )
 
 from morediffusers.Applications.create_video_file_path import (
