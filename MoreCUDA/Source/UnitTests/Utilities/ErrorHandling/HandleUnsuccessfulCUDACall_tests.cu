@@ -1,7 +1,7 @@
 #include "UnitTests/Utilities/CaptureCerr.h"
 #include "Utilities/ErrorHandling/HandleUnsuccessfulCUDACall.h"
 
-#include <boost/test/unit_test.hpp>
+#include "gtest/gtest.h"
 #include <cuda_runtime.h>
 #include <string>
 #include <string_view>
@@ -11,47 +11,50 @@ using Utilities::ErrorHandling::HandleUnsuccessfulCUDACall;
 using std::string;
 using std::string_view;
 
-BOOST_AUTO_TEST_SUITE(Utilities)
-BOOST_AUTO_TEST_SUITE(ErrorHandling)
-BOOST_AUTO_TEST_SUITE(HandleUnsuccessfulCUDACall_tests)
+namespace GoogleUnitTests
+{
+namespace Utilities
+{
+namespace ErrorHandling
+{
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(DefaultConstructsWithStringView)
+TEST(HandleUnsuccessfulCUDACallTests, DefaultConstructsWithStringView)
 {
   HandleUnsuccessfulCUDACall handler {};
-  BOOST_CHECK_EQUAL(
+  EXPECT_EQ(
     handler.get_error_message(),
     string_view{"cudaSuccess was not returned."});
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(ConstructsWithStdString)
+TEST(HandleUnsuccessfulCUDACallTests, ConstructsWithStdString)
 {
   const string error_message {"std::string custom error message"};
 
   HandleUnsuccessfulCUDACall handler {error_message};
-  BOOST_CHECK_EQUAL(
+  EXPECT_EQ(
     handler.get_error_message(),
     string_view{"std::string custom error message"});
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(ConstructsWithCString)
+TEST(HandleUnsuccessfulCUDACallTests, ConstructsWithCString)
 {
   const char* error_message {"C string custom error message"};
 
   HandleUnsuccessfulCUDACall handler {error_message};
-  BOOST_CHECK_EQUAL(
+  EXPECT_EQ(
     handler.get_error_message(),
     string_view{"C string custom error message"});
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(OperatorCallWorks)
+TEST(HandleUnsuccessfulCUDACallTests, OperatorCallWorks)
 {
   CaptureCerr capture_cerr {};
 
@@ -61,31 +64,31 @@ BOOST_AUTO_TEST_CASE(OperatorCallWorks)
 
   handler(test_error);
 
-  BOOST_CHECK_EQUAL(handler.get_cuda_error(), test_error);
-  BOOST_CHECK_EQUAL(
+  EXPECT_EQ(handler.get_cuda_error(), test_error);
+  EXPECT_EQ(
     capture_cerr.local_oss_.str(),
     "Test CUDA error message (error code invalid argument)!\n");
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(CheckCUDASuccess)
+TEST(HandleUnsuccessfulCUDACallTests, CheckCUDASuccess)
 {
   CaptureCerr capture_cerr {};
 
   HandleUnsuccessfulCUDACall handler {};
 
-  BOOST_CHECK(handler.is_cuda_success());
+  EXPECT_TRUE(handler.is_cuda_success());
 
   cudaError_t test_error = cudaErrorInvalidValue;
   handler(test_error);
 
-  BOOST_CHECK(!handler.is_cuda_success());
-  BOOST_CHECK_EQUAL(
+  EXPECT_TRUE(!handler.is_cuda_success());
+  EXPECT_EQ(
     capture_cerr.local_oss_.str(),
     "cudaSuccess was not returned. (error code invalid argument)!\n");
 }
 
-BOOST_AUTO_TEST_SUITE_END() // HandleUnsuccessfulCUDACall_tests
-BOOST_AUTO_TEST_SUITE_END() // ErrorHandling
-BOOST_AUTO_TEST_SUITE_END() // Utilities
+} // namespace ErrorHandling
+} // namespace Utilities
+} // namespace GoogleUnitTests

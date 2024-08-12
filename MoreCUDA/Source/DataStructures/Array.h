@@ -4,6 +4,7 @@
 #include "Utilities/ErrorHandling/HandleUnsuccessfulCUDACall.h"
 
 #include <cstddef> // std::size_t
+#include <cuda_runtime.h>
 #include <iostream>
 #include <stdexcept>
 #include <vector>

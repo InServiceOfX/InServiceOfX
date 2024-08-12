@@ -1,34 +1,34 @@
 #include "UnitTests/Utilities/CaptureCerr.h"
 
-#include <boost/test/unit_test.hpp>
+#include "gtest/gtest.h"
 #include <iostream> // std::cerr
 
 using std::cerr;
 using UnitTests::Utilities::CaptureCerr;
 
-BOOST_AUTO_TEST_SUITE(UnitTests)
-BOOST_AUTO_TEST_SUITE(Utilities)
-BOOST_AUTO_TEST_SUITE(CaptureCerr_tests)
+namespace GoogleUnitTests
+{
+namespace Utilities
+{
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(DefaultConstructs)
+TEST(CaptureCerrTests, DefaultConstructs)
 {
 	CaptureCerr capture_cerr {};
 
-  BOOST_TEST(true);
+  EXPECT_TRUE(true);
 }
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(CaptureLocallyUponConstruction)
+TEST(CaptureCerrTests, CaptureLocallyUponConstruction)
 {
   CaptureCerr capture_cerr {};
   cerr << "\n Testing Testing \n";
 
-  BOOST_CHECK_EQUAL(capture_cerr.local_oss_.str(), "\n Testing Testing \n");
+  EXPECT_EQ(capture_cerr.local_oss_.str(), "\n Testing Testing \n");
 }
 
-BOOST_AUTO_TEST_SUITE_END() // CaptureCerr_tests
-BOOST_AUTO_TEST_SUITE_END() // Utilities
-BOOST_AUTO_TEST_SUITE_END() // UnitTests
+} // namespace Utilities
+} // namespace GoogleUnitTests

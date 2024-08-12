@@ -21,26 +21,6 @@ BUILD_FILE_NAME="BuildDocker.sh"
 CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
 
 
-def parse_mount_paths_file():
-    mount_paths = []
-    file_path = Path(__file__).resolve().parent / CONFIGURATION_FILE_NAME
-    if file_path.exists():
-        with open(file_path, 'r') as file:
-            for line in file:
-                stripped_line = line.strip()
-
-                # Skip comments and empty lines
-                if stripped_line.startswith('#') or not stripped_line:
-                    continue
-
-                path_parts = stripped_line.split(':', 1)
-                if ':' in stripped_line and \
-                    Path(stripped_line.split(':', 1)[0]).resolve().is_dir():
-                    mount_paths.append(stripped_line)
-                else:
-                    print(f"Invalid or nonexistent path in file: {line.split(':', 1)[0]}")
-    return mount_paths
-
 def main():
     project_directory = get_project_directory()
 

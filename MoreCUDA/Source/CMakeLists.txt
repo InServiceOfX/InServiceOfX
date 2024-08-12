@@ -5,24 +5,31 @@ CMAKE_MINIMUM_REQUIRED (VERSION 3.17.0)
 
 MESSAGE("CMAKE_CUDA_ARCHITECTURES before SET: " ${CMAKE_CUDA_ARCHITECTURES})
 
-IF (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  # Maxwell cards (CUDA 6 until CUDA 11)
-  # SM52 or SM_52, compute_52
-  # GeForce 900, GTX-970, GTX-980, GeForce GTX 980 Ti
-  #
-  # Pascal (CUDA 8 and later)
-  # SM61 or SM_61, compute_61
-  # GTX 1080, GTX 1070, GTX 1060, GTX 1050
-  # SM62 or SM_62, compute_62
-  # Tegra X2, Jetson TX2
-  #
-  # Ampere (CUDA 11.1 and later)
-  # SM86 or SM_86, compute_86
-  # RTX 3080, RTX 3070, RTX 3050
-  SET(CMAKE_CUDA_ARCHITECTURES 52 60 61 62 75 86)
-ELSE()
-  SET(CMAKE_CUDA_ARCHITECTURES 52 60 61 62 75 86)
-ENDIF()
+# This has list of (Streaming Multiprocessor) SM architectures:
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+#
+# Maxwell cards (CUDA 6 until CUDA 11)
+# SM52 or SM_52, compute_52
+# GeForce 900, GTX-970, GTX-980, GeForce GTX 980 Ti
+#
+# Pascal (CUDA 8 and later)
+# SM61 or SM_61, compute_61
+# GTX 1080, GTX 1070, GTX 1060, GTX 1050
+# SM62 or SM_62, compute_62
+# Tegra X2, Jetson TX2
+#
+# Ampere (CUDA 11.1 and later)
+# SM86 or SM_86, compute_86
+# RTX 3080, RTX 3070, RTX 3050
+#
+# Hopper (CUDA 12 and later)
+# SM90 or SM_90, compute_90-
+# NVIDIA H100 (GH100), NVIDIA H200
+# SM90a or SM_90a, compute_90a - (for PTX ISA version 8.0) - adds
+# acceleration for features like wgmma and setmaxnreg. This is required for
+# NVIDIA CUTLASS
+#
+SET(CMAKE_CUDA_ARCHITECTURES 52 60 61 62 75 86 90 90a)
 
 MESSAGE("CMAKE_CUDA_ARCHITECTURES after SET: " ${CMAKE_CUDA_ARCHITECTURES})
 
@@ -134,21 +141,33 @@ IF(CCACHE_FOUND)
 ENDIF()
 
 ################################################################################
-## Boost for unit tests
+## Google Unit Tests for unit tests
 ################################################################################
 
-SET(BOOST_MIN_VERSION "1.65.0")
+# Declare dependency on GoogleTest which is downloaded from GitHub.
+# cf. https://google.github.io/googletest/quickstart-cmake.html
+INCLUDE(FetchContent)
 
-IF (ALLOW_NEWER_BOOST)
-#  FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED)
-  FIND_PACKAGE(Boost)
+MESSAGE("CMAKE_VERSION: " ${CMAKE_VERSION})
+IF (CMAKE_VERSION VERSION_LESS "3.23.0")
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  )
 ELSE()
-  # FIND_PACKAGE(Boost 1.65.0 EXACT REQUIRED)
-  FIND_PACKAGE(Boost)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+    # See https://github.com/aminya/project_options/issues/146
+    # See https://cmake.org/cmake/help/latest/policy/CMP0135.html
+    DOWNLOAD_EXTRACT_TIMESTAMP true
+  )
 ENDIF()
 
-# Include directories so that header files can be found.
-INCLUDE_DIRECTORIES(BOOST_INCLUDES ${Boost_INCLUDE_DIRS})
+# If you have problems running `cmake ../Source` for instance, it's indicative
+# of a stale CMake configuration, so try a hard removal of the build folder.
+
+FetchContent_MakeAvailable(googletest)
 
 ADD_SUBDIRECTORY(UnitTests)
 ADD_SUBDIRECTORY(Utilities)

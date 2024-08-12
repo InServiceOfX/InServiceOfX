@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="minimal-cuda-nvidia-python-24.01"
+DOCKER_IMAGE_NAME="minimal-cuda-nvidia-python-24.05"
 
 print_help()
 {
@@ -62,7 +62,7 @@ build_docker_image()
   echo "$script_dir"
 
   # Builds from Dockerfile in this directory.
-  docker build $use_cache \
+  DOCKER_BUILDKIT=1 docker build $use_cache \
     -t "$DOCKER_IMAGE_NAME" \
     -f "$script_dir/Dockerfile" .
 }
