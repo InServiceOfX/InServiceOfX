@@ -3,24 +3,8 @@
 # SetupPyTorchGPUDocker.sh) or doing something like, in command line,
 # cat Dockerfile.header Dockerfile.base ..
 
-# https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
-# Also, see
-# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch
-# Check for the latest version on this page, on the left:
-# https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
-# Look for the PyTorch Release Notes.
-# Also, try
-# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch/tags
-# and click on "Tags" on the top center for the different tags.
-
-# As of March 26, 2024, there's 24.03.
-# By doing nvcc --version, one can see that from 24.03, CUDA is 12.4. From
-# 24.02, CUDA is 12.3.r12.3. For OpenCV and this issue, let's stay with < 12.4.
-# Issue: https://github.com/opencv/opencv_contrib/issues/3690
-# Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
-# https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
-# https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-FROM nvcr.io/nvidia/pytorch:24.05-py3
+# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags
+FROM nvcr.io/nvidia/cuda:12.6.0-cudnn-devel-ubuntu24.04
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
@@ -28,42 +12,28 @@ ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
 RUN apt-get update && \
-  apt-get install --upgrade -y ccache libssl-dev && \
-  python -m pip install --upgrade pip && \
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
+  apt-get install --upgrade -y cmake ccache libssl-dev && \
+  apt install -y git git-lfs && \
+  git lfs install && \
   #
   #
   # Install Rust. Compare CUDA against Rust.
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   #
-  #
-  # Install Poetry
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  curl -sSL https://install.python-poetry.org | python3 - && \
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  # Step 3, you have to add poetry to your PATH, which on UNIX is in
-  # $HOME/.local/bin
-  #
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 ### Further code/repositories from NVIDIA
 
-## cuDNN
-
-# https://docs.nvidia.com/deeplearning/cudnn/latest/installation/linux.html
-RUN apt-get install zlib1g && \
-  # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#network-repo-installation-for-ubuntu
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
-  dpkg -i cuda-keyring_1.1-1_all.deb && \
-  apt-get update && \
-  apt-get -y install cudnn9-cuda-12 && \
-  # These are to verify Linux install
-  apt-get -y install libcudnn9-samples && \
-  cd /
-
+### If you want to test cuDNN install, don't follow the instructions on NVIDIA
+### for the path for the cudnn samples, instead it is in
+### /usr/src/cudnn_samples_v9
+### Consider
+### cp -r /usr/src/cudnn_samples_v9 /ThirdParty/
+### and
+### apt-get install libfreeimage3 libfreeimage-dev
+### https://forums.developer.nvidia.com/t/verify-cudnn-install-failed/167220/4
 
 ## CUTLASS
 

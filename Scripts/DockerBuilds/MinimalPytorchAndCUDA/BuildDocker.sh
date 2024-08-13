@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Global variables
-DOCKER_IMAGE_NAME="minimal-cuda-12.6.0-cudnn-ubuntu24.04"
+DOCKER_IMAGE_NAME="minimal-pytorch-and-cuda-nvidia-python-24.05"
 
 print_help()
 {

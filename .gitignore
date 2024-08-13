@@ -121,6 +121,8 @@ Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalCUDA/nvidia_compute_capabilities.txt
+Scripts/DockerBuilds/MinimalPytorchAndCUDA/nvidia_compute_capabilities.txt
+Scripts/DockerBuilds/MinimalPytorchAndCUDA/run_docker_configuration.txt
 Scripts/DockerBuilds/OctoAI/mount_paths.txt
 Scripts/DockerBuilds/OctoAI/nvidia_compute_capabilities.txt
 Scripts/PyTorchGPUDocker/mount_paths.txt
