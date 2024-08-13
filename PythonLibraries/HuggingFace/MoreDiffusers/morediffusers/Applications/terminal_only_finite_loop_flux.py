@@ -29,6 +29,8 @@ from morediffusers.Applications import (
 
 from morediffusers.Configurations import FluxPipelineConfiguration
 
+from morediffusers.Schedulers import change_scheduler_or_not
+
 from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
     create_flux_pipeline
@@ -50,6 +52,13 @@ def terminal_only_finite_loop_flux():
         is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
 
     original_scheduler_name = pipe.scheduler.config._class_name
+
+    is_scheduler_changed = None
+    if (configuration.scheduler != "" and configuration.scheduler != None):
+        is_scheduler_changed = change_scheduler_or_not(
+            pipe,
+            configuration.scheduler,
+            configuration.a1111_kdiffusion)
 
     change_pipe_to_cuda_or_not(configuration, pipe)
 
