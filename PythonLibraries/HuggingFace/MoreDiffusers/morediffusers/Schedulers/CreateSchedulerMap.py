@@ -61,6 +61,7 @@ class CreateSchedulerMap:
         "EulerDiscreteScheduler": EulerDiscreteScheduler,
         "EDMEulerScheduler": EDMEulerScheduler,
         "EDMDPMSolverMultistepScheduler": EDMDPMSolverMultistepScheduler,
+        "HeunDiscreteScheduler": HeunDiscreteScheduler,
         "KDPM2AncestralDiscreteScheduler": KDPM2AncestralDiscreteScheduler,
         "PNDMScheduler": PNDMScheduler,
         "SASolverScheduler": SASolverScheduler,
