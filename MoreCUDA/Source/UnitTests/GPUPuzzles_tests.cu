@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 #include "DataStructures/Array.h"
+#include "Utilities/arange.h"
 
 #include "gtest/gtest.h"
 #include <cstddef>
@@ -16,6 +17,7 @@
 using DataStructures::Array;
 using std::size_t;
 using std::vector;
+using Utilities::arange;
 
 template <typename T>
 __global__ void add_with_guard(
@@ -86,6 +88,39 @@ __global__ void add_scalar_with_shared_memory(
   }
 }
 
+//------------------------------------------------------------------------------
+/// \details Assume P <= THREADS_PER_BLOCK.
+//------------------------------------------------------------------------------
+template <std::size_t THREADS_PER_BLOCK, std::size_t P, typename T>
+__global__ void pooling_with_shared_memory(
+  T* input,
+  T* output,
+  const std::size_t size)
+{
+  __shared__ T shared_array[P - 1 + THREADS_PER_BLOCK];
+
+  const std::size_t index {blockIdx.x * blockDim.x + threadIdx.x};
+  if (index < size)
+  {
+    shared_array[threadIdx.x + P - 1] = input[index];
+  }
+  if (threadIdx.x < P - 1)
+  {
+    shared_array[threadIdx.x] = (index < P - 1) ? static_cast<T>(0) :
+      input[index - (P - 1)];
+  }
+
+  __syncthreads();
+
+  if (index < size)
+  {
+    for (auto i {0}; i < P; ++i)
+    {
+      output[index] += shared_array[threadIdx.x + P - 1 - i];
+    }
+  }
+}
+
 namespace GoogleUnitTests
 {
 
@@ -150,7 +185,7 @@ TEST(GPUPuzzlesTests, BroadcastAdds)
   EXPECT_EQ(host_y.at(0), 0.);
   EXPECT_EQ(host_y.at(1), 1.);
   EXPECT_EQ(host_y.at(2), 1.);
-  EXPECT_EQ(host_y.at(3), 2.);  
+  EXPECT_EQ(host_y.at(3), 2.);
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +201,6 @@ TEST(GPUPuzzlesTests, BroadcastAdds)
 /// (This example does not really need shared memory or syncthreads, but it is a
 /// demo.)
 //------------------------------------------------------------------------------
-
 TEST(GPUPuzzlesTests, AddScalarWithSharedMemory)
 {
   const size_t example_size {8};
@@ -198,6 +232,43 @@ TEST(GPUPuzzlesTests, AddScalarWithSharedMemory)
   {
     EXPECT_FLOAT_EQ(host_y.at(i), 11.0);
   }
+}
+
+//------------------------------------------------------------------------------
+/// \ref https://github.com/srush/GPU-Puzzles
+/// Puzzle 9 - Pooling: Implement a kernel that sums together the last 3
+/// position of a and stores it in out. You have 1 thread per position. You only
+/// need 1 global read and 1 global write per thread.
+//------------------------------------------------------------------------------
+TEST(GPUPuzzlesTests, PoolingWorksFor3)
+{
+  const size_t example_size {8};
+  const auto host_input = arange<float>(example_size);
+  constexpr dim3 threads_per_block {8, 1};
+  const dim3 blocks_per_grid {1, 1};
+
+  Array<float> input {example_size};
+  Array<float> output {example_size};
+  input.copy_host_input_to_device(host_input);
+
+  pooling_with_shared_memory<threads_per_block.x, 3, float>
+    <<<blocks_per_grid, threads_per_block>>>(
+    input.elements_,
+    output.elements_,
+    example_size);
+
+  vector<float> host_y (example_size);
+
+  output.copy_device_output_to_host(host_y);
+
+  EXPECT_EQ(host_y.at(0), 0.);
+  EXPECT_EQ(host_y.at(1), 1.);
+  EXPECT_EQ(host_y.at(2), 3.);
+  EXPECT_EQ(host_y.at(3), 6.);
+  EXPECT_EQ(host_y.at(4), 9.);
+  EXPECT_EQ(host_y.at(5), 12.);
+  EXPECT_EQ(host_y.at(6), 15.);
+  EXPECT_EQ(host_y.at(7), 18.);
 }
 
 } // namespace GoogleUnitTests
