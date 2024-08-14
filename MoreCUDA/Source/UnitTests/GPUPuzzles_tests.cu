@@ -102,10 +102,12 @@ __global__ void pooling_with_shared_memory(
   const std::size_t index {blockIdx.x * blockDim.x + threadIdx.x};
   if (index < size)
   {
+    // 1 global read from input for each thread.
     shared_array[threadIdx.x + P - 1] = input[index];
   }
   if (threadIdx.x < P - 1)
   {
+    // 1 extra global read from input for P - 1 threads.
     shared_array[threadIdx.x] = (index < P - 1) ? static_cast<T>(0) :
       input[index - (P - 1)];
   }
@@ -114,10 +116,55 @@ __global__ void pooling_with_shared_memory(
 
   if (index < size)
   {
+    T out {static_cast<T>(0)};
+
     for (auto i {0}; i < P; ++i)
     {
-      output[index] += shared_array[threadIdx.x + P - 1 - i];
+      // All P shared memory reads.
+      out += shared_array[threadIdx.x + P - 1 - i];
     }
+    // 1 global write.
+    output[index] = out;
+  }
+}
+
+//------------------------------------------------------------------------------
+/// \details Based upon solution for Puzzle 9 here:
+/// https://github.com/isamu-isozaki/GPU-Puzzles-answers
+/// See also this for another way:
+/// https://github.com/chancecardona/GPU-Puzzles-Solns/blob/main/GPU_puzzlers.py
+//------------------------------------------------------------------------------
+template <std::size_t THREADS_PER_BLOCK, std::size_t P, typename T>
+__global__ void pooling_with_smaller_shared_memory(
+  T* input,
+  T* output,
+  const std::size_t size)
+{
+  __shared__ T shared_array[THREADS_PER_BLOCK];
+
+  const std::size_t index {blockIdx.x * blockDim.x + threadIdx.x};
+  if (index < size)
+  {
+    // 1 global read from input for each thread.
+    shared_array[threadIdx.x] = input[index];
+  }
+  __syncthreads();
+
+  if (index < size)
+  {
+    T out {shared_array[threadIdx.x]};
+
+    for (auto i {1}; i < P; ++i)
+    {
+      if (index > i)
+      {
+        // P shared memory reads.
+        out += shared_array[threadIdx.x - i];
+      }
+    }
+
+    // 1 global write.
+    output[index] = out;
   }
 }
 
@@ -240,6 +287,7 @@ TEST(GPUPuzzlesTests, AddScalarWithSharedMemory)
 /// position of a and stores it in out. You have 1 thread per position. You only
 /// need 1 global read and 1 global write per thread.
 //------------------------------------------------------------------------------
+
 TEST(GPUPuzzlesTests, PoolingWorksFor3)
 {
   const size_t example_size {8};
@@ -252,6 +300,37 @@ TEST(GPUPuzzlesTests, PoolingWorksFor3)
   input.copy_host_input_to_device(host_input);
 
   pooling_with_shared_memory<threads_per_block.x, 3, float>
+    <<<blocks_per_grid, threads_per_block>>>(
+    input.elements_,
+    output.elements_,
+    example_size);
+
+  vector<float> host_y (example_size);
+
+  output.copy_device_output_to_host(host_y);
+
+  EXPECT_EQ(host_y.at(0), 0.);
+  EXPECT_EQ(host_y.at(1), 1.);
+  EXPECT_EQ(host_y.at(2), 3.);
+  EXPECT_EQ(host_y.at(3), 6.);
+  EXPECT_EQ(host_y.at(4), 9.);
+  EXPECT_EQ(host_y.at(5), 12.);
+  EXPECT_EQ(host_y.at(6), 15.);
+  EXPECT_EQ(host_y.at(7), 18.);
+}
+
+TEST(GPUPuzzlesTests, PoolingWithSmallerSharedMemoryWorksFor3)
+{
+  const size_t example_size {8};
+  const auto host_input = arange<float>(example_size);
+  constexpr dim3 threads_per_block {8, 1};
+  const dim3 blocks_per_grid {1, 1};
+
+  Array<float> input {example_size};
+  Array<float> output {example_size};
+  input.copy_host_input_to_device(host_input);
+
+  pooling_with_smaller_shared_memory<threads_per_block.x, 3, float>
     <<<blocks_per_grid, threads_per_block>>>(
     input.elements_,
     output.elements_,

@@ -4,6 +4,7 @@ ADD_EXECUTABLE(Check
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
   Operations/Arithmetic_tests.cu
+  Operations/dot_product_tests.cu
   Utilities/CaptureCerr.cpp
   Utilities/CaptureCerr_tests.cpp
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
