@@ -91,16 +91,15 @@ TEST(ArithmeticTests, AddScalarAddsWithLvalueScalar)
 TEST(ArithmeticTests, AdditionDoesBinaryAddition)
 {
   const size_t example_size {4};
-  const vector<float> host_addend1 {0., 1., 2., 3.};
-  const vector<float> host_addend2 {0., 1., 2., 3.};
+  const auto host_input = arange<float>(example_size);
   const size_t threads_per_block {example_size};
   const size_t blocks_per_grid {1};
 
   Array<float> addend1 {example_size};
   Array<float> addend2 {example_size};
   Array<float> output {example_size};
-  addend1.copy_host_input_to_device(host_addend1);
-  addend2.copy_host_input_to_device(host_addend2);
+  addend1.copy_host_input_to_device(host_input);
+  addend2.copy_host_input_to_device(host_input);
 
   addition<float><<<blocks_per_grid, threads_per_block>>>(
     addend1.elements_,
@@ -126,7 +125,7 @@ TEST(ArithmeticTests, AdditionDoesBinaryAddition)
 TEST(ArithmeticTests, AddScalar2DAdds)
 {
   const size_t example_size {2};
-  const vector<float> host_x {0., 1., 2., 3.};
+  const auto host_x = arange<float>(4);
   const dim3 threads_per_block {3, 3};
   const size_t blocks_per_grid {1};
   // This works as well.
