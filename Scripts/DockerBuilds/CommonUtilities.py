@@ -27,6 +27,8 @@ def get_project_directory():
 
 def parse_build_script(script_path):
     """
+    TODO: Remove this function once no other scripts uses it and replace it with
+    read_build_configuration.
     @brief For now, it parses build script BuildDocker.sh for constants it used,
     namely DOCKER_IMAGE_NAME.
     """
@@ -72,6 +74,47 @@ def parse_run_configuration_file(configuration_file_path):
                                 f"Invalid or nonexistent path in file: {line.split(':', 1)[0]}")
 
     configuration['mount_paths'] = mount_paths
+    return configuration
+
+def read_build_configuration(config_path):
+    """
+    Reads the build_configuration.txt file and parses parameters.
+
+    Args:
+        config_path (Path): Path to the build_configuration.txt file.
+
+    Returns:
+        dict: Dictionary containing the extracted parameters.
+
+    Raises:
+        FileNotFoundError: If the configuration file does not exist.
+        ValueError: If any required parameter is missing.
+    """
+    if not config_path.is_file():
+        raise FileNotFoundError(
+            f"Configuration file '{config_path}' does not exist.")
+
+    configuration = {}
+    required_keys = {"ARCH", "PTX", "COMPUTE_CAPABILITY", "DOCKER_IMAGE_NAME"}
+
+    with config_path.open('r') as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue  # Skip empty lines and comments
+            if '=' not in line:
+                continue  # Skip lines without key=value format
+            key, value = line.split('=', 1)
+            key = key.strip().upper()
+            value = value.strip()
+            if key in required_keys:
+                configuration[key] = value
+
+    missing_keys = required_keys - configuration.keys()
+    if missing_keys:
+        raise ValueError(
+            f"Missing required configuration parameters: {', '.join(missing_keys)}")
+
     return configuration
 
 

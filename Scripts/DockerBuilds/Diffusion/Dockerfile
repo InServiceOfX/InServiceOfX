@@ -3,6 +3,7 @@
 # SetupPyTorchGPUDocker.sh) or doing something like, in command line,
 # cat Dockerfile.header Dockerfile.base ..
 
+
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
 # Also, see
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch
@@ -100,6 +101,7 @@ RUN pip uninstall -y opencv && \
   rm /opencv_contrib.zip
 
 
+
 ## HuggingFace
 
 ## transformers (hugging face), required to run most popular diffusion models.
@@ -109,6 +111,7 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
+  cd / && \
   #
   #
 ## datasets (hugging face)
@@ -169,6 +172,7 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   cd /
 
 
+
 ### Further third party code/repositories
 
 ## onnxruntime, ONNX Runtime, needed by insightface.
@@ -201,5 +205,6 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
   #TODO: amend master branch to remove dependency on opencv.
   #poetry install && \
   #cd /
+
 
 

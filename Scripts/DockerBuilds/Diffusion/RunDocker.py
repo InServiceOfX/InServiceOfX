@@ -12,25 +12,24 @@ import os, sys
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CommonUtilities import (
+    DefaultValues,
     get_project_directory,
-    parse_build_script,
-    parse_run_configuration_file)
-
-# Global variables
-BUILD_FILE_NAME="BuildDocker.sh"
-CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
+    parse_run_configuration_file,
+    read_build_configuration)
 
 
 def main():
     project_directory = get_project_directory()
 
     # Path to the build configuration file.
-    build_file_path = Path(__file__).resolve().parent / BUILD_FILE_NAME
-    docker_image_name = parse_build_script(build_file_path)
+    build_file_path = Path(__file__).resolve().parent / \
+        DefaultValues.BUILD_FILE_NAME
+    docker_image_name = read_build_configuration(build_file_path)[
+        'DOCKER_IMAGE_NAME']
 
     # Path to the configuration file.
     configuration_file_path = Path(__file__).resolve().parent / \
-        CONFIGURATION_FILE_NAME
+        DefaultValues.CONFIGURATION_FILE_NAME
     configuration = parse_run_configuration_file(configuration_file_path)
 
     mount_paths = configuration["mount_paths"]
