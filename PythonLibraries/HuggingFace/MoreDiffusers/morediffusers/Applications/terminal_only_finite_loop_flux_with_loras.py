@@ -23,6 +23,8 @@ from corecode.Utilities import clear_torch_cache_and_collect_garbage
 from morediffusers.Applications import (
     create_image_filename_and_save,
     create_image_filenames_and_save_images,
+    print_loras_diagnostics,
+    print_pipeline_diagnostics,
     FluxPipelineUserInput
     )
 
@@ -34,11 +36,11 @@ from morediffusers.Schedulers import change_scheduler_or_not
 from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
     change_pipe_with_loras_to_cuda_or_not,
-    create_flux_pipeline
-    )
+    load_loras,
+    create_flux_pipeline)
 
 
-def terminal_only_finite_loop_flux():
+def terminal_only_finite_loop_flux_with_loras():
 
     start_time = time.time()
 
@@ -64,6 +66,31 @@ def terminal_only_finite_loop_flux():
     change_pipe_to_cuda_or_not(configuration, pipe)
 
     end_time = time.time()
+
+    print_pipeline_diagnostics(
+        end_time - start_time,
+        pipe,
+        is_scheduler_changed,
+        original_scheduler_name)
+
+    #
+    #
+    # LoRAs - Low Rank Adaptations
+    #
+    #
+
+    start_time = time.time()
+
+    loras_configuration = LoRAsConfigurationForMoreDiffusers()
+    resulting_loras_state_dict = load_loras(pipe, loras_configuration)
+
+    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
+
+    end_time = time.time()
+
+    print_loras_diagnostics(end_time - start_time, pipe)
+
+    print("\n  ----- loras state dict: ", resulting_loras_state_dict)
 
     user_input = FluxPipelineUserInput(configuration)
 
@@ -126,4 +153,4 @@ def terminal_only_finite_loop_flux():
 
 if __name__ == "__main__":
 
-    terminal_only_finite_loop_flux()
+    terminal_only_finite_loop_flux_with_loras()

@@ -117,7 +117,7 @@ Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
 Scripts/DockerBuilds/Diffusion/RunDockerConfiguration.txt
-Scripts/DockerBuilds/Diffusion/nvidia_compute_capabilities.txt
+Scripts/DockerBuilds/Diffusion/build_docker_configuration.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalCUDA/nvidia_compute_capabilities.txt

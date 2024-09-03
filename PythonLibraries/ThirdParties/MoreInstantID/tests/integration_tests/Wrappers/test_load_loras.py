@@ -4,7 +4,8 @@ from corecode.Utilities import (
     DataSubdirectories,
     )
 
-from morediffusers.Wrappers import load_loras
+from morediffusers.Wrappers.pipelines import load_loras
+
 from morediffusers.Configurations import LoRAsConfiguration
 from moreinstantid.Configuration import Configuration
 from moreinstantid.Wrappers import (

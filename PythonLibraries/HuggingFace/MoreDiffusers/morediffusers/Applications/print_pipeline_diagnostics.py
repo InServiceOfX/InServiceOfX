@@ -24,4 +24,8 @@ def print_pipeline_diagnostics(
             changed_scheduler_name)
 
     print("\nDiagnostic: pipe.unet.config.time_cond_proj_dim: ")
-    print(pipe.unet.config.time_cond_proj_dim)
+
+    try:
+        print(pipe.unet.config.time_cond_proj_dim)
+    except AttributeError as err:
+        print(f"AttributeError for 'unet': {err}")

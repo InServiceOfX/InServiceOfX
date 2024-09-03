@@ -41,12 +41,14 @@ from morediffusers.Configurations import (
 
 from morediffusers.Schedulers import create_ddim_scheduler
 
-from morediffusers.Wrappers import (
+from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
-    change_pipe_with_ip_adapter_to_cuda_or_not,
     change_pipe_with_loras_to_cuda_or_not,
+    load_loras)
+
+from morediffusers.Wrappers import (
+    change_pipe_with_ip_adapter_to_cuda_or_not,
     create_seed_generator,
-    load_loras,
     load_ip_adapter)
 
 from morediffusers.Wrappers.models import create_motion_adapter

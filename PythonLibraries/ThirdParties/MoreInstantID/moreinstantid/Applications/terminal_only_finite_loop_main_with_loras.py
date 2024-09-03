@@ -52,10 +52,9 @@ from morediffusers.Configurations import Configuration as PipelineConfiguration
 from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers as \
     LoRAsConfiguration
 
-from morediffusers.Wrappers import (
-    load_loras,
+from morediffusers.Wrappers.pipelines import (
     change_pipe_with_loras_to_cuda_or_not,
-    )
+    load_loras)
 
 from morediffusers.Schedulers import change_scheduler_or_not
 from moreinsightface.Wrappers import get_face_and_pose_info_from_images

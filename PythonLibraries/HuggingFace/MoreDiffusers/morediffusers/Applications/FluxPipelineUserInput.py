@@ -44,6 +44,14 @@ class FluxPipelineUserInput:
                 "Guidance Scale: ",
                 7.0))
 
+        # From pipeline_flux.py of diffusers, __call__(..) function,
+        # Guidance Scale defined in
+        # [Classifier-Free Diffusion Guidance](https://arxiv.org/abs/2207.12598).
+        # guidance_scale defined as 'w' of equation 2. of
+        # [Imagen Paper](https://arxiv.org/pdf/2205.11487.pdf). Higher guidance
+        # scale encourages to generate images closely linked to text `prompt`,
+        # usually at expense of lower image quality.
+
         self.guidance_scale = self.guidance_scale.value
 
         guidance_scale_step_explanation = \

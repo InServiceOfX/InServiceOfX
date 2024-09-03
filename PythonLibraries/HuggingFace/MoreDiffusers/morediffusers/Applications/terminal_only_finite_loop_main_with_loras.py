@@ -32,11 +32,12 @@ from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 
 from morediffusers.Schedulers import change_scheduler_or_not
 
-from morediffusers.Wrappers import (
+from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
     change_pipe_with_loras_to_cuda_or_not,
-    create_stable_diffusion_xl_pipeline,
     load_loras)
+
+from morediffusers.Wrappers import create_stable_diffusion_xl_pipeline
 
 
 def terminal_only_finite_loop_main_with_loras():

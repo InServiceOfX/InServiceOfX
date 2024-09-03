@@ -40,12 +40,15 @@ from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 
 from morediffusers.Schedulers import change_scheduler_or_not
 
+from morediffusers.Wrappers.pipelines import (
+    change_pipe_to_cuda_or_not,
+    change_pipe_with_loras_to_cuda_or_not,
+    load_loras)
+
 from morediffusers.Wrappers import (
     change_pipe_to_cuda_or_not,
     change_pipe_with_ip_adapter_to_cuda_or_not,
-    change_pipe_with_loras_to_cuda_or_not,
     create_stable_diffusion_xl_pipeline,
-    load_loras,
     load_ip_adapter)
 
 from moreinsightface.Configurations import Configuration as MoreInsightFaceConfiguration
