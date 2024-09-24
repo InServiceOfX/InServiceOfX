@@ -10,6 +10,8 @@ repository = "https://github.com/InServiceOfX/InServiceOfX"
 [tool.poetry.dependencies]
 python = "^3.10"
 python-dotenv = "^1.0.1"
+pandas = "^2.2.3"
+tabula-py = "^2.9.3"
 
 [tool.poetry.group.dev.dependencies]
 beautifulsoup4 = "^4.12.3"
