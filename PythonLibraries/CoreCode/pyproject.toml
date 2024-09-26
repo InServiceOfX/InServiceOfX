@@ -9,11 +9,14 @@ repository = "https://github.com/InServiceOfX/InServiceOfX"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+# https://pypi.org/project/python-dotenv/
+# Reads key-value pairs from .env file and can set them as environment variables.
 python-dotenv = "^1.0.1"
 pandas = "^2.2.3"
 tabula-py = "^2.9.3"
 
 [tool.poetry.group.dev.dependencies]
+# For WebBaseLoader for Langchain.
 beautifulsoup4 = "^4.12.3"
 jupyter = "^1.0.0"
 
