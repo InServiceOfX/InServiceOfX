@@ -1,0 +1,13 @@
+## Meta Llama
+
+## llama-models, Utilities for use with Llama models.
+RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-models && \
+    cd /ThirdParty/llama-models && \
+    git checkout main && \
+    # Install dependencies, as mentioned here:
+    # https://github.com/meta-llama/llama-models 
+    pip install fairscale fire blobfile && \
+    pip install -r ./requirements.txt && \
+    cd /
+
+

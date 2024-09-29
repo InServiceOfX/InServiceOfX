@@ -39,10 +39,12 @@ def main():
     docker_image_name = read_build_configuration(build_file_path)['DOCKER_IMAGE_NAME']
 
     # Path to the configuration file.
-    configuration_file_path = dir_path / DefaultValues.CONFIGURATION_FILE_NAME
-    configuration = parse_run_configuration_file(configuration_file_path)
+    run_configuration_file_path = dir_path / DefaultValues.RUN_CONFIGURATION_FILE_NAME
+    run_configuration = parse_run_configuration_file(run_configuration_file_path)
 
-    mount_paths = configuration["mount_paths"]
+    print()
+
+    mount_paths = run_configuration["mount_paths"]
 
     # Run command
     # -it - i stands for interactive, so this flag makes sure that standard

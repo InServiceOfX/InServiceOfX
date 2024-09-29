@@ -112,6 +112,7 @@ def main():
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = script_dir / "Dockerfile.base"
     dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
+    dockerfile_meta_llama = script_dir / "Dockerfile.meta-llama"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
     try:
@@ -120,6 +121,7 @@ def main():
             dockerfile_header,
             dockerfile_base,
             dockerfile_huggingface,
+            dockerfile_meta_llama,
             dockerfile_third_parties,
         )
     except FileNotFoundError as e:

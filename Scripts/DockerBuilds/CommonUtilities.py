@@ -48,7 +48,7 @@ def run_command(command, cwd=None):
 
 class DefaultValues:
     _BUILD_FILE_NAME="build_docker_configuration.txt"
-    _CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
+    _RUN_CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
 
     @classmethod
     @property
@@ -57,8 +57,8 @@ class DefaultValues:
 
     @classmethod
     @property 
-    def CONFIGURATION_FILE_NAME(cls):
-        return cls._CONFIGURATION_FILE_NAME
+    def RUN_CONFIGURATION_FILE_NAME(cls):
+        return cls._RUN_CONFIGURATION_FILE_NAME
 
 def read_build_configuration(config_path):
     """
@@ -181,6 +181,8 @@ def parse_run_configuration_file(configuration_file_path):
                         else:
                             print(
                                 f"Invalid or nonexistent path in file: {line.split(':', 1)[0]}")
+    else:
+        print(f"Configuration file '{configuration_file_path}' does not exist.")
 
     configuration['mount_paths'] = mount_paths
     return configuration

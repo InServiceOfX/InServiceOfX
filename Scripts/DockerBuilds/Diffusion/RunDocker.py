@@ -28,11 +28,11 @@ def main():
         'DOCKER_IMAGE_NAME']
 
     # Path to the configuration file.
-    configuration_file_path = Path(__file__).resolve().parent / \
-        DefaultValues.CONFIGURATION_FILE_NAME
-    configuration = parse_run_configuration_file(configuration_file_path)
+    run_configuration_file_path = Path(__file__).resolve().parent / \
+        DefaultValues.RUN_CONFIGURATION_FILE_NAME
+    run_configuration = parse_run_configuration_file(run_configuration_file_path)
 
-    mount_paths = configuration["mount_paths"]
+    mount_paths = run_configuration["mount_paths"]
 
     # Run command
     # -it - i stands for interactive, so this flag makes sure that standard
