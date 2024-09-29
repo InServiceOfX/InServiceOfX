@@ -1,0 +1,1 @@
+from moretransformers.Wrappers.Pipelines.create_pipeline import create_pipeline

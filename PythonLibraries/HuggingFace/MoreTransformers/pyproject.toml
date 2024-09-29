@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "moretransformers"
+version = "0.1.0"
+description = "More code and tests on HuggingFace's transformers"
+authors = ["InServiceOfX <inserviceofxy@proton.me>"]
+readme = "README.md"
+repository = "https://github.com/InServiceOfX/InServiceOfX"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+transformers = "^4.45.1"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

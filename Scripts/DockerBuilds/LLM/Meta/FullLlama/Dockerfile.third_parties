@@ -1,0 +1,16 @@
+### Further third party code/repositories
+
+## insightface, needed by InstantID
+#
+#
+# InServiceOfX
+#
+#
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init --cone && \
+  git sparse-checkout set PythonLibraries/CoreCode && \
+  git checkout && \
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+
+

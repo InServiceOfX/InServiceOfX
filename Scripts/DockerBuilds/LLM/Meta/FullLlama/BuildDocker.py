@@ -2,11 +2,10 @@
 
 import argparse
 import sys
-import subprocess
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from CommonUtilities import (
     read_build_configuration,
     DefaultValues,
@@ -74,7 +73,7 @@ def build_docker_image(
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(
-        description="Build Docker image for Image and Video diffusion models.",
+        description="Build Docker image for LLM models.",
         add_help=False)
     parser.add_argument(
         '--no-cache',
@@ -95,7 +94,7 @@ def main():
     script_path = Path(__file__).resolve()
     script_dir = script_path.parent
     # Where common files for building and running Docker images are stored.
-    parent_dir = script_dir.parent
+    parent_dir = script_dir.parents[2]
 
     # Path to build_configuration.txt
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME

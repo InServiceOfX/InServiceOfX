@@ -79,7 +79,6 @@ RUN apt-get update && \
   echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 
-## Fix OpenCV install
 RUN pip uninstall -y opencv && \
   cd / && \
   # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
@@ -111,7 +110,6 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
-  cd / && \
   #
   #
 ## datasets (hugging face)

@@ -24,16 +24,6 @@ FROM nvcr.io/nvidia/pytorch:24.05-py3
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
-# pip installations and updating OpenCV build.
-
-COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
-
-# As of July 30, 2024, for OpenCV, there's 4.10.0.
-# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
-# where CuDNN 9+ support, CUDA 12.4+ support.
-
-ARG OPENCV_VERSION=4.10.0
-
 ARG ARCH
 ARG PTX
 
@@ -71,26 +61,5 @@ RUN apt-get update && \
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
   echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
-
-
-RUN pip uninstall -y opencv && \
-  cd / && \
-  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-  # -q for quiet because output of wget with progress bars is too much.
-  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
-  unzip opencv && \
-  wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
-  unzip opencv_contrib && \
-  cd /opencv-${OPENCV_VERSION} && \
-  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
-  # This was done in one of the layers of the "original", NVIDIA PyTorch
-  # Container for OpenCV
-  cd /opencv-${OPENCV_VERSION}/modules/python/package && \
-  pip install --no-cache-dir --disable-pip-version-check -v . && \
-  cd / && \
-  rm -rf /opencv-${OPENCV_VERSION} && \
-  rm -rf /opencv_contrib-${OPENCV_VERSION} && \
-  rm /opencv.zip && \
-  rm /opencv_contrib.zip
 
 
