@@ -1,4 +1,3 @@
 task: text-generation
 model_path :
 torch_dtype : "torch.bfloat16"
-max_new_tokens : 256

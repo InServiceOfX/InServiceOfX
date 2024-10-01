@@ -1,5 +1,4 @@
 from transformers import pipeline
-import torch
 
 def create_pipeline(
     model_subdirectory,

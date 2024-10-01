@@ -17,7 +17,6 @@ class Configuration:
         self.task = data["task"]
         self.model_path = data["model_path"]
         self.torch_dtype = data["torch_dtype"]
-        self.max_new_tokens = data["max_new_tokens"]
 
         if self.torch_dtype == "torch.float16":
             self.torch_dtype = torch.float16

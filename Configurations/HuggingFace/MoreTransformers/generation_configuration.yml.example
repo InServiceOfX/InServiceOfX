@@ -1,0 +1,17 @@
+timeout: 60.0
+# Parameters that control length of output.
+# Max numbers of tokens to generate, ignoring number of tokens in the prompt.
+max_new_tokens: 8192
+# Parameters  for manipulation of the model output logits.
+# Value used to modulate next token probabilities.
+temperature: 0.8
+# The number of highest probability vocabulary tokens to keep for
+# top-k-filtering.
+top_k: 20
+# If set to float < 1, only smallest set of most probable tokens with
+# probabilities that add up to top_p  or higher are kept for generation.
+top_p: 1.0
+# Special tokens that can be used at generation time.
+# ID of "end of sequence" token; optionally, use a list to set multiple
+# "end of sequence" tokens.
+eos_token_id: [128001,128008,128009]

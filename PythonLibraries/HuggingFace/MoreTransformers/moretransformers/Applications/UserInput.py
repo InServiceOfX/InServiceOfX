@@ -1,18 +1,19 @@
 from corecode.Utilities import (
     get_user_input,
-    FloatParameter,
-    IntParameter,
     StringParameter)
 
 from pathlib import Path
 
-
+# TODO: Remove this after fixing all functions that use this.
 class UserInput:
 
     def __init__(self, configuration,):
 
         self.system_prompt = StringParameter(
-            get_user_input(str, "Prompt for system: ", ""))
+            get_user_input(
+                str,
+                "Prompt for system: ",
+                "You are a helpful assistant"))
         self.user_prompt = StringParameter(
             get_user_input(str, "Prompt User prompt: ", ""))
 
@@ -26,3 +27,18 @@ class UserInput:
             {"role": "system", "content": self.system_prompt.value},
             {"role": "user", "content": self.user_prompt.value}]
     
+
+class SystemPromptInput:
+
+    def __init__(self):
+        self.system_prompt = StringParameter(
+            get_user_input(
+                str,
+                "Prompt for system: ",
+                "You are a helpful assistant"))
+
+class UserPromptInput:
+
+    def __init__(self):
+        self.user_prompt = StringParameter(
+            get_user_input(str, "Prompt User prompt: ", ""))

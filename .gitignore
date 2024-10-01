@@ -114,6 +114,7 @@ Configurations/HuggingFace/MoreDiffusers/flux_pipeline_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/ip_adapter_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/loras_configuration.yml
 Configurations/HuggingFace/MoreTransformers/configuration.yml
+Configurations/HuggingFace/MoreTransformers/generation_configuration.yml
 Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
