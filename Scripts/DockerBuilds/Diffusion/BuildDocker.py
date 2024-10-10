@@ -63,6 +63,8 @@ def build_docker_image(
         "-t",
         build_configuration['DOCKER_IMAGE_NAME']])
 
+    docker_build_cmd.extend(["--platform", "linux/arm64"])
+
     # Specify build context
     docker_build_cmd.append(".")
 
