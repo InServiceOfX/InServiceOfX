@@ -12,7 +12,7 @@ ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
 RUN apt-get update && \
-  apt-get install --upgrade -y cmake ccache libssl-dev && \
+  apt-get install --upgrade -y cmake ccache curl libssl-dev && \
   apt install -y git git-lfs && \
   git lfs install && \
   #

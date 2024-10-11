@@ -79,7 +79,14 @@ def read_build_configuration(config_path):
             f"Configuration file '{config_path}' does not exist.")
 
     configuration = {}
-    required_keys = {"ARCH", "PTX", "COMPUTE_CAPABILITY", "DOCKER_IMAGE_NAME"}
+    required_keys = {
+        "ARCH",
+        "PTX",
+        "COMPUTE_CAPABILITY",
+        "DOCKER_IMAGE_NAME",
+        "ARM64_DOCKER_IMAGE_NAME",
+        "BASE_IMAGE",
+        "ARM64_BASE_IMAGE"}
 
     with config_path.open('r') as file:
         for line in file:
@@ -151,6 +158,88 @@ def concatenate_dockerfiles(output_dockerfile, *dockerfile_paths):
                 outfile.write('\n')
 
     print(f"Successfully concatenated Dockerfiles into '{output_dockerfile}'.")
+
+
+def build_docker_image(
+    dockerfile_path,
+    build_configuration,
+    use_cache,
+    build_context,
+    is_arm64):
+    """
+    Builds the Docker image using the provided Dockerfile and build arguments.
+
+    Args:
+        dockerfile_path (Path): Path to the Dockerfile.
+        build_configuration: Typically result from read_build_configuration.
+        use_cache (bool): Whether to use Docker cache during build.
+        build_context (Path): The directory to use as the build context.
+        is_arm64 (bool): Flag indicating if the build is for ARM 64 architecture.
+
+    Raises:
+        subprocess.CalledProcessError: If the Docker build command fails.
+        ValueError: If the BASE_IMAGE or ARM64_BASE_IMAGE is empty in the configuration.
+    """
+    # See https://docs.docker.com/build/buildkit/
+    if is_arm64:
+        docker_build_cmd = ["DOCKER_BUILDKIT=1", "docker", "buildx", "build"]
+    else:
+        docker_build_cmd = ["DOCKER_BUILDKIT=1", "docker", "build"]
+
+    if not use_cache:
+        docker_build_cmd.append("--no-cache")
+
+    build_argument_keys = ["ARCH", "PTX", "COMPUTE_CAPABILITY"]
+
+    # Add build arguments
+    for key in build_argument_keys:
+        docker_build_cmd.extend([
+            "--build-arg",
+            f"{key}={build_configuration[key]}"])
+
+    # Check and add BASE_IMAGE argument
+    if is_arm64:
+        base_image = build_configuration.get('ARM64_BASE_IMAGE', '')
+        if not base_image:
+            raise ValueError("ARM64_BASE_IMAGE is empty in the configuration file")
+        docker_image_name = build_configuration['ARM64_DOCKER_IMAGE_NAME']
+    else:
+        base_image = build_configuration.get('BASE_IMAGE', '')
+        if not base_image:
+            raise ValueError("BASE_IMAGE is empty in the configuration file")
+        docker_image_name = build_configuration['DOCKER_IMAGE_NAME']
+
+    docker_build_cmd.extend([
+        "--build-arg",
+        f"BASE_IMAGE={base_image}"
+    ])
+
+    # Specify platform if building for ARM 64
+    if is_arm64:
+        docker_build_cmd.extend(["--platform", "linux/arm64"])
+        # Add --output option for ARM64 builds
+        output_file = f"{docker_image_name}.tar"
+        docker_build_cmd.extend(["--output", f"type=tar,dest={output_file}"])
+
+    # Specify Dockerfile
+    docker_build_cmd.extend(["-f", str(dockerfile_path)])
+
+    # Tag the image
+    docker_build_cmd.extend(["-t", docker_image_name])
+
+
+    # Add --load option to load the image into Docker's image store
+    if not is_arm64:
+        docker_build_cmd.append(".")
+    else:
+        # Specify build context
+        docker_build_cmd.append(str(build_context))
+
+    # Convert command list to string
+    command_str = ' '.join(docker_build_cmd)
+
+    run_command(command_str, cwd=build_context)
+
 
 def parse_run_configuration_file(configuration_file_path):
     configuration = {}

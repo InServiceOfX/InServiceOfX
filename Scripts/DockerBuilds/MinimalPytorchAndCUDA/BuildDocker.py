@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from CommonUtilities import (
     build_docker_image,
     read_build_configuration,
@@ -52,7 +52,7 @@ def main():
     script_path = Path(__file__).resolve()
     script_dir = script_path.parent
     # Where common files for building and running Docker images are stored.
-    parent_dir = script_dir.parents[2]
+    parent_dir = script_dir.parents[0]
 
     # Path to build_configuration.txt
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME
@@ -63,6 +63,8 @@ def main():
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
+
+
     # Path to Dockerfile in script directory
     dockerfile_path = script_dir / "Dockerfile"
 
@@ -70,10 +72,9 @@ def main():
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
+    dockerfile_more_apt_packages = script_dir / "Dockerfile.more_apt_packages"
     dockerfile_more_pip_installs = script_dir / "Dockerfile.more_pip_installs"
-    dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
-    dockerfile_meta_llama = script_dir / "Dockerfile.meta-llama"
-    dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
+    dockerfile_base_more_nvidia = script_dir / "Dockerfile.MoreNvidia"
 
     try:
         concatenate_dockerfiles(
@@ -81,10 +82,9 @@ def main():
             dockerfile_header,
             dockerfile_base,
             dockerfile_rust,
+            dockerfile_more_apt_packages,
             dockerfile_more_pip_installs,
-            dockerfile_huggingface,
-            dockerfile_meta_llama,
-            dockerfile_third_parties,
+            dockerfile_base_more_nvidia
         )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -103,8 +103,7 @@ def main():
         build_configuration=configuration,
         use_cache=not args.no_cache,
         build_context=parent_dir,
-        is_arm64=args.arm64
-    )
+        is_arm64=args.arm64)
 
     print(
         f"Successfully built Docker image '{configuration['DOCKER_IMAGE_NAME']}'.")

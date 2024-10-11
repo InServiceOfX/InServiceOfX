@@ -21,9 +21,8 @@
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-#
-
-FROM nvcr.io/nvidia/pytorch:24.05-py3
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
@@ -33,7 +32,7 @@ WORKDIR ${THIRD_PARTY}
 ARG ARCH
 ARG PTX
 
-## Update apt, pip, install Rust, and do pip installs.
+## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
@@ -45,28 +44,27 @@ RUN apt-get update && \
   pip install --upgrade python-dotenv && \
   #
   #
-  # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
-  # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
-  # Please update jupyter and ipywidgets. See
-  # https://ipywidgets.readthedocs.io/en/stable/user_install.html
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
-  #
-  #
-  # Install Rust
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  #
-  #
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  #
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+
+
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+
+
+
+RUN python -m pip install --upgrade pip && \
+  pip install --upgrade ipywidgets && \
+  pip install --upgrade numpy
 
 
 

@@ -3,6 +3,7 @@
 # SetupPyTorchGPUDocker.sh) or doing something like, in command line,
 # cat Dockerfile.header Dockerfile.base ..
 
+
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
 # Also, see
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch
@@ -20,22 +21,27 @@
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-FROM nvcr.io/nvidia/pytorch:24.05-py3
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
+ARG ARCH
+ARG PTX
+
+## Update apt, pip, and do pip installs.
 RUN apt-get update && \
-  apt-get install --upgrade -y ccache libssl-dev && \
+  apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
   #
   #
-  # Install Rust. Compare CUDA against Rust.
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  # Do more pip installs.
+  # Reads key-value pairs from .env file to set environment variables; in
+  # particular for Open AI API keys for LangChain.
+  pip install --upgrade python-dotenv && \
   #
   #
   # Install Poetry
@@ -44,10 +50,29 @@ RUN apt-get update && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  #
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+
+
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+
+
+
+RUN apt-get update && \
+    apt-get install -y \
+    libssl-dev
+
+
+
+RUN python -m pip install --upgrade pip && \
+  pip install --upgrade ipywidgets && \
+  pip install --upgrade numpy
+
+
 
 ### Further code/repositories from NVIDIA
 
@@ -79,5 +104,6 @@ RUN git clone https://github.com/InServiceOfX/cutlass.git /ThirdParty/cutlass &&
   cd /ThirdParty/cutlass && \
   git checkout master && \
   cd /
+
 
 
