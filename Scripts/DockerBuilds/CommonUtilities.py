@@ -47,18 +47,8 @@ def run_command(command, cwd=None):
         sys.exit(err.returncode)
 
 class DefaultValues:
-    _BUILD_FILE_NAME="build_docker_configuration.txt"
-    _RUN_CONFIGURATION_FILE_NAME="run_docker_configuration.txt"
-
-    @classmethod
-    @property
-    def BUILD_FILE_NAME(cls):
-        return cls._BUILD_FILE_NAME
-
-    @classmethod
-    @property 
-    def RUN_CONFIGURATION_FILE_NAME(cls):
-        return cls._RUN_CONFIGURATION_FILE_NAME
+    BUILD_FILE_NAME = "build_docker_configuration.txt"
+    RUN_CONFIGURATION_FILE_NAME = "run_docker_configuration.txt"
 
 def read_build_configuration(config_path):
     """
@@ -227,8 +217,6 @@ def build_docker_image(
     # Tag the image
     docker_build_cmd.extend(["-t", docker_image_name])
 
-
-    # Add --load option to load the image into Docker's image store
     if not is_arm64:
         docker_build_cmd.append(".")
     else:
@@ -277,22 +265,30 @@ def parse_run_configuration_file(configuration_file_path):
     return configuration
 
 class CreateDockerRunCommand:
-    def __init__(self, project_directory, build_configuration, configuration):
-
-        self.docker_image_name = build_configuration["DOCKER_IMAGE_NAME"]
+    def __init__(
+            self,
+            project_directory,
+            build_configuration,
+            configuration,
+            is_arm64):
+        self.is_arm64 = is_arm64
+        self.docker_image_name = \
+            build_configuration["ARM64_DOCKER_IMAGE_NAME"] if is_arm64 \
+                else build_configuration["DOCKER_IMAGE_NAME"]
         self.mount_paths = configuration["mount_paths"]
 
         self.docker_run_command = self.create_docker_run_command(
             project_directory,
             self.mount_paths,
-            self.docker_image_name)
-
+            self.docker_image_name,
+            self.is_arm64)
 
     def create_docker_run_command(
         self,
         project_directory,
         mount_paths,
-        DOCKER_IMAGE_NAME
+        DOCKER_IMAGE_NAME,
+        is_arm64
         ):
         # Run command
         # -it - i stands for interactive, so this flag makes sure that standard
@@ -300,7 +296,9 @@ class CreateDockerRunCommand:
         # -t stands for pseudo-TTY, allocates a pseudo terminal inside
         # container, used to make environment inside container feel like a
         # regular shell session.
-        docker_run_command = f"docker run -v {project_directory}:/InServiceOfX --gpus all -it "
+        gpu_option = "--runtime=nvidia" if is_arm64 else "--gpus all"
+        docker_run_command = \
+            f"docker run -v {project_directory}:/InServiceOfX {gpu_option} -it "
 
         # Add mount paths from configuration file
         for mount_path in mount_paths:
@@ -314,6 +312,9 @@ class CreateDockerRunCommand:
         docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
 
         docker_run_command += DOCKER_IMAGE_NAME
+
+        if is_arm64:
+            docker_run_command += " /bin/bash"
 
         print(docker_run_command)
 
