@@ -106,8 +106,12 @@ def main():
         is_arm64=args.arm64
     )
 
-    print(
-        f"Successfully built Docker image '{configuration['DOCKER_IMAGE_NAME']}'.")
+    if args.arm64:
+        print(
+            f"Successfully built ARM64 Docker image '{configuration['ARM64_DOCKER_IMAGE_NAME']}'.")
+    else:
+        print(
+            f"Successfully built Docker image '{configuration['DOCKER_IMAGE_NAME']}'.")
 
 if __name__ == "__main__":
     main()

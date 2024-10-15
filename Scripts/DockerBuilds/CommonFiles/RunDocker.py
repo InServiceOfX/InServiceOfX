@@ -3,15 +3,17 @@
 more options.
 
 @details
-USAGE: python ./RunDocker.py [directory_path]
+USAGE: python ./RunDocker.py [directory_path] [--arm64]
 """
 
 from pathlib import Path
 import os, sys
+import argparse
 
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from CommonUtilities import (
+    CreateDockerRunCommand,
     DefaultValues,
     get_docker_builds_directory,
     get_project_directory,
@@ -19,12 +21,45 @@ from CommonUtilities import (
     read_build_configuration)
 
 
+def print_help():
+    help_text = """
+Usage: RunDocker.py [directory_path] [--arm64]
+
+Options:
+  directory_path      Path to the directory containing build configuration files
+  --arm64             Run for ARM 64 architecture
+  --help              Show this help message and exit
+"""
+    print(help_text)
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Run Docker container.", add_help=False)
+    parser.add_argument(
+        'directory_path',
+        nargs='?',
+        default=None,
+        help='Path to the directory containing build configuration files')
+    parser.add_argument(
+        '--arm64',
+        action='store_true',
+        help='Run for ARM 64 architecture')
+    parser.add_argument(
+        '--help',
+        action='store_true',
+        help='Show help message and exit')
+
+    args = parser.parse_args()
+
+    if args.help:
+        print_help()
+        sys.exit(0)
+
+    is_arm64 = args.arm64
     docker_builds_directory = get_docker_builds_directory()
 
-    # Check for command-line argument for directory path
-    if len(sys.argv) > 1:
-        dir_path = Path(sys.argv[1]).resolve()
+    if args.directory_path:
+        dir_path = Path(args.directory_path).resolve()
     else:
         # Default to the specific directory structure
         dir_path = docker_builds_directory / "LLM" / "Meta" / "FullLlama"
@@ -36,7 +71,7 @@ def main():
 
     # Path to the build configuration file.
     build_file_path = dir_path / DefaultValues.BUILD_FILE_NAME
-    docker_image_name = read_build_configuration(build_file_path)['DOCKER_IMAGE_NAME']
+    build_configuration = read_build_configuration(build_file_path)
 
     # Path to the configuration file.
     run_configuration_file_path = dir_path / DefaultValues.RUN_CONFIGURATION_FILE_NAME
@@ -44,32 +79,13 @@ def main():
 
     print()
 
-    mount_paths = run_configuration["mount_paths"]
+    create_docker_run_command = CreateDockerRunCommand(
+        get_project_directory(),
+        build_configuration,
+        run_configuration,
+        is_arm64)
 
-    # Run command
-    # -it - i stands for interactive, so this flag makes sure that standard
-    # input ('STDIN') remains open even if you're not attached to container.
-    # -t stands for pseudo-TTY, allocates a pseudo terminal inside container,
-    # used to make environment inside container feel like a regular shell
-    # session.
-    docker_run_command = \
-        f"docker run -v {get_project_directory()}:/InServiceOfX --gpus all -it "
-
-    # Add mount paths from configuration file
-    for mount_path in mount_paths:
-        docker_run_command += f"-v {mount_path} "
-
-    # -e flag sets environment and enables CUDA Forward Compatibility instead of
-    # default CUDA Minor Version Compatibility.
-    docker_run_command += "-e NVIDIA_DISABLE_REQUIRE=1 "
-
-    # Add the port 7860 for gradio applications.
-    docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
-    docker_run_command += docker_image_name
-
-    print(docker_run_command)
-
-    os.system(docker_run_command)
+    os.system(create_docker_run_command.docker_run_command)
 
 if __name__ == "__main__":
     main()
