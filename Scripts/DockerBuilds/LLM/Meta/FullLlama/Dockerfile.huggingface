@@ -1,6 +1,6 @@
 ## HuggingFace
 
-## transformers (hugging face), required to run most popular diffusion models.
+## transformers (hugging face), required to run LLMs as models.
 RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
   git checkout master && \

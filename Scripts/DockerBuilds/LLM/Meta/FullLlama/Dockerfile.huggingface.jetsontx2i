@@ -1,0 +1,24 @@
+## HuggingFace
+
+## transformers (hugging face), required to run LLMs as models.
+RUN python3 -m pip install transformers && \
+  #
+  #
+## datasets (hugging face)
+  python3 -m pip install datasets && \
+  #
+  #
+## accelerate - speeds up model loading for inference and training
+  python3 -m pip install accelerate && \
+  #
+  #
+## candle (hugging face)
+  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  cd /ThirdParty/candle && \
+  git checkout master && \
+  #
+  #
+  #
+  cd /
+
+
