@@ -32,24 +32,25 @@ WORKDIR ${THIRD_PARTY}
 ARG ARCH
 ARG PTX
 
-# This is to fix
-# 8.982 Reading package lists...
-# 13.35 W: GPG error: https://apt.kitware.com/ubuntu bionic InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 1A127079A92F09ED
-#13.35 E: The repository 'https://apt.kitware.com/ubuntu bionic InRelease' is not signed.
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1A127079A92F09ED && \
-    apt-get update
-
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
-  apt-get install --upgrade -y ccache python3-pip curl && \
-  python3 -m pip install --upgrade pip && \
+  apt-get install --upgrade -y ccache && \
+  python -m pip install --upgrade pip && \
   #
   #
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv && \
-
+  #
+  #
+  # Install Poetry
+  # https://python-poetry.org/docs/#installing-with-the-official-installer
+  curl -sSL https://install.python-poetry.org | python3 - && \
+  # https://python-poetry.org/docs/#installing-with-the-official-installer
+  # Step 3, you have to add poetry to your PATH, which on UNIX is in
+  # $HOME/.local/bin
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
 
 
 
@@ -72,15 +73,26 @@ RUN python3 -m pip install --upgrade pip && \
 ## HuggingFace
 
 ## transformers (hugging face), required to run LLMs as models.
-RUN python3 -m pip install transformers && \
+RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  git checkout master && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e . && \
   #
   #
 ## datasets (hugging face)
-  python3 -m pip install datasets && \
+  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
+  cd /ThirdParty/datasets && \
+  git checkout main && \
+  pip install -e . && \
   #
   #
 ## accelerate - speeds up model loading for inference and training
-  python3 -m pip install accelerate && \
+  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
+  cd /ThirdParty/accelerate && \
+  git checkout main && \
+  pip install -e . && \
   #
   #
 ## candle (hugging face)
@@ -89,8 +101,47 @@ RUN python3 -m pip install transformers && \
   git checkout master && \
   #
   #
+  # See Huggingface's transformers/src/transformers/pipelines/__init__.py for
+  # def pipeline(..) where if config is None and isinstance(model, str) and case
+  # when if is_peft_available().
+  ## PEFT (Parameter-Efficient Fine-Tuning)
+  git clone https://github.com/huggingface/peft /ThirdParty/peft && \
+  cd /ThirdParty/peft && \
+  pip install -e . && \
+  #
   #
   cd /
+
+
+
+## Meta Llama
+
+## llama-models, Utilities for use with Llama models.
+RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-models && \
+    cd /ThirdParty/llama-models && \
+    git checkout main && \
+    # Install dependencies, as mentioned here:
+    # https://github.com/meta-llama/llama-models 
+    pip install fairscale fire blobfile && \
+    pip install -r ./requirements.txt && \
+    cd /
+
+
+
+### Further third party code/repositories
+
+## insightface, needed by InstantID
+#
+#
+# InServiceOfX
+#
+#
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init --cone && \
+  git sparse-checkout set PythonLibraries/CoreCode && \
+  git checkout && \
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
 
 
 

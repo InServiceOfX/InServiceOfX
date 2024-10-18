@@ -1,6 +1,8 @@
 ### Further third party code/repositories
 
-## insightface, needed by InstantID
+# Python modules from pip that's needed by InServiceOfX.
+RUN pip install --upgrade pdf2image && \
+  pip install --upgradetabula
 #
 #
 # InServiceOfX
