@@ -70,6 +70,7 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
+
 ## HuggingFace
 
 ## transformers (hugging face), required to run LLMs as models.
@@ -130,7 +131,9 @@ RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-m
 
 ### Further third party code/repositories
 
-## insightface, needed by InstantID
+# Python modules from pip that's needed by InServiceOfX.
+RUN pip install --upgrade pdf2image && \
+  pip install --upgrade tabula
 #
 #
 # InServiceOfX
@@ -141,7 +144,11 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   git sparse-checkout init --cone && \
   git sparse-checkout set PythonLibraries/CoreCode && \
   git checkout && \
-  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/ && \
+  pip install -e . && \
+  git clone https://github.com/karpathy/nanoGPT.git && \
+  cd /
 
+  
 
 

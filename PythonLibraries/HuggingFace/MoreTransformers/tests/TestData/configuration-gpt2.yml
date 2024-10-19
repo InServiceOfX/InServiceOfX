@@ -1,0 +1,3 @@
+task: text-generation
+model_path : /Data/Models/LLM/openai-community/gpt2
+torch_dtype : ""

@@ -2,7 +2,7 @@
 
 # Python modules from pip that's needed by InServiceOfX.
 RUN pip install --upgrade pdf2image && \
-  pip install --upgradetabula
+  pip install --upgrade tabula
 #
 #
 # InServiceOfX
@@ -13,6 +13,10 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   git sparse-checkout init --cone && \
   git sparse-checkout set PythonLibraries/CoreCode && \
   git checkout && \
-  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/ && \
+  pip install -e . && \
+  git clone https://github.com/karpathy/nanoGPT.git && \
+  cd /
 
+  
 
