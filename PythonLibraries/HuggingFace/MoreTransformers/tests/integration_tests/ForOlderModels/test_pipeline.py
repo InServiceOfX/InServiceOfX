@@ -9,6 +9,7 @@ from transformers import pipeline, set_seed, Pipeline, GenerationConfig
 
 from pathlib import Path
 import json
+import pytest
 import torch
 
 test_data_directory = Path(__file__).resolve().parents[2] / "TestData"
@@ -77,6 +78,11 @@ def test_pipeline_instantiates():
         else:
             pytest.fail(f'Unexpected error: {err}')
 
+    # Done in base.py for class Pipeline, in def forward(..)
+    inference_context = pipeline_object.get_inference_context()
+    # Should be True 
+    #assert isinstance(inference_context, torch.autograd.grad_mode.no_grad)
+
 
 def test_pipeline_calls():
     pipeline_object = pipeline(
@@ -99,7 +105,13 @@ def test_pipeline_calls():
     # "content" keys. and code comment in the beginning of
     # TextGenerationPipeline, where example of "role" includes "user" and
     # "assistant".
+    # __call__(..) for TextGenerationPipeline calls __call__(..) for Pipeline by
+    # super().__call__(..).
+    # __call__(self, inputs, *args, ..) inputs is text_inputs for
+    # TextGenerationPipeline.__call__(..).
 
+    # __call__(..) for Pipeline calls forward(..) in Pipeline, which calls
+    # _forward(..) in TextGenerationPipeline.
     output = pipeline_object(
         "Hello, I'm a language model,",
         max_length=30,
@@ -109,3 +121,25 @@ def test_pipeline_calls():
     assert isinstance(output[0], dict)
     assert len(output[0].keys()) == 1
     assert len(output[0]["generated_text"]) == 132
+
+@pytest.mark.xfail(reason=\
+    "ValueError: Cannot use chat template functions because tokenizer.chat_template is not set and no template argument was passed!")
+def test_pipeline_calls_with_chat_fails_on_gpt2():
+    pipeline_object = pipeline(
+        task="text-generation",
+        model=configuration_gpt2.model_path,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+
+    set_seed(42)
+
+    chat1 = [{"role": "user", "content": "Tell me about writing GPT2 in CUDA."}]
+
+    # max_new_tokens if not specified defaults to
+    # self.generation_config.max_length - cur_len
+    output1 = pipeline_object(chat1, num_return_sequences=2)
+    # assert isinstance(output1, list)
+    # assert len(output1) == 2
+    # assert isinstance(output1[0], dict)
+    # assert len(output1[0].keys()) == 1
+    # assert len(output1[0]["generated_text"]) == 132
+

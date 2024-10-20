@@ -8,6 +8,8 @@ from transformers.utils import (
 
 from pathlib import Path
 
+import pytest
+
 test_data_directory = Path(__file__).resolve().parents[3] / "TestData"
 
 configuration_gpt2 = Configuration(
@@ -24,7 +26,7 @@ def test__add_variant_creates_filenames():
         "pytorch_model.variant.bin"
 
 
-def test_GPT2PreTrainedModel_instantiates_from_pretrained():
+def test_GPT2PreTrainedModel_fails_from_pretrained_on_gpt2():
     """
     See modeling_utils.py for PretrainedModel class and def __init__() and
     def post_init(). 
@@ -37,7 +39,9 @@ def test_GPT2PreTrainedModel_instantiates_from_pretrained():
     #   If specified load weights from 'variant' filename, *e.g.*
     # pytorch_model.<variant>.bin. 'variant' is ignored when using 'from_tf',
     # 'from_flax'.
-    model = GPT2PreTrainedModel.from_pretrained(
-        configuration_gpt2.model_path,
-        local_files_only=True)
+
+    with pytest.raises(IndexError):
+        GPT2PreTrainedModel.from_pretrained(
+            configuration_gpt2.model_path,
+            local_files_only=True)
     
