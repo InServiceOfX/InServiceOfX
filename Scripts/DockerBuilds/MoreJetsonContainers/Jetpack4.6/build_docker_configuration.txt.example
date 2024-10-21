@@ -1,0 +1,22 @@
+# Copy this file and fill in the values for your specific hardware configuration
+# for ARCH, PTX, and COMPUTE_CAPABILITY. Be sure to rename the file to be
+# build_docker_configuration.txt (i.e. remove the .example extension).
+# See
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+# for an explanation of the difference between compute capability, ARCH, and
+# PTX, a gencode.
+
+# Remember to change ARCH, PTX, and COMPUTE_CAPABILITY to match the Jetson TX2i.
+ARCH=6.2
+PTX=sm_62
+COMPUTE_CAPABILITY=62
+# https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html#framework-matrix-2021
+# See 22.01 for latest version of Pytorch compatible with TX2.
+DOCKER_IMAGE_NAME=x-transformers-JetPack4.6
+# This
+# https://github.com/dusty-nv/jetson-containers
+# led me to this legacy page:
+# https://github.com/dusty-nv/jetson-containers/tree/legacy
+# which then led me to this page, mentioning being able to pull these images:
+# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-pytorch
+BASE_IMAGE=nvcr.io/nvidia/pytorch:24.05-py3
