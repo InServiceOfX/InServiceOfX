@@ -12,9 +12,7 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   cd /ThirdParty/InServiceOfX/ && \
   git sparse-checkout init --cone && \
   git sparse-checkout set PythonLibraries/CoreCode && \
-  git checkout && \
-  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/ && \
-  pip install -e . && \
+  git checkout master && \
   git clone https://github.com/karpathy/nanoGPT.git && \
   cd /
 

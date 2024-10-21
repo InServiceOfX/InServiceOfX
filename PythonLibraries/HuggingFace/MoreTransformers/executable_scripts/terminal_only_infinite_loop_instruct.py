@@ -35,9 +35,12 @@ import torch
 
 def terminal_only_infinite_loop_instruct():
 
-    configuration = Configuration(
-        python_libraries_path.parent / "Configurations" / "HuggingFace" / \
-            "MoreTransformers" / "configuration.yml")        
+    configuration = Configuration()
+
+    # TODO: change this for another configuration .yml file for arm64.
+    # configuration = Configuration(
+    #     python_libraries_path.parent / "Configurations" / "HuggingFace" / \
+    #         "MoreTransformers" / "configuration.yml")        
 
     model, _ = create_AutoModelForCausalLM(
         model_subdirectory=configuration.model_path,
