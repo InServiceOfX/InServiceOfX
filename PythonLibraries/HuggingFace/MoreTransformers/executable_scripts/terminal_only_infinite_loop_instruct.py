@@ -35,7 +35,9 @@ import torch
 
 def terminal_only_infinite_loop_instruct():
 
-    configuration = Configuration()
+    configuration = Configuration(
+        python_libraries_path.parent / "Configurations" / "HuggingFace" / \
+            "MoreTransformers" / "configuration.yml")        
 
     model, _ = create_AutoModelForCausalLM(
         model_subdirectory=configuration.model_path,
@@ -47,7 +49,9 @@ def terminal_only_infinite_loop_instruct():
 
     tokenizer = AutoTokenizer.from_pretrained(configuration.model_path)
 
-    generation_configuration = GenerationConfiguration()
+    generation_configuration = GenerationConfiguration(
+        python_libraries_path.parent / "Configurations" / "HuggingFace" / \
+            "MoreTransformers" / "generation_configuration.yml")
 
     streamer = TextIteratorStreamer(
         tokenizer,

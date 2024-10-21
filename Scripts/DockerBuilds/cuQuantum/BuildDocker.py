@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from CommonUtilities import (
     build_docker_image,
     read_build_configuration,
@@ -71,8 +71,11 @@ def main():
 
     # Paths to Dockerfile components
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
-    dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
+    # We can't use the base Dockerfile because with NVIDIA's base image for
+    # cuquantum applicate, we need sudo.
+    dockerfile_base = script_dir / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
+    dockerfile_nvidia = script_dir / "Dockerfile.nvidia"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
     try:
@@ -81,6 +84,7 @@ def main():
             dockerfile_header,
             dockerfile_base,
             dockerfile_rust,
+            dockerfile_nvidia,
             dockerfile_third_parties)
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

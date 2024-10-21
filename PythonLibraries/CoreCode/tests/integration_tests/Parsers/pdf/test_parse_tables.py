@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 import pandas as pd
 from corecode.Parsers.pdf.parse_tables import parse_tables
