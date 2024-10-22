@@ -1,0 +1,15 @@
+### Further third party code/repositories
+
+#
+#
+# InServiceOfX
+#
+#
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git checkout master
+
+
+
+
+

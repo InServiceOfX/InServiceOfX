@@ -12,11 +12,12 @@ PTX=sm_62
 COMPUTE_CAPABILITY=62
 # https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html#framework-matrix-2021
 # See 22.01 for latest version of Pytorch compatible with TX2.
-DOCKER_IMAGE_NAME=x-transformers-JetPack4.6
+DOCKER_IMAGE_NAME=x-transformers-jetpack4.6
 # This
 # https://github.com/dusty-nv/jetson-containers
 # led me to this legacy page:
 # https://github.com/dusty-nv/jetson-containers/tree/legacy
 # which then led me to this page, mentioning being able to pull these images:
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-pytorch
-BASE_IMAGE=nvcr.io/nvidia/pytorch:24.05-py3
+# https://github.com/dusty-nv/jetson-containers
+BASE_IMAGE=dustynv/transformers:r32.7.1 

@@ -144,7 +144,8 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   git sparse-checkout init --cone && \
   git sparse-checkout set PythonLibraries/CoreCode && \
   git checkout master && \
-  git clone https://github.com/karpathy/nanoGPT.git && \
+  cd / && \
+  git clone https://github.com/karpathy/nanoGPT.git /ThirdParty/nanoGPT && \
   cd /
 
   

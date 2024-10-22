@@ -26,13 +26,6 @@ WORKDIR ${THIRD_PARTY}
 ARG ARCH
 ARG PTX
 
-# This is to fix
-# 8.982 Reading package lists...
-# 13.35 W: GPG error: https://apt.kitware.com/ubuntu bionic InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 1A127079A92F09ED
-#13.35 E: The repository 'https://apt.kitware.com/ubuntu bionic InRelease' is not signed.
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1A127079A92F09ED && \
-    apt-get update
-
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache python3-pip curl && \
@@ -42,7 +35,7 @@ RUN apt-get update && \
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
+  pip install --upgrade python-dotenv
 
 
 
