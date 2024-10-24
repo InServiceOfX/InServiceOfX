@@ -1,0 +1,3 @@
+task: text-generation
+model_path : /Data/Models/ViDoRe/colqwen2-v0.1-merged
+torch_dtype : "torch.bfloat16"

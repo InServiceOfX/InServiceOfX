@@ -18,7 +18,6 @@ Usage: build_docker_image.py [--no-cache] [--arm64]
 
 Options:
   --no-cache         If provided, the Docker build will be performed without using cache
-  --arm64            Build for ARM 64 architecture
   --help             Show this help message and exit
 """
     print(help_text)
@@ -68,40 +67,24 @@ def main():
 
     # Paths to Dockerfile components
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
-    if args.arm64:
-        dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base.jetsontx2i"
-    else:
-        dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
+    dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
     dockerfile_more_pip_installs = script_dir / "Dockerfile.more_pip_installs"
-    if args.arm64:
-        dockerfile_huggingface = script_dir / "Dockerfile.huggingface.jetsontx2i"
-    else:
-        dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
+    dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
     dockerfile_meta_llama = script_dir / "Dockerfile.meta-llama"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
     try:
-        if args.arm64:
-            concatenate_dockerfiles(
-                dockerfile_path,
-                dockerfile_header,
-                dockerfile_base,
-                dockerfile_rust,
-                dockerfile_more_pip_installs,
-                dockerfile_huggingface,
-            )
-        else:
-            concatenate_dockerfiles(
-                dockerfile_path,
-                dockerfile_header,
-                dockerfile_base,
-                dockerfile_rust,
-                dockerfile_more_pip_installs,
-                dockerfile_huggingface,
-                dockerfile_meta_llama,
-                dockerfile_third_parties,
-            )
+        concatenate_dockerfiles(
+            dockerfile_path,
+            dockerfile_header,
+            dockerfile_base,
+            dockerfile_rust,
+            dockerfile_more_pip_installs,
+            dockerfile_huggingface,
+            dockerfile_meta_llama,
+            dockerfile_third_parties,
+        )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

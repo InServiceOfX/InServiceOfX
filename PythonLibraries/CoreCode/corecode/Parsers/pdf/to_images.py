@@ -24,15 +24,16 @@ def process_pdf(
     if isinstance(pdf_file, str):
         pdf_file = Path(pdf_file)
     pdf_path = input_dir / pdf_file
-    curr_output_dir = output_dir / pdf_file.stem
-    curr_output_dir.mkdir(parents=True, exist_ok=True)
+    current_output_dir = output_dir / pdf_file.stem
+    current_output_dir.mkdir(parents=True, exist_ok=True)
     
     images = convert_from_path(str(pdf_path))
     for i, image in enumerate(images, start=1):
-        image_path = curr_output_dir / f'page_{i}.{image_format.lower()}'
+        image_path = current_output_dir / f'page_{i}.{image_format.lower()}'
         image.save(str(image_path), image_format)
     
     print(f"Processed: {pdf_file}")
+
 
 def pdf_to_image_parallel(
         input_dir: Path,
@@ -53,6 +54,7 @@ def pdf_to_image_parallel(
     with multiprocessing.Pool(processes=num_processes) as pool:
         # Use starmap to pass the arguments as a tuple to the function
         pool.starmap(process_pdf, args)
+
 
 def convert_pdfs_to_images(
         input_dir: Path,

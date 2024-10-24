@@ -132,8 +132,12 @@ RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-m
 ### Further third party code/repositories
 
 # Python modules from pip that's needed by InServiceOfX.
+# Needed to use copali.
 RUN pip install --upgrade pdf2image && \
-  pip install --upgrade tabula
+  pip install --upgrade tabula && \
+  # Needed for pdf2image, for pdfinfo command.
+  apt-get install -y poppler-utils
+
 #
 #
 # InServiceOfX
@@ -147,7 +151,14 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   cd / && \
   git clone https://github.com/karpathy/nanoGPT.git /ThirdParty/nanoGPT && \
   cd /
+#
+#
+#
+# https://github.com/illuin-tech/colpali.git
+#
+RUN git clone https://github.com/illuin-tech/colpali.git /ThirdParty/colpali && \
+  cd /ThirdParty/colpali && \
+  pip install -e .
 
-  
 
 
