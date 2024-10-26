@@ -1,0 +1,3 @@
+task: text-generation
+model_path : /Data/Models/ViDoRe/colpali-v1.2-merged
+torch_dtype : "torch.bfloat16"
