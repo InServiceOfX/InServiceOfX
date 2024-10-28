@@ -66,7 +66,10 @@ RUN python3 -m pip install --upgrade pip && \
   pip install --upgrade ipywidgets && \
   pip install --upgrade numpy && \
   # Upgrading Jinja2 to 3.1 is needed to use apply_chat_template.
-  pip install --upgrade jinja2
+  pip install --upgrade jinja2 && \
+  # For async API calls to AsyncGroq
+  pip install --upgrade pytest-asyncio
+
 
 
 
@@ -159,6 +162,33 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 RUN git clone https://github.com/illuin-tech/colpali.git /ThirdParty/colpali && \
   cd /ThirdParty/colpali && \
   pip install -e .
+
+
+
+  
+RUN pip install groq
+
+
+
+
+# Install Lean and add to PATH
+RUN curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y && \
+    echo 'export PATH="/root/.elan/bin:$PATH"' >> /root/.bashrc && \
+    /bin/bash -c "source /root/.bashrc"
+
+# Update elan and set default Lean version
+RUN /root/.elan/bin/elan self update && \
+    /root/.elan/bin/elan default leanprover/lean4:stable
+
+
+# Install Mathlib4
+#RUN mkdir -p ~/.local/bin && \
+#    curl https://raw.githubusercontent.com/leanprover-community/mathlib4/master/scripts/install_mathlib.sh -sSf | bash
+
+# Update Mathlib4
+#RUN lake update
+
+
 
 
 

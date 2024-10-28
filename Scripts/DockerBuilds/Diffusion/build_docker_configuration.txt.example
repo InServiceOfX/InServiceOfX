@@ -10,3 +10,4 @@ ARCH=9.0
 PTX=sm_90a
 COMPUTE_CAPABILITY=90a
 DOCKER_IMAGE_NAME=diffusion-nvidia-python-24.05
+BASE_IMAGE=nvcr.io/nvidia/pytorch:24.05-py3

@@ -72,6 +72,8 @@ def main():
     dockerfile_more_pip_installs = script_dir / "Dockerfile.more_pip_installs"
     dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
     dockerfile_meta_llama = script_dir / "Dockerfile.meta-llama"
+    dockerfile_apis = script_dir / "Dockerfile.apis"
+    dockerfile_math = script_dir / "Dockerfile.math"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
     try:
@@ -84,6 +86,8 @@ def main():
             dockerfile_huggingface,
             dockerfile_meta_llama,
             dockerfile_third_parties,
+            dockerfile_apis,
+            dockerfile_math,
         )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

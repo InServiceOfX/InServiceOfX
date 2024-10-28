@@ -1,0 +1,3 @@
+task: text-generation
+model_path : /Data/Models/LLM/Qwen/Qwen2.5-Math-1.5B-Instruct
+torch_dtype : "auto"
