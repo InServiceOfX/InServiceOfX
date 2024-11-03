@@ -1,0 +1,1 @@
+from morepinns.PINNModel import PINNModel

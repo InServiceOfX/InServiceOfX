@@ -1,0 +1,24 @@
+RUN python3 -m pip install --upgrade pip && \
+    pip install matplotlib && \
+    pip install cantera && \
+    cd / && \
+    apt-get update && apt-get install -y wget bzip2 && \
+    pip install git+https://github.com/modelon-community/Assimulo.git && \
+    cd /
+
+
+
+    #    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+#    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+
+#ENV PATH="/opt/conda/bin:${PATH}"
+
+#RUN /opt/conda/bin/conda init bash && \
+#    conda create -n stiff_pinn_env python=3.10 -y
+
+#SHELL ["conda", "run", "-n", "stiff_pinn_env", "/bin/bash", "-c"]
+
+#RUN conda install -c conda-forge assimulo sundials -y
+
+#    cd /
+

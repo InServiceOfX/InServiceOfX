@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 from CommonUtilities import (
     build_docker_image,
     read_build_configuration,
@@ -14,11 +14,10 @@ from CommonUtilities import (
 
 def print_help():
     help_text = """
-Usage: build_docker_image.py [--no-cache] [--arm64]
+Usage: build_docker_image.py [--no-cache]
 
 Options:
   --no-cache         If provided, the Docker build will be performed without using cache
-  --arm64            Build for ARM 64 architecture
   --help             Show this help message and exit
 """
     print(help_text)
@@ -34,10 +33,6 @@ def main():
         action='store_true',
         help='If provided, the Docker build will be performed without using cache')
     parser.add_argument(
-        '--arm64',
-        action='store_true',
-        help='Build for ARM 64 architecture')
-    parser.add_argument(
         '--help',
         action='store_true',
         help='Show help message and exit')
@@ -52,7 +47,7 @@ def main():
     script_path = Path(__file__).resolve()
     script_dir = script_path.parent
     # Where common files for building and running Docker images are stored.
-    parent_dir = script_dir.parent
+    parent_dir = script_dir.parents[1]
 
     # Path to build_configuration.txt
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME
@@ -64,18 +59,13 @@ def main():
         sys.exit(1)
 
     # Path to Dockerfile in script directory
-    if args.arm64:
-        dockerfile_path = script_dir / "Dockerfile.arm64"
-    else:
-        dockerfile_path = script_dir / "Dockerfile"
+    dockerfile_path = script_dir / "Dockerfile"
 
     # Paths to Dockerfile components
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
-    # We can't use the base Dockerfile because with NVIDIA's base image for
-    # cuquantum applicate, we need sudo.
-    dockerfile_base = script_dir / "Dockerfile.base"
+    dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
-    dockerfile_nvidia = script_dir / "Dockerfile.nvidia"
+    dockerfile_more_pip_installs = script_dir / "Dockerfile.more_pip_installs"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
     try:
@@ -84,8 +74,9 @@ def main():
             dockerfile_header,
             dockerfile_base,
             dockerfile_rust,
-            dockerfile_nvidia,
-            dockerfile_third_parties)
+            dockerfile_more_pip_installs,
+            dockerfile_third_parties
+            )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

@@ -1,0 +1,11 @@
+RUN git clone https://github.com/InServiceOfX/pinns-torch.git /ThirdParty/pinns-torch && \
+  cd /ThirdParty/pinns-torch && \
+  pip install -r requirements.txt && \
+  pip install -e . && \
+  cd / && \
+  git clone https://github.com/InServiceOfX/Stiff-PINN.git /ThirdParty/Stiff-PINN && \
+  cd /ThirdParty/Stiff-PINN && \
+  cd /
+
+
+
