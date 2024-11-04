@@ -3,6 +3,9 @@
 # Make this an alias by
 # echo "alias StartDocker='./StartDocker.sh'" >> ~/.bashrc
 # source ~/.bashrc
+# I found that I also needed to do this:
+# chmod +x StartDocker.sh
+# because otherwise trying to run it gives error of Permission denied.
 
 # Set the base directory (modify this if needed)
 BASE_DIR="/media/ernest/Samsung980ProPCI/PropD/InServiceOfX"
