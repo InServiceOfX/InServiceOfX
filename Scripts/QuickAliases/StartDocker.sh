@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Make this an alias by
-# echo "alias StartDocker='./StartDocker.sh'" >> ~/.bashrc
+# echo "alias StartDocker='/home/propdev/Prop/InServiceOfX/Scripts/QuickAliases/StartDocker.sh'" >> ~/.bashrc
 # source ~/.bashrc
 # I found that I also needed to do this:
 # chmod +x StartDocker.sh
 # because otherwise trying to run it gives error of Permission denied.
 
 # Set the base directory (modify this if needed)
-BASE_DIR="/media/ernest/Samsung980ProPCI/PropD/InServiceOfX"
+BASE_DIR="/home/propdev/Prop/InServiceOfX"
 
 # Check if a base directory is provided as the first argument
 if [ -n "$1" ]; then

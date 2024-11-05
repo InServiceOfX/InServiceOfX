@@ -1,3 +1,5 @@
 task: text-generation
 model_path :
+# For SM 5.2 or i.e. compute capability 5.2, use torch.float16, otherwise if
+# newer, use torch.bfloat16.
 torch_dtype : "torch.bfloat16"
