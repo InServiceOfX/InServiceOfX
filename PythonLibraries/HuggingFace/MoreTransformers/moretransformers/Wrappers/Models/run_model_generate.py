@@ -14,7 +14,7 @@ def run_model_generate(
         generation_config: Optional[GenerationConfig] = None,
         streamer: Optional["BaseStreamer"] = None,
         **kwargs,
-    ) -> Union[GenerateOuput, torch.LongTensor]
+    ) -> Union[GenerateOutput, torch.LongTensor]
 
     inputs ('torch.Tensor' of varying shape depending on the modality,
     *optional*): The sequence used as a prompt for generation or as model

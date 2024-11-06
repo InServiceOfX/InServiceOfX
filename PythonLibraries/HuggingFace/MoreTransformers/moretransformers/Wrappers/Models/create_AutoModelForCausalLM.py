@@ -1,8 +1,6 @@
 from transformers import AutoModelForCausalLM
 from transformers.utils import is_peft_available
 
-import torch
-
 def create_AutoModelForCausalLM(
     model_subdirectory,
     torch_dtype=None,
