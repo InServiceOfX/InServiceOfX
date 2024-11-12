@@ -62,16 +62,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 
 
-RUN python3 -m pip install --upgrade pip && \
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
-  # For async API calls to AsyncGroq
-  pip install --upgrade pytest-asyncio
-
-
-
-
-
 ## HuggingFace
 
 RUN python3 -m pip install --upgrade pip && \
@@ -121,79 +111,35 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
-## Meta Llama
+## LangChain
 
-## llama-models, Utilities for use with Llama models.
-RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-models && \
-    cd /ThirdParty/llama-models && \
-    git checkout main && \
-    # Install dependencies, as mentioned here:
-    # https://github.com/meta-llama/llama-models 
-    pip install fairscale fire blobfile && \
-    pip install -r ./requirements.txt && \
-    cd /
+### https://python.langchain.com/docs/get_started/introduction
+### The LangChain libraries themselves are made up of several different packages
+### and we'll install 3 of them:
+### langchain: Chains, agents, and retrieval strategies that make up an
+### application's cognitive architecture.
+### langchain-core: Base abstractions and LangChain Expression Language.
+### langchain-community: Third party integrations.
 
-
-
-### Further third party code/repositories
-
-# Python modules from pip that's needed by InServiceOfX.
-# Needed to use copali.
-RUN pip install --upgrade pdf2image && \
-  pip install --upgrade tabula && \
-  # Needed to resolve IP address for openjpeg2/libopenjp2
-  apt update && \
-  # Needed for pdf2image, for pdfinfo command.
-  apt-get install -y poppler-utils
-
-#
-#
-# InServiceOfX
-#
-#
-RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
-  cd /ThirdParty/InServiceOfX/ && \
-  git sparse-checkout init --cone && \
-  git sparse-checkout set PythonLibraries/CoreCode && \
+RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchain && \
+  cd /ThirdParty/langchain/libs/langchain && \
   git checkout master && \
-  cd / && \
-  git clone https://github.com/karpathy/nanoGPT.git /ThirdParty/nanoGPT && \
-  cd /
-#
-#
-#
-# https://github.com/illuin-tech/colpali.git
-#
-RUN git clone https://github.com/illuin-tech/colpali.git /ThirdParty/colpali && \
-  cd /ThirdParty/colpali && \
-  pip install -e .
-
-
-
-
-RUN pip install groq
-
-
-
-
-# Install Lean and add to PATH
-RUN curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y && \
-    echo 'export PATH="/root/.elan/bin:$PATH"' >> /root/.bashrc && \
-    /bin/bash -c "source /root/.bashrc"
-
-# Update elan and set default Lean version
-RUN /root/.elan/bin/elan self update && \
-    /root/.elan/bin/elan default leanprover/lean4:stable
-
-
-# Install Mathlib4
-#RUN mkdir -p ~/.local/bin && \
-#    curl https://raw.githubusercontent.com/leanprover-community/mathlib4/master/scripts/install_mathlib.sh -sSf | bash
-
-# Update Mathlib4
-#RUN lake update
-
-
+  # Install editable install from source.
+  # See https://python.langchain.com/docs/get_started/installation
+  pip install -e . && \
+  cd ../core && \
+  pip install -e . && \
+  cd ../community && \
+  pip install -e . && \
+  # Install partners, which include Anthropic, Mistral AI, Open AI, etc.
+  cd ../partners && \
+  cd anthropic && \
+  pip install -e . && \
+  cd ../mistralai && \
+  pip install -e . && \
+  cd ../openai && \
+  pip install -e . && \
+  pip install -U --quiet langmem
 
 
 

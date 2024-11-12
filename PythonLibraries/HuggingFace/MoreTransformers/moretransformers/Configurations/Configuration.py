@@ -16,6 +16,10 @@ class Configuration:
 
         self.task = data["task"]
         self.model_path = data["model_path"]
+        
+        # Extract model name from the last part of the path
+        self.model_name = Path(self.model_path).name
+        
         self.torch_dtype = data["torch_dtype"]
 
         if self.torch_dtype == "torch.float16":

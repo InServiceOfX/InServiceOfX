@@ -3,6 +3,7 @@ from moretransformers.Configurations import (
     GenerationConfiguration)
 
 from moretransformers.Wrappers.Models import run_model_generate
+from moretransformers.Wrappers.Models.configure_tokens import get_pad_token_id
 
 from typing import List, Dict
 
@@ -60,6 +61,7 @@ class LocalLlamaAgent:
                 model=self.model,
                 streamer=self.streamer,
                 eos_token_id=self.generation_configuration.eos_token_id,
+                pad_token_id=get_pad_token_id(self.model, self.tokenizer),
                 generation_configuration=self.generation_configuration,
                 attention_mask=return_output["attention_mask"])
 

@@ -63,6 +63,27 @@ def test_LlamaForCausalLM_derives_from_LlamaPreTrainedModel():
     assert model._supports_cache_class == True
     assert model._supports_quantized_cache == True
 
+def test_LlamaForCausalLM_initializes_LlamaConfig():
+    """
+    See transformers, models/llama/configuration_llama.py for LlamaConfig,
+    which derives from PretrainedConfig, found in
+    transformers/configuration_utils.py
+    """
+    pretrained_model_path = data_sub_dirs.ModelsLLM / "meta-llama" / \
+        "Llama-3.2-1B-Instruct"
+
+    model = LlamaForCausalLM.from_pretrained(
+        pretrained_model_path,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        trust_remote_code=True)
+
+    # Data members of PretrainedConfig
+
+    assert model.config.bos_token_id == 128000
+    assert model.config.pad_token_id == None
+    assert model.config.eos_token_id == [128001, 128008, 128009]
+
 def test_LlamaPreTrainedModel_fails_to_instantiate():
     """
     See transformers, src/transformers/modeling_utils.py

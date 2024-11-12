@@ -10,17 +10,12 @@
 # Set the base directory (modify this if needed)
 BASE_DIR="/home/propdev/Prop/InServiceOfX"
 
-# Check if a base directory is provided as the first argument
-if [ -n "$1" ]; then
-    BASE_DIR="$1"
-fi
-
 # Set the argument for RunDocker.py (default value)
 DOCKERFILE_LOCATION_ARG="../LLM/Meta/FullLlama/"
 
 # Check if a Docker argument is provided as the second argument
-if [ -n "$2" ]; then
-    DOCKERFILE_LOCATION_ARG="$2"
+if [ -n "$1" ]; then
+    DOCKERFILE_LOCATION_ARG="$1"
 fi
 
 # Navigate to the base directory

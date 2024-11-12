@@ -2,6 +2,8 @@ def run_model_generate(
     input_ids,
     model,
     eos_token_id,
+    # Use get_pad_token_id to determine pad_token_id.
+    pad_token_id,
     streamer=None,
     generation_configuration=None,
     generation_config=None,
@@ -33,16 +35,15 @@ def run_model_generate(
     the model configuration. Please note that unspecified parameters will
     inherit ['~generation.GenerationConfig']'s default value, whose
     documentation should be checked to parameterize generation.
+
+    @param pad_token_id: ID of padding token in the vocabulary.
+    Use configure_tokens.py get_pad_token_id to determine this.
     """
     # Create base generation config from model if none provided
     if generation_config is None and generation_configuration is None:
         generation_config = model.generation_config
 
     if generation_configuration is not None:
-        # Set pad_token_id to eos_token_id if not set
-        pad_token_id = getattr(model.config, 'pad_token_id', None)
-        if pad_token_id is None:
-            pad_token_id = eos_token_id
 
         generation_kwargs = {
             'max_new_tokens': generation_configuration.max_new_tokens,

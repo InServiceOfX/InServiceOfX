@@ -9,6 +9,7 @@ from transformers import AutoTokenizer, TextIteratorStreamer
 import torch
 
 from moretransformers.Configurations import GenerationConfiguration
+from moretransformers.Wrappers.Models.configure_tokens import get_pad_token_id
 
 data_sub_dirs = DataSubdirectories()
 
@@ -61,6 +62,7 @@ def test_run_model_generate_generates():
         model=model,
         streamer=streamer,
         eos_token_id=[128001,128008,128009],
+        pad_token_id=get_pad_token_id(model, tokenizer),
         generation_configuration=generation_configuration)
 
     output_buffer = ""

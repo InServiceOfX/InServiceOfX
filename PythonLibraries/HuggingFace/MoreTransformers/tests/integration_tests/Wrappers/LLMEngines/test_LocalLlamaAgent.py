@@ -25,6 +25,9 @@ def test_LocalLlamaAgent_inits():
     assert agent.model.config.pad_token_id == \
         generation_configuration_llama3.eos_token_id[0]
 
+    assert agent.model.config.name_or_path == \
+        "/Data/Models/LLM/meta-llama/Llama-3.2-1B-Instruct"
+
 def test_LocalLlamaAgent_generate_for_llm_engine_fails_on_empty_messages():
 
     agent = LocalLlamaAgent(

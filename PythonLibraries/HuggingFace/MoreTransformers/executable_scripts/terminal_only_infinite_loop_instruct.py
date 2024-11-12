@@ -28,6 +28,7 @@ from moretransformers.Wrappers.Models import (
     create_AutoModelForCausalLM,
     run_model_generate,
     set_model_to_cuda)
+from moretransformers.Wrappers.Models.configure_tokens import get_pad_token_id
 
 from transformers import AutoTokenizer, TextIteratorStreamer
 
@@ -101,6 +102,7 @@ def terminal_only_infinite_loop_instruct():
                     model=model,
                     streamer=streamer,
                     eos_token_id=generation_configuration.eos_token_id,
+                    pad_token_id=get_pad_token_id(model, tokenizer),
                     generation_configuration=generation_configuration,
                     attention_mask=return_output["attention_mask"])
 
