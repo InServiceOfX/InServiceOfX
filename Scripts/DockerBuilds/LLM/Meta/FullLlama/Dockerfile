@@ -138,6 +138,8 @@ RUN git clone https://github.com/meta-llama/llama-models.git /ThirdParty/llama-m
 # Needed to use copali.
 RUN pip install --upgrade pdf2image && \
   pip install --upgrade tabula && \
+  # Needed to resolve IP address for openjpeg2/libopenjp2
+  apt update && \
   # Needed for pdf2image, for pdfinfo command.
   apt-get install -y poppler-utils
 
@@ -165,7 +167,7 @@ RUN git clone https://github.com/illuin-tech/colpali.git /ThirdParty/colpali && 
 
 
 
-  
+
 RUN pip install groq
 
 

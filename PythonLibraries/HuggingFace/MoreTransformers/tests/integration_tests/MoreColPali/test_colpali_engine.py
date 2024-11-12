@@ -25,7 +25,7 @@ configuration_colpali = Configuration(
 total_dataset = load_dataset("vidore/docvqa_test_subsampled", split="test[:3]")
 images = total_dataset["image"]
 
-query_indices = [12, 15]
+query_indices = [1, 0]
 queries = [total_dataset[idx]["query"] for idx in query_indices]
 
 def test_ColPali_instantiates_with_cpu_offloading():
