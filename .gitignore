@@ -124,6 +124,7 @@ Scripts/DockerBuilds/MinimalCUDA/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalPytorchAndCUDA/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/OctoAI/mount_paths.txt
 Scripts/DockerBuilds/OctoAI/nvidia_compute_capabilities.txt
+Scripts/QuickAliases/StartDocker.sh
 Scripts/PyTorchGPUDocker/mount_paths.txt
 **/build_docker_configuration.txt
 **/run_docker_configuration.txt

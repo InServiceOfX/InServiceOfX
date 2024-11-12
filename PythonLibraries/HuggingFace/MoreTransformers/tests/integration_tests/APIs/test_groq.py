@@ -4,6 +4,8 @@ from groq import (AsyncGroq, Groq)
 from corecode.Utilities import load_environment_file
 from corecode.Utilities.load_environment_file import get_environment_variable
 
+from pathlib import Path
+
 load_environment_file()
 
 test_image_data_directory = Path(__file__).parents[4] / "ThirdParties" / \

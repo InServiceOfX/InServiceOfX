@@ -34,42 +34,40 @@ def run_model_generate(
     inherit ['~generation.GenerationConfig']'s default value, whose
     documentation should be checked to parameterize generation.
     """
-    if generation_configuration is not None:
+    # Create base generation config from model if none provided
+    if generation_config is None and generation_configuration is None:
+        generation_config = model.generation_config
 
-        # Parameters that control the generation strategy used.
-        # Whether or not to use sampling; use greedy decoding otherwise.
-        do_sample = False if generation_configuration.temperature == 0 else True
+    if generation_configuration is not None:
+        # Set pad_token_id to eos_token_id if not set
+        pad_token_id = getattr(model.config, 'pad_token_id', None)
+        if pad_token_id is None:
+            pad_token_id = eos_token_id
+
+        generation_kwargs = {
+            'max_new_tokens': generation_configuration.max_new_tokens,
+            'do_sample': False if generation_configuration.temperature == 0 else True,
+            'top_k': generation_configuration.top_k,
+            'top_p': generation_configuration.top_p,
+            'temperature': generation_configuration.temperature,
+            'eos_token_id': eos_token_id,
+            'pad_token_id': pad_token_id,
+            'streamer': streamer,
+            'repetition_penalty': 1.1,  # Add repetition penalty
+            'use_cache': True,  # Enable KV caching
+        }
 
         if attention_mask is not None:
-            return model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=generation_configuration.max_new_tokens,
-                do_sample=do_sample,
-                top_k=generation_configuration.top_k,
-                top_p=generation_configuration.top_p,
-                temperature=generation_configuration.temperature,
-                eos_token_id=eos_token_id,
-                streamer=streamer)
-        else:
-            return model.generate(
-                input_ids=input_ids,
-                max_new_tokens=generation_configuration.max_new_tokens,
-                do_sample=do_sample,
-                top_k=generation_configuration.top_k,
-                top_p=generation_configuration.top_p,
-                temperature=generation_configuration.temperature,
-                eos_token_id=eos_token_id,
-                streamer=streamer)
+            generation_kwargs['attention_mask'] = attention_mask
 
+        return model.generate(
+            input_ids=input_ids,
+            **generation_kwargs
+        )
+    
+    # Fallback to basic generation config
+    kwargs = {'generation_config': generation_config, 'streamer': streamer}
     if attention_mask is not None:
-        return model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            generation_config=generation_config,
-            streamer=streamer)
-    else:
-        return model.generate(
-            input_ids=input_ids,
-            generation_config=generation_config,
-            streamer=streamer)
+        kwargs['attention_mask'] = attention_mask
+        
+    return model.generate(input_ids=input_ids, **kwargs)
