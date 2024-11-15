@@ -1,0 +1,84 @@
+
+\documentclass[10pt]{amsart}
+\pdfoutput=1
+
+% Essential packages
+\usepackage{mathtools,amssymb,caption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usepackage{multicol}
+
+% Hyperref setup
+\hypersetup{colorlinks=true,citecolor=[rgb]{0,0.4,0}}
+
+% Wide format page settings
+\oddsidemargin=15pt
+\evensidemargin=5pt
+\hoffset-45pt
+\voffset-55pt
+\topmargin=-4pt
+\headsep=5pt
+\textwidth=1120pt
+\textheight=595pt
+\paperwidth=1200pt
+\paperheight=700pt
+\footskip=40pt
+
+% Mathematical environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% Custom environments
+\newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
+\newenvironment{claimproof}[1]{\par\noindent\underline{Proof:}\space#1}{\hfill $\blacksquare$}
+
+% Section heading commands
+\newcommand{\questionhead}[1]{\bigskip\bigskip\noindent{\small\bf Question #1.}\bigskip}
+\newcommand{\problemhead}[1]{\noindent{\small\bf Problem #1.}}
+\newcommand{\exercisehead}[1]{\smallskip\noindent{\small\bf Exercise #1.}}
+\newcommand{\solutionhead}[1]{\noindent{\small\bf Solution #1.}}
+
+% Document info
+\title[CuLLM Theory]{CuLLM Theory}
+\author{Ernest Yeung for In Service Of X LLC \href{mailto:inserviceofxy@proton.me}{inserviceofxy@proton.me}}
+\date{\today}
+\keywords{LLM, Attention, CUDA}
+
+\begin{document}
+
+% Code listing settings
+\definecolor{darkgreen}{rgb}{0,0.4,0}
+\lstset{language=C++,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{darkgreen}
+}
+
+\maketitle
+\tableofcontents
+
+% Start two-column layout
+\begin{multicols*}{2}
+
+\begin{abstract}
+Your abstract text here.
+\end{abstract}
+
+\section{Introduction}
+
+\section{LLM}
+\subsection{Attention}
+\subsubsection{Attention Forward}
+
+
+% End two-column layout
+\end{multicols*}
+
+\end{document}
