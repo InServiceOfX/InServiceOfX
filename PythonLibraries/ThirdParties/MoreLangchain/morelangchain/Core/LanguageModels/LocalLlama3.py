@@ -121,7 +121,8 @@ class LocalLlama3(LLM):
         """
         return {
             "model_name": self.model.config.name_or_path,
-            "device_map": self.model.device_map,
+            # TODO: find out if Langchain needs a device_map or hf_device_map.
+            #"hf_device_map": self.model.device_map,
             "torch_dtype": self.model.dtype
         }
     

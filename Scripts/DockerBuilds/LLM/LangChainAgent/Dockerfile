@@ -139,7 +139,9 @@ RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchai
   pip install -e . && \
   cd ../openai && \
   pip install -e . && \
-  pip install -U --quiet langmem
+  pip install -U --quiet langmem && \
+  pip install -U langchain-experimental && \
+  pip install -U langchain-groq
 
 
 

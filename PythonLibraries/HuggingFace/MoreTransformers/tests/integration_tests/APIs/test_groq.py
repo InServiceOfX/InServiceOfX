@@ -27,6 +27,8 @@ def test_groq():
         model=model
     )
 
+    assert isinstance(client, Groq)
+
     assert len(chat_completion.choices) == 1
     assert isinstance(chat_completion.choices[0].message.content, str)
     # Uncomment to print the response
