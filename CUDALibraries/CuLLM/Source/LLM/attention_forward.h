@@ -1,8 +1,8 @@
 #ifndef LLM_ATTENTION_FORWARD_H
 #define LLM_ATTENTION_FORWARD_H
 
-#include <cstddef> // std::size_t
-#include <limits> // std::numeric_limits
+#include "Utilities/MathFunctions.h"
+#include "Utilities/NumericalConstants/get_infinity.h"
 
 namespace LLM
 {
@@ -25,41 +25,43 @@ __global__ void attention_query_key_kernel1(
   const int C,
   const int NH)
 {
-  const std::size_t idx {blockIdx.x * blockDim.x + threadIdx.x};
-  const std::size_t total_number_of_threads {B * NH * T * T};
+  const size_t idx {blockIdx.x * blockDim.x + threadIdx.x};
+  const size_t total_number_of_threads {
+    static_cast<size_t>(B) * NH * T * T};
 
   if (idx < total_number_of_threads)
   {
-    const std::size_t t2 {idx % T};
-    const std::size_t t {(idx / T) % T};
+    const size_t t2 {idx % T};
+    const size_t t {(idx / T) % T};
     if (t2 > t)
     {
       // autoregressive mask
-      preattention[idx] = -std::numeric_limits<FPType>::infinity();
+      preattention[idx] =
+        -Utilities::NumericalConstants::get_infinity<FPType>();
       return;
     }
 
     // attention head index
-    const std::size_t h {(idx / (T * T)) % NH};
+    const size_t h {(idx / (T * T)) % NH};
     // batch index
-    const std::size_t b {idx / (NH * T * T)};
+    const size_t b {idx / (NH * T * T)};
 
     const int C3 {C * 3};
     // head size, dimensionality of single attention head, d.
     const int hs {C / NH};
 
-    const T* query_t {inp + b * T * C3 + t * C3 + h * hs};
+    const FPType* query_t {inp + b * T * C3 + t * C3 + h * hs};
     // +C because it's a key.
-    const T* key_t2 {inp + b * T * C3 + t2 * C3 + h * hs + C};
+    const FPType* key_t2 {inp + b * T * C3 + t2 * C3 + h * hs + C};
 
     // (query_t) dot (key_t2)
-    T value {0.0f};
+    FPType value {0.0f};
     for (int i {0}; i < hs; ++i)
     {
       value += query_t[i] * key_t2[i];
     }
 
-    value *= 1.0 / sqrt(hs);
+    value *= 1.0 / Utilities::MathFunctions::get_sqrt<FPType>(hs);
 
     preattention[idx] = value;
   }

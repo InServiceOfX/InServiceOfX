@@ -1,23 +1,24 @@
 ENABLE_TESTING()
 
+SET(TEST_CU_SOURCES
+  LLM/attention_forward_tests.cu
+)
+
+#SET(TEST_SOURCES
+#  )
+
 ADD_EXECUTABLE(Check
-  DataStructures/Array_tests.cu
-  GPUPuzzles_tests.cu
-  Operations/Arithmetic_tests.cu
-  Operations/Convolution1D_tests.cu
-  Operations/dot_product_tests.cu
-  Utilities/CaptureCerr.cpp
-  Utilities/CaptureCerr_tests.cpp
-  Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
-  Utilities/NumericalConstants/get_infinity_tests.cu
-  Utilities/arange_tests.cpp
+  ${TEST_CU_SOURCES}
+  # ${TEST_SOURCES}
   )
 
 TARGET_LINK_LIBRARIES(Check
-  Utilities
+  MoreCUDAUtilities
   gmock_main
   gtest_main
-)
+  )
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../../MoreCUDA/Source/)
 
 INCLUDE(GoogleTest)
 gtest_discover_tests(Check)

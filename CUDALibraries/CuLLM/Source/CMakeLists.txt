@@ -158,6 +158,7 @@ ENDIF()
 
 FetchContent_MakeAvailable(googletest)
 
-#ADD_SUBDIRECTORY(UnitTests)
+ADD_SUBDIRECTORY(UnitTests)
 #ADD_SUBDIRECTORY(Utilities)
 ADD_SUBDIRECTORY(../../MoreCUDA/Source/Utilities MoreCUDAUtilities)
+ADD_LIBRARY(MoreCUDAUtilities ALIAS Utilities)
