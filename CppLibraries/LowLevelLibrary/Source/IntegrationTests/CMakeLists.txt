@@ -3,6 +3,7 @@ ENABLE_TESTING()
 ADD_EXECUTABLE(IntegrationTestsCheck
   IPC/UDPSocket_tests.cpp
   IPC/UDP/RunningUDPTransceiver_tests.cpp
+  IPC/UDP/RunningTwoUDPTransceivers_tests.cpp
   ../UnitTests/ArbitraryIPAddressSetup.cpp
   )
 

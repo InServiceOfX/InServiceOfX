@@ -13,6 +13,14 @@ using UDPSocketConfiguration = IPC::UDPSocket::Configuration;
 
 namespace fs = std::filesystem;
 
+void print_usage(const char* program_name)
+{
+  std::cout << "Usage: " << program_name << " [configuration_file]\n"
+            << "  configuration_file: Optional. Path to configuration file in TestData directory\n"
+            << "                     (defaults to UDPTransceiverConfiguration.txt)\n"
+            << "  -h, --help: Show this help message\n";
+}
+
 // Global flag for clean shutdown
 std::atomic<bool> g_running{true};
 
@@ -25,8 +33,14 @@ void signal_handler(int signum)
   }
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  if (argc > 1 && (std::string(argv[1]) == "-h" || std::string(argv[1]) == "--help"))
+  {
+    print_usage(argv[0]);
+    return 0;
+  }
+
   // Setup signal handler
   signal(SIGINT, signal_handler);
 
@@ -35,9 +49,15 @@ int main()
   fs::path test_data_dir {
     current_file.parent_path().parent_path() / "TestData"};
     
+  std::string config_file = "UDPTransceiverConfiguration.txt";
+  if (argc > 1)
+  {
+    config_file = argv[1];
+  }
+    
   // Create receiver with configuration from transceiver's destination
   UDPSocketConfiguration transceiver_configuration {
-    test_data_dir / "UDPTransceiverConfiguration.txt"};
+    test_data_dir / config_file};
   UDPSocketConfiguration receiver_configuration {};
   receiver_configuration.ip_address_and_port_ = 
     transceiver_configuration.destination_;
