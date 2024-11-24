@@ -74,25 +74,25 @@ mod tests
         assert!(paths.project_path.exists());
 
         assert!(is_path_contains_substring(&paths.configure_paths_path, "InServiceOfX"));
-        assert!(is_path_contains_substring(&paths.configure_paths_path, "CoreCode"));
+        assert!(is_path_contains_substring(&paths.configure_paths_path, "RustLibraries"));
         assert!(is_path_contains_substring(&paths.configure_paths_path, "core_code"));
         assert!(is_path_contains_substring(&paths.configure_paths_path, "src"));
         assert!(is_path_contains_substring(&paths.configure_paths_path, "utilities"));
 
         assert!(is_path_contains_substring(&paths.core_code_rust_path, "InServiceOfX"));
-        assert!(is_path_contains_substring(&paths.core_code_rust_path, "CoreCode"));
+        assert!(is_path_contains_substring(&paths.core_code_rust_path, "RustLibraries"));
         assert!(is_path_contains_substring(&paths.core_code_rust_path, "core_code"));
         assert!(!is_path_contains_substring(&paths.core_code_rust_path, "src"));
         assert!(!is_path_contains_substring(&paths.core_code_rust_path, "utilities"));
 
         assert!(is_path_contains_substring(&paths.core_code_path, "InServiceOfX"));
-        assert!(is_path_contains_substring(&paths.core_code_path, "CoreCode"));
+        assert!(is_path_contains_substring(&paths.core_code_path, "RustLibraries"));
         assert!(!is_path_contains_substring(&paths.core_code_path, "core_code"));
         assert!(!is_path_contains_substring(&paths.core_code_path, "src"));
         assert!(!is_path_contains_substring(&paths.core_code_path, "utilities"));
 
         assert!(is_path_contains_substring(&paths.project_path, "InServiceOfX"));
-        assert!(!is_path_contains_substring(&paths.project_path, "CoreCode"));
+        assert!(!is_path_contains_substring(&paths.project_path, "RustLibraries"));
         assert!(!is_path_contains_substring(&paths.project_path, "core_code"));
         assert!(!is_path_contains_substring(&paths.project_path, "src"));
         assert!(!is_path_contains_substring(&paths.project_path, "utilities"));

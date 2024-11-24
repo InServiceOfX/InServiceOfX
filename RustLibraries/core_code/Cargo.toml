@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 # https://docs.rs/crate/dotenv/latest
 dotenv = "0.15"
+
+[dev-dependencies]
+core_code = { path = "." }
