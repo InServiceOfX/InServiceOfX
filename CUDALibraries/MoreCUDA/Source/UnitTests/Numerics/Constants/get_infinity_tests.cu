@@ -1,5 +1,5 @@
 #include "DataStructures/Array.h"
-#include "Utilities/NumericalConstants/get_infinity.h"
+#include "Numerics/Constants/get_infinity.h"
 
 #include "gtest/gtest.h"
 #include <cuda_fp16.h>  // For half precision support
@@ -9,13 +9,13 @@
 using DataStructures::Array;
 using std::numeric_limits;
 using std::vector;
-using Utilities::NumericalConstants::get_infinity;
+using Numerics::Constants::get_infinity;
 
 namespace GoogleUnitTests
 {
-namespace Utilities
+namespace Numerics
 {
-namespace NumericalConstants
+namespace Constants
 {
 
 template <typename FPType>
@@ -96,6 +96,6 @@ TEST(GetInfinityTests, ApplyMacroComparison)
   EXPECT_EQ(host_output.at(3), static_cast<__half>(0x7FFFFFFFFFFFFFFF));
 }
 
-} // namespace NumericalConstants
-} // namespace Utilities
+} // namespace Constants
+} // namespace Numerics
 } // namespace GoogleUnitTests

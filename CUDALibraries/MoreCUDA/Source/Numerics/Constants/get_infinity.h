@@ -1,12 +1,12 @@
-#ifndef UTILITIES_NUMERICAL_CONSTANTS_GET_INFINITY_H
-#define UTILITIES_NUMERICAL_CONSTANTS_GET_INFINITY_H
+#ifndef NUMERICS_CONSTANTS_GET_INFINITY_H
+#define NUMERICS_CONSTANTS_GET_INFINITY_H
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>  // For half precision support
 
-namespace Utilities
+namespace Numerics
 {
-namespace NumericalConstants
+namespace Constants
 {
 
 // Primary template - deleted to prevent instantiation with unsupported types.
@@ -54,7 +54,7 @@ template<> __device__ __half get_infinity<__half>()
   return __ushort_as_half((unsigned short)0x7C00U);
 }
 
-} // namespace NumericalConstants
-} // namespace Utilities
+} // namespace Constants
+} // namespace Numerics
 
-#endif // UTILITIES_NUMERICAL_CONSTANTS_GET_INFINITY_H
+#endif // NUMERICS_CONSTANTS_GET_INFINITY_H

@@ -3,13 +3,13 @@ ENABLE_TESTING()
 ADD_EXECUTABLE(Check
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
+  Numerics/Constants/get_infinity_tests.cu
   Operations/Arithmetic_tests.cu
   Operations/Convolution1D_tests.cu
   Operations/dot_product_tests.cu
   Utilities/CaptureCerr.cpp
   Utilities/CaptureCerr_tests.cpp
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
-  Utilities/NumericalConstants/get_infinity_tests.cu
   Utilities/arange_tests.cpp
   )
 
