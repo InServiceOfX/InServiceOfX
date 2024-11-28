@@ -42,6 +42,27 @@ template<> __device__ __half get_exponential<__half>(const __half value)
 #endif // __CUDA_ARCH__
 
 template <typename FPType>
+__device__ FPType get_max(const FPType a, const FPType b) = delete;
+
+template<> __device__ float get_max<float>(const float a, const float b)
+{
+  // See
+  // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__SINGLE.html#_CPPv45fmaxfff
+  return fmaxf(a, b);
+}
+
+//------------------------------------------------------------------------------
+/// See
+/// https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__DOUBLE.html#_CPPv44fmaxdd
+/// Treats NaN arguments as missing data. If 1 argument is NaN and the other is
+/// legitamate numeric value, numeric value is chosen.
+//------------------------------------------------------------------------------
+template<> __device__ double get_max<double>(const double a, const double b)
+{
+  return fmax(a, b);
+}
+
+template <typename FPType>
 __device__ FPType get_sqrt(const FPType value) = delete;
 
 template<> __device__ float get_sqrt<float>(const float value)

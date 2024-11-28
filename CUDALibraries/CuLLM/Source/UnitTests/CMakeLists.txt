@@ -2,7 +2,8 @@ ENABLE_TESTING()
 
 SET(TEST_CU_SOURCES
   LLM/attention_forward_tests.cu
-)
+  LLM/AttentionForward/softmax_tests.cu
+  )
 
 #SET(TEST_SOURCES
 #  )

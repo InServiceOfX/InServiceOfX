@@ -7,6 +7,7 @@ ADD_EXECUTABLE(Check
   Operations/Arithmetic_tests.cu
   Operations/Convolution1D_tests.cu
   Operations/dot_product_tests.cu
+  ParallelProcessing/warp_reductions_tests.cu
   Utilities/CaptureCerr.cpp
   Utilities/CaptureCerr_tests.cpp
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu

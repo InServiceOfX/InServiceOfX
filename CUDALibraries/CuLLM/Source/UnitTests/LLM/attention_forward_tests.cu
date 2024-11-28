@@ -281,21 +281,21 @@ TEST_F(AttentionForwardTests, AttentionSoftMaxKernel1Computes)
   EXPECT_NEAR(output[3], 0.0f, 1e-6f);
 
   // For t=1: maxval=3.0
-  const int idx1 = seq_length;
-  const float exp0_t1 = std::exp(3.0f - 3.0f);  // 1.0
-  const float exp1_t1 = std::exp(1.0f - 3.0f);  // exp(-2)
-  const float sum_t1 = exp0_t1 + exp1_t1;
+  const int idx1 {seq_length};
+  const float exp0_t1 {std::exp(3.0f - 3.0f)};  // 1.0
+  const float exp1_t1 {std::exp(1.0f - 3.0f)};  // exp(-2)
+  const float sum_t1 {exp0_t1 + exp1_t1};
   EXPECT_NEAR(output[idx1 + 0], exp0_t1/sum_t1, 1e-6f);
   EXPECT_NEAR(output[idx1 + 1], exp1_t1/sum_t1, 1e-6f);
   EXPECT_NEAR(output[idx1 + 2], 0.0f, 1e-6f);
   EXPECT_NEAR(output[idx1 + 3], 0.0f, 1e-6f);
 
   // For t=2: maxval=3.0
-  const int idx2 = 2 * seq_length;
-  const float exp0_t2 = std::exp(3.0f - 3.0f);  // 1.0
-  const float exp1_t2 = std::exp(1.0f - 3.0f);  // exp(-2)
-  const float exp2_t2 = std::exp(2.0f - 3.0f);  // exp(-1)
-  const float sum_t2 = exp0_t2 + exp1_t2 + exp2_t2;
+  const int idx2 {2 * seq_length};
+  const float exp0_t2 {std::exp(3.0f - 3.0f)};  // 1.0
+  const float exp1_t2 {std::exp(1.0f - 3.0f)};  // exp(-2)
+  const float exp2_t2 {std::exp(2.0f - 3.0f)};  // exp(-1)
+  const float sum_t2 {exp0_t2 + exp1_t2 + exp2_t2};
   EXPECT_NEAR(output[idx2 + 0], exp0_t2/sum_t2, 1e-6f);
   EXPECT_NEAR(output[idx2 + 1], exp1_t2/sum_t2, 1e-6f);
   EXPECT_NEAR(output[idx2 + 2], exp2_t2/sum_t2, 1e-6f);

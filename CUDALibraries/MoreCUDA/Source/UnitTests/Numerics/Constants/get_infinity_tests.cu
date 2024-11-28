@@ -1,5 +1,4 @@
 #include "DataStructures/Array.h"
-#include "Numerics/Constants/get_infinity.h"
 
 #include "gtest/gtest.h"
 #include <cuda_fp16.h>  // For half precision support
@@ -9,7 +8,6 @@
 using DataStructures::Array;
 using std::numeric_limits;
 using std::vector;
-using Numerics::Constants::get_infinity;
 
 namespace GoogleUnitTests
 {
@@ -17,6 +15,11 @@ namespace Numerics
 {
 namespace Constants
 {
+
+// Do the include here to avoid multiple definitions linking error.
+#include "Numerics/Constants/get_infinity.h"
+
+using Numerics::Constants::get_infinity;
 
 template <typename FPType>
 __global__ void apply_infinity_kernel(FPType* d_output)
