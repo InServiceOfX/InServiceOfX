@@ -3,7 +3,7 @@
 
 #include "Utilities/ErrorHandling/HandleUnsuccessfulCUDACall.h"
 
-#include <cstddef> // std::size_t
+#include <cstdint>
 #include <cuda_runtime.h>
 #include <iostream>
 #include <stdexcept>
@@ -19,18 +19,28 @@ struct Array
     Utilities::ErrorHandling::HandleUnsuccessfulCUDACall;
 
   T* elements_;
-  const std::size_t number_of_elements_;
+  // Because for CUDA, uint1 is of size 4 bytes=32 bits, use uint32_t. See
+  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3
+  const uint32_t number_of_elements_;
   bool is_cuda_freed_;
 
-  Array(const std::size_t number_of_elements = 50000):
+  Array(const uint32_t number_of_elements = 50000):
     elements_{nullptr},
     number_of_elements_{number_of_elements},
     is_cuda_freed_{false}
   {
-    const size_t size_in_bytes {number_of_elements * sizeof(T)};
+    const uint32_t size_in_bytes {
+      number_of_elements * static_cast<uint32_t>(sizeof(T))};
     HandleUnsuccessfulCUDACall handle_malloc {
       "Failed to allocate device array"};
 
+    //--------------------------------------------------------------------------
+    /// While the function signature of cudaMalloc(..) is
+    /// __host__ ​ __device__ ​cudaError_t cudaMalloc ( void** devPtr, size_t size ) 
+    /// size_t could be an unsigned int in CUDA and wouldn't be the 64-bit x86
+    /// architecture, and so use uint32_t. See
+    /// https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1g37d37965bfb4803b6d4e59ff26856356
+    //--------------------------------------------------------------------------
     HANDLE_UNSUCCESSFUL_CUDA_CALL_WITH_LOCATION(
       handle_malloc,
       cudaMalloc(reinterpret_cast<void**>(&elements_), size_in_bytes));
@@ -51,18 +61,25 @@ struct Array
     HandleUnsuccessfulCUDACall handle_values {
       "Failed to copy values from host to device"};
 
+    //--------------------------------------------------------------------------
+    /// While the function signature of cudaMemcpy(..) is
+    /// __host__ ​cudaError_t cudaMemcpy ( void* dst, const void* src, size_t count, cudaMemcpyKind kind ) 
+    /// size_t could be an unsigned int in CUDA and wouldn't be the 64-bit x86
+    /// architecture, and so use uint32_t. See
+    /// https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1gc263dbe6574220cc776b45438fc351e8
+    //--------------------------------------------------------------------------
     HANDLE_UNSUCCESSFUL_CUDA_CALL_WITH_LOCATION(
       handle_values,
       cudaMemcpy(
         elements_,
         h_a.data(),
-        h_a.size() * sizeof(T),
+        static_cast<uint32_t>(h_a.size() * sizeof(T)),
         cudaMemcpyHostToDevice));
 
     return handle_values.is_cuda_success();
   }
 
-  bool copy_host_input_to_device(const T* h_a, const std::size_t size_in_bytes)
+  bool copy_host_input_to_device(const T* h_a, const uint32_t size_in_bytes)
   {
     HandleUnsuccessfulCUDACall handle_values {
       "Failed to copy values from host to device"};
@@ -88,7 +105,7 @@ struct Array
       cudaMemcpy(
         h_a.data(),
         elements_,
-        number_of_elements_ * sizeof(T),
+        number_of_elements_ * static_cast<uint32_t>(sizeof(T)),
         cudaMemcpyDeviceToHost));
 
     return handle_values.is_cuda_success();
@@ -104,7 +121,7 @@ struct Array
       cudaMemcpy(
         host_ptr,
         elements_,
-        number_of_elements_ * sizeof(T),
+        number_of_elements_ * static_cast<uint32_t>(sizeof(T)),
         cudaMemcpyDeviceToHost));
 
     return handle_values.is_cuda_success();

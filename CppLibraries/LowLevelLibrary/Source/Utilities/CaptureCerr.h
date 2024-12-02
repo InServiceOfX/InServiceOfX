@@ -1,10 +1,12 @@
-#ifndef UNIT_TESTS_UTILITIES_CAPTURE_CERR_H
-#define UNIT_TESTS_UTILITIES_CAPTURE_CERR_H
+//------------------------------------------------------------------------------
+/// \brief Help capture std::cerr standard output.
+///-----------------------------------------------------------------------------
+#ifndef UTILITIES_CAPTURE_CERR_H
+#define UTILITIES_CAPTURE_CERR_H
 
 #include <sstream> // std::ostringstream
+#include <utility> // std::pair
 
-namespace UnitTests
-{
 namespace Utilities
 {
 
@@ -14,14 +16,11 @@ namespace Utilities
 //------------------------------------------------------------------------------
 std::streambuf* capture_cerr(std::ostringstream& local_oss);
 
-//------------------------------------------------------------------------------
-/// \brief Help capture std::cerr standard output.
-///-----------------------------------------------------------------------------
 class CaptureCerr
 {
   public:
 
-    // Buffer to capture cerr; it essentially displaces the stream of std::cerr.
+    // Buffer to capture cout; it essentially displaces the stream of std::cout.
     std::ostringstream local_oss_;
 
     CaptureCerr();
@@ -41,6 +40,5 @@ class CaptureCerr
 };
 
 } // namespace Utilities
-} // namespace UnitTests
 
-#endif // UNIT_TESTS_UTILITIES_CAPTURE_CERR_H
+#endif // UTILITIES_CAPTURE_CERR_H

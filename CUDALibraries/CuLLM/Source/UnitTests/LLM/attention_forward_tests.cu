@@ -1,4 +1,3 @@
-#include "LLM/attention_forward.h"
 #include "DataStructures/Array.h"
 #include "gtest/gtest.h"
 
@@ -8,13 +7,18 @@
 
 using DataStructures::Array;
 using std::vector;
-using LLM::attention_query_key_kernel1;
-using LLM::attention_softmax_kernel1;
 
 namespace GoogleUnitTests
 {
 namespace LLM
 {
+
+// Keep include and using alias within namespace to avoid compilation linking
+// errors for multiple definitions of functions in MathFunction.h.
+
+#include "LLM/attention_forward.h"
+
+using LLM::attention_query_key_kernel1;
 
 class AttentionForwardTests : public ::testing::Test
 {
@@ -235,71 +239,6 @@ TEST_F(AttentionForwardTests, MultipleBatchAndHeads)
       }
     }
   }
-}
-
-TEST_F(AttentionForwardTests, AttentionSoftMaxKernel1Computes)
-{
-  const int batch_size {1};
-  const int seq_length {4};
-  const int num_heads {1};
-
-  // Test case: [3.0, 1.0, 2.0, 4.0]
-  vector<float> input_data(batch_size * num_heads * seq_length * seq_length, 0.0f);
-  // First row (t=0)
-  input_data[0] = 3.0f;
-  // Second row (t=1)
-  input_data[seq_length + 0] = 3.0f;
-  input_data[seq_length + 1] = 1.0f;
-  // Third row (t=2)
-  input_data[2 * seq_length + 0] = 3.0f;
-  input_data[2 * seq_length + 1] = 1.0f;
-  input_data[2 * seq_length + 2] = 2.0f;
-
-  Array<float> d_input(input_data.size());
-  Array<float> d_output(input_data.size());
-  d_input.copy_host_input_to_device(input_data);
-
-  const dim3 block_size(256);
-  const dim3 grid_size(
-    (batch_size * num_heads * seq_length + block_size.x - 1) / block_size.x);
-
-  attention_softmax_kernel1<<<grid_size, block_size>>>(
-    d_output.elements_,
-    d_input.elements_,
-    batch_size,
-    seq_length,
-    num_heads);
-
-  vector<float> output(input_data.size());
-  d_output.copy_device_output_to_host(output);
-
-  // For t=0: maxval=3.0
-  // Only x[0] processed, rest masked
-  EXPECT_NEAR(output[0], 1.0f, 1e-6f);
-  EXPECT_NEAR(output[1], 0.0f, 1e-6f);
-  EXPECT_NEAR(output[2], 0.0f, 1e-6f);
-  EXPECT_NEAR(output[3], 0.0f, 1e-6f);
-
-  // For t=1: maxval=3.0
-  const int idx1 {seq_length};
-  const float exp0_t1 {std::exp(3.0f - 3.0f)};  // 1.0
-  const float exp1_t1 {std::exp(1.0f - 3.0f)};  // exp(-2)
-  const float sum_t1 {exp0_t1 + exp1_t1};
-  EXPECT_NEAR(output[idx1 + 0], exp0_t1/sum_t1, 1e-6f);
-  EXPECT_NEAR(output[idx1 + 1], exp1_t1/sum_t1, 1e-6f);
-  EXPECT_NEAR(output[idx1 + 2], 0.0f, 1e-6f);
-  EXPECT_NEAR(output[idx1 + 3], 0.0f, 1e-6f);
-
-  // For t=2: maxval=3.0
-  const int idx2 {2 * seq_length};
-  const float exp0_t2 {std::exp(3.0f - 3.0f)};  // 1.0
-  const float exp1_t2 {std::exp(1.0f - 3.0f)};  // exp(-2)
-  const float exp2_t2 {std::exp(2.0f - 3.0f)};  // exp(-1)
-  const float sum_t2 {exp0_t2 + exp1_t2 + exp2_t2};
-  EXPECT_NEAR(output[idx2 + 0], exp0_t2/sum_t2, 1e-6f);
-  EXPECT_NEAR(output[idx2 + 1], exp1_t2/sum_t2, 1e-6f);
-  EXPECT_NEAR(output[idx2 + 2], exp2_t2/sum_t2, 1e-6f);
-  EXPECT_NEAR(output[idx2 + 3], 0.0f, 1e-6f);
 }
 
 } // namespace LLM

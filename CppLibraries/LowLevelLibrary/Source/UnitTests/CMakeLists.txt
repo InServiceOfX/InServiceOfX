@@ -4,6 +4,7 @@ ADD_EXECUTABLE(Check
   ArbitraryIPAddressSetup.cpp
   IPC/UDPSocket_tests.cpp
   IPC/UDP/RunningUDPTransceiver_tests.cpp
+  Utilities/CaptureCerr_tests.cpp
   Utilities/Parsers/parse_simple_map_tests.cpp
   )
 

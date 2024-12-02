@@ -1,20 +1,33 @@
 ENABLE_TESTING()
 
 ADD_EXECUTABLE(Check
+  cuBLASWrappers/LibraryContextHandle_tests.cu
+  cuBLASWrappers/MatrixMultiplication/cuBLASLtDescriptor_tests.cu
+  cuBLASWrappers/MatrixMultiplication/cuBLASLtLayouts_tests.cu
+  cuBLASWrappers/MatrixMultiplication/cuBLASLtSetDescriptorAttributes_tests.cu
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
   Numerics/Constants/get_infinity_tests.cu
+  NVIDIAToolsExtension/NVTXRange_tests.cu
   Operations/Arithmetic_tests.cu
   Operations/Convolution1D_tests.cu
   Operations/dot_product_tests.cu
   ParallelProcessing/warp_reductions_tests.cu
-  Utilities/CaptureCerr.cpp
-  Utilities/CaptureCerr_tests.cpp
+  Utilities/BuiltInTypes/vector_at_tests.cu
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
   Utilities/arange_tests.cpp
+  variable_sizes_tests.cu
+  ../../../../CppLibraries/LowLevelLibrary/Source/Utilities/CaptureCerr.cpp
+  )
+
+TARGET_INCLUDE_DIRECTORIES(Check
+  PRIVATE
+  ../../../../CppLibraries/LowLevelLibrary/Source/
   )
 
 TARGET_LINK_LIBRARIES(Check
+  cuBLASWrappers
+  NVIDIAToolsExtension
   Utilities
   gmock_main
   gtest_main

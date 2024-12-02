@@ -1,4 +1,4 @@
-#include "CaptureCerr.h"
+#include "Utilities/CaptureCerr.h"
 
 #include <iostream>
 #include <sstream> // std::ostringstream
@@ -8,8 +8,6 @@ using std::cerr;
 using std::ostringstream;
 using std::streambuf;
 
-namespace UnitTests
-{
 namespace Utilities
 {
 
@@ -56,5 +54,3 @@ void CaptureCerr::restore_cerr()
 }
 
 } // namespace Utilities
-} // namespace UnitTests
-

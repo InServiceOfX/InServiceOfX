@@ -14,14 +14,19 @@ namespace MathFunctions
 template <typename FPType>
 __device__ FPType get_exponential(const FPType value) = delete;
 
-template<> __device__ float get_exponential<float>(const float value)
+//-----------------------------------------------------------------------------
+/// It's very important to use the inline keyword for specializations to
+/// linking errors due to multiple definitions.
+//-----------------------------------------------------------------------------
+
+template<> __device__ inline float get_exponential<float>(const float value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__SINGLE.html#_CPPv44expff
   return expf(value);
 }
 
-template<> __device__ double get_exponential<double>(const double value)
+template<> __device__ inline double get_exponential<double>(const double value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__DOUBLE.html#_CPPv43expd
@@ -32,7 +37,7 @@ template<> __device__ double get_exponential<double>(const double value)
 // earlier.
 #ifndef __CUDA_ARCH__
 
-template<> __device__ __half get_exponential<__half>(const __half value)
+template<> __device__ inline __half get_exponential<__half>(const __half value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__FUNCTIONS.html#_CPPv44hexpK6__half
@@ -44,7 +49,7 @@ template<> __device__ __half get_exponential<__half>(const __half value)
 template <typename FPType>
 __device__ FPType get_max(const FPType a, const FPType b) = delete;
 
-template<> __device__ float get_max<float>(const float a, const float b)
+template<> __device__ inline float get_max<float>(const float a, const float b)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__SINGLE.html#_CPPv45fmaxfff
@@ -57,7 +62,7 @@ template<> __device__ float get_max<float>(const float a, const float b)
 /// Treats NaN arguments as missing data. If 1 argument is NaN and the other is
 /// legitamate numeric value, numeric value is chosen.
 //------------------------------------------------------------------------------
-template<> __device__ double get_max<double>(const double a, const double b)
+template<> __device__ inline double get_max<double>(const double a, const double b)
 {
   return fmax(a, b);
 }
@@ -65,21 +70,21 @@ template<> __device__ double get_max<double>(const double a, const double b)
 template <typename FPType>
 __device__ FPType get_sqrt(const FPType value) = delete;
 
-template<> __device__ float get_sqrt<float>(const float value)
+template<> __device__ inline float get_sqrt<float>(const float value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__SINGLE.html
   return sqrtf(value);
 }
 
-template<> __device__ double get_sqrt<double>(const double value)
+template<> __device__ inline double get_sqrt<double>(const double value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__DOUBLE.html
   return sqrt(value);
 }
 
-template<> __device__ __half get_sqrt<__half>(const __half value)
+template<> __device__ inline __half get_sqrt<__half>(const __half value)
 {
   // See
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__FUNCTIONS.html

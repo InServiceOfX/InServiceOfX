@@ -57,14 +57,53 @@ __device__ FPType warp_reduce_max_shift_up(FPType value)
   return value;
 }
 
-template <typename FPType>
-__device__ FPType warp_reduce_sum(FPType value)
+template <typename T> __device__ T warp_reduce_sum(T value) = delete;
+
+//------------------------------------------------------------------------------
+/// See
+/// https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__MISC.html?highlight=__shfl_xor_sync#_CPPv415__shfl_xor_syncKjK6__halfKiKi
+/// __device__ __half __shfl_xor_sync(
+///   const unsigned int mask,
+///   const __half var,
+///   const int laneMask,
+///   const int width = warpSize)
+/// Exchange a variable between threads within a warp.
+/// Copy from a thread based on bitwise XOR of own thread ID.
+/// Calculates source thread ID by performing bitwise XOR of caller's thread ID
+/// with laneMask.
+//------------------------------------------------------------------------------
+
+template <> __device__ inline float warp_reduce_sum<float>(float value)
 {
   for (int offset {16}; offset > 0; offset /= 2)
   {
-    value += __shfl_xor_sync(0xFFFFFFFF, value, offset);
+    value += __half2float(__shfl_xor_sync(0xFFFFFFFF, value, offset));
   }
   return value;
+}
+
+template <> __device__ inline double warp_reduce_sum<double>(double value)
+{
+  for (int offset {16}; offset > 0; offset /= 2)
+  {
+    value += __longlong_as_double(__shfl_xor_sync(0xFFFFFFFF, value, offset));
+  }
+  return value;
+}
+
+template <> __device__ inline __half warp_reduce_sum<__half>(__half value)
+{
+  // Convert to float for shuffle
+  float val {__half2float(value)};
+  for (int offset {16}; offset > 0; offset /= 2)
+  {
+    // See
+    // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__MISC.html
+    // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__MISC.html#_CPPv412__half2floatK6__half
+    // __half2float(const __half a) converts half number to float.
+    val += __half2float(__shfl_xor_sync(0xFFFFFFFF, value, offset));
+  }
+  return __float2half(val);  // Convert back to half
 }
 
 } // namespace ParallelProcessing

@@ -87,7 +87,7 @@ ENDIF()
 # See https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html
 # FindCUDAToolkit new in 3.17
 
-FIND_PACKAGE(CUDAToolkit)
+FIND_PACKAGE(CUDAToolkit REQUIRED)
 
 IF (CUDAToolkit_FOUND)
   MESSAGE(STATUS "Cuda Toolkit was found at ${CUDA_TOOLKIT_ROOT_DIR}.")
@@ -169,5 +169,7 @@ ENDIF()
 
 FetchContent_MakeAvailable(googletest)
 
+ADD_SUBDIRECTORY(cuBLASWrappers)
+ADD_SUBDIRECTORY(NVIDIAToolsExtension)
 ADD_SUBDIRECTORY(UnitTests)
 ADD_SUBDIRECTORY(Utilities)

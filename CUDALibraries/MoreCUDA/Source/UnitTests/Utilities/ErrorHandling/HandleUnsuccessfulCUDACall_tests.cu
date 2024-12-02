@@ -1,4 +1,4 @@
-#include "UnitTests/Utilities/CaptureCerr.h"
+#include "Utilities/CaptureCerr.h"
 #include "Utilities/ErrorHandling/HandleUnsuccessfulCUDACall.h"
 
 #include "gtest/gtest.h"
@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-using UnitTests::Utilities::CaptureCerr;
+using Utilities::CaptureCerr;
 using Utilities::ErrorHandling::HandleUnsuccessfulCUDACall;
 using std::string;
 using std::string_view;

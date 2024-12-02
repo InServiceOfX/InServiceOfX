@@ -1,7 +1,6 @@
 #ifndef LLM_ATTENTION_FORWARD_SOFTMAX_H
 #define LLM_ATTENTION_FORWARD_SOFTMAX_H
 
-#include "Numerics/Constants/get_infinity.h"
 #include "Numerics/MathFunctions.h"
 #include "ParallelProcessing/warp_reductions.h"
 
@@ -10,115 +9,127 @@ namespace LLM
 namespace AttentionForward
 {
 
+//------------------------------------------------------------------------------
+/// Based upon softmax_forward_kernel5(..) in
+/// https://github.com/karpathy/llm.c/blob/master/llmc/attention.cuh#L85
+/// \param[in] T is the number of tokens in the sequence.
+//------------------------------------------------------------------------------
 template <typename FPType>
-__global__ void softmax_forward_kernel4(
+__global__ void softmax_forward(
   FPType* out,
+  const FPType inverse_temperature,
   const FPType* input,
-  const int N,
-  const int C)
+  const unsigned int N,
+  const unsigned int T)
 {
-  // out is (N, C) just like inp. Each row of inp will get softmaxed.
-  // same as kernel3, but can handle any block size (multiple of 32)
-  // each row of C elements is handled by block_size threads
-  // furthermore, each block_size threads get executed in warps of 32 threads
+  // TODO: Is this or global __constant__ better?
+  static constexpr unsigned int warp_size {32};
 
-  // special reduction operations warpReduceMax/warpReduceSum are used for intra-warp reductions
-  // shared memory is used for inter-warp reduction
-  extern __shared__ FPType shared[];
-  const size_t idx {blockIdx.x};
-  const size_t tid {threadIdx.x};
-  const size_t warpId {threadIdx.x / 32}; // warp index within a block
-  const size_t laneId {threadIdx.x % 32}; // thread index within a warp
+  // inp, out shape: (N, T, T), where N = B * NH
+  // fuses the multiplication by scale inside attention
+  // directly autoregressive, so we only compute the lower triangular part
+  // uses the online softmax algorithm
+  //assert(T % 4  == 0);
+  const unsigned int lane_id {threadIdx.x % warp_size};
+  const unsigned int warp_id {threadIdx.x / warp_size};
+  const unsigned int number_of_warps {blockDim.x / warp_size};
 
-  // the number of warps per block. recall that blockDim.x is block_size
-  const size_t warpsPerBlock {blockDim.x / 32};
+  // micro-optimization: we iterate backwards so that
+  // after the softmax backward operation completes, the cache retains the
+  // part of the matrix close to the upper left corner, which benefits the
+  // matmul operation that immediately follows.
+  const unsigned int idx {
+    (gridDim.x - blockIdx.x - 1) * number_of_warps + warp_id};
 
-  // shared[] must be allocated to have 2 * warpsPerBlock elements
-  // first half for max values, the second half for sum values
-  FPType* maxvals {shared};
-  FPType* sumvals {&shared[warpsPerBlock]};
-
-  // one row of inp, i.e. inp[idx, :] of shape (C,)
-  const FPType* x {input + idx * C};
-
-  // first, thread coarsening by directly accessing global memory in series
-  FPType maxval {-Numerics::Constants::get_infinity<FPType>()};
-  for (size_t i {tid}; i < C; i += blockDim.x)
+  if (idx >= N * T)
   {
-    maxval = Numerics::MathFunctions::get_max<FPType>(maxval, x[i]);
+    return;
   }
+  const unsigned int sequence_position {idx % T};
+  const unsigned int sequence_position_by_4 {sequence_position / 4};
 
-  // now within-warp reductions for maxval
-  maxval = ParallelProcessing::warp_reduce_max(maxval);
+  // one row of input, i.e. input[idx, :] of shape (T,)
+  const FPType* x {input + idx * T};
 
-  // the 0th thread of each warp writes the maxval of that warp to shared memory
-  if (laneId == 0)
+  // not INF, so we don't get NaNs accidentally when subtracting two values.
+  // In Karpathy's implementation, they avoid #include <float.h> and use this
+  // value.
+  FPType max_value {
+    -static_cast<FPType>(340282346638528859811704183484516925440.0f)};
+  FPType sum_value {0};
+
+  // See
+  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=__builtin_assume_aligned#builtin-assume-aligned
+  // void * __builtin_assume_aligned(const void *exp, size_t align)
+  // Allows compiler to assume argument pointer is aligned to at least align
+  // bytes, and returns argument pointer.
+  constexpr unsigned int alignment {sizeof(FPType) * 4};
+
+  const FPType* x_aligned {
+    reinterpret_cast<const FPType*>(__builtin_assume_aligned(x, alignment))};
+  for (
+    unsigned int i {lane_id};
+    i < sequence_position_by_4;
+    i += warp_size)
   {
-    maxvals[warpId] = maxval;
-  }
-  __syncthreads();
-
-  // now the 0th thread reduces the maxvals in shared memory, i.e. across warps
-  if (tid == 0)
-  {
-    FPType val {maxvals[tid]};
-    for (int i {1}; i < warpsPerBlock; ++i)
+    FPType regarray[4];
+    for (unsigned int k {0}; k < 4; ++k)
     {
-      val = Numerics::MathFunctions::get_max<FPType>(val, maxvals[i]);
+      regarray[k] = static_cast<FPType>(x_aligned[4*i + k]);
     }
-    // store the final max in the first position
-    maxvals[0] = val;
-  }
-  __syncthreads();
-  // broadcast the max to all threads
-  FPType offset {maxvals[0]};
-
-  // compute expf and write the result to global memory
-  for (int i {tid}; i < C; i += blockDim.x)
-  {
-    // subtract max for numerical stability
-    out[idx * C + i] = Numerics::MathFunctions::get_exponential<FPType>(
-      x[i] - offset);
-  }
-
-  // okay now we calculated exp(x - max(x))
-  // step 2: sum all the values and divide by the sum
-
-  // thread coarsening for sum
-  x = out + idx * C;
-  FPType sumval {0.0f};
-  for (int i {tid}; i < C; i += blockDim.x)
-  {
-    sumval += x[i];
-  }
-  // within-warp reduction for sumval
-  //sumval = warpReduceSum(sumval);
-
-  // write sumval to shared memory
-  if (laneId == 0)
-  {
-    sumvals[warpId] = sumval;
-  }
-  __syncthreads();
-
-  // inter-thread reduction of sum
-  if (tid == 0)
-  {
-    FPType val {sumvals[tid]};
-    for (int i {1}; i < warpsPerBlock; ++i)
+    const FPType old_max_value {max_value};
+    for (unsigned int k {0}; k < 4; ++k)
     {
-      val += sumvals[i];
+      max_value = Numerics::MathFunctions::get_max<FPType>(
+        max_value,
+        regarray[k]);
     }
-    sumvals[0] = val;
+    sum_value *= Numerics::MathFunctions::get_exponential<FPType>(
+      inverse_temperature * (old_max_value - max_value));
+    for (unsigned int k {0}; k < 4; ++k)
+    {
+      sum_value += Numerics::MathFunctions::get_exponential<FPType>(
+        inverse_temperature * (regarray[k] - max_value));
+    }
   }
-  __syncthreads();
-  // broadcast the sum to all threads
-  FPType sum {sumvals[0]};
+
+  if (4*sequence_position_by_4 + lane_id <= sequence_position)
+  {
+    const FPType old_max_value {max_value};
+    max_value = Numerics::MathFunctions::get_max<FPType>(
+      max_value,
+      static_cast<FPType>(x[4*sequence_position_by_4 + lane_id]));
+    sum_value *= Numerics::MathFunctions::get_exponential<FPType>(
+      inverse_temperature * (old_max_value - max_value));
+    sum_value += Numerics::MathFunctions::get_exponential<FPType>(
+      inverse_temperature * (
+        static_cast<FPType>(x[4*sequence_position_by_4 + lane_id]) -
+          max_value));
+  }
+
+  const FPType global_max_value {
+    ParallelProcessing::warp_reduce_max<FPType>(max_value)};
+  sum_value *= Numerics::MathFunctions::get_exponential<FPType>(
+    inverse_temperature * (max_value - global_max_value));
+
+  const FPType sum {ParallelProcessing::warp_reduce_sum<FPType>(sum_value)};
+  const FPType norm {1.0f / sum};
 
   // divide the whole row by the sum
-  for (int i {tid}; i < C; i += blockDim.x)
+  for (unsigned int i {lane_id}; i <= sequence_position; i += warp_size)
   {
-    out[idx * C + i] = x[i] / sum;
+    // recalculation is faster than doing the round-trip through memory.
+    // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=__ldcs#load-functions-using-cache-hints
+    // T __ldcs(const T* address);
+    // returns data of type T located at address address.
+    const FPType ev {
+      Numerics::MathFunctions::get_exponential<FPType>(
+        inverse_temperature * (
+          static_cast<FPType>(__ldcs(x + i)) - global_max_value))};
+    // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=__ldcs#store-functions-using-cache-hints
+    // void __stcs(T* address, T value);
+    // stores value argument of type T to location at address address.
+    __stcs(out + idx * T + i, static_cast<FPType>(ev * norm));
   }
 }
 

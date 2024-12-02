@@ -12,13 +12,18 @@ namespace Constants
 // Primary template - deleted to prevent instantiation with unsupported types.
 template<typename T> __device__ T get_infinity() = delete;
 
+//-----------------------------------------------------------------------------
+/// It's very important to use the inline keyword for specializations to
+/// linking errors due to multiple definitions.
+//-----------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 /// Specialization for float
 /// https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__INTRINSIC__CAST.html?highlight=__int_as_float#_CPPv414__int_as_floati
 /// __device__ float __int_as_float(int x)
 /// Reinterpret bits in an integer as a float.
 //------------------------------------------------------------------------------
-template<> __device__ float get_infinity<float>() 
+template<> __device__ inline float get_infinity<float>()
 {
   // 0x7f800000 represents infinity in IEEE-754 single precision
   // See also
@@ -32,7 +37,7 @@ template<> __device__ float get_infinity<float>()
 /// __device__ double __longlong_as_double(long long int x)
 /// Reinterpret bits in a 64-bit signed integer to a double.
 //------------------------------------------------------------------------------
-template<> __device__ double get_infinity<double>() 
+template<> __device__ inline double get_infinity<double>()
 {
   // 0x7ff0000000000000LL represents infinity in IEEE-754 double precision
   // See also
@@ -49,7 +54,7 @@ template<> __device__ double get_infinity<double>()
 /// Use the macro instead,
 /// CUDART_INF_FP16 __ushort_as_half((unsigned short)0x7C00U)
 //------------------------------------------------------------------------------
-template<> __device__ __half get_infinity<__half>() 
+template<> __device__ inline __half get_infinity<__half>()
 {
   return __ushort_as_half((unsigned short)0x7C00U);
 }
