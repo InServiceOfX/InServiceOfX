@@ -262,6 +262,32 @@ std::optional<std::tuple<int32_t, uint64_t>> cuBLASLtLayouts::get_batch_count(
   }
 }
 
+std::optional<std::tuple<int64_t, uint64_t>> cuBLASLtLayouts::get_strided_batch_offset(
+  const char matrix_name) const
+{
+  int64_t strided_batch_offset {0};
+  uint64_t size_written {0};
+
+  const bool status {handle_get_attribute(
+    cublasLtMatrixLayoutGetAttribute(
+      matrix_name == 'A' ? A_layout_ : matrix_name == 'B' ? B_layout_ :
+      matrix_name == 'C' ? C_layout_ : D_layout_,
+      CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET,
+      &strided_batch_offset,
+      sizeof(strided_batch_offset),
+      &size_written),
+    CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET)};
+
+  if (status)
+  {
+    return std::make_tuple(strided_batch_offset, size_written);
+  }
+  else
+  {
+    return std::nullopt;
+  }
+}
+
 //------------------------------------------------------------------------------
 /// https://docs.nvidia.com/cuda/cublas/#cublasltmatrixlayoutcreate
 //------------------------------------------------------------------------------

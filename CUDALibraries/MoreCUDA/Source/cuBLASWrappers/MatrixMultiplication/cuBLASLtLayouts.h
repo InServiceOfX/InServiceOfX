@@ -162,6 +162,9 @@ class cuBLASLtLayouts
     std::optional<std::tuple<int32_t, uint64_t>> get_batch_count(
       const char matrix_name) const;
 
+    std::optional<std::tuple<int64_t, uint64_t>> get_strided_batch_offset(
+      const char matrix_name) const;
+
     cublasLtMatrixLayout_t A_layout_;
     cublasLtMatrixLayout_t B_layout_;
     cublasLtMatrixLayout_t C_layout_;

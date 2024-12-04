@@ -119,6 +119,28 @@ TEST(cuBLASLtLayoutsTests, GetBatchCountWorks)
   EXPECT_EQ(capture_cerr.local_oss_.str(), "");
 }
 
+TEST(cuBLASLtLayoutsTests, GetStridedBatchOffsetWorks)
+{
+  CaptureCerr capture_cerr {};
+
+  {
+    cuBLASLtLayouts layouts {8, 4, 2};
+    EXPECT_TRUE(layouts.create_ABD_layouts<float>());
+    EXPECT_TRUE(layouts.create_C_layout<float>());
+
+    EXPECT_TRUE(layouts.set_batch_count_and_strided_offsets(
+      2, 16, 8, 4));
+
+    // Strided batch offset is 16, size written is 8.
+    EXPECT_EQ(layouts.get_strided_batch_offset('A'), std::make_tuple(16, 8));
+    EXPECT_EQ(layouts.get_strided_batch_offset('B'), std::make_tuple(8, 8));
+    EXPECT_EQ(layouts.get_strided_batch_offset('C'), std::make_tuple(4, 8));
+    EXPECT_EQ(layouts.get_strided_batch_offset('D'), std::make_tuple(4, 8));
+  }
+
+  EXPECT_EQ(capture_cerr.local_oss_.str(), "");
+}
+
 } // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 } // namespace GoogleUnitTests

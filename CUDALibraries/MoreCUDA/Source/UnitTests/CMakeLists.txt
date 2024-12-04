@@ -4,7 +4,9 @@ ADD_EXECUTABLE(Check
   cuBLASWrappers/LibraryContextHandle_tests.cu
   cuBLASWrappers/MatrixMultiplication/cuBLASLtDescriptor_tests.cu
   cuBLASWrappers/MatrixMultiplication/cuBLASLtLayouts_tests.cu
+  cuBLASWrappers/MatrixMultiplication/cuBLASLtMatmul_tests.cu
   cuBLASWrappers/MatrixMultiplication/cuBLASLtSetDescriptorAttributes_tests.cu
+  cuBLASWrappers/MatrixMultiplication/Workspace_tests.cu
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
   Numerics/Constants/get_infinity_tests.cu

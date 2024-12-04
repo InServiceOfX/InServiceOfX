@@ -3,6 +3,8 @@ ADD_LIBRARY(cuBLASWrappers
   MatrixMultiplication/cuBLASLtDescriptor.cu
   MatrixMultiplication/cuBLASLtLayouts.cu
   MatrixMultiplication/cuBLASLtSetDescriptorAttributes.cu
+  MatrixMultiplication/cuBLASLtPreference.cu
+  MatrixMultiplication/Workspace.cu
   )
 
 TARGET_LINK_LIBRARIES(cuBLASWrappers
