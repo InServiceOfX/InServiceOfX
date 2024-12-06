@@ -1,9 +1,10 @@
 ADD_LIBRARY(cuBLASWrappers
   LibraryContextHandle.cu
-  MatrixMultiplication/cuBLASLtDescriptor.cu
-  MatrixMultiplication/cuBLASLtLayouts.cu
-  MatrixMultiplication/cuBLASLtSetDescriptorAttributes.cu
-  MatrixMultiplication/cuBLASLtPreference.cu
+  MatrixMultiplication/LtDescriptor.cu
+  MatrixMultiplication/LtHeuristic.cu
+  MatrixMultiplication/LtLayouts.cu
+  MatrixMultiplication/LtSetDescriptorAttributes.cu
+  MatrixMultiplication/LtPreference.cu
   MatrixMultiplication/Workspace.cu
   )
 

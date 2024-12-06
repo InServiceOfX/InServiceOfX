@@ -1,5 +1,5 @@
-#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_SET_DESCRIPTOR_ATTRIBUTES_H
-#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_SET_DESCRIPTOR_ATTRIBUTES_H
+#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_SET_DESCRIPTOR_ATTRIBUTES_H
+#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_SET_DESCRIPTOR_ATTRIBUTES_H
 
 #include "cuBLASWrappers/get_data_precision.h"
 
@@ -11,11 +11,11 @@ namespace cuBLASWrappers
 namespace MatrixMultiplication
 {
 
-class cuBLASLtSetDescriptorAttributes
+class LtSetDescriptorAttributes
 {
   public:
 
-    cuBLASLtSetDescriptorAttributes():
+    LtSetDescriptorAttributes():
       no_transpose_{CUBLAS_OP_N},
       transpose_{CUBLAS_OP_T},
       gelu_leading_dimension_{},
@@ -29,7 +29,7 @@ class cuBLASLtSetDescriptorAttributes
       scale_type_{CUDA_R_32F}
     {}
 
-    ~cuBLASLtSetDescriptorAttributes() = default;
+    ~LtSetDescriptorAttributes() = default;
 
     //--------------------------------------------------------------------------
     /// \param [in] is_transpose - If true, matrix A is transposed.
@@ -143,4 +143,4 @@ class cuBLASLtSetDescriptorAttributes
 } // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 
-#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_SET_DESCRIPTOR_ATTRIBUTES_H
+#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_SET_DESCRIPTOR_ATTRIBUTES_H

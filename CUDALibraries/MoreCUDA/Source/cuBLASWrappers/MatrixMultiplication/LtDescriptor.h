@@ -1,5 +1,5 @@
-#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_DESCRIPTOR_H
-#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_DESCRIPTOR_H
+#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_DESCRIPTOR_H
+#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_DESCRIPTOR_H
 
 #include <cublasLt.h>
 
@@ -73,14 +73,14 @@ inline ComputeParameters get_compute_parameters<__half>()
 /// cublasLtMatmulDesc_t type is a pointer to an opaque structure holding the
 /// description of the matrix multiplication operation cublasLtMatmul().
 //------------------------------------------------------------------------------
-class cuBLASLtDescriptor
+class LtDescriptor
 {
   public:
 
     // Defaults to 32-bit single precision floating point data type.
-    cuBLASLtDescriptor();
-    cuBLASLtDescriptor(const ComputeParameters compute_parameters);
-    ~cuBLASLtDescriptor();
+    LtDescriptor();
+    LtDescriptor(const ComputeParameters compute_parameters);
+    ~LtDescriptor();
 
     cublasLtMatmulDesc_t descriptor_;
 

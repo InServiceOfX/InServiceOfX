@@ -1,4 +1,4 @@
-#include "cuBLASWrappers/MatrixMultiplication/cuBLASLtDescriptor.h"
+#include "cuBLASWrappers/MatrixMultiplication/LtDescriptor.h"
 
 #include <cublasLt.h>
 #include <stdexcept>
@@ -8,25 +8,25 @@ namespace cuBLASWrappers
 namespace MatrixMultiplication
 {
 
-cuBLASLtDescriptor::cuBLASLtDescriptor():
+LtDescriptor::LtDescriptor():
   descriptor_{}
 {
   create_descriptor(get_compute_parameters<float>());
 }
 
-cuBLASLtDescriptor::cuBLASLtDescriptor(
+LtDescriptor::LtDescriptor(
 	const ComputeParameters compute_parameters):
   descriptor_{}
 {
   create_descriptor(compute_parameters);
 }
 
-cuBLASLtDescriptor::~cuBLASLtDescriptor()
+LtDescriptor::~LtDescriptor()
 {
   destroy_descriptor();
 }
 
-bool cuBLASLtDescriptor::create_descriptor(
+bool LtDescriptor::create_descriptor(
   const ComputeParameters compute_parameters)
 {
 	// https://docs.nvidia.com/cuda/cublas/#cublasltmatmuldesccreate
@@ -52,7 +52,7 @@ bool cuBLASLtDescriptor::create_descriptor(
   return status == CUBLAS_STATUS_SUCCESS;
 }
 
-bool cuBLASLtDescriptor::destroy_descriptor()
+bool LtDescriptor::destroy_descriptor()
 {
   return cublasLtMatmulDescDestroy(descriptor_) == CUBLAS_STATUS_SUCCESS;
 }

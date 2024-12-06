@@ -1,5 +1,5 @@
-#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_PREFERENCE_H
-#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_PREFERENCE_H
+#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_PREFERENCE_H
+#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_PREFERENCE_H
 
 #include <cstdint>
 #include <cublasLt.h>
@@ -16,13 +16,13 @@ namespace MatrixMultiplication
 /// description of the preferences for cublasLtMatmulAlgoGetHeuristic()
 /// configuration.
 //------------------------------------------------------------------------------
-class cuBLASLtPreference
+class LtPreference
 {
   public:
 
-    cuBLASLtPreference();
+    LtPreference();
 
-    ~cuBLASLtPreference();
+    ~LtPreference();
 
     bool set_max_workspace_memory(uint64_t& workspace_size_in_bytes);
 
@@ -37,4 +37,4 @@ class cuBLASLtPreference
 } // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 
-#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_PREFERENCE_H
+#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_PREFERENCE_H

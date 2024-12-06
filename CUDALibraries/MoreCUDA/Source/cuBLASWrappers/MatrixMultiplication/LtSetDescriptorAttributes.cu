@@ -1,12 +1,10 @@
-#include "cuBLASWrappers/MatrixMultiplication/cuBLASLtSetDescriptorAttributes.h"
+#include "cuBLASWrappers/MatrixMultiplication/LtSetDescriptorAttributes.h"
 
 #include <cstdint>
 #include <cublasLt.h>
 #include <iostream>
-#include <string>
 
 using std::cerr;
-using std::string;
 
 namespace cuBLASWrappers
 {
@@ -26,17 +24,19 @@ namespace MatrixMultiplication
 /// documentation.
 //------------------------------------------------------------------------------
 
-bool cuBLASLtSetDescriptorAttributes::handle_set_descriptor_status(
+bool LtSetDescriptorAttributes::handle_set_descriptor_status(
   const cublasStatus_t status)
 {
   if (status != CUBLAS_STATUS_SUCCESS)
   {
     if (status == CUBLAS_STATUS_INVALID_VALUE)
     {
-      string error_message {
-        "buf is NULL or sizeInBytes doesn't match the size of the internal "
+      static constexpr const char* error_message_1 {
+        "buf is NULL or sizeInBytes doesn't match the size of the internal "};
+      static constexpr const char* error_message_2 {
         "storage for the selected attribute."};
-      cerr << error_message << '\n';
+
+      cerr << error_message_1 << error_message_2 << '\n';
       return false;
     }
 
@@ -47,7 +47,7 @@ bool cuBLASLtSetDescriptorAttributes::handle_set_descriptor_status(
   return true;
 }
 
-bool cuBLASLtSetDescriptorAttributes::set_transpose_on_A(
+bool LtSetDescriptorAttributes::set_transpose_on_A(
   cublasLtMatmulDesc_t matmul_descriptor,
   const bool is_transpose)
 {
@@ -66,7 +66,7 @@ bool cuBLASLtSetDescriptorAttributes::set_transpose_on_A(
   return handle_set_descriptor_status(status);
 }
 
-bool cuBLASLtSetDescriptorAttributes::set_transpose_on_B(
+bool LtSetDescriptorAttributes::set_transpose_on_B(
   cublasLtMatmulDesc_t matmul_descriptor,
   const bool is_transpose)
 {
@@ -85,7 +85,7 @@ bool cuBLASLtSetDescriptorAttributes::set_transpose_on_B(
   return handle_set_descriptor_status(status);
 }
 
-bool cuBLASLtSetDescriptorAttributes::set_gelu_epilogue_auxiliary_leading_dimension(
+bool LtSetDescriptorAttributes::set_gelu_epilogue_auxiliary_leading_dimension(
   cublasLtMatmulDesc_t matmul_descriptor,
   const int64_t m)
 {
@@ -107,7 +107,7 @@ bool cuBLASLtSetDescriptorAttributes::set_gelu_epilogue_auxiliary_leading_dimens
   return handle_set_descriptor_status(status);
 }
 
-void cuBLASLtSetDescriptorAttributes::set_epilogue(
+void LtSetDescriptorAttributes::set_epilogue(
   const bool has_gelu,
   const bool is_backward,
   const bool has_bias)
@@ -149,7 +149,7 @@ void cuBLASLtSetDescriptorAttributes::set_epilogue(
   }
 }
 
-bool cuBLASLtSetDescriptorAttributes::set_epilogue_function(
+bool LtSetDescriptorAttributes::set_epilogue_function(
   cublasLtMatmulDesc_t matmul_descriptor)
 {
   const cublasStatus_t status {
@@ -162,7 +162,7 @@ bool cuBLASLtSetDescriptorAttributes::set_epilogue_function(
   return handle_set_descriptor_status(status);
 }
 
-bool cuBLASLtSetDescriptorAttributes::set_scale_type(
+bool LtSetDescriptorAttributes::set_scale_type(
   cublasLtMatmulDesc_t matmul_descriptor,
   const cublasDataType_t scale_type)
 {

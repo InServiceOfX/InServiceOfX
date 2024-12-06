@@ -1,4 +1,4 @@
-#include "cuBLASWrappers/MatrixMultiplication/cuBLASLtLayouts.h"
+#include "cuBLASWrappers/MatrixMultiplication/LtLayouts.h"
 #include "cuBLASWrappers/get_data_precision.h"
 
 #include <cstdint>
@@ -31,12 +31,12 @@ namespace cuBLASWrappers
 namespace MatrixMultiplication
 {
 
-cuBLASLtLayouts::~cuBLASLtLayouts()
+LtLayouts::~LtLayouts()
 {
   destroy_layouts();
 }
 
-void cuBLASLtLayouts::set_dimensions(
+void LtLayouts::set_dimensions(
   const uint64_t m,
   const uint64_t n,
   const uint64_t k)
@@ -69,7 +69,7 @@ void cuBLASLtLayouts::set_dimensions(
 /// matrix for strided batch operation. Default value is 0. int64_t
 //------------------------------------------------------------------------------
 
-bool cuBLASLtLayouts::set_batch_count_and_strided_offsets(
+bool LtLayouts::set_batch_count_and_strided_offsets(
   const int32_t batch_count,
   const int64_t A_strided_batch_offset,
   const int64_t B_strided_batch_offset,
@@ -190,7 +190,7 @@ bool cuBLASLtLayouts::set_batch_count_and_strided_offsets(
     CUBLASLT_MATRIX_LAYOUT_STRIDED_BATCH_OFFSET);
 }
 
-bool cuBLASLtLayouts::destroy_layouts()
+bool LtLayouts::destroy_layouts()
 {
   cublasStatus_t status_A {cublasLtMatrixLayoutDestroy(A_layout_)};
   cublasStatus_t status_B {cublasLtMatrixLayoutDestroy(B_layout_)};
@@ -236,7 +236,7 @@ bool cuBLASLtLayouts::destroy_layouts()
 /// CUBLAS_STATUS_SUCCESS. If sizeInBytes is non-zero: then sizeWritten is the
 /// number of bytes actually written;
 //------------------------------------------------------------------------------
-std::optional<std::tuple<int32_t, uint64_t>> cuBLASLtLayouts::get_batch_count(
+std::optional<std::tuple<int32_t, uint64_t>> LtLayouts::get_batch_count(
   const char matrix_name) const
 {
   int32_t batch_count {0};
@@ -262,7 +262,7 @@ std::optional<std::tuple<int32_t, uint64_t>> cuBLASLtLayouts::get_batch_count(
   }
 }
 
-std::optional<std::tuple<int64_t, uint64_t>> cuBLASLtLayouts::get_strided_batch_offset(
+std::optional<std::tuple<int64_t, uint64_t>> LtLayouts::get_strided_batch_offset(
   const char matrix_name) const
 {
   int64_t strided_batch_offset {0};
@@ -289,9 +289,94 @@ std::optional<std::tuple<int64_t, uint64_t>> cuBLASLtLayouts::get_strided_batch_
 }
 
 //------------------------------------------------------------------------------
+/// https://docs.nvidia.com/cuda/cublas/#cublasltmatrixlayoutattribute-t
+/// CUBLASLT_MATRIX_LAYOUT_ORDER - specifies Memory order of the data of the
+/// matrix. Default value is CUBLASLT_ORDER_COL.
+/// Data Type: int32_t
+//------------------------------------------------------------------------------
+bool LtLayouts::set_memory_order(
+  const char matrix_name,
+  const cublasLtOrder_t data_ordering)
+{
+  memory_order_ = data_ordering;
+  if (matrix_name == 'A')
+  {
+    return handle_set_attribute(
+      cublasLtMatrixLayoutSetAttribute(
+        A_layout_,
+        CUBLASLT_MATRIX_LAYOUT_ORDER,
+        &memory_order_,
+        sizeof(memory_order_)),
+      CUBLASLT_MATRIX_LAYOUT_ORDER);
+  }
+  else if (matrix_name == 'B')
+  {
+    return handle_set_attribute(
+      cublasLtMatrixLayoutSetAttribute(
+        B_layout_,
+        CUBLASLT_MATRIX_LAYOUT_ORDER,
+        &memory_order_,
+        sizeof(memory_order_)),
+      CUBLASLT_MATRIX_LAYOUT_ORDER);
+  }
+  else if (matrix_name == 'C')
+  {
+    return handle_set_attribute(
+      cublasLtMatrixLayoutSetAttribute(
+        C_layout_,
+        CUBLASLT_MATRIX_LAYOUT_ORDER,
+        &memory_order_,
+        sizeof(memory_order_)),
+      CUBLASLT_MATRIX_LAYOUT_ORDER);
+  }
+  else if (matrix_name == 'D')
+  {
+    return handle_set_attribute(
+      cublasLtMatrixLayoutSetAttribute(
+        D_layout_,
+        CUBLASLT_MATRIX_LAYOUT_ORDER,
+        &memory_order_,
+        sizeof(memory_order_)),
+      CUBLASLT_MATRIX_LAYOUT_ORDER);
+  }
+  else
+  {
+    return false;
+  }
+}
+
+std::optional<std::tuple<cublasLtOrder_t, uint64_t>>
+  LtLayouts::get_memory_order(const char matrix_name)
+{
+  int32_t memory_order {0};
+  uint64_t size_written {0};
+
+  const bool status {handle_get_attribute(
+    cublasLtMatrixLayoutGetAttribute(
+      matrix_name == 'A' ? A_layout_ : matrix_name == 'B' ? B_layout_ :
+      matrix_name == 'C' ? C_layout_ : D_layout_,
+      CUBLASLT_MATRIX_LAYOUT_ORDER,
+      &memory_order,
+      sizeof(memory_order),
+      &size_written),
+    CUBLASLT_MATRIX_LAYOUT_ORDER)};
+
+  if (status)
+  {
+    return std::make_tuple(
+      static_cast<cublasLtOrder_t>(memory_order),
+      size_written);
+  }
+  else
+  {
+    return std::nullopt;
+  }
+}
+
+//------------------------------------------------------------------------------
 /// https://docs.nvidia.com/cuda/cublas/#cublasltmatrixlayoutcreate
 //------------------------------------------------------------------------------
-bool cuBLASLtLayouts::handle_create_layout_status(
+bool LtLayouts::handle_create_layout_status(
   const cublasStatus_t status,
   const char matrix_name)
 {
@@ -315,7 +400,7 @@ bool cuBLASLtLayouts::handle_create_layout_status(
 //------------------------------------------------------------------------------
 /// https://docs.nvidia.com/cuda/cublas/#cublasltmatrixlayoutcreate
 //------------------------------------------------------------------------------
-bool cuBLASLtLayouts::handle_set_attribute(
+bool LtLayouts::handle_set_attribute(
   const cublasStatus_t status,
   cublasLtMatrixLayoutAttribute_t attribute)
 {
@@ -347,7 +432,7 @@ bool cuBLASLtLayouts::handle_set_attribute(
 //------------------------------------------------------------------------------
 /// https://docs.nvidia.com/cuda/cublas/#cublasltmatrixlayoutgetattribute
 //------------------------------------------------------------------------------
-bool cuBLASLtLayouts::handle_get_attribute(
+bool LtLayouts::handle_get_attribute(
   const cublasStatus_t status,
   cublasLtMatrixLayoutAttribute_t attribute)
 {

@@ -1,11 +1,11 @@
-#include "cuBLASWrappers/MatrixMultiplication/cuBLASLtDescriptor.h"
+#include "cuBLASWrappers/MatrixMultiplication/LtDescriptor.h"
 
 #include "gtest/gtest.h"
 
 #include <cublasLt.h>
 
 using cuBLASWrappers::MatrixMultiplication::ComputeParameters;
-using cuBLASWrappers::MatrixMultiplication::cuBLASLtDescriptor;
+using cuBLASWrappers::MatrixMultiplication::LtDescriptor;
 using cuBLASWrappers::MatrixMultiplication::get_compute_parameters;
 
 namespace GoogleUnitTests
@@ -39,7 +39,7 @@ TEST(
 //------------------------------------------------------------------------------
 TEST(cuBLASLtDescriptorTests, DefaultConstructs)
 {
-  cuBLASLtDescriptor descriptor {};
+  LtDescriptor descriptor {};
 
   EXPECT_NE(descriptor.descriptor_, nullptr);
 }

@@ -2,10 +2,12 @@ ENABLE_TESTING()
 
 ADD_EXECUTABLE(Check
   cuBLASWrappers/LibraryContextHandle_tests.cu
-  cuBLASWrappers/MatrixMultiplication/cuBLASLtDescriptor_tests.cu
-  cuBLASWrappers/MatrixMultiplication/cuBLASLtLayouts_tests.cu
-  cuBLASWrappers/MatrixMultiplication/cuBLASLtMatmul_tests.cu
-  cuBLASWrappers/MatrixMultiplication/cuBLASLtSetDescriptorAttributes_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtDescriptor_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtHeuristic_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtLayouts_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtMatrixMultiplication_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtPreference_tests.cu
+  cuBLASWrappers/MatrixMultiplication/LtSetDescriptorAttributes_tests.cu
   cuBLASWrappers/MatrixMultiplication/Workspace_tests.cu
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
@@ -15,6 +17,7 @@ ADD_EXECUTABLE(Check
   Operations/Convolution1D_tests.cu
   Operations/dot_product_tests.cu
   ParallelProcessing/warp_reductions_tests.cu
+  StreamManagement/Stream_tests.cu
   Utilities/BuiltInTypes/vector_at_tests.cu
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
   Utilities/arange_tests.cpp
@@ -30,6 +33,7 @@ TARGET_INCLUDE_DIRECTORIES(Check
 TARGET_LINK_LIBRARIES(Check
   cuBLASWrappers
   NVIDIAToolsExtension
+  StreamManagement
   Utilities
   gmock_main
   gtest_main

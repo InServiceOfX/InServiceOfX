@@ -6,6 +6,7 @@
 #include <string>
 
 using std::cerr;
+using std::string;
 
 namespace cuBLASWrappers
 {
@@ -62,9 +63,7 @@ bool LibraryContextHandle::handle_creation(cublasStatus_t status)
     }
     else if (status == CUBLAS_STATUS_INVALID_VALUE)
     {
-      std::string error_message {"lighthandle == NULL"};
-
-      throw std::runtime_error(error_message);
+      throw std::runtime_error("lighthandle == NULL");
     }
     else
     {
@@ -81,15 +80,14 @@ bool LibraryContextHandle::handle_destruction(cublasStatus_t status)
   {
     if (status == CUBLAS_STATUS_NOT_INITIALIZED)
     {
-      std::string error_message {"cuBLASLt library was not initialized."};
+      static constexpr const char* error_message {
+        "cuBLASLt library was not initialized."};
 
       cerr << error_message << '\n';
     }
     else if (status == CUBLAS_STATUS_INVALID_VALUE)
     {
-      std::string error_message {"lighthandle == NULL"};
-
-      cerr << error_message << '\n';
+      cerr << "lighthandle == NULL" << '\n';
     }
     else
     {

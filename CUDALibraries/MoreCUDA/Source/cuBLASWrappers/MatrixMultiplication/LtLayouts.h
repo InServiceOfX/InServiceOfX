@@ -1,5 +1,5 @@
-#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_LAYOUTS_H
-#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_LAYOUTS_H
+#ifndef CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_LAYOUTS_H
+#define CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_LAYOUTS_H
 
 #include "cuBLASWrappers/get_data_precision.h"
 
@@ -20,11 +20,11 @@ namespace MatrixMultiplication
 /// D = alpha * (A * B) + beta * C
 //------------------------------------------------------------------------------
 
-class cuBLASLtLayouts
+class LtLayouts
 {
   public:
 
-    cuBLASLtLayouts():
+    LtLayouts():
       A_layout_{},
       B_layout_{},
       C_layout_{},
@@ -35,10 +35,11 @@ class cuBLASLtLayouts
       batch_count_{},
       A_strided_batch_offset_{},
       B_strided_batch_offset_{},
-      output_strided_batch_offset_{}
+      output_strided_batch_offset_{},
+      memory_order_{CUBLASLT_ORDER_COL}
     {}
 
-    cuBLASLtLayouts(
+    LtLayouts(
       const uint64_t m,
       const uint64_t n,
       const uint64_t k):
@@ -52,10 +53,11 @@ class cuBLASLtLayouts
       batch_count_{},
       A_strided_batch_offset_{},
       B_strided_batch_offset_{},
-      output_strided_batch_offset_{}
+      output_strided_batch_offset_{},
+      memory_order_{CUBLASLT_ORDER_COL}
     {}
 
-    ~cuBLASLtLayouts();
+    ~LtLayouts();
 
     void set_dimensions(const uint64_t m, const uint64_t n, const uint64_t k);
 
@@ -165,6 +167,13 @@ class cuBLASLtLayouts
     std::optional<std::tuple<int64_t, uint64_t>> get_strided_batch_offset(
       const char matrix_name) const;
 
+    bool set_memory_order(
+      const char matrix_name,
+      cublasLtOrder_t data_ordering=CUBLASLT_ORDER_COL);
+
+    std::optional<std::tuple<cublasLtOrder_t, uint64_t>> get_memory_order(
+      const char matrix_name);
+
     cublasLtMatrixLayout_t A_layout_;
     cublasLtMatrixLayout_t B_layout_;
     cublasLtMatrixLayout_t C_layout_;
@@ -200,9 +209,11 @@ class cuBLASLtLayouts
     int64_t A_strided_batch_offset_;
     int64_t B_strided_batch_offset_;
     int64_t output_strided_batch_offset_;
+
+    cublasLtOrder_t memory_order_;
 };
 
 } // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 
-#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_CUBLAS_LT_LAYOUTS_H
+#endif // CUBLAS_WRAPPERS_MATRIX_MULTIPLICATION_LT_LAYOUTS_H

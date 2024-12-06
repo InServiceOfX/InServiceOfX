@@ -171,5 +171,6 @@ FetchContent_MakeAvailable(googletest)
 
 ADD_SUBDIRECTORY(cuBLASWrappers)
 ADD_SUBDIRECTORY(NVIDIAToolsExtension)
+ADD_SUBDIRECTORY(StreamManagement)
 ADD_SUBDIRECTORY(UnitTests)
 ADD_SUBDIRECTORY(Utilities)
