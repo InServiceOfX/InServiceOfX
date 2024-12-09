@@ -5,7 +5,9 @@
 #include "cuBLASWrappers/MatrixMultiplication/LtDescriptor.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtHeuristic.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtLayouts.h"
+#include "cuBLASWrappers/MatrixMultiplication/Setup.h"
 #include "cuBLASWrappers/MatrixMultiplication/Workspace.h"
+#include "DataStructures/Array.h"
 #include "StreamManagement/Stream.h"
 
 #include <iostream>
@@ -151,6 +153,52 @@ class LtMatrixMultiplication
     // This was non-obvious to me.
     T beta_;
 };
+
+template <typename T>
+bool matrix_multiply(
+  cuBLASWrappers::LibraryContextHandle& handle,
+  StreamManagement::Stream& stream,
+  Setup<T>& setup,
+  LtMatrixMultiplication<T>& matrix_multiplication,
+  DataStructures::Array<T>& A,
+  DataStructures::Array<T>& B,
+  DataStructures::Array<T>& D)
+{
+  return matrix_multiplication(
+    handle,
+    setup.descriptor_,
+    setup.layouts_,
+    setup.heuristic_,
+    stream,
+    setup.workspace_,
+    A.elements_,
+    B.elements_,
+    nullptr,
+    D.elements_);
+}
+
+template <typename T>
+bool general_matrix_multiply(
+  cuBLASWrappers::LibraryContextHandle& handle,
+  StreamManagement::Stream& stream,
+  Setup<T>& setup,
+  LtMatrixMultiplication<T>& matrix_multiplication,
+  DataStructures::Array<T>& A,
+  DataStructures::Array<T>& B,
+  DataStructures::Array<T>& D)
+{
+  return matrix_multiplication(
+    handle,
+    setup.descriptor_,
+    setup.layouts_,
+    setup.heuristic_,
+    stream,
+    setup.workspace_,
+    A.elements_,
+    B.elements_,
+    D.elements_,
+    D.elements_);
+}
 
 } // namespace MatrixMultiplication
 } // namespace cuBLASWrappers

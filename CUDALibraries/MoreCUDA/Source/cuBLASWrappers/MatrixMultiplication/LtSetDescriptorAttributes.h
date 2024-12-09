@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <cublasLt.h>
+#include <optional>
+#include <utility>
 
 namespace cuBLASWrappers
 {
@@ -40,6 +42,11 @@ class LtSetDescriptorAttributes
     bool set_transpose_on_B(
       cublasLtMatmulDesc_t matmul_descriptor,
       const bool is_transpose=false);
+
+    std::optional<std::pair<int32_t, uint64_t>> get_transpose_operation_on_A(
+      cublasLtMatmulDesc_t matmul_descriptor);
+    std::optional<std::pair<int32_t, uint64_t>> get_transpose_operation_on_B(
+      cublasLtMatmulDesc_t matmul_descriptor);
 
     //--------------------------------------------------------------------------
     /// See
@@ -86,6 +93,12 @@ class LtSetDescriptorAttributes
 
     bool set_epilogue_function(cublasLtMatmulDesc_t matmul_descriptor);
 
+    static uint64_t get_bias_size(
+      const uint64_t m,
+      const uint64_t n,
+      const bool has_gelu=false,
+      const bool is_backward=false);
+
     template <typename T>
     bool set_bias(cublasLtMatmulDesc_t matmul_descriptor, const T* bias)
     {
@@ -127,6 +140,12 @@ class LtSetDescriptorAttributes
   protected:
 
     bool handle_set_descriptor_status(const cublasStatus_t status);
+    bool handle_get_attribute(const cublasStatus_t status);
+
+    static cublasLtEpilogue_t get_epilogue_postprocessing_options(
+      const bool has_gelu,
+      const bool is_backward,
+      const bool has_bias);
 
     cublasOperation_t no_transpose_;
     cublasOperation_t transpose_;
