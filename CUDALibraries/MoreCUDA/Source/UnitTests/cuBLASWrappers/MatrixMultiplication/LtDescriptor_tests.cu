@@ -12,6 +12,8 @@ namespace GoogleUnitTests
 {
 namespace cuBLASWrappers
 {
+namespace MatrixMultiplication
+{
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -44,5 +46,6 @@ TEST(cuBLASLtDescriptorTests, DefaultConstructs)
   EXPECT_NE(descriptor.descriptor_, nullptr);
 }
 
+} // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 } // namespace GoogleUnitTests

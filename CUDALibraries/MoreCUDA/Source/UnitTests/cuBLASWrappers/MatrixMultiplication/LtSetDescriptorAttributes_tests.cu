@@ -10,6 +10,8 @@ namespace GoogleUnitTests
 {
 namespace cuBLASWrappers
 {
+namespace MatrixMultiplication
+{
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -76,5 +78,6 @@ TEST(LtSetDescriptorAttributesTests, SetDefaultScaleTypeWorks)
   EXPECT_TRUE(set_descriptor_attributes.set_scale_type(descriptor.descriptor_));
 }
 
+} // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 } // namespace GoogleUnitTests

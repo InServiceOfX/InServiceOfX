@@ -5,6 +5,7 @@
 #include "cuBLASWrappers/MatrixMultiplication/LtMatrixMultiplication.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtPreference.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtSetDescriptorAttributes.h"
+#include "cuBLASWrappers/MatrixMultiplication/Setup.h"
 #include "cuBLASWrappers/MatrixMultiplication/Workspace.h"
 #include "DataStructures/Array.h"
 #include "gtest/gtest.h"
@@ -20,6 +21,9 @@ using cuBLASWrappers::MatrixMultiplication::LtLayouts;
 using cuBLASWrappers::MatrixMultiplication::LtMatrixMultiplication;
 using cuBLASWrappers::MatrixMultiplication::LtPreference;
 using cuBLASWrappers::MatrixMultiplication::LtSetDescriptorAttributes;
+
+using cuBLASWrappers::MatrixMultiplication::Setup;
+
 using cuBLASWrappers::MatrixMultiplication::Workspace;
 using DataStructures::Array;
 using StreamManagement::Stream;
@@ -351,58 +355,47 @@ TEST(
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-// TEST(cuBLASLtMatmulTests, RowMajorAndColumnMajorMultiplicationWorks)
-// {
-//   const uint32_t M {4};
-//   const uint32_t K {3};
-//   const uint32_t N {2};
+TEST(cuBLASLtMatmulTests, RowMajorAndRowMajorMultiplicationWorks)
+{
+  const uint32_t M {4};
+  const uint32_t K {3};
+  const uint32_t N {2};
 
-//   // Matrix A (4x3) in -major order
-//   vector<float> A
-//   {
-//     1, 2, 3,    // row 0
-//     4, 5, 6,    // row 1
-//     7, 8, 9,    // row 2
-//     2, 4, 6     // row 3
-//   };
+  // Matrix A (4x3) in row-major order
+  vector<float> A
+  {
+    1, 2, 3,    // row 0
+    4, 5, 6,    // row 1
+    7, 8, 9,    // row 2
+    2, 4, 6     // row 3
+  };
 
-//   // Matrix B (3x2) in row-major order
-//   vector<float> B
-//   {
-//     1, 3, 5,    // column 0
-//     2, 4, 6     // column 1
-//   };
+  // Matrix B (3x2) in row-major order
+  vector<float> B
+  {
+    1, 2,
+    3, 4,
+    5, 6
+  };
 
-//   // Matrix C (4x2) in column-major order (same as output D)
-//   vector<float> C
-//   {
-//     1, 2, 3, 4,    // column 0
-//     5, 6, 7, 8     // column 1
-//   };
+  vector<float> expected_D
+  {
+    23, 51, 79, 48,    // column 0: A*B(:,0)
+    33, 70, 107, 64    // column 1: A*B(:,1)
+  };
 
-//   // Expected result D (4x2) in column-major order: D = A*B + C
-//   // A*B calculation:
-//   // Row 0: [1,2,3] * [1,2; 3,4; 5,6] = [22,28]
-//   // Row 1: [4,5,6] * [1,2; 3,4; 5,6] = [49,64]
-//   // Row 2: [7,8,9] * [1,2; 3,4; 5,6] = [76,100]
-//   // Row 3: [2,4,6] * [1,2; 3,4; 5,6] = [44,56]
-//   vector<float> expected_D
-//   {
-//     23, 51, 79, 48,    // column 0: A*B(:,0) + C(:,0)
-//     33, 70, 107, 64    // column 1: A*B(:,1) + C(:,1)
-//   };
+  Array<float> A_array {M * K};
+  Array<float> B_array {K * N};
+  Array<float> D_array {M * N};
 
-//   Array<float> A_array {M * K};
-//   Array<float> B_array {K * N};
-//   Array<float> C_array {M * N};
-//   Array<float> D_array {M * N};
+  EXPECT_TRUE(A_array.copy_host_input_to_device(A));
+  EXPECT_TRUE(B_array.copy_host_input_to_device(B));
 
-//   EXPECT_TRUE(A_array.copy_host_input_to_device(A));
-//   EXPECT_TRUE(B_array.copy_host_input_to_device(B));
-//   EXPECT_TRUE(C_array.copy_host_input_to_device(C));
+  Stream stream {};
+  LibraryContextHandle handle {};
+  ::cuBLASWrappers::MatrixMultiplication::Setup<float> setup {};
+}
 
-//   Stream stream {};
-//   LibraryContextHandle handle {};
 //   Workspace workspace {};
 //   LtDescriptor descriptor {};
 //   LtSetDescriptorAttributes set_descriptor_attributes {};
