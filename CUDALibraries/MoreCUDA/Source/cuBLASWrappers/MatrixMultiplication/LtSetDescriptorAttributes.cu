@@ -47,6 +47,33 @@ bool LtSetDescriptorAttributes::handle_set_descriptor_status(
   return true;
 }
 
+//------------------------------------------------------------------------------
+/// https://docs.nvidia.com/cuda/cublas/#cublasltmatmuldescgetattribute
+/// 3.4.28 cublasLtMatmulDescGetAttribute(..)
+//------------------------------------------------------------------------------
+bool LtSetDescriptorAttributes::handle_get_attribute(
+const cublasStatus_t status)
+{
+  // attribute's value was successfully written to user memory.
+  if (status == CUBLAS_STATUS_SUCCESS)
+  {
+    return true;
+  }
+  else if (status == CUBLAS_STATUS_INVALID_VALUE)
+  {
+    cerr << "Either sizeInBytes is 0 and sizeWritten is NULL, or\n";
+    cerr << "sizeInBytes is non-zero and buf is NULL, or\n";
+    cerr << "sizeInBytes doesn't match size of internal storage for the ";
+    cerr << " selected attribute.\n";
+    return false;
+  }
+  else
+  {
+    cerr << "Failed to get attribute.\n";
+    return false;
+  }
+}
+
 bool LtSetDescriptorAttributes::set_transpose_on_A(
   cublasLtMatmulDesc_t matmul_descriptor,
   const bool is_transpose)
@@ -83,6 +110,52 @@ bool LtSetDescriptorAttributes::set_transpose_on_B(
       sizeof(transpose_))};
 
   return handle_set_descriptor_status(status);
+}
+
+std::optional<std::pair<int32_t, uint64_t>>
+  LtSetDescriptorAttributes::get_transpose_operation_on_A(
+    cublasLtMatmulDesc_t matmul_descriptor)
+{
+  int32_t transpose_operation;
+  uint64_t size_in_bytes;
+
+  const cublasStatus_t status {
+    cublasLtMatmulDescGetAttribute(
+      matmul_descriptor,
+      CUBLASLT_MATMUL_DESC_TRANSA,
+      &transpose_operation,
+      sizeof(transpose_operation),
+      &size_in_bytes)};
+
+  if (!handle_get_attribute(status))
+  {
+    return std::nullopt;
+  }
+
+  return std::make_pair(transpose_operation, size_in_bytes);
+}
+
+std::optional<std::pair<int32_t, uint64_t>>
+  LtSetDescriptorAttributes::get_transpose_operation_on_B(
+    cublasLtMatmulDesc_t matmul_descriptor)
+{
+  int32_t transpose_operation;
+  uint64_t size_in_bytes;
+
+  const cublasStatus_t status {
+    cublasLtMatmulDescGetAttribute(
+      matmul_descriptor,
+      CUBLASLT_MATMUL_DESC_TRANSB,
+      &transpose_operation,
+      sizeof(transpose_operation),
+      &size_in_bytes)};
+
+  if (!handle_get_attribute(status))
+  {
+    return std::nullopt;
+  }
+
+  return std::make_pair(transpose_operation, size_in_bytes);
 }
 
 bool LtSetDescriptorAttributes::set_gelu_epilogue_auxiliary_leading_dimension(

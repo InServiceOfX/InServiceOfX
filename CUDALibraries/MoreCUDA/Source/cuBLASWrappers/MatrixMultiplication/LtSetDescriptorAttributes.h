@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <cublasLt.h>
+#include <optional>
+#include <utility>
 
 namespace cuBLASWrappers
 {
@@ -40,6 +42,11 @@ class LtSetDescriptorAttributes
     bool set_transpose_on_B(
       cublasLtMatmulDesc_t matmul_descriptor,
       const bool is_transpose=false);
+
+    std::optional<std::pair<int32_t, uint64_t>> get_transpose_operation_on_A(
+      cublasLtMatmulDesc_t matmul_descriptor);
+    std::optional<std::pair<int32_t, uint64_t>> get_transpose_operation_on_B(
+      cublasLtMatmulDesc_t matmul_descriptor);
 
     //--------------------------------------------------------------------------
     /// See
@@ -127,6 +134,7 @@ class LtSetDescriptorAttributes
   protected:
 
     bool handle_set_descriptor_status(const cublasStatus_t status);
+    bool handle_get_attribute(const cublasStatus_t status);
 
     cublasOperation_t no_transpose_;
     cublasOperation_t transpose_;

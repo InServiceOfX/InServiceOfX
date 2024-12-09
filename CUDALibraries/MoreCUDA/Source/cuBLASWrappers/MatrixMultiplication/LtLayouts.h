@@ -167,6 +167,18 @@ class LtLayouts
     std::optional<std::tuple<int64_t, uint64_t>> get_strided_batch_offset(
       const char matrix_name) const;
 
+    //--------------------------------------------------------------------------
+    /// https://docs.nvidia.com/cuda/cublas/#cublasltorder-t
+    /// 3.3.22. cublasLtOrder_t
+    /// \brief Convenient enum class for matrix data ordering.
+    //--------------------------------------------------------------------------
+    enum class DataOrdering : int32_t
+    {
+      COLUMN_MAJOR=static_cast<int32_t>(CUBLASLT_ORDER_COL),
+      ROW_MAJOR=static_cast<int32_t>(CUBLASLT_ORDER_ROW),
+      COLUMN_MAJOR_ORDERED_TILES_32=static_cast<int32_t>(CUBLASLT_ORDER_COL32)
+    };
+
     bool set_memory_order(
       const char matrix_name,
       cublasLtOrder_t data_ordering=CUBLASLT_ORDER_COL);

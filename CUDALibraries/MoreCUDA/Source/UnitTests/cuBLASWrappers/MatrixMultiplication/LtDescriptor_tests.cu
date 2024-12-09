@@ -12,10 +12,12 @@ namespace GoogleUnitTests
 {
 namespace cuBLASWrappers
 {
+namespace MatrixMultiplication
+{
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-TEST(cuBLASLtDescriptorComputeParametersTests, DefaultConstructs)
+TEST(LtDescriptorComputeParametersTests, DefaultConstructs)
 {
   ComputeParameters compute_parameters {};
 
@@ -25,9 +27,7 @@ TEST(cuBLASLtDescriptorComputeParametersTests, DefaultConstructs)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-TEST(
-  cuBLASLtDescriptorComputeParametersTests,
-  GetComputeParametersWorksForDouble)
+TEST(LtDescriptorComputeParametersTests, GetComputeParametersWorksForDouble)
 {
   ComputeParameters compute_parameters {get_compute_parameters<double>()};
 
@@ -37,12 +37,13 @@ TEST(
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-TEST(cuBLASLtDescriptorTests, DefaultConstructs)
+TEST(LtDescriptorTests, DefaultConstructs)
 {
   LtDescriptor descriptor {};
 
   EXPECT_NE(descriptor.descriptor_, nullptr);
 }
 
+} // namespace MatrixMultiplication
 } // namespace cuBLASWrappers
 } // namespace GoogleUnitTests
