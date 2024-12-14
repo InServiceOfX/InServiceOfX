@@ -10,6 +10,7 @@ ADD_EXECUTABLE(Check
   cuBLASWrappers/MatrixMultiplication/LtSetDescriptorAttributes_tests.cu
   cuBLASWrappers/MatrixMultiplication/Setup_tests.cu
   cuBLASWrappers/MatrixMultiplication/Workspace_tests.cu
+  DataStructures/Aligned128BitArray_tests.cu
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
   Numerics/Constants/get_infinity_tests.cu
