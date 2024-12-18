@@ -34,5 +34,6 @@ LLAMA_CLOUD_API_KEY=llx-xxxxxx
 
 # Groq, GroqCloud
 # https://console.groq.com/keys
+# GROQ_CLOUD_API_KEY has been deprecated.
 
-GROQ_CLOUD_API_KEY=gsk_xxxxxx
+GROQ_API_KEY=gsk_xxxxxx
