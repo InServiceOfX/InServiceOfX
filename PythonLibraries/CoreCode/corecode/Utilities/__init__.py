@@ -19,5 +19,6 @@ from corecode.Utilities.get_user_input import (
 )
 
 from corecode.Utilities.load_environment_file import (
+	get_environment_variable,
 	load_environment_file,
 )

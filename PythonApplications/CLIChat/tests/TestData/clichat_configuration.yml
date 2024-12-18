@@ -1,0 +1,23 @@
+cancel_entry: '.cancel'
+exit_entry: '.exit'
+
+hotkey_cancel: ['c-z']
+hotkey_exit: ['c-x']
+hotkey_insert_newline: ['c-i']
+hotkey_toggle_word_wrap: ['c-w']
+hotkey_new: ['c-n']
+
+temperature: 1.0
+max_tokens: 8192
+
+# TerminalModeDialogs dependencies.
+terminal_CommandEntryColor2: "ansigreen"
+terminal_DisplayCommandOnMenu: false
+terminal_PromptIndicatorColor2: "ansicyan"
+terminal_ResourceLinkColor: "ansiyellow"
+
+wrap_words: true
+
+# Leave blank for the current working directory. Can input absolute or relative
+# (to current working directory) paths.
+chat_history_path: tests/TestData/chat_history.txt

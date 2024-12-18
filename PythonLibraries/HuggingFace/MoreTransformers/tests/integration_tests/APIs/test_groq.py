@@ -8,9 +8,6 @@ from pathlib import Path
 
 load_environment_file()
 
-test_image_data_directory = Path(__file__).parents[4] / "ThirdParties" / \
-    "MoreInsightFace" / "tests" / "TestData" / "Images"
-
 # https://console.groq.com/docs/quickstart
 def test_groq():
     client = Groq(api_key=get_environment_variable("GROQ_API_KEY"))
