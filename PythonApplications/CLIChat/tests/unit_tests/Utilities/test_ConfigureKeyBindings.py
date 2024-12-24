@@ -2,7 +2,7 @@ import pytest
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.application import Application
 from unittest.mock import Mock, patch
-from clichat.Configuration import Configuration
+from clichat.Configuration import Configuration, RuntimeConfiguration
 from clichat.Utilities import ConfigureKeyBindings
 from pathlib import Path
 
@@ -15,6 +15,10 @@ def config():
     return Configuration(test_file_path)
 
 @pytest.fixture
+def runtime_config():
+    return RuntimeConfiguration()
+
+@pytest.fixture
 def mock_event():
     buffer = Mock(spec=Buffer)
     app = Mock(spec=Application)
@@ -24,8 +28,8 @@ def mock_event():
     return event
 
 @pytest.fixture
-def key_binder(config):
-    return ConfigureKeyBindings(config)
+def key_binder(config, runtime_config):
+    return ConfigureKeyBindings(config, runtime_config)
 
 def test_exit_binding(key_binder, mock_event):
     kb = key_binder.configure_key_bindings()

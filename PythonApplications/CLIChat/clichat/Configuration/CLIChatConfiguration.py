@@ -12,7 +12,6 @@ class CLIChatConfiguration(BaseModel):
     hotkey_new: list[str] = Field(default=['c-n'])
 
     temperature: float = Field(default=1.0)
-    max_tokens: int = Field(default=8192)
 
     # TerminalModeDialogs dependencies.
     terminal_DisplayCommandOnMenu: bool = Field(default=False)
@@ -20,7 +19,7 @@ class CLIChatConfiguration(BaseModel):
     terminal_PromptIndicatorColor2: str = Field(default="ansicyan")
     terminal_ResourceLinkColor: str = Field(default="ansiyellow")
 
-    wrap_words: bool = Field(default=True)
+    terminal_DialogBackgroundColor: str = Field(default="ansibrightblue")
 
     chat_history_path: Optional[str] = Field(default=None)
 

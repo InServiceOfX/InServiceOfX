@@ -75,7 +75,6 @@ def test_ChatGroq_chains():
         max_retries=generation_configuration.max_retries
     )
 
-
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a helpful assistant that translates {input_language} to {output_language}."),
         ("human", "{input}"),

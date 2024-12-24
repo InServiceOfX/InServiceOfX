@@ -102,10 +102,9 @@ class SinglePrompt:
         formatted text.
         """
 
-        key_binder = ConfigureKeyBindings(configuration)
+        key_binder = ConfigureKeyBindings(configuration, runtime_configuration)
         this_key_bindings = key_binder.configure_key_bindings()
 
-        runtime_configuration.select_all = False
         # a prompt_toolkit PromptSession object itself has the prompt method.
         input_prompt = prompt_session.prompt \
             if prompt_session is not None else prompt

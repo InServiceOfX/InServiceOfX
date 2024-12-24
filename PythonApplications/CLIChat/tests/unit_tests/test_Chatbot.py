@@ -21,7 +21,6 @@ def test_chatbot_init_with_defaults():
     chatbot = Chatbot()
     
     assert chatbot.temperature == 1.0
-    assert chatbot.max_tokens == 8192
     assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
     
@@ -35,7 +34,6 @@ def test_chatbot_init_with_configuration(config):
     chatbot = Chatbot(configuration=config)
     
     assert chatbot.temperature == config.temperature
-    assert chatbot.max_tokens == config.max_tokens
     assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
     
@@ -50,14 +48,12 @@ def test_chatbot_init_with_custom_name():
     chatbot = Chatbot(name=custom_name)
     
     assert chatbot.temperature == 1.0  # Default value
-    assert chatbot.max_tokens == 8192  # Default value
     assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
 
 def test_chatbot_init_with_none_configuration_values(config):
     # Test handling of None values in configuration
     config.temperature = None
-    config.max_tokens = None
     config.terminal_CommandEntryColor2 = None
     config.terminal_PromptIndicatorColor2 = None
     
@@ -65,7 +61,6 @@ def test_chatbot_init_with_none_configuration_values(config):
     
     # Should use default values when configuration values are None
     assert chatbot.temperature == 1.0
-    assert chatbot.max_tokens == 8192
     
     # Check default style values are used when configuration values are None
     style_dict = dict(chatbot.prompt_style._style_rules)

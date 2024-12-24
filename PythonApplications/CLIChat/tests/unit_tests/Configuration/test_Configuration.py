@@ -11,10 +11,8 @@ def test_Configuration_loads_from_yaml():
     
     # Test that values from yaml are loaded correctly
     assert configuration.temperature == 1.0
-    assert configuration.max_tokens == 8192
     assert configuration.terminal_DisplayCommandOnMenu == False
     assert configuration.terminal_CommandEntryColor2 == "ansigreen"
     assert configuration.terminal_PromptIndicatorColor2 == "ansicyan"
     assert configuration.terminal_ResourceLinkColor == "ansiyellow"
-    assert configuration.wrap_words == True
 

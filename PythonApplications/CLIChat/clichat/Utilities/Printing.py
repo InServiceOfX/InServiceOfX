@@ -6,8 +6,8 @@ class Printing:
     def __init__(self, configuration):
         self._configuration = configuration
 
-    def print_wrapped_text(self, content):
-        if self._configuration.wrap_words:
+    def print_wrapped_text(self, content, runtime_configuration):
+        if runtime_configuration.wrap_words:
             # wrap words to fit terminal width
             terminal_width = shutil.get_terminal_size().columns
             print(wrap_text(content, terminal_width))

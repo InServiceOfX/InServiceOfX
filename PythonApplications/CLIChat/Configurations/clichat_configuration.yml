@@ -16,7 +16,7 @@ terminal_DisplayCommandOnMenu: false
 terminal_PromptIndicatorColor2: "ansicyan"
 terminal_ResourceLinkColor: "ansiyellow"
 
-wrap_words: true
+terminal_DialogBackgroundColor: "ansibrightblue"
 
 # Leave blank for the current working directory. Can input absolute or relative
 # (to current working directory) paths.

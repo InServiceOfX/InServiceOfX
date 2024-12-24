@@ -28,3 +28,22 @@ class GetAllActiveModels:
         except Exception as err:
             print(err)
             return None
+
+    def get_all_available_models_names(self):
+        model_ids = []
+        for entry in self.response.json()["data"]:
+            if entry["active"] == True:
+                model_ids.append(entry["id"])
+        return model_ids
+    
+    def get_list_of_available_models(self):
+        resulting_list = []
+        for entry in self.response.json()["data"]:
+            if entry["active"] == True:
+                parsed_entry = {
+                    "id": entry["id"],
+                    "owned_by": entry["owned_by"],
+                    "context_window": entry["context_window"]}
+
+                resulting_list.append(parsed_entry)
+        return resulting_list

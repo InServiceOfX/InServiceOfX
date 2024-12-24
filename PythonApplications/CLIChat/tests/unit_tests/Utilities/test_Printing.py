@@ -1,6 +1,6 @@
 import pytest
 from clichat.Utilities.Printing import Printing
-from clichat.Configuration import Configuration
+from clichat.Configuration import Configuration, RuntimeConfiguration
 from unittest.mock import patch
 from collections import namedtuple
 from pathlib import Path
@@ -21,11 +21,14 @@ def printer(config):
     return Printing(config)
 
 def test_print_wrapped_text_with_wrapping(printer):
+    runtime_configuration = RuntimeConfiguration()
     with patch('builtins.print') as mock_print, \
          patch('shutil.get_terminal_size') as mock_size:
         mock_size.return_value = TerminalSize(columns=20, lines=24)
         
-        printer.print_wrapped_text("This is a long text that should be wrapped")
+        printer.print_wrapped_text(
+            "This is a long text that should be wrapped",
+            runtime_configuration)
         
         # Should be wrapped due to terminal width of 20
         mock_print.assert_called_once()
@@ -35,10 +38,11 @@ def test_print_wrapped_text_with_wrapping(printer):
         assert "wrapped" in called_text
 
 def test_print_wrapped_text_without_wrapping(config, printer):
-    config.wrap_words = False
+    runtime_configuration = RuntimeConfiguration()
+    runtime_configuration.wrap_words = False
     with patch('builtins.print') as mock_print:
         text = "This text should not be wrapped"
-        printer.print_wrapped_text(text)
+        printer.print_wrapped_text(text, runtime_configuration)
         mock_print.assert_called_once_with(text)
 
 def test_print_as_html_formatted_text(printer):

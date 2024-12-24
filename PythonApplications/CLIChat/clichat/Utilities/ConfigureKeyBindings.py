@@ -3,8 +3,9 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.application import run_in_terminal
 
 class ConfigureKeyBindings:
-    def __init__(self, configuration):
+    def __init__(self, configuration, runtime_configuration):
         self._configuration = configuration
+        self._runtime_configuration = runtime_configuration
         self.key_bindings = KeyBindings()
         self._default_entry = None
 
@@ -32,10 +33,11 @@ class ConfigureKeyBindings:
 
         @self.key_bindings.add(*self._configuration.hotkey_toggle_word_wrap)
         def _(_):
-            self._configuration.wrap_words = not self._configuration.wrap_words
+            self._runtime_configuration.wrap_words = \
+                not self._runtime_configuration.wrap_words
             run_in_terminal(
                 lambda: Printing.print_key_value(
-                    f"Word Wrap: '{'enabled' if self._configuration.wrap_words else 'disabled'}'!"))
+                    f"Word Wrap: '{'enabled' if self._runtime_configuration.wrap_words else 'disabled'}'!"))
 
         @self.key_bindings.add(*self._configuration.hotkey_new)
         def _(event):

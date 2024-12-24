@@ -4,12 +4,16 @@ import sys
 application_path = Path(__file__).resolve().parents[1]
 project_path = Path(__file__).resolve().parents[3]
 corecode_path = project_path / "PythonLibraries" / "CoreCode"
+more_groq_path = project_path / "PythonLibraries" / "ThirdParties" / "MoreGroq"
 
 if not str(application_path) in sys.path:
     sys.path.append(str(application_path))
 
 if not str(corecode_path) in sys.path:
     sys.path.append(str(corecode_path))
+
+if not str(more_groq_path) in sys.path:
+    sys.path.append(str(more_groq_path))
 
 from clichat.Configuration import Configuration
 from clichat.Chatbot import Chatbot
