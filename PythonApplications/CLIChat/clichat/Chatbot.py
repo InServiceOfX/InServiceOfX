@@ -1,13 +1,16 @@
 from clichat.Configuration import RuntimeConfiguration
 from clichat import StreamingWordWrapper
+from clichat.Persistence import ChatLogger, SystemMessagesManager
 from clichat.Terminal import (
     CreateBottomToolbar,
     create_prompt_session,
-    ModelSelector,
+    GroqModelSelector,
     PromptWrapperInputs,
-    SinglePrompt)
+    SinglePrompt,
+    show_system_message_dialog)
 from clichat.Utilities.FileIO import (
     get_existing_chat_history_path_or_fail,
+    get_path_from_configuration,
     setup_chat_history_file)
 from clichat.Utilities import Printing
 from corecode.Utilities import get_environment_variable
@@ -33,7 +36,6 @@ class Chatbot:
             self.temperature = configuration.temperature \
                 if configuration.temperature is not None else 1.0
 
-        self.default_prompt = ""
         self.prompt_style = Style.from_dict({
             # User input (default text).
             "": configuration.terminal_CommandEntryColor2 \
@@ -50,24 +52,39 @@ class Chatbot:
         self._runtime_configuration = RuntimeConfiguration()
         self._printer = Printing(self._configuration)
 
-        self.messages = [create_system_message(
-            self._runtime_configuration.system_message),]
+        self.system_messages_manager = SystemMessagesManager()
+        self.system_messages_manager.handle_initialization(self._configuration)
+
+        self.reset_messages()
 
         if self._configuration is not None:
             self.chat_history_path = get_existing_chat_history_path_or_fail(
                 self._configuration)
+            self.chat_log_path = ChatLogger(self._configuration.chat_log_path)
         else:
             self.chat_history_path = setup_chat_history_file()
-    
+            self.chat_log_path = ChatLogger()
+
+    def reset_messages(self):
+        self.messages = [
+            create_system_message(msg.content) \
+                for msg in self.system_messages_manager.get_active_messages()]
+
+    def _append_active_system_messages(self):
+        current_system_contents = [msg["content"] for msg in self.messages \
+            if msg["role"] == "system"]
+
+        for active_msg in self.system_messages_manager.get_active_messages():
+            if active_msg.content not in current_system_contents:
+                self.messages.append(create_system_message(active_msg.content))
 
     def _create_completer(self, runtime_configuration):
         completer_list = [
-            ".new",
-            ".api",
             ".model",
-            ".systemmessage",
+            ".active_system_messages",
+            ".add_system_message",
+            ".configure_system_messages",
             ".temperature",
-            ".maxtokens",
             ".togglewordwrap",
             self._configuration.exit_entry]
 
@@ -77,51 +94,50 @@ class Chatbot:
     def run_iteration(
         self,
         prompt_session,
-        bottom_toolbar,
-        prompt: str="") -> bool:
+        bottom_toolbar) -> bool:
         completer = self._create_completer(self._runtime_configuration)
 
         prompt_wrapper_input = PromptWrapperInputs(
             completer=completer,
             style=self.prompt_style)
 
-        if not prompt:
-            prompt = SinglePrompt.run(
-                self._configuration,
-                self._runtime_configuration,
-                prompt_wrapper_inputs=prompt_wrapper_input,
-                input_indicator="",
-                prompt_session=prompt_session,
-                bottom_toolbar=bottom_toolbar)
-            user_message = create_user_message(prompt)
-            self.messages.append(user_message)
-            if prompt and \
-                not prompt in (".new", self._configuration.exit_entry) and \
-                self._runtime_configuration.current_messages is not None:
-                self._runtime_configuration.current_messages.append(
-                    user_message)
-        else:
-            prompt_wrapper_input.default = prompt
-            prompt_wrapper_input.accept_default = True
-            prompt = SinglePrompt.run(
-                self._configuration,
-                self._runtime_configuration,
-                prompt_wrapper_inputs=prompt_wrapper_input,
-                input_indicator="",
-                prompt_session=prompt_session,
-                bottom_toolbar=bottom_toolbar)
-            user_message = create_user_message(prompt)
-            self.messages.append(user_message)
+        prompt = SinglePrompt.run(
+            self._configuration,
+            self._runtime_configuration,
+            prompt_wrapper_inputs=prompt_wrapper_input,
+            input_indicator="",
+            prompt_session=prompt_session,
+            bottom_toolbar=bottom_toolbar)
+
         if prompt == self._configuration.exit_entry:
+            self.system_messages_manager.handle_exit(self._configuration)
             return False
-        elif self._runtime_configuration.current_messages is None and \
-            prompt.lower() == ".togglewordwrap":
+        elif prompt.lower() == ".active_system_messages":
+            self.system_messages_manager.show_active_system_messages(
+                self._configuration)
+            return True
+        elif prompt.lower() == ".add_system_message":
+            self.system_messages_manager.add_system_message_dialog(
+                self.prompt_style)
+            return True
+        elif prompt.lower() == ".configure_system_messages":
+            action = show_system_message_dialog(
+                self.system_messages_manager,
+                self.prompt_style)
+            
+            if action == "reset":
+                self.reset_messages()
+            elif action == "append":
+                self._append_active_system_messages()
+            return True
+
+        elif prompt.lower() == ".togglewordwrap":
             self._runtime_configuration.wrap_words = \
                 not self._runtime_configuration.wrap_words
             self._printer.print_key_value(
                 f"Word Wrap: {self._runtime_configuration.wrap_words}")
         elif prompt.lower() == ".model":
-            model_selector = ModelSelector(self._configuration)
+            model_selector = GroqModelSelector(self._configuration)
             model, max_tokens = model_selector.select_model_and_tokens()
             self._runtime_configuration.model = model
             self._runtime_configuration.max_tokens = max_tokens
@@ -137,6 +153,9 @@ class Chatbot:
                     "Max tokens: Using model default",
                     self._runtime_configuration)
         elif prompt := prompt.strip():
+            user_message = create_user_message(prompt)
+            self.messages.append(user_message)
+
             self._printer.print_wrapped_text(
                 prompt,
                 self._runtime_configuration)
@@ -176,17 +195,14 @@ class Chatbot:
         return True
 
 
-    def run(self, prompt: str = ""):
-        if self.default_prompt:
-            prompt, self.default_prompt = self.default_prompt, ""
+    def run(self):
 
         prompt_session = create_prompt_session(self.chat_history_path)
 
         self._printer.print_as_html_formatted_text(f"\n{self.name} loaded!")
-        self._printer.print_as_html_formatted_text(f"```system message```")
-        self._printer.print_wrapped_text(
-            self._runtime_configuration.system_message,
-            self._runtime_configuration)
+        self._printer.print_as_html_formatted_text(f"```system message(s)```")
+        self.system_messages_manager.show_active_system_messages(
+            self._configuration)
         self._printer.print_as_html_formatted_text("```")
 
         bottom_toolbar = CreateBottomToolbar(
@@ -194,7 +210,7 @@ class Chatbot:
         print(f"(To exit, enter '{self._configuration.exit_entry}')\n")
 
         while True:
-            if not self.run_iteration(prompt_session, bottom_toolbar, prompt):
+            if not self.run_iteration(prompt_session, bottom_toolbar):
                 break
 
 

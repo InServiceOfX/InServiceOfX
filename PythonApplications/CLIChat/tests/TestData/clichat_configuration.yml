@@ -16,8 +16,15 @@ terminal_DisplayCommandOnMenu: false
 terminal_PromptIndicatorColor2: "ansicyan"
 terminal_ResourceLinkColor: "ansiyellow"
 
-terminal_DialogBackgroundColor: "ansibrightblue"
+terminal_DialogBackgroundColor: "ansiblue"
+
+terminal_SystemMessageColor: "ansigray"
+terminal_SystemMessagePrefix: "🤖"
+
+terminal_ErrorColor: "ansiyellow"
 
 # Leave blank for the current working directory. Can input absolute or relative
 # (to current working directory) paths.
 chat_history_path: tests/TestData/chat_history.txt
+chat_log_path: tests/TestData/chat_log.txt
+system_messages_path: tests/TestData/system_messages.json

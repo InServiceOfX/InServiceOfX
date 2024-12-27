@@ -95,3 +95,19 @@ def get_existing_chat_history_path_or_fail(configuration):
             f"Chat history file does not exist: {abs_history_path}")
 
     return history_path
+
+def get_path_from_configuration(configuration, field):
+    """
+    Raises FileNotFoundError if file path does not exist for the given field
+    value.
+    """
+    if getattr(configuration, field) is None:
+        return None
+
+    path = Path(getattr(configuration, field))
+    abs_path = path if path.is_absolute() else Path.cwd() / path
+
+    if not abs_path.exists():
+        raise FileNotFoundError(f"File does not exist: {abs_path}")
+
+    return abs_path

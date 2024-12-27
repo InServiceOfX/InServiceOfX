@@ -1,16 +1,18 @@
 from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit.styles import Style
-from prompt_toolkit import HTML
 from typing import Optional, Tuple
 from moregroq.Wrappers import GetAllActiveModels
 from corecode.Utilities import get_environment_variable
 
-class ModelSelector:
+class GroqModelSelector:
     def __init__(self, configuration):
         self.style = Style.from_dict({
-            'dialog': f'bg:{configuration.terminal_DialogBackgroundColor}',
-            'dialog.body': f'bg:{configuration.terminal_DialogBackgroundColor}',
-            'dialog frame.label': f'bg:{configuration.terminal_DialogBackgroundColor}'
+            'dialog': \
+                f'bg:{configuration.terminal_DialogBackgroundColor} fg:white',
+            'dialog.body': \
+                f'bg:{configuration.terminal_DialogBackgroundColor} fg:white',
+            'dialog frame.label': \
+                f'bg:{configuration.terminal_DialogBackgroundColor} fg:white',
         })
 
     def _get_available_models(self) -> list[tuple[str, str]]:
@@ -20,10 +22,12 @@ class ModelSelector:
             get_all_active_models()
             models = get_all_active_models.get_list_of_available_models()
             return [
-                (model.id, f"{model.id} (context window: {model.context_window})") 
+                (
+                    model.get('id'),
+                    f"{model.get('id')} (context window: {model.get('context_window')})")
                 for model in models]
         except Exception as err:
-            print(err)
+            print(f"Failed to get models: {err}")
             return [("llama-3.3-70b-versatile", 
                     "llama-3.3-70b-versatile (context window: 32768)")]
 
@@ -31,8 +35,8 @@ class ModelSelector:
         models = self._get_available_models()
         
         model_result = radiolist_dialog(
-            title="Model Selection",
-            text="Select an LLM model:",
+            title="Model Selection from Groq",
+            text="Select an active LM model:",
             values=models,
             default=models[0][0] if models else "llama-3.3-70b-versatile",
             style=self.style

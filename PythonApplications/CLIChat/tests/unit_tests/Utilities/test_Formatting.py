@@ -1,6 +1,5 @@
 import pytest
 from clichat.Utilities.Formatting import get_string_width, wrap_text
-import shutil
 from unittest.mock import patch
 from collections import namedtuple
 

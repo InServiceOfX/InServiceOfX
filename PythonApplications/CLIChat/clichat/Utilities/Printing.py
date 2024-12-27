@@ -6,6 +6,25 @@ class Printing:
     def __init__(self, configuration):
         self._configuration = configuration
 
+    @staticmethod
+    def print_info(message: str) -> None:
+        print_formatted_text(
+            HTML(
+                "<ansigreen>"
+                f">> {message}"
+                "</ansigreen>"
+            )
+        )
+
+    def print_error(self, message: str) -> None:
+        print_formatted_text(
+            HTML(
+                f"<{self._configuration.terminal_ErrorColor}>"
+                f"Error: {message}"
+                f"</{self._configuration.terminal_ErrorColor}>"
+            )
+        )
+
     def print_wrapped_text(self, content, runtime_configuration):
         if runtime_configuration.wrap_words:
             # wrap words to fit terminal width

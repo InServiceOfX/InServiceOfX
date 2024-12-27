@@ -12,3 +12,8 @@ def wrap_text(content, terminal_width=None):
     return "\n".join([
         textwrap.fill(line, width=terminal_width) \
             for line in content.splitlines()])
+
+def empty_string_to_none(value):
+    if value == "":
+        return None
+    return value

@@ -21,7 +21,6 @@ def test_chatbot_init_with_defaults():
     chatbot = Chatbot()
     
     assert chatbot.temperature == 1.0
-    assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
     
     # Check default style values
@@ -34,7 +33,6 @@ def test_chatbot_init_with_configuration(config):
     chatbot = Chatbot(configuration=config)
     
     assert chatbot.temperature == config.temperature
-    assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
     
     # Check configured style values
@@ -48,7 +46,6 @@ def test_chatbot_init_with_custom_name():
     chatbot = Chatbot(name=custom_name)
     
     assert chatbot.temperature == 1.0  # Default value
-    assert chatbot.default_prompt == ""
     assert isinstance(chatbot.prompt_style, Style)
 
 def test_chatbot_init_with_none_configuration_values(config):
@@ -94,8 +91,12 @@ def test_create_completer_returns_fuzzy_completer_when_no_messages(
     
     # Verify all expected commands are in the completer
     expected_commands = {
-        ".new", ".api", ".model", ".systemmessage",
-        ".temperature", ".maxtokens", ".togglewordwrap",
+        ".model",
+        ".active_system_messages",
+        ".add_system_message",
+        ".configure_system_messages",
+        ".temperature",
+        ".togglewordwrap",
         config.exit_entry
     }
     assert set(word_completer.words) == expected_commands
@@ -108,9 +109,9 @@ def test_create_completer_completions_work(config):
     completer = chatbot._create_completer(runtime_config)
     
     # Test some completion scenarios
-    document = Document(".sys")  # Simulating typing .sys
+    document = Document(".activ")  # Simulating typing .sys
     completions = list(completer.get_completions(document, CompleteEvent()))
-    assert any(c.text == ".systemmessage" for c in completions)
+    assert any(c.text == ".active_system_messages" for c in completions)
     
     document = Document(".temp")  # Simulating typing .temp
     completions = list(completer.get_completions(document, CompleteEvent()))

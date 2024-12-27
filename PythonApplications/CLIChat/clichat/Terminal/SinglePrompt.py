@@ -100,6 +100,11 @@ class SinglePrompt:
         and light terminal backgrounds.
         bottom_toolbar - Formatted text or callable which is supposed to return 
         formatted text.
+
+        default - The default input text to be shown. (This can be edited by the
+        user).
+        accept_default - When True, automatically accept default value without
+        allowing user to edit the input.
         """
 
         key_binder = ConfigureKeyBindings(configuration, runtime_configuration)
