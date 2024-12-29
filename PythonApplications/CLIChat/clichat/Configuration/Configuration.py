@@ -1,13 +1,16 @@
 from clichat.Configuration.CLIChatConfiguration import CLIChatConfiguration
+from clichat.Utilities import get_environment_variable
 from pathlib import Path
 from typing import Optional
 
 import yaml
+import os
 
 class Configuration:
     @staticmethod
     def _get_default_configuration_path() -> Path:
-        return Path.cwd() / "Configurations" / "clichat_configuration.yml"
+        return Path.home() / ".config" / "clichat" / "Configurations" / \
+            "clichat_configuration.yml"
 
     @staticmethod
     def load_yaml(configuration_path: Optional[Path] = None) -> dict:
@@ -27,14 +30,14 @@ class Configuration:
             print("Make sure the file exists and you have read permissions.\n")
             raise SystemExit(1)
 
-    def __init__(self, configuration_path: Optional[Path] = None):
-        yaml_data = self.load_yaml(configuration_path)
+    def __init__(self, config_path=None):
+        if config_path is None:
+            config_path = self._get_default_configuration_path()
+        
+        self.configuration_path = config_path
+        yaml_data = self.load_yaml(config_path)
         configuration = CLIChatConfiguration(**yaml_data)
-
-        self.configuration_path = configuration_path \
-            if configuration_path is not None \
-            else Configuration._get_default_configuration_path()
-
+        
         # Transfer all attributes from pydantic model to this instance
         for key, value in configuration.model_dump().items():
             setattr(self, key, value)

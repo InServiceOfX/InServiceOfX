@@ -1,3 +1,14 @@
+# Deployment
+
+Run
+
+```
+pyinstaller installer.spec
+```
+in the subdirectory containing `installer.spec`, which is in `Deployment/`
+
+# Development Scratch notes
+
 Chatbot.py
 class Chatbot
 

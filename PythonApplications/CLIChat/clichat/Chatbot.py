@@ -10,10 +10,9 @@ from clichat.Terminal import (
     show_system_message_dialog)
 from clichat.Utilities.FileIO import (
     get_existing_chat_history_path_or_fail,
-    get_path_from_configuration,
     setup_chat_history_file)
 from clichat.Utilities import Printing
-from corecode.Utilities import get_environment_variable
+from clichat.Utilities import get_environment_variable
 from moregroq.Prompting.PromptTemplates import (
     create_user_message,
     create_system_message)
@@ -60,10 +59,11 @@ class Chatbot:
         if self._configuration is not None:
             self.chat_history_path = get_existing_chat_history_path_or_fail(
                 self._configuration)
-            self.chat_log_path = ChatLogger(self._configuration.chat_log_path)
+            # TODO: Implement ChatLogger.
+            #self.chat_log_path = ChatLogger(self._configuration.chat_log_path)
         else:
             self.chat_history_path = setup_chat_history_file()
-            self.chat_log_path = ChatLogger()
+            #self.chat_log_path = ChatLogger()
 
     def reset_messages(self):
         self.messages = [
@@ -79,17 +79,29 @@ class Chatbot:
                 self.messages.append(create_system_message(active_msg.content))
 
     def _create_completer(self, runtime_configuration):
-        completer_list = [
-            ".model",
-            ".active_system_messages",
-            ".add_system_message",
-            ".configure_system_messages",
-            ".temperature",
-            ".togglewordwrap",
-            self._configuration.exit_entry]
-
+        command_descriptions = {
+            ".model": "Change the LLM model and max tokens for responses",
+            ".active_system_messages": "Display all currently active system "
+                "messages",
+            ".add_system_message": "Add a new system message to the collection",
+            ".configure_system_messages": "Configure which system messages "
+                "are active",
+            ".reset_messages": "Reset conversation to only include active "
+                "system messages",
+            ".temperature": "TODO: Adjust the temperature (creativity) of the "
+                "model's responses",
+            ".togglewordwrap": "Toggle word wrapping for long responses",
+            ".exit": "Exit the application and optionally save system messages"
+        }
+        
+        completer_list = [(cmd, desc) for cmd, desc in command_descriptions.items()]
+        
         return None if runtime_configuration.current_messages is not None else \
-            FuzzyCompleter(WordCompleter(completer_list, ignore_case=True))
+            FuzzyCompleter(WordCompleter(
+                words=dict(completer_list).keys(),
+                meta_dict=command_descriptions,
+                ignore_case=True
+            ))
 
     def run_iteration(
         self,
@@ -130,7 +142,11 @@ class Chatbot:
             elif action == "append":
                 self._append_active_system_messages()
             return True
-
+        elif prompt.lower() == ".reset_messages":
+            self.reset_messages()
+            self._printer.print_info(
+                "Messages reset to active system messages only")
+            return True
         elif prompt.lower() == ".togglewordwrap":
             self._runtime_configuration.wrap_words = \
                 not self._runtime_configuration.wrap_words

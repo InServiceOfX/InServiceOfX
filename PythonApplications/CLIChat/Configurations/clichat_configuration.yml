@@ -12,7 +12,6 @@ max_tokens: 8192
 
 # TerminalModeDialogs dependencies.
 terminal_CommandEntryColor2: "ansigreen"
-terminal_DisplayCommandOnMenu: false
 terminal_PromptIndicatorColor2: "ansicyan"
 terminal_ResourceLinkColor: "ansiyellow"
 

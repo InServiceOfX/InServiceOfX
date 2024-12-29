@@ -95,6 +95,7 @@ def test_create_completer_returns_fuzzy_completer_when_no_messages(
         ".active_system_messages",
         ".add_system_message",
         ".configure_system_messages",
+        ".reset_messages",
         ".temperature",
         ".togglewordwrap",
         config.exit_entry

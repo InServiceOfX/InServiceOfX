@@ -2,7 +2,7 @@ from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit.styles import Style
 from typing import Optional, Tuple
 from moregroq.Wrappers import GetAllActiveModels
-from corecode.Utilities import get_environment_variable
+from clichat.Utilities import get_environment_variable
 
 class GroqModelSelector:
     def __init__(self, configuration):

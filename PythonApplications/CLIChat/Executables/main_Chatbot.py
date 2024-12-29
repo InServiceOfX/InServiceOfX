@@ -3,27 +3,34 @@ import sys
 
 application_path = Path(__file__).resolve().parents[1]
 project_path = Path(__file__).resolve().parents[3]
-corecode_path = project_path / "PythonLibraries" / "CoreCode"
 more_groq_path = project_path / "PythonLibraries" / "ThirdParties" / "MoreGroq"
 
 if not str(application_path) in sys.path:
     sys.path.append(str(application_path))
-
-if not str(corecode_path) in sys.path:
-    sys.path.append(str(corecode_path))
 
 if not str(more_groq_path) in sys.path:
     sys.path.append(str(more_groq_path))
 
 from clichat.Configuration import Configuration
 from clichat.Chatbot import Chatbot
-from clichat.Utilities import Printing
-
-from corecode.Utilities import load_environment_file
+from clichat.Utilities import (Printing, load_environment_file)
 
 def main_Chatbot():
-    # Load the environment variables.
-    environment_file_path = application_path / "Configurations" / ".env"
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--dev', action='store_true',
+        help='Use development configuration')
+    args = parser.parse_args()
+
+    if args.dev:
+        environment_file_path = application_path / "Configurations" / ".env"
+        config_path = application_path / "Configurations" / "clichat_configuration.yml"
+    else:
+        config_dir = Path.home() / ".config" / "clichat"
+        environment_file_path = config_dir / "Configurations" / ".env"
+        config_path = config_dir / "Configurations" / "clichat_configuration.yml"
+
     if not environment_file_path.exists():
         Printing.print_info(
             f"\nEnvironment file not found at {environment_file_path}")
@@ -33,7 +40,7 @@ def main_Chatbot():
 
     load_environment_file(environment_file_path)
 
-    configuration = Configuration()
+    configuration = Configuration(config_path)
     Printing.print_info(
         f"Found and loaded configuration at: {configuration.configuration_path}")
     chatbot = Chatbot(configuration=configuration)

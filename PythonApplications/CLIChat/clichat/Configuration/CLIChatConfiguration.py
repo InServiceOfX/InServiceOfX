@@ -15,7 +15,6 @@ class CLIChatConfiguration(BaseModel):
     temperature: float = Field(default=1.0)
 
     # TerminalModeDialogs dependencies.
-    terminal_DisplayCommandOnMenu: bool = Field(default=False)
     terminal_CommandEntryColor2: str = Field(default="ansigreen")
     terminal_PromptIndicatorColor2: str = Field(default="ansicyan")
     terminal_ResourceLinkColor: str = Field(default="ansiyellow")

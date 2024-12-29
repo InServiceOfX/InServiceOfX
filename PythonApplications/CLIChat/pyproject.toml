@@ -1,15 +1,33 @@
 [tool.poetry]
 name = "clichat"
 version = "0.1.0"
-description = ""
-authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+description = "Command Line Interface Chatbot with LLMs"
+authors = ["In Service of X LLC <inserviceofxy@proton.me>"]
 readme = "README.md"
+packages = [
+    { include = "clichat" },
+    { include = "Executables" }
+]
+include = [
+    "Configurations/.env.example",
+    "Configurations/clichat_configuration.yml",
+    "Data/chat_history.txt.example",
+    "Data/empty_system_messages.json"
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 prompt-toolkit = "^3.0.48"
 wcwidth = "^0.2.13"
+moregroq = "^0.1.0"
+pydantic = "^2.10.4"
+python-dotenv = "^1.0.1"
+pyyaml = "^6.0.2"
 
+
+[tool.poetry.scripts]
+clichat = "Executables.main_Chatbot:main_Chatbot"
+clichat-setup = "Executables.main_setup:main_setup"
 
 [build-system]
 requires = ["poetry-core"]

@@ -119,6 +119,9 @@ Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
 PythonApplications/CLIChat/Data/chat_history.txt
+PythonApplications/CLIChat/Deployment/build
+PythonApplications/CLIChat/Deployment/dist/
+PythonApplications/CLIChat/dist/
 PythonApplications/CLIChat/tests/TestData/chat_history.txt
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
