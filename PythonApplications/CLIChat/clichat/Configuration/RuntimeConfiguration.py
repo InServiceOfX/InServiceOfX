@@ -2,7 +2,6 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 class RuntimeConfiguration(BaseModel):
-    current_messages: Optional[List[Dict[str, str]]] = Field(default=None)
     multiline_input: bool = Field(default=False)
     add_path_at: bool = Field(default=False)
     temp_chunk: str = Field(default="")
@@ -15,3 +14,4 @@ class RuntimeConfiguration(BaseModel):
     # length of input tokens and generated tokens is limited by model's context
     # length.
     max_tokens: int | None = Field(default=None)
+    is_user_prompt_history_active: bool = Field(default=False)

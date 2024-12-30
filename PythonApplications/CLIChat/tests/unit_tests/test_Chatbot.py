@@ -64,19 +64,10 @@ def test_chatbot_init_with_none_configuration_values(config):
     assert style_dict.get("") == "ansigreen"
     assert style_dict.get("indicator") == "ansicyan"
 
-def test_create_completer_returns_none_when_messages_exist(config):
-    chatbot = Chatbot(configuration=config)
-    runtime_config = RuntimeConfiguration()
-    runtime_config.current_messages = [{"role": "user", "content": "Hello"}]
-    
-    completer = chatbot._create_completer(runtime_config)
-    assert completer is None
-
-def test_create_completer_returns_fuzzy_completer_when_no_messages(
+def test_create_completer_returns_fuzzy_completer(
     config):
     chatbot = Chatbot(configuration=config)
     runtime_config = RuntimeConfiguration()
-    runtime_config.current_messages = None
     
     completer = chatbot._create_completer(runtime_config)
     assert completer is not None
@@ -98,6 +89,7 @@ def test_create_completer_returns_fuzzy_completer_when_no_messages(
         ".reset_messages",
         ".temperature",
         ".togglewordwrap",
+        ".toggle_prompt_history",
         config.exit_entry
     }
     assert set(word_completer.words) == expected_commands
@@ -105,7 +97,6 @@ def test_create_completer_returns_fuzzy_completer_when_no_messages(
 def test_create_completer_completions_work(config):
     chatbot = Chatbot(configuration=config)
     runtime_config = RuntimeConfiguration()
-    runtime_config.current_messages = None
     
     completer = chatbot._create_completer(runtime_config)
     
@@ -117,3 +108,26 @@ def test_create_completer_completions_work(config):
     document = Document(".temp")  # Simulating typing .temp
     completions = list(completer.get_completions(document, CompleteEvent()))
     assert any(c.text == ".temperature" for c in completions)
+
+@pytest.fixture
+def chatbot(config):
+    chatbot = Chatbot(configuration=config)
+    chatbot.messages = []  # Start with empty messages
+    return chatbot
+
+def test_toggle_user_prompt_history(chatbot):
+    assert chatbot._runtime_configuration.is_user_prompt_history_active == False
+    
+    chatbot.messages.append({"role": "user", "content": "Hello"})
+    chatbot.messages.append({"role": "assistant", "content": "Hi"})
+    chatbot.messages.append({"role": "user", "content": "Goodbye"})
+    
+    assert len(chatbot.messages) == 3
+    
+    # Toggle it back on
+    chatbot._runtime_configuration.is_user_prompt_history_active = True
+    
+    chatbot.messages.append({"role": "assistant", "content": "Bye"})
+    chatbot.messages.append({"role": "user", "content": "Thanks"})
+    
+    assert len(chatbot.messages) == 5

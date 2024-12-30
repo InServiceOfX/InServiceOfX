@@ -91,17 +91,17 @@ class Chatbot:
             ".temperature": "TODO: Adjust the temperature (creativity) of the "
                 "model's responses",
             ".togglewordwrap": "Toggle word wrapping for long responses",
+            ".toggle_prompt_history": "Toggle whether to keep previous user "
+                "prompts in history",
             ".exit": "Exit the application and optionally save system messages"
         }
         
         completer_list = [(cmd, desc) for cmd, desc in command_descriptions.items()]
         
-        return None if runtime_configuration.current_messages is not None else \
-            FuzzyCompleter(WordCompleter(
-                words=dict(completer_list).keys(),
-                meta_dict=command_descriptions,
-                ignore_case=True
-            ))
+        return FuzzyCompleter(WordCompleter(
+            words=dict(completer_list).keys(),
+            meta_dict=command_descriptions,
+            ignore_case=True))
 
     def run_iteration(
         self,
@@ -168,8 +168,23 @@ class Chatbot:
                 self._printer.print_wrapped_text(
                     "Max tokens: Using model default",
                     self._runtime_configuration)
+        elif prompt.lower() == ".toggle_prompt_history":
+            self._runtime_configuration.is_user_prompt_history_active = \
+                not self._runtime_configuration.is_user_prompt_history_active
+            self._printer.print_key_value(
+                f"User Prompt History: {'Active' if self._runtime_configuration.is_user_prompt_history_active else 'Inactive'}")
+            return True
+        # This is the "main" thing that happens: this is where the LLM gets fed
+        # the prompt.
         elif prompt := prompt.strip():
             user_message = create_user_message(prompt)
+            
+            # Check if we need to remove the last user message
+            if not self._runtime_configuration.is_user_prompt_history_active \
+                and self.messages:
+                if self.messages[-1]["role"] == "user":
+                    self.messages.pop()
+            
             self.messages.append(user_message)
 
             self._printer.print_wrapped_text(
@@ -222,7 +237,8 @@ class Chatbot:
         self._printer.print_as_html_formatted_text("```")
 
         bottom_toolbar = CreateBottomToolbar(
-            self._configuration).create_bottom_toolbar()
+            self._configuration,
+            self._runtime_configuration).create_bottom_toolbar()
         print(f"(To exit, enter '{self._configuration.exit_entry}')\n")
 
         while True:

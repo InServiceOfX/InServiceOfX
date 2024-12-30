@@ -121,14 +121,15 @@ class SinglePrompt:
             is_password=prompt_wrapper_inputs.is_password,
             key_bindings=this_key_bindings,
             bottom_toolbar=bottom_toolbar if bottom_toolbar is not None \
-                else CreateBottomToolbar(configuration).create_bottom_toolbar(),
+                else CreateBottomToolbar(
+                    configuration,
+                    runtime_configuration).create_bottom_toolbar(),
             style=prompt_wrapper_inputs.style,
             swap_light_and_dark_colors=Condition(
                 lambda: not configuration.terminal_ResourceLinkColor.startswith(
                     "ansibright")),
             multiline=Condition(
-                lambda: runtime_configuration.current_messages is not None and \
-                    runtime_configuration.multiline_input),
+                lambda: runtime_configuration.multiline_input),
             validator=prompt_wrapper_inputs.validator,
             mouse_support=prompt_wrapper_inputs.mouse_support,
             default=prompt_wrapper_inputs.default,

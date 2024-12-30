@@ -71,7 +71,6 @@ def test_single_prompt_with_document(config, runtime_config):
         assert result == "document text"
 
 def test_single_prompt_with_multiline(config, runtime_config):
-    runtime_config.current_messages = [{"role": "user", "content": "test"}]
     runtime_config.multiline_input = True
     prompt_inputs = PromptWrapperInputs(
         mouse_support=False
