@@ -1,4 +1,46 @@
+# List of possible "free" API keys
+
+* groq - [Groq cloud api and model](https://console.groq.com/keys) / [Groq Hosted models](https://console.groq.com/docs/models)
+
+* mistral - Mistral AI (recent addition)
+
+## Groq Cloud API Key
+
+Groq Cloud API Key allows you to have FREE access to [selected open source LLMs](https://console.groq.com/docs/models).
+
+At the time of writing, use of Groq Cloud API is FREE.
+
+### Generate Groq API Key
+
+1. Go to https://console.groq.com/keys
+2. Log in with a registered account
+3. Click menu item "API Keys" on the left
+4. Click button "Create API Key"
+5. Enter a name, for example, "clichat"
+6. Copy or make a note of the created API key
+
+## Mistral AI API Key Setup
+
+Mistral AI API Key allows you to have FREE access to [selected open source LLMs](https://docs.mistral.ai/getting-started/models/models_overview/).
+
+At the time of writing, Mistral AI offers API keys for both FREE and paid tier users.
+
+Even FREE tier users can use Mistral Large models
+
+### Generate Mistral API Key
+
+![api_setup](https://github.com/user-attachments/assets/a93d6875-dbe8-44d6-84d4-6f924e6d54aa)
+
+1. Go to https://console.mistral.ai/api-keys/
+2. Log in with a registered account (Note that each free plan requires a phone number to verify.)
+3. Click menu item "API Keys" on the left
+4. Click button "Create new Key"
+5. Enter a name, for example, "toolmate"
+6. Copy or make a note of the created API key
+
 # Deployment
+
+Make sure, if you made changes either to the `ThirdParties/MoreGroq` Python library/code or to the `CLIChat` Python application, that you run `poetry build` in each respective directory where there's a pyproject.toml file in order to build a new .tar.gz to place into the `clichat-installer` subdirectory.
 
 Run
 
