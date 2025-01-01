@@ -1,0 +1,4 @@
+DOCKER_IMAGE_NAME=minimal-full-stack-python-3.10
+# Based upon or FROM debian:11-slim
+# https://hub.docker.com/layers/library/python/3.10-slim/images/sha256-0d15918ecae76250659ae3036ad1fc898f801f6cb803860bdf0cc4b27fe316dc
+BASE_IMAGE=python:3.10-slim

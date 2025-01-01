@@ -52,6 +52,8 @@ class DefaultValues:
 
 def read_build_configuration(config_path):
     """
+    TODO: Replace this with a generalized version.
+
     Reads the build_configuration.txt file and parses parameters.
 
     Args:
@@ -154,6 +156,7 @@ def build_docker_image(
     use_cache,
     build_context):
     """
+    TODO: Replace this with a generalized version.
     Builds the Docker image using the provided Dockerfile and build arguments.
 
     Args:

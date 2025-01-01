@@ -1,8 +1,10 @@
 # List of possible "free" API keys
 
 * groq - [Groq cloud api and model](https://console.groq.com/keys) / [Groq Hosted models](https://console.groq.com/docs/models)
+  - Keep in mind that the free tier is rate limited and request limited.
 
-* mistral - Mistral AI (recent addition)
+* mistral - Mistral AI
+  - Keep in mind that the free tier is rate limited and request limited.
 
 ## Groq Cloud API Key
 

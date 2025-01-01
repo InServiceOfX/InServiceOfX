@@ -1,0 +1,15 @@
+# Install Node.js via nvm.
+RUN apt-get update && apt-get install -y curl
+# From https://nodejs.org/en/download
+
+ENV NVM_DIR /root/.nvm
+
+# Download and install nvm:
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+  # This loads nvm.
+  . "$NVM_DIR/nvm.sh" && \
+  # Download and install Node.js:
+  nvm install 20
+
+
+

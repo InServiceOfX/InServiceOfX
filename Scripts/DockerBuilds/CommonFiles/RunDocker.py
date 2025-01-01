@@ -34,7 +34,10 @@ Options:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Docker container.", add_help=False)
+    parser = argparse.ArgumentParser(
+        description="Run Docker container.",
+        add_help=False)
+
     parser.add_argument(
         'directory_path',
         nargs='?',
