@@ -55,7 +55,8 @@ RUN apt-get update && \
 
 
 # Install Node.js via nvm.
-RUN apt-get update && apt-get install -y curl
+# git needed to install degit when needed.
+RUN apt-get update && apt-get install -y curl git
 # From https://nodejs.org/en/download
 
 ENV NVM_DIR /root/.nvm
