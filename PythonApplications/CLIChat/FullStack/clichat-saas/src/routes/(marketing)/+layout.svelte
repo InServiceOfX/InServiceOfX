@@ -15,8 +15,9 @@
   </div>
   <div class="flex-none">
     <ul class="menu menu-horizontal px-1 hidden sm:flex font-bold text-lg">
-      <li class="md:mx-2"><a href="/blog">Blog</a></li>
       <li class="md:mx-4"><a href="/pricing" class="border border-primary">Pricing</a></li>
+      <li class="md:mx-2"><a href="/account">Account/Login</a></li>
+      <li class="md:mx-2"><a href="/gallery">Gallery</a></li>
       <li class="md:mx-0">
         <a href="/search" aria-label="Search">
           <svg
@@ -55,15 +56,10 @@
         tabindex="0"
         class="menu menu-lg dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 font-bold"
       >
-        <li><a href="/blog">Blog</a></li>
         <li><a href="/pricing">Pricing</a></li>
+        <li><a href="/account">Account/Login</a></li>
+        <li><a href="/gallery">Gallery</a></li>
         <li><a href="/search">Search</a></li>
-        <li>
-          <a
-            href="https://github.com/CriticalMoments/CMSaasStarter"
-            class="border border-primary">★ us on Github</a
-          >
-        </li>
       </ul>
     </div>
   </div>
@@ -84,7 +80,8 @@
       <span class="footer-title opacity-80">Explore</span>
       <a class="link link-hover mb-1" href="/">Overview</a>
       <a class="link link-hover my-1" href="/pricing">Pricing</a>
-      <a class="link link-hover my-1" href="/blog">Blog</a>
+      <a class="link link-hover my-1" href="/account">Account/Login</a>
+      <a class="link link-hover my-1" href="/gallery">Gallery</a>
       <a class="link link-hover my-1" href="/contact_us">Contact Us</a>
       <a
         class="link link-hover my-1"
@@ -97,7 +94,8 @@
         <div class="font-bold text-3xl mb-1">In Service of X LLC</div>
         <div class="font-medium mb-3"></div>
         <div class="font-light">
-          Make cool and/or useful AI-powered apps people can use so I could buy more equipment for more research and development. And make more cool or useful apps for people.
+          Make cool and/or useful AI-powered apps people can use so I could buy more equipment for
+          more research and development, so that I can make more cool or useful AI apps for people.
         </div>
         <div class="link text-sm font-bold mt-2">Learn More</div>
       </a>
