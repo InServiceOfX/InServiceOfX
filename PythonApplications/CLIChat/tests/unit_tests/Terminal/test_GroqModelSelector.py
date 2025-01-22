@@ -46,7 +46,7 @@ def test_get_available_models_gets_default_model(mock_get_models, model_selector
     mock_get_models.return_value = mock_get_models_instance
 
     models = model_selector._get_available_models()
-    assert len(models) == 18
+    assert len(models) == 16
 
 @patch('moregroq.Wrappers.GetAllActiveModels')
 def test_get_available_models_failure_gets_default_model(
@@ -55,4 +55,4 @@ def test_get_available_models_failure_gets_default_model(
     mock_get_models.side_effect = Exception("API Error")
     
     models = model_selector._get_available_models()
-    assert len(models) == 18
+    assert len(models) == 16

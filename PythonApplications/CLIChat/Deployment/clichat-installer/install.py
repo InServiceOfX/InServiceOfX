@@ -105,8 +105,46 @@ def run_installation(venv_path):
     try:
         print("\nInstalling required packages...")
         subprocess.run([pip_cmd, "install", str(moregroq_path)], check=True)
-        subprocess.run([pip_cmd, "install", str(clichat_path)], check=True)
         
+        # Extract clichat package to a temporary directory
+        import tempfile
+        import tarfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with tarfile.open(clichat_path) as tar:
+                tar.extractall(tmpdir)
+
+            # Install the package
+            subprocess.run([pip_cmd, "install", str(clichat_path)], check=True)
+
+            # Copy configuration files to site-packages
+            pkg_dir = subprocess.check_output(
+                [pip_cmd, "show", "clichat"], text=True)
+            pkg_location = None
+            for line in pkg_dir.split('\n'):
+                if line.startswith('Location:'):
+                    pkg_location = line.split(':', 1)[1].strip()
+                    break
+
+            if pkg_location:
+                clichat_site_pkg = Path(pkg_location) / "clichat"
+                src_dir = Path(tmpdir) / "clichat-0.1.0"
+
+                # Copy configuration directories
+                if (src_dir / "Configurations").exists():
+                    shutil.copytree(
+                        src_dir / "Configurations",
+                        clichat_site_pkg / "Configurations",
+                        dirs_exist_ok=True
+                    )
+                if (src_dir / "Data").exists():
+                    shutil.copytree(
+                        src_dir / "Data",
+                        clichat_site_pkg / "Data",
+                        dirs_exist_ok=True
+                    )
+                print(f"Sanity check: clichat_site_pkg: {clichat_site_pkg}")
+
         print("\nRunning initial setup...")
         subprocess.run([python_cmd, "-m", "Executables.main_setup"], check=True)
         

@@ -3,6 +3,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import yes_no_dialog, input_dialog
 import shutil
 import sys
+from importlib.resources import files
 
 def get_configuration_directory():
     configuration_dir = Path.home() / ".config" / "clichat" / "Configurations"
@@ -58,8 +59,20 @@ def get_data_directory():
             
     return path
 
+def get_package_directory():
+    """Get the directory where the clichat package is installed."""
+    try:
+        # This will find the installed package location
+        return files('clichat')
+    except ImportError:
+        # Fallback for development
+        return Path(__file__).parent
+
 def copy_configuration_files(
     configuration_dir: Path, data_dir: Path, package_dir: Path):
+    """
+    Copy from package_dir and into configuration_dir and data_dir.
+    """
     # Create subdirectories
     data_dir = data_dir / "Data"
     configuration_dir.mkdir(exist_ok=True)
@@ -143,13 +156,16 @@ def main_setup():
     
     # Setup config directory in ~/.config/clichat
     configuration_dir = get_configuration_directory()
-    
+    print(f"Sanity check: Configuration directory: {configuration_dir}")
+
     # Get user's preferred data directory
     data_dir = get_data_directory()
-    
-    # Get package directory
-    package_dir = Path(__file__).parent.parent
-    
+    print(f"Sanity check: Data directory: {data_dir}")
+
+    # Get package directory using the new method
+    package_dir = get_package_directory()
+    print(f"Sanity check: Package directory: {package_dir}")
+
     # Copy files
     copy_configuration_files(configuration_dir, data_dir, package_dir)
     
