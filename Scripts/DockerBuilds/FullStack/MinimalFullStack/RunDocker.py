@@ -8,7 +8,7 @@ from CommonUtilities import (
     DefaultValues,
     get_project_directory)
 
-from Utilities import ReadBuildConfigurationForMinimalFullStack
+from Utilities import ReadBuildConfigurationForMinimalStack
 
 class CreateDockerRunCommandForFullStack:
     def __init__(
@@ -78,7 +78,7 @@ def main():
     build_file_path = Path(__file__).resolve().parent / \
         DefaultValues.BUILD_FILE_NAME
     build_configuration = \
-        ReadBuildConfigurationForMinimalFullStack().read_build_configuration(
+        ReadBuildConfigurationForMinimalStack().read_build_configuration(
             build_file_path)
 
     project_directory = get_project_directory()

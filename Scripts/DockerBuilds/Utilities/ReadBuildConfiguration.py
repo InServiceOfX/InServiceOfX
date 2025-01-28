@@ -67,7 +67,7 @@ class ReadBuildConfigurationWithNVIDIAGPU(ReadBuildConfiguration):
 
         super().__init__(required_keys)
 
-class ReadBuildConfigurationForMinimalFullStack(ReadBuildConfiguration):
+class ReadBuildConfigurationForMinimalStack(ReadBuildConfiguration):
     def __init__(self):
         required_keys = {
             "DOCKER_IMAGE_NAME",

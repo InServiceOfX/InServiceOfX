@@ -1,7 +1,4 @@
 from pathlib import Path
-import argparse
-import os
-import re
 import sys
 import subprocess
 
@@ -50,53 +47,6 @@ class DefaultValues:
     BUILD_FILE_NAME = "build_docker_configuration.txt"
     RUN_CONFIGURATION_FILE_NAME = "run_docker_configuration.txt"
 
-def read_build_configuration(config_path):
-    """
-    TODO: Replace this with a generalized version.
-
-    Reads the build_configuration.txt file and parses parameters.
-
-    Args:
-        config_path (Path): Path to the build_configuration.txt file.
-
-    Returns:
-        dict: Dictionary containing the extracted parameters.
-
-    Raises:
-        FileNotFoundError: If the configuration file does not exist.
-        ValueError: If any required parameter is missing.
-    """
-    if not config_path.is_file():
-        raise FileNotFoundError(
-            f"Configuration file '{config_path}' does not exist.")
-
-    configuration = {}
-    required_keys = {
-        "ARCH",
-        "PTX",
-        "COMPUTE_CAPABILITY",
-        "DOCKER_IMAGE_NAME",
-        "BASE_IMAGE"}
-
-    with config_path.open('r') as file:
-        for line in file:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue  # Skip empty lines and comments
-            if '=' not in line:
-                continue  # Skip lines without key=value format
-            key, value = line.split('=', 1)
-            key = key.strip().upper()
-            value = value.strip()
-            if key in required_keys:
-                configuration[key] = value
-
-    missing_keys = required_keys - configuration.keys()
-    if missing_keys:
-        raise ValueError(
-            f"Missing required configuration parameters: {', '.join(missing_keys)}")
-
-    return configuration
 
 def get_project_directory():
     # Resolve to absolute path.
@@ -148,63 +98,6 @@ def concatenate_dockerfiles(output_dockerfile, *dockerfile_paths):
                 outfile.write('\n')
 
     print(f"Successfully concatenated Dockerfiles into '{output_dockerfile}'.")
-
-
-def build_docker_image(
-    dockerfile_path,
-    build_configuration,
-    use_cache,
-    build_context):
-    """
-    TODO: Replace this with a generalized version.
-    Builds the Docker image using the provided Dockerfile and build arguments.
-
-    Args:
-        dockerfile_path (Path): Path to the Dockerfile.
-        build_configuration: Typically result from read_build_configuration.
-        use_cache (bool): Whether to use Docker cache during build.
-        build_context (Path): The directory to use as the build context.
-
-    Raises:
-        subprocess.CalledProcessError: If the Docker build command fails.
-        ValueError: If the BASE_IMAGE or ARM64_BASE_IMAGE is empty in the configuration.
-    """
-    docker_build_cmd = ["DOCKER_BUILDKIT=1", "docker", "build"]
-
-    if not use_cache:
-        docker_build_cmd.append("--no-cache")
-
-    build_argument_keys = ["ARCH", "PTX", "COMPUTE_CAPABILITY"]
-
-    # Add build arguments
-    for key in build_argument_keys:
-        docker_build_cmd.extend([
-            "--build-arg",
-            f"{key}={build_configuration[key]}"])
-
-    # Check and add BASE_IMAGE argument
-    base_image = build_configuration.get('BASE_IMAGE', '')
-    if not base_image:
-        raise ValueError("BASE_IMAGE is empty in the configuration file")
-    docker_image_name = build_configuration['DOCKER_IMAGE_NAME']
-
-    docker_build_cmd.extend([
-        "--build-arg",
-        f"BASE_IMAGE={base_image}"
-    ])
-
-    # Specify Dockerfile
-    docker_build_cmd.extend(["-f", str(dockerfile_path)])
-
-    # Tag the image
-    docker_build_cmd.extend(["-t", docker_image_name])
-
-    docker_build_cmd.append(".")
-
-    # Convert command list to string
-    command_str = ' '.join(docker_build_cmd)
-
-    run_command(command_str, cwd=build_context)
 
 
 def build_docker_image_for_arm64(

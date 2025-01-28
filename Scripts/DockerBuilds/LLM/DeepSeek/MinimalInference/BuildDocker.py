@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from CommonUtilities import (
     DefaultValues,
     concatenate_dockerfiles)
@@ -28,8 +28,7 @@ Options:
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(
-        description="Build Docker image for a full stack application / website "
-            "with minimal setup.",
+        description="Build Docker image for LLM models.",
         add_help=False)
     parser.add_argument(
         '--no-cache',
@@ -50,7 +49,7 @@ def main():
     script_path = Path(__file__).resolve()
     script_dir = script_path.parent
     # Where common files for building and running Docker images are stored.
-    parent_dir = script_dir.parents[1]
+    parent_dir = script_dir.parents[2]
 
     # Path to build_configuration.txt
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME
@@ -62,25 +61,23 @@ def main():
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(configuration)
-
     # Path to Dockerfile in script directory
     dockerfile_path = script_dir / "Dockerfile"
 
-    # If you're copy/pasting, you'll want to modify the following for you
-    # situation for what you want your Dockerfile to build/contain.
     # Paths to Dockerfile components
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
-    dockerfile_nvm_latest = script_dir / "Dockerfile.nvm_latest"
+    dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
+    dockerfile_deepseek_inference = script_dir / "Dockerfile.deepseek_inference"
 
     try:
         concatenate_dockerfiles(
             dockerfile_path,
             dockerfile_header,
             dockerfile_base,
-            dockerfile_nvm_latest)
-
+            dockerfile_rust,
+            dockerfile_deepseek_inference,
+        )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

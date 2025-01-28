@@ -1,8 +1,9 @@
 from .ReadBuildConfiguration import (
     ReadBuildConfiguration,
     ReadBuildConfigurationWithNVIDIAGPU,
-    ReadBuildConfigurationForMinimalFullStack)
+    ReadBuildConfigurationForMinimalStack)
 
 from .BuildDockerImage import (
     BuildDockerImage,
+    BuildDockerImageNoArguments,
     BuildDockerImageWithNVIDIAGPU)

@@ -64,7 +64,8 @@ class SystemMessagesManager:
                     f"Loaded system messages from {path}")
             except json.JSONDecodeError:
                 Printing(configuration).print_error(
-                    "System messages file is not a valid JSON file. "
+                    "System messages file is not a valid JSON file: "
+                    f"{path}. "
                     "Using default system messages.")
                 return
 

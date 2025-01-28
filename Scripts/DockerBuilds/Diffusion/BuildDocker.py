@@ -8,10 +8,12 @@ from pathlib import Path
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CommonUtilities import (
-    read_build_configuration,
     DefaultValues,
     run_command,
     concatenate_dockerfiles)
+
+from Utilities import (
+    ReadBuildConfigurationWithNVIDIAGPU)
 
 def print_help():
     help_text = """
@@ -101,7 +103,8 @@ def main():
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME
 
     try:
-        configuration = read_build_configuration(build_configuration_path)
+        configuration = ReadBuildConfigurationWithNVIDIAGPU().read_build_configuration(
+            build_configuration_path)
     except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

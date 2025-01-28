@@ -17,9 +17,10 @@ from CommonUtilities import (
     DefaultValues,
     get_docker_builds_directory,
     get_project_directory,
-    parse_run_configuration_file,
-    read_build_configuration)
+    parse_run_configuration_file)
 
+from Utilities import (
+    ReadBuildConfigurationForMinimalStack)
 
 def print_help():
     help_text = """
@@ -74,7 +75,8 @@ def main():
 
     # Path to the build configuration file.
     build_file_path = dir_path / DefaultValues.BUILD_FILE_NAME
-    build_configuration = read_build_configuration(build_file_path)
+    build_configuration = ReadBuildConfigurationForMinimalStack().read_build_configuration(
+        build_file_path)
 
     # Path to the configuration file.
     run_configuration_file_path = dir_path / DefaultValues.RUN_CONFIGURATION_FILE_NAME

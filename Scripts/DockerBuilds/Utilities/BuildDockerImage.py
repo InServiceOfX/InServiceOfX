@@ -72,3 +72,9 @@ class BuildDockerImage:
 class BuildDockerImageWithNVIDIAGPU(BuildDockerImage):
     def __init__(self):
         super().__init__(["ARCH", "PTX", "COMPUTE_CAPABILITY"])
+
+class BuildDockerImageNoArguments(BuildDockerImage):
+    def __init__(self):
+        build_arguments_keys = {}
+
+        super().__init__(build_arguments_keys)
