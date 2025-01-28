@@ -1,0 +1,13 @@
+# See
+# https://docs.sglang.ai/start/install.html#method-2-from-source
+# TODO: Consider installing FlashInfer from source for AOT mode for production.
+# https://docs.flashinfer.ai/installation.html
+
+RUN git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
+    cd /ThirdParty/sglang && \
+    pip install --upgrade pip && \
+    pip install sgl-kernel --force-reinstall --no-deps && \
+    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/
+
+
+

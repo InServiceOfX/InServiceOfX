@@ -54,6 +54,39 @@ RUN apt-get update && \
 
 
 
+COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+# As of July 30, 2024, for OpenCV, there's 4.10.0.
+# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
+# where CuDNN 9+ support, CUDA 12.4+ support.
+
+ARG OPENCV_VERSION=4.10.0
+
+ARG ARCH
+ARG PTX
+
+RUN pip uninstall -y opencv && \
+  cd / && \
+  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
+  # -q for quiet because output of wget with progress bars is too much.
+  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
+  unzip opencv && \
+  wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
+  unzip opencv_contrib && \
+  cd /opencv-${OPENCV_VERSION} && \
+  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
+  # This was done in one of the layers of the "original", NVIDIA PyTorch
+  # Container for OpenCV
+  cd /opencv-${OPENCV_VERSION}/modules/python/package && \
+  pip install --no-cache-dir --disable-pip-version-check -v . && \
+  cd / && \
+  rm -rf /opencv-${OPENCV_VERSION} && \
+  rm -rf /opencv_contrib-${OPENCV_VERSION} && \
+  rm /opencv.zip && \
+  rm /opencv_contrib.zip
+
+
+
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # https://rust-lang.github.io/rustup/installation/index.html
@@ -62,15 +95,17 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 
 
-# Taken from https://github.com/deepseek-ai/DeepSeek-V3/blob/main/inference/requirements.txt
-# where
-# torch==2.4.1
-# triton==3.0.0
-# transformers==4.46.3
-# safetensors==0.4.5
+# See
+# https://docs.sglang.ai/start/install.html#method-2-from-source
+# TODO: Consider installing FlashInfer from source for AOT mode for production.
+# https://docs.flashinfer.ai/installation.html
 
-RUN python3 -m pip install --upgrade pip && \
-    pip install \
-        triton==3.0.0 \
-        transformers==4.46.3 \
-        safetensors==0.4.5
+RUN git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
+    cd /ThirdParty/sglang && \
+    pip install --upgrade pip && \
+    pip install sgl-kernel --force-reinstall --no-deps && \
+    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/
+
+
+
+

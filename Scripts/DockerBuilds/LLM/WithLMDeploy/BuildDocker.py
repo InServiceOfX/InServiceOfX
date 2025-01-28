@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 from CommonUtilities import (
     DefaultValues,
     concatenate_dockerfiles)
@@ -49,7 +49,7 @@ def main():
     script_path = Path(__file__).resolve()
     script_dir = script_path.parent
     # Where common files for building and running Docker images are stored.
-    parent_dir = script_dir.parents[2]
+    parent_dir = script_dir.parents[1]
 
     # Path to build_configuration.txt
     build_configuration_path = script_dir / DefaultValues.BUILD_FILE_NAME
@@ -68,7 +68,7 @@ def main():
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
-    dockerfile_deepseek_inference = script_dir / "Dockerfile.deepseek_inference"
+    dockerfile_lmdeploy = script_dir / "Dockerfile.lmdeploy"
 
     try:
         concatenate_dockerfiles(
@@ -76,7 +76,7 @@ def main():
             dockerfile_header,
             dockerfile_base,
             dockerfile_rust,
-            dockerfile_deepseek_inference,
+            dockerfile_lmdeploy,
         )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

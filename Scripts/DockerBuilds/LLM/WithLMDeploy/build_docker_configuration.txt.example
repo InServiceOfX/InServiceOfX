@@ -6,5 +6,5 @@
 # for an explanation of the difference between compute capability, ARCH, and
 # PTX, a gencode.
 
-DOCKER_IMAGE_NAME=deepseek-inference-nvidia-python-24.05
+DOCKER_IMAGE_NAME=with-lmdeploy-nvidia-python-24.05
 BASE_IMAGE=nvcr.io/nvidia/pytorch:24.05-py3

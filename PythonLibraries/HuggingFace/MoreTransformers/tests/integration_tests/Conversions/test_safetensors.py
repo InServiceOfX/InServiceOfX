@@ -7,7 +7,6 @@ def is_directory_empty_or_missing(directory_path: str) -> bool:
     path = Path(directory_path)
     return not path.exists() or not any(path.iterdir())
 
-# Define the directory path
 MODEL_DIR = "/Data/Models/LLM/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
 
 # Skip reason that will show in pytest output

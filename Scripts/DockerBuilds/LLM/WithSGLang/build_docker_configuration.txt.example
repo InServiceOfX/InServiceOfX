@@ -1,0 +1,13 @@
+# Copy this file and fill in the values for your specific hardware configuration
+# for ARCH, PTX, and COMPUTE_CAPABILITY. Be sure to rename the file to be
+# build_docker_configuration.txt (i.e. remove the .example extension).
+# See
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+# for an explanation of the difference between compute capability, ARCH, and
+# PTX, a gencode.
+
+ARCH=9.0
+PTX=sm_90a
+COMPUTE_CAPABILITY=90a
+DOCKER_IMAGE_NAME=with-sglang-nvidia-python-24.05
+BASE_IMAGE=nvcr.io/nvidia/pytorch:24.05-py3
