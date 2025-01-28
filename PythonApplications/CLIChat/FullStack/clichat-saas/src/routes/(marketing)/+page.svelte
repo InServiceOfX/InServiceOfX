@@ -16,7 +16,17 @@
     JSON.stringify(ldJson) + "<"
   }/script>`
 
-  const features = [
+  interface Feature {
+    name: string
+    description: string
+    svgContent: string
+    newPage?: boolean
+    useBuyButton?: boolean
+    link?: string
+    linkText?: string
+  }
+
+  const features: Feature[] = [
     {
       name: "Pay once, no subscription",
       description:
@@ -149,6 +159,27 @@
   </div>
 </div>
 
+<div class="flex justify-center items-center py-8 px-4">
+  <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8">
+    <div class="md:w-[55%]">
+      <img
+        src="/images/CartoonMiaoCatOnSimpleBackgroundInFront2FLUX.1-dev-Steps45Iter0Guidance5.5.png"
+        alt="Cartoon Cat Mascot - Relaxed Pose"
+        class="w-full max-w-md mx-auto transform hover:scale-105 transition-transform duration-300"
+        style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"
+      />
+    </div>
+    <div class="md:w-[45%]">
+      <img
+        src="/images/CartoonMiaoCatOnSimpleBackgroundInFront2FLUX.1-dev-Steps45Iter2Guidance7.5.png"
+        alt="Cartoon Cat Mascot - Active Pose"
+        class="w-full max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300"
+        style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"
+      />
+    </div>
+  </div>
+</div>
+
 <!-- Add the animated GIF here -->
 <div class="max-w-4xl mx-auto px-4 py-12">
   <div class="mockup-browser border">
@@ -236,7 +267,19 @@
     </div>
   </div>
 </div>
-<div class="hero min-h-[60vh] mt-12">
+
+<div class="flex justify-center items-center py-8">
+  <div class="max-w-xl mx-auto">
+    <img
+      src="/images/CartoonMiaoCatOnSimpleBackgroundInFront2FLUX.1-dev-Steps45Iter1Guidance6.5.png"
+      alt="Cartoon Cat Mascot - Playful Pose"
+      class="w-4/5 mx-auto transform hover:scale-105 transition-transform duration-300"
+      style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"
+    />
+  </div>
+</div>
+
+<div class="hero mt-8">
   <div class="hero-content text-center pb-16 pt-4 px-4">
     <div class="max-w-lg">
       <div
@@ -300,5 +343,16 @@ CLIChat was created by <span
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="flex justify-center items-center py-8 px-4">
+  <div class="max-w-3xl mx-auto">
+    <img
+      src="/images/CartoonmiaocatSimplebackground0FLUX.1-dev-Steps30Iter9Guidance8WithTerminal.png"
+      alt="CLIChat Mascot - Terminal Expert"
+      class="w-full max-w-xl mx-auto transform hover:scale-105 transition-transform duration-300"
+      style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"
+    />
   </div>
 </div>

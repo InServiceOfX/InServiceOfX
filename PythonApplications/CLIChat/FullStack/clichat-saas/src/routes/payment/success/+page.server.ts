@@ -3,8 +3,22 @@ import { error } from "@sveltejs/kit"
 import Stripe from "stripe"
 import { randomUUID } from 'crypto'
 
-const stripe = new Stripe(PRIVATE_STRIPE_API_KEY, { apiVersion: "2023-08-16" })
+const stripe = new Stripe(PRIVATE_STRIPE_API_KEY, { apiVersion: "2024-12-18.acacia" })
 const INSTALLER_FILE_NAME = "clichat-installer"
+
+interface DownloadLog {
+  user_id: string
+  stripe_session_id: string
+  file_name: string
+  ip_address: string
+  user_agent: string
+  meta: {
+    payment_status: string
+    customer: Stripe.Customer | null
+    customer_email: string | null
+    customer_name: string
+  }
+}
 
 export const load = async ({ url, locals: { safeGetSession, supabaseServiceRole }, request }) => {
   const sessionId = url.searchParams.get('session_id')
@@ -29,6 +43,7 @@ export const load = async ({ url, locals: { safeGetSession, supabaseServiceRole 
 
     // For guest users, store their data
     if (!user && stripeSession.customer) {
+      const customer = stripeSession.customer as Stripe.Customer
       const { data: existingCustomer } = await supabaseServiceRole
         .from('stripe_customers_guest')
         .select('stripe_customer_id')
@@ -41,7 +56,7 @@ export const load = async ({ url, locals: { safeGetSession, supabaseServiceRole 
         await supabaseServiceRole
           .from('stripe_customers_guest')
           .insert({
-            stripe_customer_id: stripeSession.customer.id,
+            stripe_customer_id: customer.id,
             stripe_session_id: sessionId,
             customer_name: stripeSession.customer_details?.name,
             customer_email: stripeSession.customer_details?.email,
@@ -57,21 +72,23 @@ export const load = async ({ url, locals: { safeGetSession, supabaseServiceRole 
     }
 
     // Log the download attempt
+    const downloadLog: DownloadLog = {
+      user_id: user?.id || 'guest',
+      stripe_session_id: sessionId,
+      file_name: INSTALLER_FILE_NAME,
+      ip_address: request.headers.get('x-forwarded-for') || 'unknown',
+      user_agent: request.headers.get('user-agent') || 'unknown',
+      meta: { 
+        payment_status: stripeSession.payment_status,
+        customer: stripeSession.customer || null,
+        customer_email: customerEmail || null,
+        customer_name: customerName
+      }
+    }
+
     await supabaseServiceRole
       .from('download_logs')
-      .insert({
-        user_id: user?.id || 'guest',
-        stripe_session_id: sessionId,
-        file_name: INSTALLER_FILE_NAME,
-        ip_address: request.headers.get('x-forwarded-for') || 'unknown',
-        user_agent: request.headers.get('user-agent') || 'unknown',
-        meta: { 
-          payment_status: stripeSession.payment_status,
-          customer: stripeSession.customer,
-          customer_email: customerEmail,
-          customer_name: customerName
-        }
-      })
+      .insert(downloadLog)
 
     // Generate signed URL
     const { data: urlData, error: urlError } = await supabaseServiceRole
@@ -91,8 +108,11 @@ export const load = async ({ url, locals: { safeGetSession, supabaseServiceRole 
       customerEmail,
       customerName
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error processing success:", err)
-    throw error(err.status || 500, err.message || "Could not process download")
+    throw error(
+      typeof err.status === 'number' ? err.status : 500,
+      err.message || "Could not process download"
+    )
   }
 }

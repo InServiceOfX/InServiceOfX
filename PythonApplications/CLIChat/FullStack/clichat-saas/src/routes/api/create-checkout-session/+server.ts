@@ -2,7 +2,7 @@ import { PRIVATE_STRIPE_API_KEY } from "$env/static/private"
 import { error, json } from "@sveltejs/kit"
 import Stripe from "stripe"
 
-const stripe = new Stripe(PRIVATE_STRIPE_API_KEY, { apiVersion: "2023-08-16" })
+const stripe = new Stripe(PRIVATE_STRIPE_API_KEY, { apiVersion: "2024-12-18.acacia" })
 
 export async function POST({ url, locals: { safeGetSession } }) {
   try {

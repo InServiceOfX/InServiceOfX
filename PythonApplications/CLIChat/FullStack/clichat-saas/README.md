@@ -364,9 +364,3 @@ These extensions are reference implementations of commonly needed features. We d
 ### Icons Credits
 
 Homescreen Icons are from [Solar Broken Line Icons](https://www.svgrepo.com/collection/solar-broken-line-icons/) and [Solar Linear Icons](https://www.svgrepo.com/collection/solar-linear-icons) via CC Attribution License.
-
-# Sponsor
-
-We hope you enjoy SaaS Starter! If you build mobile apps, please check out its sponsor/creator.
-
-**[Kiln AI](https://getkiln.ai):** Free apps and tools for building high quality AI products.
