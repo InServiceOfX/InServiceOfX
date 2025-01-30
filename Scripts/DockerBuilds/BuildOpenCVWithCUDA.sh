@@ -17,7 +17,7 @@ generate_cmake_flags()
   # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
   # ${parameter:-word}
   # if parameter unset or null, word is substituted.
-  local OPENCV_VERSION="${3:-4.10.0}"
+  local OPENCV_VERSION="${3:-4.11.0}"
   # Example value, PYTHON_VERSION=3.10, which is found in the NVIDIA PyTorch
   # Container.
   local PYTHON_VERSION="${4:-3.10}"
@@ -151,7 +151,7 @@ main()
   # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
   # ${parameter:-word}
   # if parameter unset or null, word is substituted.
-  local OPENCV_VERSION="${3:-4.10.0}"
+  local OPENCV_VERSION="${3:-4.11.0}"
   # Example value, PYTHON_VERSION=3.10, which is found in the NVIDIA PyTorch
   # Container.
   local PYTHON_VERSION="${4:-3.10}"

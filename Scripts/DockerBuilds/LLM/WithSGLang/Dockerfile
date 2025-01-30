@@ -59,8 +59,11 @@ COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
 # As of July 30, 2024, for OpenCV, there's 4.10.0.
 # https://github.com/opencv/opencv/wiki/ChangeLog#version4100
 # where CuDNN 9+ support, CUDA 12.4+ support.
+# As of January 2025, for OpenCV there's 4.11.0.
+# https://github.com/opencv/opencv/wiki/OpenCV-Change-Logs#version4110
+# No CuDNN, CUDA version change.
 
-ARG OPENCV_VERSION=4.10.0
+ARG OPENCV_VERSION=4.11.0
 
 ARG ARCH
 ARG PTX
@@ -100,11 +103,18 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 # TODO: Consider installing FlashInfer from source for AOT mode for production.
 # https://docs.flashinfer.ai/installation.html
 
-RUN git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
+# Originally, the documentation said to install by cloning this specific version:
+# git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang
+RUN git clone https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
     cd /ThirdParty/sglang && \
+    git checkout main && \
     pip install --upgrade pip && \
     pip install sgl-kernel --force-reinstall --no-deps && \
-    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/
+    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/ && \
+    # If this isn't done, this is obtained:
+    # WARNING 01-29 14:48:12 cuda.py:23] You are using a deprecated `pynvml` package. Please install `nvidia-ml-py` instead, and make sure to uninstall `pynvml`.
+    pip uninstall -y pynvml && \
+    pip install nvidia-ml-py
 
 
 
