@@ -3,9 +3,7 @@ from pathlib import Path
 
 from safetensors.torch import safe_open
 
-def is_directory_empty_or_missing(directory_path: str) -> bool:
-    path = Path(directory_path)
-    return not path.exists() or not any(path.iterdir())
+from corecode.FileIO import is_directory_empty_or_missing
 
 MODEL_DIR = "/Data/Models/LLM/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
 
