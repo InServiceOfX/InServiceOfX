@@ -3,7 +3,6 @@ from corecode.Utilities import DataSubdirectories
 
 from moretransformers.Wrappers.Models import create_AutoModelForCausalLM
 
-from pathlib import Path
 import pytest
 
 # TODO: Consider if BitsAndBytesConfig should be tested here.
@@ -12,10 +11,12 @@ import pytest
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    GPT2TokenizerFast,
     LlamaForCausalLM,
     LlamaModel)
 
 import torch
+import transformers
 
 data_sub_dirs = DataSubdirectories()
 
@@ -30,11 +31,35 @@ SMOL_V2_skip_reason = f"Directory {SMOL_V2_MODEL_DIR} is empty or doesn't exist"
 def test_use_AutoModelForCausalLLM_with_SmolLMv2():
     device = "cuda"
     tokenizer = AutoTokenizer.from_pretrained(SMOL_V2_MODEL_DIR)
-    assert isinstance(tokenizer, PreTrainedTokenizerFast)
+    assert isinstance(tokenizer, GPT2TokenizerFast)
     model = AutoModelForCausalLM.from_pretrained(SMOL_V2_MODEL_DIR).to(device)
     assert isinstance(model, LlamaForCausalLM)
     assert isinstance(model.model, LlamaModel)
     assert model.device == torch.device(device, index=0)
+
+    messages = [{"role": "user", "content": "What is the capital of France."}]
+    
+    # Get both input_ids and attention_mask
+    model_inputs = tokenizer.apply_chat_template(
+        messages,
+        return_tensors="pt",
+        return_dict=True,
+        add_generation_prompt=True).to(device)
+
+    assert isinstance(model_inputs, transformers.tokenization_utils_base.BatchEncoding)
+
+    outputs = model.generate(
+        # This unpacks both input_ids and attention_mask
+        **model_inputs,
+        max_new_tokens=50,
+        temperature=0.2,
+        top_p=0.9,
+        do_sample=True)
+
+    assert isinstance(outputs, torch.Tensor)
+    assert outputs.shape == torch.Size([1, 45])
+    print(tokenizer.decode(outputs[0]))
+
 
 def test_create_AutoModelForCausalLM_instantiates_without_quantization():
     pretrained_model_path = data_sub_dirs.ModelsLLM / "meta-llama" / \

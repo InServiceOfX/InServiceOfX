@@ -1,8 +1,10 @@
+from corecode.FileIO import is_directory_empty_or_missing
 from corecode.Utilities import DataSubdirectories
 
 from safetensors import safe_open
 
 from transformers import (
+    GPT2TokenizerFast,
     LlamaForCausalLM,
     LlamaModel,
     LlamaConfig,
@@ -19,8 +21,13 @@ from transformers.utils import SAFE_WEIGHTS_NAME
 
 import pytest
 import torch
+import transformers
 
 data_sub_dirs = DataSubdirectories()
+
+SMOL_V2_MODEL_DIR = data_sub_dirs.ModelsLLM / "HuggingFaceTB" / \
+    "SmolLM2-360M-Instruct"
+SMOL_V2_skip_reason = f"Directory {SMOL_V2_MODEL_DIR} is empty or doesn't exist"
 
 def test_LlamaForCausalLM_instantiates_without_quantization():
     pretrained_model_path = data_sub_dirs.ModelsLLM / "meta-llama" / \
@@ -233,3 +240,43 @@ def test_LlamaForCausalLM_from_pretrained_instantiates():
     # model = cls(config, ...),
     # This state_dict appears to be used in cls._load_pretrained(..) when that
     # gets called.
+
+@pytest.mark.skipif(
+    is_directory_empty_or_missing(SMOL_V2_MODEL_DIR),
+    reason=SMOL_V2_skip_reason
+)
+def test_use_LlamaForCausalLM_with_SmolLMv2():
+    device = "cuda"
+    tokenizer = GPT2TokenizerFast.from_pretrained(SMOL_V2_MODEL_DIR)
+    model = LlamaForCausalLM.from_pretrained(
+        SMOL_V2_MODEL_DIR,
+        torch_dtype=torch.bfloat16).to(device)
+
+    assert isinstance(model, LlamaForCausalLM)
+    assert isinstance(model.model, LlamaModel)
+    assert model.device == torch.device(device, index=0)
+
+    messages = [
+        {"role": "user", "content": "What is the capital of France."}]
+    model_inputs = tokenizer.apply_chat_template(
+        messages,
+        return_tensors="pt",
+        return_dict=True,
+        add_generation_prompt=True).to(device)
+
+    assert isinstance(model_inputs, transformers.tokenization_utils_base.BatchEncoding)
+
+    # Without do_sample=True parameter value, then AttributeError occurs because
+    # we specify top_p value.
+    # TODO: Fix this,
+    # RuntimeError: CUDA error: CUBLAS_STATUS_NOT_SUPPORTED when calling `cublasGemmStridedBatchedEx(handle, opa, opb, (int)m, (int)n, (int)k, (void*)&falpha, a, CUDA_R_16BF, (int)lda, stridea, b, CUDA_R_16BF, (int)ldb, strideb, (void*)&fbeta, c, CUDA_R_16BF, (int)ldc, stridec, (int)num_batches, compute_type, CUBLAS_GEMM_DEFAULT_TENSOR_OP)`
+    # outputs = model.generate(
+    #     **model_inputs,
+    #     max_new_tokens=50,
+    #     temperature=0.2,
+    #     top_p=0.6,
+    #     do_sample=True)
+
+    # assert isinstance(outputs, torch.Tensor)
+    # assert outputs.shape == torch.Size([1, 45])
+    # print(tokenizer.decode(outputs[0]))
