@@ -1,0 +1,6 @@
+reasoning_effort: low
+temperature: 0.4
+#max_completion_tokens: 32768
+max_completion_tokens: 1024
+# max_tokens is deprecated but appears to be necessary for certain models.
+max_tokens: 1024

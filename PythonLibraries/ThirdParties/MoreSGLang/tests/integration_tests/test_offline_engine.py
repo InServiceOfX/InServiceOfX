@@ -1,14 +1,19 @@
 from corecode.FileIO import is_directory_empty_or_missing
 from corecode.Utilities import DataSubdirectories
 
+import asyncio
 import atexit
 import os
 import sglang.api
+import sglang
 import pytest
+
 
 from sglang.srt.server_args import ServerArgs
 from sglang.srt.utils import kill_process_tree
 from sglang.utils import stream_and_merge
+from sglang.srt.entrypoints.engine import _launch_subprocesses
+from typing import Dict
 
 data_sub_dirs = DataSubdirectories()
 
@@ -64,3 +69,23 @@ def test_engine_launches_subprocesses(kwargs):
     server_args = ServerArgs(**kwargs)
     atexit.register(shutdown_function_from_engine)
 
+    print("Launching subprocesses\n")
+    tokenizer_manager, scheduler_info = _launch_subprocesses(
+        server_args=server_args)
+    print("Subprocesses launched\n")
+    print(type(tokenizer_manager))
+    print(type(scheduler_info))
+    assert isinstance(
+        tokenizer_manager,
+        sglang.srt.managers.tokenizer_manager.TokenizerManager)
+    assert isinstance(scheduler_info, Dict)
+
+    # srt/entrypoints/engine.py around line 126 says for def generate(self, ..)
+    # that "the arguments for this function is the same as
+    # 'sglang/srt/managers/io_struct.py::GenerateReqInput`. Please refor to 
+    # `GenerateReqInput` for the documentation."
+    # GenerateReqInput is found in io_struct.py.
+    # It seems like all arguments for generate(..) can be optional, but code
+    # will complain later.
+
+    loop = asyncio.get_event_loop()
