@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "clichatlocal"
+version = "0.1.0"
+description = "Command Line Interface Chat with local and via API LLMs"
+authors = ["In Service of X LLC <inserviceofxy@proton.me>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+clichat = {path = "../CLIChat"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

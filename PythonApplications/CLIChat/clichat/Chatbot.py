@@ -1,6 +1,6 @@
 from clichat.Configuration import RuntimeConfiguration
 from clichat import StreamingWordWrapper
-from clichat.Persistence import ChatLogger, SystemMessagesManager
+from clichat.Persistence import SystemMessagesManager
 from clichat.Terminal import (
     CreateBottomToolbar,
     create_prompt_session,

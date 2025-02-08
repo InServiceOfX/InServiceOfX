@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "clichat"
 version = "0.1.0"
-description = "Command Line Interface Chatbot with LLMs"
+description = "Command Line Interface Chat with LLMs"
 authors = ["In Service of X LLC <inserviceofxy@proton.me>"]
 readme = "README.md"
 packages = [

@@ -2,7 +2,6 @@ from threading import Event
 import shutil
 from typing import Any, Iterator
 from prompt_toolkit.output import create_output
-from prompt_toolkit.formatted_text import FormattedText
 from clichat.Utilities.Formatting import get_string_width
 
 class StreamingWordWrapper:
