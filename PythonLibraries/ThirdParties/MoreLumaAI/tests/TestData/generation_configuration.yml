@@ -1,0 +1,6 @@
+temporary_save_path: /Data/Private
+input_images_directory: /Data/Private/InputImages
+aspect_ratio: "4:3"
+model: "ray-2"
+resolution: "540p"
+duration: "5s"

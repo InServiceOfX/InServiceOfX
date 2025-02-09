@@ -32,3 +32,6 @@ LLAMA_CLOUD_API_KEY=llx-xxxxxx
 # GROQ_CLOUD_API_KEY has been deprecated.
 
 GROQ_API_KEY=gsk_xxxxxx
+
+# https://lumalabs.ai/dream-machine/api/keys
+LUMAAI_API_KEY=luma-xxxxxx
