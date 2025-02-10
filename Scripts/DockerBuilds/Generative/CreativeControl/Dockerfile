@@ -100,7 +100,16 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 RUN git clone https://github.com/lumalabs/lumaai-python.git /ThirdParty/lumaai-python && \
   cd /ThirdParty/lumaai-python && \
+  git checkout main && \
   pip install -e . && \
+  cd /
+
+
+
+RUN git clone https://github.com/fal-ai/fal.git /ThirdParty/fal && \
+  cd /ThirdParty/fal && \
+  git checkout main && \
+  pip install -e 'projects/fal_client[dev]' && \
   cd /
 
 

@@ -1,3 +1,11 @@
+"""
+Usage: This is one way it can work:
+python main_Chatbot.py
+or
+python main_Chatbot.py --dev
+where you run it from the CLIChat/Executables subdirectory wwhere this file
+is stored.
+"""
 from pathlib import Path
 import sys
 

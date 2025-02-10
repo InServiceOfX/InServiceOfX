@@ -5,7 +5,7 @@ from typing import Union, Optional, Dict
 
 class GenerationConfiguration(BaseModel):
     temporary_save_path: str = Field(default="/Data/Private")
-    input_images_directory: str = Field(...)  # Required field, no default
+    input_images_directory: Optional[str] = Field(default=None)
     # From
     # https://docs.lumalabs.ai/docs/python-video-generation#ray-2
     # https://docs.lumalabs.ai/docs/python-video-generation#usage-example
@@ -17,6 +17,7 @@ class GenerationConfiguration(BaseModel):
     model: Optional[str] = Field(default=None)
     # resolution: Union[Literal["540p", "720p"], str] | NotGiven = NOT_GIVEN,
     resolution: Optional[str] = Field(default=None)
+    # duration: Union[Literal["5s", "9s"], str] | NotGiven = NOT_GIVEN,
     duration: Optional[str] = Field(default=None)
 
     @classmethod

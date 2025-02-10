@@ -67,3 +67,35 @@ def test_GenerateVideo_can_save_video():
 
     print(f"Video saved to {save_path}")
 
+def test_GenerateVideo_can_save_video_2():
+    generation_configuration = GenerationConfiguration.from_yaml(
+        test_data_directory / "generation_configuration.yml")
+
+    # prompt = (
+    #     "Aerial wide shot of a New England sprawling estate on a lake, late "
+    #     "afternoon, with elegant gardens and elegant guests mingling on a "
+    #     "terrace near the water circa 1930s.")
+
+    prompt = (
+        "75 years later: Aerial wide shot of a dilapidated New England "
+        "sprawling estate on a lake, late afternoon, with overgrown gardens "
+        "on a terrace near the water after decades of decline.")
+
+    video_generator = GenerateVideo(generation_configuration)
+
+    # https://docs.lumalabs.ai/docs/python-video-generation
+
+    keyframes = {
+        "frame0": {
+            "type": "image",
+            "url": "https://i.imgur.com/lAccpr8.jpeg"
+        }
+    }
+
+    video_url = video_generator.generate(prompt, keyframes) 
+
+    save_path = video_generator.save_video()
+
+    print(f"Video saved to {save_path}")
+
+

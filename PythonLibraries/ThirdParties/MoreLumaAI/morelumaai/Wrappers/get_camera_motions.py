@@ -1,8 +1,7 @@
 from typing import List
 import requests
-from corecode.Utilities import get_environment_variable
 
-def get_camera_motions(api_key: str = None):
+def get_camera_motions(api_key: str):
     """
     Get list of available camera motion presets from LumaAI
     
@@ -15,10 +14,7 @@ def get_camera_motions(api_key: str = None):
         
     Raises:
         RuntimeError: If the API request fails
-    """
-    if api_key is None:
-        api_key = get_environment_variable("LUMAAI_API_KEY")
-    
+    """    
     url = "https://api.lumalabs.ai/dream-machine/v1/generations/camera_motion/list"
     headers = {
         'accept': 'application/json',

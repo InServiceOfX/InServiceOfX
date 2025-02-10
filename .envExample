@@ -35,3 +35,6 @@ GROQ_API_KEY=gsk_xxxxxx
 
 # https://lumalabs.ai/dream-machine/api/keys
 LUMAAI_API_KEY=luma-xxxxxx
+
+# https://fal.ai/dashboard/keys
+FAL_KEY=abcdefgh-xxxxxx

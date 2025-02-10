@@ -16,13 +16,6 @@ if not str(application_path) in sys.path:
 
 from clichatlocal.FileIO import ApplicationPaths
 
-global_application_paths = ApplicationPaths.create()
-
-if not str(global_application_paths.third_party_paths["moresglang"]) \
-    in sys.path:
-    sys.path.append(
-        str(global_application_paths.third_party_paths["moresglang"]))
-
 def main_CLIChatLocal():
     print("Hello World")
 
@@ -35,6 +28,10 @@ def main_CLIChatLocal():
 
     application_paths = ApplicationPaths.create(is_development=args.dev)
 
+    if not str(application_paths.third_party_paths["moresglang"]) \
+        in sys.path:
+        sys.path.append(
+            str(application_paths.third_party_paths["moresglang"]))
 
 if __name__ == "__main__":
 

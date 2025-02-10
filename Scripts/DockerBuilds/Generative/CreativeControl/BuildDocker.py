@@ -70,6 +70,7 @@ def main():
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
     dockerfile_opencv_with_cuda = script_dir / "Dockerfile.opencv_with_cuda"
     dockerfile_lumaai = script_dir / "Dockerfile.lumaai"
+    dockerfile_falai = script_dir / "Dockerfile.falai"
 
     try:
         concatenate_dockerfiles(
@@ -79,6 +80,7 @@ def main():
             dockerfile_opencv_with_cuda,
             dockerfile_rust,
             dockerfile_lumaai,
+            dockerfile_falai,
         )
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -1,0 +1,7 @@
+temporary_save_path: /Data/Private
+aspect_ratio: "4:3"
+model: "ray-2"
+resolution: "540p"
+#resolution: "720p"
+duration: "5s"
+#duration: "9s"
