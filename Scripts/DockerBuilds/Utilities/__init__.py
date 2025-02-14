@@ -7,3 +7,6 @@ from .BuildDockerImage import (
     BuildDockerImage,
     BuildDockerImageNoArguments,
     BuildDockerImageWithNVIDIAGPU)
+
+from .BuildDockerBase import (
+    BuildDockerBase)

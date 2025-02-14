@@ -68,7 +68,8 @@ def main():
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = parent_dir / "CommonFiles" / "Dockerfile.base"
     dockerfile_rust = parent_dir / "CommonFiles" / "Dockerfile.rust"
-    dockerfile_opencv_with_cuda = script_dir / "Dockerfile.opencv_with_cuda"
+    dockerfile_opencv_with_cuda = parent_dir / "CommonFiles" / \
+        "Dockerfile.opencv_with_cuda"
     dockerfile_sglang = script_dir / "Dockerfile.sglang"
 
     try:

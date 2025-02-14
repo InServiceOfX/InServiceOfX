@@ -21,16 +21,15 @@
 # Furthermore, cudnnRNNForwardInference was removed in 9.0 of cuDNN:
 # https://docs.nvidia.com/deeplearning/cudnn/api/overview.html
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-24-01.html
-#
-
-FROM nvcr.io/nvidia/pytorch:24.05-py3
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
-## Update apt, pip, install Rust, and do pip installs.
+## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
@@ -42,32 +41,114 @@ RUN apt-get update && \
   pip install --upgrade python-dotenv && \
   #
   #
-  # In HuggingFace, diffusers, in jupyter notebook, this warning was obtained:
-  # /usr/local/lib/python3.10/dist-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found.
-  # Please update jupyter and ipywidgets. See
-  # https://ipywidgets.readthedocs.io/en/stable/user_install.html
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
-  #
-  #
-  # Install Rust
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  #
-  #
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
-  #
-  # https://rust-lang.github.io/rustup/installation/index.html
-  # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.local/bin:/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
 
 
 
-  
+# numpy
+# I wanted the latest numpy since it was a major version update from 1.x to 2.x.
+# However,
+# for NVIDIA Optimized Frameworks Containers,
+# for 24.06 (or 24.07) container images,
+# >>> numpy.__version__
+#'1.24.4'
+# >>> print(torchvision.__version__)
+# 0.19.0a0
+# >>> print(optree.__version__)
+# 0.11.0
+#
+# As of 2025-02-12, latest for numpy is 2.2.2.
+# Latest for torchvision is 0.21.0+cu124
+# Latest for optree is 0.14.0
+# Otherwise, this error is obtained:
+# >>> import torchvision
+#
+# A module that was compiled using NumPy 1.x cannot be run in
+# NumPy 2.2.2 as it may crash. To support both 1.x and 2.x
+# versions of NumPy, modules must be compiled with NumPy 2.0.
+# Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+#
+# If you are a user of the module, the easiest solution will be to
+# downgrade to 'numpy<2' or try to upgrade the affected module.
+# We expect that some modules will need time to support NumPy 2
+#
+# optree needed to be upgrade because otherwise,
+# 
+# /usr/local/lib/python3.10/dist-packages/torch/utils/_pytree.py:185: 
+# FutureWarning: optree is installed but the version is too old to support
+# PyTorch Dynamo in C++ pytree. C++ pytree support is disabled. Please consider
+# upgrading optree using `python3 -m pip install --upgrade 'optree>=0.13.0'`.
+#
+
+RUN pip install --upgrade pip && \
+    # First check numpy version
+    python -c "import numpy; print(f'Current NumPy version: {numpy.__version__}')" || \
+    echo "NumPy not installed" && \
+    pip uninstall -y numpy && \
+    pip install --upgrade numpy && \
+    python -c "import numpy; print(f'Updated NumPy version: {numpy.__version__}')" && \
+    python -c "import optree; print(f'Current optree version: {optree.__version__}')" || \
+    echo "optree not installed" && \
+    pip uninstall -y optree && \
+    pip install --upgrade optree && \
+    python -c "import optree; print(f'Updated optree version: {optree.__version__}')" && \
+    python -c "import torchvision; print(f'Current torchvision version: {torchvision.__version__}')" || \
+    echo "torchvision not installed" && \
+    pip uninstall -y torchvision && \
+    pip install --upgrade torchvision && \
+    python -c "import torchvision; print(f'Updated torchvision version: {torchvision.__version__}')" && \
+    pip install --upgrade transformer-engine && \
+    pip uninstall -y flash-attn && \
+    pip install --upgrade flash-attn && \
+    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')"
+
+
+
+
+
+
+COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+# As of July 30, 2024, for OpenCV, there's 4.10.0.
+# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
+# where CuDNN 9+ support, CUDA 12.4+ support.
+# As of January 2025, for OpenCV there's 4.11.0.
+# https://github.com/opencv/opencv/wiki/OpenCV-Change-Logs#version4110
+# No CuDNN, CUDA version change.
+
+ARG OPENCV_VERSION=4.11.0
+
+ARG ARCH
+ARG PTX
+
+RUN pip uninstall -y opencv && \
+  cd / && \
+  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
+  # -q for quiet because output of wget with progress bars is too much.
+  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
+  unzip opencv && \
+  wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
+  unzip opencv_contrib && \
+  cd /opencv-${OPENCV_VERSION} && \
+  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
+  # This was done in one of the layers of the "original", NVIDIA PyTorch
+  # Container for OpenCV
+  cd /opencv-${OPENCV_VERSION}/modules/python/package && \
+  pip install --no-cache-dir --disable-pip-version-check -v . && \
+  cd / && \
+  rm -rf /opencv-${OPENCV_VERSION} && \
+  rm -rf /opencv_contrib-${OPENCV_VERSION} && \
+  rm /opencv.zip && \
+  rm /opencv_contrib.zip
+
+
+
 ## HuggingFace
 
 ## transformers (hugging face), required to run most popular diffusion models.
@@ -79,17 +160,9 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   pip install -e . && \
   #
   #
-## datasets (hugging face)
-  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
-  cd /ThirdParty/datasets && \
-  git checkout main && \
-  pip install -e . && \
-  #
-  #
 ## diffusers (hugging face)
   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
-  git checkout master && \
   git checkout master && \
   git config --local pull.rebase true && \
   git pull origin master && \
@@ -141,28 +214,22 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 
 ### Further third party code/repositories
 
-## onnxruntime, ONNX Runtime, needed by insightface.
-## https://onnxruntime.ai/docs/install/
-RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+# TODO: On ASUS Zephyrus G15, pip install fails even with ninja-build installed.
+# Also, see https://github.com/facebookresearch/fairseq/issues/4246
+# pip uninstall apex works for me.
+# RUN git clone https://github.com/NVIDIA/apex /ThirdParty/apex && \
+#     cd /ThirdParty/apex && \
+#     git checkout master && \
+#     pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
 
-## insightface, needed by InstantID
-RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insightface && \
-  cd /ThirdParty/insightface && \
-  cd python-package && \
-  git checkout development && \
-  pip install -e . && \
-  cd / && \
-## InstantID
-  git clone https://github.com/InServiceOfX/InstantID.git /ThirdParty/InstantID && \
-  cd /ThirdParty/InstantID && \
-  git checkout main && \
-  cd / && \
+RUN pip uninstall -y apex
+
 #
 #
 # InServiceOfX
 #
 #
-  git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
   cd /ThirdParty/InServiceOfX/ && \
   git sparse-checkout init --cone && \
   git sparse-checkout set PythonLibraries/CoreCode && \

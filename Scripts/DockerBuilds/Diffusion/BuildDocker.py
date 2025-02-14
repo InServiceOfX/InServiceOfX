@@ -2,17 +2,16 @@
 
 import argparse
 import sys
-import subprocess
 from pathlib import Path
 
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CommonUtilities import (
     DefaultValues,
-    run_command,
     concatenate_dockerfiles)
 
 from Utilities import (
+    BuildDockerImageWithNVIDIAGPU,
     ReadBuildConfigurationWithNVIDIAGPU)
 
 def print_help():
@@ -25,53 +24,6 @@ Options:
 """
     print(help_text)
 
-def build_docker_image(
-    dockerfile_path,
-    build_configuration,
-    use_cache,
-    build_context):
-    """
-    Builds the Docker image using the provided Dockerfile and build arguments.
-
-    Args:
-        dockerfile_path (Path): Path to the Dockerfile.
-        build_configuration: Typically result from read_build_configuration.
-        docker_image_name (str): Name of the Docker image to build.
-        use_cache (bool): Whether to use Docker cache during build.
-        build_context (Path): The directory to use as the build context.
-
-    Raises:
-        subprocess.CalledProcessError: If the Docker build command fails.
-    """
-    # See https://docs.docker.com/build/buildkit/
-    docker_build_cmd = ["DOCKER_BUILDKIT=1", "docker", "build"]
-
-    if not use_cache:
-        docker_build_cmd.append("--no-cache")
-
-    build_argument_keys = ["ARCH", "PTX", "COMPUTE_CAPABILITY"]
-
-    # Add build arguments
-    for key in build_argument_keys:
-        docker_build_cmd.extend([
-            "--build-arg",
-            f"{key}={build_configuration[key]}"])
-
-    # Specify Dockerfile
-    docker_build_cmd.extend(["-f", str(dockerfile_path)])
-
-    # Tag the image
-    docker_build_cmd.extend([
-        "-t",
-        build_configuration['DOCKER_IMAGE_NAME']])
-
-    # Specify build context
-    docker_build_cmd.append(".")
-
-    # Convert command list to string
-    command_str = ' '.join(docker_build_cmd)
-
-    run_command(command_str, cwd=build_context)
 
 def main():
     # Set up argument parser
@@ -115,6 +67,8 @@ def main():
     # Paths to Dockerfile components
     dockerfile_header = parent_dir / "CommonFiles" / "Dockerfile.header"
     dockerfile_base = script_dir / "Dockerfile.base"
+    dockerfile_opencv_with_cuda = parent_dir / "CommonFiles" / \
+        "Dockerfile.opencv_with_cuda"
     dockerfile_huggingface = script_dir / "Dockerfile.huggingface"
     dockerfile_third_parties = script_dir / "Dockerfile.third_parties"
 
@@ -138,7 +92,7 @@ def main():
         sys.exit(1)
 
     # Build the Docker image
-    build_docker_image(
+    BuildDockerImageWithNVIDIAGPU().build_docker_image(
         dockerfile_path=dockerfile_path,
         build_configuration=configuration,
         use_cache=not args.no_cache,

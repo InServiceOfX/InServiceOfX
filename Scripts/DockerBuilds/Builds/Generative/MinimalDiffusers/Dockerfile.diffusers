@@ -9,13 +9,6 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   pip install -e . && \
   #
   #
-## datasets (hugging face)
-  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
-  cd /ThirdParty/datasets && \
-  git checkout main && \
-  pip install -e . && \
-  #
-  #
 ## diffusers (hugging face)
   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
