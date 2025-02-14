@@ -67,6 +67,18 @@ class ReadBuildConfigurationWithNVIDIAGPU(ReadBuildConfiguration):
 
         super().__init__(required_keys)
 
+class ReadBuildConfigurationWithOpenCV(ReadBuildConfiguration):
+    def __init__(self):
+        required_keys = {
+            "ARCH",
+            "PTX",
+            "COMPUTE_CAPABILITY",
+            "OPENCV_VERSION",
+            "DOCKER_IMAGE_NAME",
+            "BASE_IMAGE"}
+
+        super().__init__(required_keys)
+
 class ReadBuildConfigurationForMinimalStack(ReadBuildConfiguration):
     def __init__(self):
         required_keys = {

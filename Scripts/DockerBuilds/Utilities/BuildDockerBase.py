@@ -53,14 +53,7 @@ class BuildDockerBase:
             sys.exit(0)
 
         # Get build configuration
-        build_config_path = self.script_dir / DefaultValues.BUILD_FILE_NAME
-        try:
-            configuration = \
-                self.configuration_reader_class().read_build_configuration(
-                    build_config_path)
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+        self.configuration = self.get_build_configuration()
 
         # Setup paths and concatenate Dockerfiles
         dockerfile_path = self.script_dir / "Dockerfile"
@@ -85,6 +78,19 @@ class BuildDockerBase:
         # Build Docker image
         self.docker_builder_class().build_docker_image(
             dockerfile_path=dockerfile_path,
-            build_configuration=configuration,
+            build_configuration=self.configuration,
             use_cache=not args.no_cache,
             build_context=self.parent_dir)
+
+    def get_build_configuration(self):
+        from CommonUtilities import DefaultValues
+
+        build_config_path = self.script_dir / DefaultValues.BUILD_FILE_NAME
+        try:
+            configuration = \
+                self.configuration_reader_class().read_build_configuration(
+                    build_config_path)
+            return configuration
+        except (FileNotFoundError, ValueError) as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)

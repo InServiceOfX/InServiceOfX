@@ -9,5 +9,6 @@
 ARCH=9.0
 PTX=sm_90a
 COMPUTE_CAPABILITY=90a
+OPENCV_VERSION=4.11.0
 DOCKER_IMAGE_NAME=creative-control-nvidia-python-24.06
 BASE_IMAGE=nvcr.io/nvidia/pytorch:24.06-py3

@@ -29,9 +29,6 @@ FROM ${BASE_IMAGE}
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
-ARG ARCH
-ARG PTX
-
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
@@ -51,6 +48,14 @@ RUN apt-get update && \
   # Step 3, you have to add poetry to your PATH, which on UNIX is in
   # $HOME/.local/bin
   echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+
+
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  # https://rust-lang.github.io/rustup/installation/index.html
+  # export PATH once, doing both Rust and poetry binaries.
+  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 
 
@@ -87,14 +92,6 @@ RUN pip uninstall -y opencv && \
   rm -rf /opencv_contrib-${OPENCV_VERSION} && \
   rm /opencv.zip && \
   rm /opencv_contrib.zip
-
-
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  # https://rust-lang.github.io/rustup/installation/index.html
-  # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 
 
