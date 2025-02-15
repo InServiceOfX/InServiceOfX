@@ -13,6 +13,8 @@ application_path = Path(__file__).resolve().parents[1]
 
 if not str(application_path) in sys.path:
     sys.path.append(str(application_path))
+    from clivideo.Utilities import Printing
+    Printing.print_info(f"Added {application_path} to sys.path")
 
 from clivideo.FileIO import ApplicationPaths
 from clivideo.Utilities import load_environment_file
@@ -30,22 +32,26 @@ def main_CLIVideo():
 
     if not application_paths.environment_file_path.exists():
         Printing.print_info(
-            f"\nEnvironment file not found at {application_paths.environment_file_path}")
+            f"\nEnvironment file not found at "
+            f"<ansiyellow>{application_paths.environment_file_path}</ansiyellow>")
     else:
         Printing.print_info(
-            f"Loading environment variables from {application_paths.environment_file_path}")
+            f"Loading environment variables from "
+            f"<ansiyellow>{application_paths.environment_file_path}</ansiyellow>")
 
     load_environment_file(application_paths.environment_file_path)
 
-    if not str(application_paths.third_party_paths["morelumaai"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.third_party_paths["morelumaai"]))
+    if not str(application_paths.third_party_paths["morelumaai"]) in sys.path:
+        Printing.print_info(
+            f"Adding <ansicyan>{application_paths.third_party_paths['morelumaai']}</ansicyan> "
+            "to sys.path")
+        sys.path.append(str(application_paths.third_party_paths["morelumaai"]))
 
-    if not str(application_paths.third_party_paths["morefal"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.third_party_paths["morefal"]))
+    if not str(application_paths.third_party_paths["morefal"]) in sys.path:
+        Printing.print_info(
+            f"Adding <ansicyan>{application_paths.third_party_paths['morefal']}</ansicyan> "
+            "to sys.path")
+        sys.path.append(str(application_paths.third_party_paths["morefal"]))
 
     # Because CLIVideo depends on morelumaai, we need to import here.
     from clivideo.CLIVideo import CLIVideo
@@ -57,5 +63,4 @@ def main_CLIVideo():
 
 
 if __name__ == "__main__":
-
     main_CLIVideo()

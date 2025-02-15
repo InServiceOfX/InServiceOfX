@@ -150,7 +150,8 @@ class ImageAndVideoManager:
         
         # Clear and rebuild parsed generations
         self.parsed_generations.clear()
-        
+        self.available_generations.clear()
+
         for gen in self._current_generations_list.generations:
             parsed = ParsedGeneration(
                 id=gen.id,

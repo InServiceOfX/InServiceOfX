@@ -1,7 +1,8 @@
 temporary_save_path: /Data/Private
+# aspect_ratio: Literal["1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "9:21"] | NotGiven = NOT_GIVEN,
 aspect_ratio: "4:3"
 model: "ray-2"
-resolution: "540p"
-#resolution: "720p"
-duration: "5s"
-#duration: "9s"
+#resolution: "540p"
+resolution: "720p"
+#duration: "5s"
+duration: "9s"

@@ -9,7 +9,7 @@ class CreateBottomToolbar:
         def _create():
             history_status = (
                 "【User History: ON】" 
-                if self._runtime_configuration.is_user_prompt_history_active 
+                if self._runtime_configuration.is_user_prompt_history_active
                 else "<dim>【User History: OFF】</dim>"
             )
             return HTML(

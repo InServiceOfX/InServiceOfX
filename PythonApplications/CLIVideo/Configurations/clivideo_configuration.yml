@@ -1,26 +1,7 @@
-cancel_entry: '.cancel'
-exit_entry: '.exit'
+hotkeys:
+  mode_switch: 'c-m'  # Ctrl+M
 
-hotkey_cancel: ['c-z']
-hotkey_exit: ['c-x']
-hotkey_insert_newline: ['c-i']
-hotkey_toggle_word_wrap: ['c-w']
-hotkey_new: ['c-n']
-
-# TerminalModeDialogs dependencies.
-terminal_CommandEntryColor2: "ansigreen"
-terminal_PromptIndicatorColor2: "ansicyan"
-terminal_ResourceLinkColor: "ansiyellow"
-
-terminal_DialogBackgroundColor: "ansiblue"
-
-terminal_SystemMessageColor: "ansigray"
-terminal_SystemMessagePrefix: "🤖"
-
-terminal_ErrorColor: "ansiyellow"
-
-# Leave blank for the current working directory. Can input absolute or relative
-# (to current working directory) paths.
-chat_history_path: Data/chat_history.txt
-chat_log_path: Data/chat_log.txt
-system_messages_path: Data/system_messages.json
+style:
+  toolbar:
+    mode_text: '#ansiwhite'
+    background: '#ansiblack'

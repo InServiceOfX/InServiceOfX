@@ -3,20 +3,37 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import clear
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit import print_formatted_text
 
 from clivideo.Utilities import get_environment_variable
 
 from morelumaai.Configuration import GenerationConfiguration
 from morelumaai.Wrappers.ImageAndVideoManager import ImageAndVideoManager
+from morelumaai.Wrappers.get_camera_motions import get_camera_motions
 from clivideo.CLIVideo.ImageGenerationPrompts import ImageGenerationPrompts
 import asyncio
 
+from clivideo.Configuration.CLIVideoConfiguration import CLIVideoConfiguration
+from clivideo.CLIVideo.PromptModes import PromptModes
+from clivideo.CLIVideo.VideoGenerationPrompts import VideoGenerationPrompts
+from clivideo.CLIVideo.PromptModes import PromptMode
+
 class CLIVideo:
-    def __init__(self, configuration_path: Path):
-        self.configuration = GenerationConfiguration.from_yaml(configuration_path)
-        self.manager = ImageAndVideoManager(self.configuration)
-        self.session = PromptSession()
-        self.image_generation_prompts = ImageGenerationPrompts()
+    def __init__(
+        self,
+        clivideo_configuration_path: Path,
+        lumaai_configuration_path: Path
+    ):
+        self.configuration = CLIVideoConfiguration(clivideo_configuration_path)
+        self.manager = ImageAndVideoManager(
+            GenerationConfiguration.from_yaml(lumaai_configuration_path))
+        self.prompt_modes = PromptModes(self.configuration)
+        self.video_generation_prompts = VideoGenerationPrompts(
+            self.prompt_modes,
+            self.manager)
+        self.image_generation_prompts = ImageGenerationPrompts(
+            self.prompt_modes)
         self.prompt_history = []
         self.last_prompt = None
         
@@ -33,74 +50,30 @@ class CLIVideo:
                 print("  ".join(f"'{motion}'" for motion in row))
             print("\n\033[1mExample: 'Push In on a grand estate...'\033[0m\n")
         except Exception as e:
-            print(f"\nWarning: Could not fetch camera motions: {str(e)}\n")
-        
-        # CLI Styling
-        self.prompt_style = Style.from_dict({
-            'prompt': '#00aa00 bold',
-            'continuation': 'gray'
-        })
-        
-        self.session = PromptSession(
-            history=InMemoryHistory(),
-            style=self.prompt_style,
-            wrap_lines=True
-        )
-
-        self.image_generation_prompts = ImageGenerationPrompts(self.session)
+            print_formatted_text(HTML(
+                f"\n<ansired>Warning: Could not fetch camera motions: {str(e)}</ansired>\n"
+            ))
 
     async def run_iterative(self):
         """Single iteration of video generation"""
         try:
-            # Get main prompt
-            prompt = await self.session.prompt_async(
-                "Video prompt (or type .help for options): ",
-                completer=self.image_generation_prompts.completer
+            prompt = await self.prompt_modes.session.prompt_async(
+                "Video prompt (or type .help for options): "
             )
             
             if not prompt.strip():
                 return True
                 
             if prompt.startswith('.'):
-                should_continue, url = await self.image_generation_prompts.handle_command(
-                    prompt)
-                if url:
-                    # Use the generated image as start frame
-                    self.manager.add_image(url)
-                    self.manager.set_start_frame(self.manager.available_images[-1])
+                if self.prompt_modes.current_mode == PromptMode.IMAGE_VIDEO:
+                    should_continue, url, desc = await self.video_generation_prompts.handle_command(prompt)
+                else:  # IMAGE_GENERATION mode
+                    should_continue, url, desc = await self.image_generation_prompts.handle_command(prompt)
                 return should_continue
 
             self.last_prompt = prompt
             self.prompt_history.append(prompt)
-
-            # Get optional start frame
-            start_url = await self.session.prompt_async(
-                "Start frame URL (optional, press Enter to skip): "
-            )
-            start_url = start_url.strip()
             
-            if start_url:
-                self.manager.add_image(start_url)
-                self.manager.set_start_frame(self.manager.available_images[-1])
-                # Only ask for end frame if start frame was provided
-                end_url = await self.session.prompt_async(
-                    "End frame URL (optional, press Enter to skip): "
-                )
-                end_url = end_url.strip()
-                if end_url:
-                    self.manager.add_image(end_url)
-                    self.manager.set_end_frame(self.manager.available_images[-1])
-
-            # Generate and save video
-            print("\nGenerating video...")
-            generate_result = self.manager.generate(prompt)
-            if generate_result is None:
-                print("Failed to generate video")
-                return True
-                
-            save_path = self.manager.save_video()
-            print(f"\nVideo saved to: {save_path}\n")
-
             return True
             
         except KeyboardInterrupt:
