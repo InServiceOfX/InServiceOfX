@@ -7,20 +7,16 @@ from prompt_toolkit.shortcuts import clear
 from clivideo.Utilities import get_environment_variable
 
 from morelumaai.Configuration import GenerationConfiguration
-from morelumaai.Wrappers import (GenerateVideo, get_camera_motions)
+from morelumaai.Wrappers.ImageAndVideoManager import ImageAndVideoManager
 from clivideo.CLIVideo.ImageGenerationPrompts import ImageGenerationPrompts
 import asyncio
 
 class CLIVideo:
-    def __init__(
-        self,
-        configuration_path: Path,
-        lumaai_configuration_path: Path):
-        self.generation_configuration = GenerationConfiguration.from_yaml(
-            lumaai_configuration_path)
-        self.generator = GenerateVideo(
-            self.generation_configuration,
-            get_environment_variable("LUMAAI_API_KEY"))
+    def __init__(self, configuration_path: Path):
+        self.configuration = GenerationConfiguration.from_yaml(configuration_path)
+        self.manager = ImageAndVideoManager(self.configuration)
+        self.session = PromptSession()
+        self.image_generation_prompts = ImageGenerationPrompts()
         self.prompt_history = []
         self.last_prompt = None
         
@@ -70,42 +66,43 @@ class CLIVideo:
                     prompt)
                 if url:
                     # Use the generated image as start frame
-                    keyframes = self.generator.create_start_keyframe(url)
+                    self.manager.add_image(url)
+                    self.manager.set_start_frame(self.manager.available_images[-1])
                 return should_continue
 
             self.last_prompt = prompt
             self.prompt_history.append(prompt)
 
-            # Get optional start frame - make async
+            # Get optional start frame
             start_url = await self.session.prompt_async(
                 "Start frame URL (optional, press Enter to skip): "
             )
             start_url = start_url.strip()
             
-            keyframes = None
             if start_url:
-                keyframes = self.generator.create_start_keyframe(start_url)
+                self.manager.add_image(start_url)
+                self.manager.set_start_frame(self.manager.available_images[-1])
                 # Only ask for end frame if start frame was provided
                 end_url = await self.session.prompt_async(
                     "End frame URL (optional, press Enter to skip): "
                 )
                 end_url = end_url.strip()
                 if end_url:
-                    keyframes.update(self.generator.create_end_keyframe(end_url))
-
-            print("keyframes: ", keyframes)
+                    self.manager.add_image(end_url)
+                    self.manager.set_end_frame(self.manager.available_images[-1])
 
             # Generate and save video
             print("\nGenerating video...")
-            if keyframes is not None:
-                self.generator.generate(prompt, keyframes)
-            else:
-                self.generator.generate(prompt)
-            save_path = self.generator.save_video()
+            generate_result = self.manager.generate(prompt)
+            if generate_result is None:
+                print("Failed to generate video")
+                return True
+                
+            save_path = self.manager.save_video()
             print(f"\nVideo saved to: {save_path}\n")
 
             return True
-
+            
         except KeyboardInterrupt:
             return False
         except Exception as e:
