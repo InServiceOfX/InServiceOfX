@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Optional, Dict
-import time
 from lumaai import LumaAI
 from morelumaai.Configuration import GenerationConfiguration
 import requests
+import time
 
 class GenerateVideo:
     def __init__(
@@ -60,9 +60,9 @@ class GenerateVideo:
         print(f"Total generation time: {total_time:.2f}s")
 
         self.current_generation = generation
-        self.video_url = generation.assets.video
+        self.current_video_url = generation.assets.video
 
-        return self.video_url
+        return self.current_video_url
 
     def save_video(self) -> Path:
         """
@@ -75,14 +75,14 @@ class GenerateVideo:
         Raises:
             RuntimeError: If no video has been generated yet
         """
-        if not self.current_generation or not self.video_url:
+        if not self.current_generation or not self.current_video_url:
             raise RuntimeError(
                 "No video has been generated yet. Call generate() first.")
 
         save_path = Path(self.configuration.temporary_save_path) / \
             f"{self.current_generation.id}.mp4"
 
-        response = requests.get(self.video_url, stream=True)
+        response = requests.get(self.current_video_url, stream=True)
         with open(str(save_path), 'wb') as file:
             file.write(response.content)
         print(f"File downloaded as {save_path}")
@@ -126,3 +126,18 @@ class GenerateVideo:
                 "url": image_url
             }
         }
+
+    def set_loop(self, loop: bool = False):
+        if loop is False:
+            self.configuration.loop = None
+        else:
+            self.configuration.loop = True
+
+    def list_all_generations(self, limit: int = 100):
+        self.current_generations_list = self.client.generations.list(
+            limit=limit,
+            offset=0)
+        return self.current_generations_list
+
+    def delete_generation(self, generation_id: str) -> None:
+        self.client.generations.delete(id=generation_id)

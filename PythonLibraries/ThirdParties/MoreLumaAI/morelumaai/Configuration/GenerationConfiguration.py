@@ -19,6 +19,7 @@ class GenerationConfiguration(BaseModel):
     resolution: Optional[str] = Field(default=None)
     # duration: Union[Literal["5s", "9s"], str] | NotGiven = NOT_GIVEN,
     duration: Optional[str] = Field(default=None)
+    loop: Optional[bool] = Field(default=None)
 
     @classmethod
     def from_yaml(cls, configuration_path: Union[Path, str]) -> \
