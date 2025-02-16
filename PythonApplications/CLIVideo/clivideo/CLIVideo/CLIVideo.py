@@ -19,6 +19,7 @@ from clivideo.Configuration.CLIVideoConfiguration import CLIVideoConfiguration
 from clivideo.CLIVideo.PromptModes import PromptModes, PromptMode
 from clivideo.CLIVideo.VideoGenerationPrompts import VideoGenerationPrompts
 from clivideo.CLIVideo.UserStartActions import UserStartActions
+from clivideo.CLIVideo.UserExitActions import UserExitActions
 
 class CLIVideo:
     def __init__(
@@ -29,13 +30,17 @@ class CLIVideo:
         self.configuration = CLIVideoConfiguration(clivideo_configuration_path)
         self.manager = ImageAndVideoManager(
             GenerationConfiguration.from_yaml(lumaai_configuration_path))
+        self.user_start_actions = UserStartActions(lumaai_configuration_path.parent)
+        self.user_exit_actions = UserExitActions(lumaai_configuration_path)
         self.prompt_modes = PromptModes(self.configuration)
         self.video_generation_prompts = VideoGenerationPrompts(
             self.prompt_modes,
             self.manager)
         self.image_generation_prompts = ImageGenerationPrompts(
             self.prompt_modes)
-        self.start_actions = UserStartActions(lumaai_configuration_path.parent)
+        
+        # Add user_exit_actions to prompt_modes for access in commands
+        self.prompt_modes.user_exit_actions = self.user_exit_actions
 
         self.prompt_history = []
         self.last_prompt = None
@@ -80,6 +85,12 @@ class CLIVideo:
             return True
             
         except KeyboardInterrupt:
+            # Handle Ctrl+C exit
+            if self.manager.available_images:
+                file_ready = await self.user_exit_actions.check_available_images_file()
+                if file_ready:
+                    self.user_exit_actions.save_available_images(self.manager)
+            print_formatted_text(HTML("\n<ansigreen>Goodbye!</ansigreen>"))
             return False
         except Exception as e:
             print(f"\nError: {str(e)}\n")
@@ -89,7 +100,7 @@ class CLIVideo:
         """Main run loop"""
         clear()
         print("Welcome to CLIVideo! Press Ctrl+C to exit.\n")
-        self.start_actions.load_available_images(self.manager)
+        self.user_start_actions.load_available_images(self.manager)
 
         async def run_async():
             continue_running = True

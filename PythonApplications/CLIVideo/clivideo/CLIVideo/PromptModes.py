@@ -1,12 +1,9 @@
 import re
 from prompt_toolkit import PromptSession
-from prompt_toolkit.application.current import get_app
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.filters import Condition
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from enum import Enum, auto
-from typing import Callable, Dict, Optional
 from clivideo.Configuration import CLIVideoConfiguration
 from clivideo.CLIVideo.VideoGenerationPrompts import VideoGenerationPrompts
 

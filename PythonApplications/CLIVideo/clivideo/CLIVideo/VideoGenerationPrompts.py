@@ -15,6 +15,7 @@ class VideoGenerationPrompts:
     CMD_LIST_GENERATIONS = '.list_generations'
     CMD_DELETE_GENERATION = '.delete_generation'
     CMD_HELP = '.help'
+    CMD_EXIT = '.exit'
     
     # List of all commands in desired order
     COMMANDS = [
@@ -25,7 +26,8 @@ class VideoGenerationPrompts:
         CMD_GENERATE,
         CMD_LIST_GENERATIONS,
         CMD_DELETE_GENERATION,
-        CMD_HELP]
+        CMD_HELP,
+        CMD_EXIT]
 
     def __init__(self, prompt_modes, manager=None):
         self.prompt_modes = prompt_modes
@@ -38,7 +40,8 @@ class VideoGenerationPrompts:
             self.CMD_GENERATE: self.handle_generate,
             self.CMD_LIST_GENERATIONS: self.handle_list_generations,
             self.CMD_DELETE_GENERATION: self.handle_delete_generation,
-            self.CMD_HELP: self.show_help
+            self.CMD_HELP: self.show_help,
+            self.CMD_EXIT: self.handle_exit
         }
 
     async def handle_command(self, command: str) -> Tuple[bool, Optional[str], Optional[str]]:
@@ -353,8 +356,25 @@ class VideoGenerationPrompts:
         for gen in self.manager.parsed_generations.values():
             id_short = gen.id[:8] + "..." + gen.id[-4:]  # Show first 8 and last 4 chars
             created_str = gen.created_at.strftime("%Y-%m-%d %H:%M") if gen.created_at else "N/A"
-            prompt_short = shorten(gen.request_prompt or "No prompt", 40)
-            label = f"ID: {id_short} | Created: {created_str} | Prompt: {prompt_short}"
+            prompt_short = shorten(gen.request_prompt or "No prompt", 30)
+            
+            # Extract filename from video URL or show "No video"
+            video_info = "No video"
+            if gen.assets_video:
+                try:
+                    from urllib.parse import urlparse
+                    video_path = urlparse(gen.assets_video).path
+                    filename = video_path.split('/')[-1]
+                    video_info = shorten(filename, 20)
+                except:
+                    video_info = shorten(gen.assets_video, 20)
+            
+            label = (
+                f"ID: {id_short} | "
+                f"Created: {created_str} | "
+                f"Video: {video_info} | "
+                f"Prompt: {prompt_short}"
+            )
             values.append((gen.id, label))
         
         result = await radiolist_dialog(
@@ -390,4 +410,16 @@ class VideoGenerationPrompts:
         print("  .set_end           - Set or clear the end frame")
         print("  .generate          - Generate video with current frames")
         print("  .help             - Show this help message")
+        print("  .exit             - Exit the program")
         return True, None, None
+
+    async def handle_exit(self) -> Tuple[bool, Optional[str], Optional[str]]:
+        """Handle exit command with save functionality"""
+        if self.manager.available_images:
+            file_ready = await self.prompt_modes.user_exit_actions.check_available_images_file()
+            if file_ready:
+                self.prompt_modes.user_exit_actions.save_available_images(
+                    self.manager)
+        
+        print_formatted_text(HTML("\n<ansigreen>Goodbye!</ansigreen>"))
+        return False, None, None
