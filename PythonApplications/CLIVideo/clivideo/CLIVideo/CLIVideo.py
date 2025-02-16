@@ -5,6 +5,7 @@ from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import clear
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit import print_formatted_text
+from prompt_toolkit.shortcuts.dialogs import yes_no_dialog
 
 from clivideo.Utilities import get_environment_variable
 
@@ -15,9 +16,9 @@ from clivideo.CLIVideo.ImageGenerationPrompts import ImageGenerationPrompts
 import asyncio
 
 from clivideo.Configuration.CLIVideoConfiguration import CLIVideoConfiguration
-from clivideo.CLIVideo.PromptModes import PromptModes
+from clivideo.CLIVideo.PromptModes import PromptModes, PromptMode
 from clivideo.CLIVideo.VideoGenerationPrompts import VideoGenerationPrompts
-from clivideo.CLIVideo.PromptModes import PromptMode
+from clivideo.CLIVideo.UserStartActions import UserStartActions
 
 class CLIVideo:
     def __init__(
@@ -34,6 +35,8 @@ class CLIVideo:
             self.manager)
         self.image_generation_prompts = ImageGenerationPrompts(
             self.prompt_modes)
+        self.start_actions = UserStartActions(lumaai_configuration_path.parent)
+
         self.prompt_history = []
         self.last_prompt = None
         
@@ -86,7 +89,8 @@ class CLIVideo:
         """Main run loop"""
         clear()
         print("Welcome to CLIVideo! Press Ctrl+C to exit.\n")
-        
+        self.start_actions.load_available_images(self.manager)
+
         async def run_async():
             continue_running = True
             while continue_running:
