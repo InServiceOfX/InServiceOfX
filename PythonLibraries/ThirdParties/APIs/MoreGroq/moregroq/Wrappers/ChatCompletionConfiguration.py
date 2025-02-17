@@ -1,22 +1,31 @@
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Literal
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
 
 @dataclass
-class ParameterDefinition:
+class ParameterProperty:
     name: str
     type: str
-    description: str
+    description: Optional[str] = None
+    enum: Optional[List[str]] = None
     required: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": "string",  # Currently hardcoded to string, could be expanded
-            "description": self.description
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to API-compatible dictionary"""
+        property_dict = {
+            "type": self.type
         }
+        
+        if self.description is not None:
+            property_dict["description"] = self.description
+            
+        if self.enum is not None:
+            property_dict["enum"] = self.enum
+            
+        return property_dict
 
 @dataclass
 class FunctionParameters:
-    parameters: List[ParameterDefinition]
+    parameters: List[ParameterProperty]
 
     def to_dict(self) -> Dict[str, Any]:
         properties = {}
@@ -91,7 +100,11 @@ class ChatCompletionConfiguration:
     # Important: when using JSON mode, you *must* also instruct model to produce
     # JSON yourself via a system or user message..
     response_format: Optional[Dict[str, str]] = None
-    
+
+    # Isn't documented in API reference, but shows up in Tool use Structured
+    # outputs example.
+    response_model: Optional[Any] = None
+
     # Tool use parameters
     tools: Optional[List[Tool]] = None
     tool_choice: Optional[str] = None
@@ -119,7 +132,9 @@ class ChatCompletionConfiguration:
             config_dict["stop"] = self.stop
         if self.response_format is not None:
             config_dict["response_format"] = self.response_format
-            
+        if self.response_model is not None:
+            config_dict["response_model"] = self.response_model
+
         # Add tool use parameters if specified
         if self.tools is not None:
             config_dict["tools"] = [

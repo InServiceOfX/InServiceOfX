@@ -540,5 +540,68 @@ def test_parallel_tool_use():
     final_response = groq_api_wrapper.create_chat_completion(messages)
     print("final response:", final_response)
     print("final response content:", final_response.choices[0].message.content)
-    assert "sunny" in final_response.choices[0].message.content
-    assert "rainy" in final_response.choices[0].message.content
+    assert "sunny" in final_response.choices[0].message.content or \
+        "Sunny" in final_response.choices[0].message.content
+    assert "rainy" in final_response.choices[0].message.content or \
+        "Rainy" in final_response.choices[0].message.content
+
+# Define the tool schema
+
+tool_schema = {
+    "name": "get_weather_info",
+    "description": "Get the weather information for any location.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "The location for which we want to get the weather information (e.g., New York)"
+            }
+        },
+        "required": ["location"]
+    }
+}
+
+from pydantic import BaseModel, Field
+import instructor
+
+class ToolCall(BaseModel):
+    input_text: str = Field(description="The user's input text")
+    tool_name: str = Field(description="The name of the tool to call")
+    tool_parameters: str = Field(description="JSON string of tool parameters")
+
+class ResponseModel(BaseModel):
+    tool_calls: list[ToolCall]
+
+def run_conversation(user_prompt, groq_api_wrapper):
+    # Prepare the messages
+    messages = [
+        create_system_message(
+            f"You are an assistant that can use tools. You have access to the following tool: {tool_schema}"),
+        create_user_message(user_prompt)
+    ]
+
+    # Make the initial request
+    groq_api_wrapper.clear_chat_completion_configuration()
+    groq_api_wrapper.configuration.model = "llama-3.3-70b-versatile"
+    groq_api_wrapper.configuration.response_model = ResponseModel
+    groq_api_wrapper.configuration.temperature = 0.7
+    groq_api_wrapper.configuration.max_completion_tokens = 1000
+
+    groq_api_wrapper.client = instructor.from_groq(
+        groq_api_wrapper.client,
+        mode=instructor.Mode.JSON)
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+    
+    return response.tool_calls
+
+def test_tool_use_with_structured_outputs():
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+    user_prompt = "What's the weather like in San Francisco?"
+    tool_calls = run_conversation(user_prompt, groq_api_wrapper)
+    for call in tool_calls:
+        print(f"Input: {call.input_text}")
+        print(f"Tool: {call.tool_name}")
+        print(f"Parameters: {call.tool_parameters}")
+        print()
