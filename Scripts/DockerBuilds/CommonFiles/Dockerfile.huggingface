@@ -6,9 +6,9 @@ RUN python3 -m pip install --upgrade pip && \
   #
   #
 ## transformers (hugging face), required to run LLMs as models.
-  git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
+  git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout master && \
+  git checkout main && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \

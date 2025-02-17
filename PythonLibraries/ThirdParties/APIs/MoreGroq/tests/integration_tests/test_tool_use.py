@@ -1,0 +1,348 @@
+
+from corecode.Utilities import (get_environment_variable, load_environment_file)
+from commonapi.Messages import (
+    create_system_message,
+    create_user_message
+)
+from moregroq.Wrappers import GroqAPIWrapper
+from moregroq.Wrappers.ChatCompletionConfiguration import (
+    ChatCompletionConfiguration,
+    FunctionDefinition,
+    Tool)
+
+import requests
+import json
+
+# Load environment variables at module level
+load_environment_file()
+
+def test_groq_tool_use_with_curl_request():
+    """
+    https://console.groq.com/docs/tool-use
+    """
+    api_key = get_environment_variable("GROQ_API_KEY")
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {
+                "role": "user",
+                "content": "What's the weather like in Boston today?"
+            }
+        ],
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_current_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. San Francisco, CA"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"]
+                            }
+                        },
+                        "required": ["location"]
+                    }
+                }
+            }
+        ],
+        "tool_choice": "required"
+    }
+    
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=payload
+    )
+    
+    result = response.json()
+    print(json.dumps(result, indent=2))
+
+    assert response.status_code == 200
+
+    # Verify response structure
+    assert "choices" in result
+    assert len(result["choices"]) > 0
+    assert "message" in result["choices"][0]
+    print(result["choices"][0])
+    print(result["choices"][0]["message"])
+
+    # Tool Call Streucture
+    # Groq API tool calls are structured to be OpenAI-compatible.
+
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a weather assistant. Use the get_weather function to retrieve weather information for a given location."
+            },
+            {
+                "role": "user",
+                "content": "What's the weather like in New York today?"
+            }
+        ],
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather for a location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "The city and state, e.g. San Francisco, CA"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "enum": ["celsius", "fahrenheit"],
+                                "description": "The unit of temperature to use. Defaults to fahrenheit."
+                            }
+                        },
+                        "required": ["location"]
+                    }
+                }
+            }
+        ],
+        "tool_choice": "auto",
+        "max_completion_tokens": 4096
+    }
+
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=payload
+    )
+
+    result = response.json()
+    print("result:", json.dumps(result, indent=2))
+
+    # This is an example tool call response:
+    # "model": "llama-3.3-70b-versatile",
+    # "choices": [{
+    #     "index": 0,
+    #     "message": {
+    #         "role": "assistant",
+    #         "tool_calls": [{
+    #         "id": "call_d5wg",
+    #         "type": "function",
+    #         "function": {
+    #             "name": "get_weather",
+    #             "arguments": "{\"location\": \"New York, NY\"}"
+    #         }
+    #         }]
+    #     },
+    #     "logprobs": null,
+    #     "finish_reason": "tool_calls"
+    # }],
+    assert response.status_code == 200
+
+    assert "choices" in result
+    assert len(result["choices"]) > 0
+    assert "message" in result["choices"][0]
+
+    assert result["choices"][0]["message"]["tool_calls"] is not None
+    assert len(result["choices"][0]["message"]["tool_calls"]) > 0
+
+    print("result[choices][0]:", result["choices"][0])
+    print("result[choices][0][message]:", result["choices"][0]["message"])
+
+    # https://console.groq.com/docs/tool-use
+    # When a model decides to use a tool, it returns a respons with a tool_calls
+    # object:
+    # id: unique identifier for tool call
+    assert "id" in result["choices"][0]["message"]["tool_calls"][0]
+    # type: type of tool call, i.e. function
+    assert "type" in result["choices"][0]["message"]["tool_calls"][0]
+    # TODO: point out change in documentation.
+    # name: name of tool being used.
+    # assert "name" in result["choices"][0]["message"]["tool_calls"][0]
+    # TODO: point out change in documentation.
+    # parameters: object containing input being passed to the tool.
+    #assert "parameters" in result["choices"][0]["message"]["tool_calls"][0]
+    assert "name" in result["choices"][0]["message"]["tool_calls"][0]["function"]
+    assert "arguments" in result["choices"][0]["message"]["tool_calls"][0]["function"]
+
+def calculate(expression):
+    """
+    https://console.groq.com/docs/tool-use
+    Evaluate a mathematical expression.
+    """
+    try:
+        # Attempt to evaluate the math expression
+        result = eval(expression)
+        return json.dumps({"result": result})
+    except Exception as e:
+        return json.dumps({"error": f"Invalid expression: {str(e)}"})
+
+def run_conversation(user_prompt):
+    """
+    https://console.groq.com/docs/tool-use
+    """
+    messages = [
+        create_system_message(
+            "You are a calculator assistant. Use the calculate function to perform mathematical operations and provide the results."),
+        create_user_message(user_prompt)
+    ]
+
+    # Define the available tools (i.e. functions) for our model to use
+    # Originally,
+    # tools = [
+    #     {
+    #         "type": "function",
+    #         "function": {
+    #             "name": "calculate",
+    #             "description": "Evaluate a mathematical expression",
+    #             "parameters": {
+    #                 "type": "object",
+    #                 "properties": {
+    #                     "expression": {
+    #                         "type": "string",
+    #                         "description": "The mathematical expression to evaluate",
+    #                     }
+    #                 },
+    #                 "required": ["expression"],
+    #             },
+    #         },
+    #     }
+    # ]
+    tools = [
+        Tool(function=FunctionDefinition(
+            name="calculate",
+            description="Evaluate a mathematical expression",
+            parameters= {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "The mathematical expression to evaluate",
+                    }
+                },
+                "required": ["expression"],
+            },
+        ))
+    ]
+
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+
+    groq_api_wrapper.configuration.model = "llama-3.3-70b-versatile"
+
+    groq_api_wrapper.configuration.tools = tools
+    # Let our LLM decide when to use tools.
+    groq_api_wrapper.configuration.tool_choice = "auto"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+    # Extract the response and any tool call responses
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    if tool_calls:
+        # Define the available tools that can be called by the LLM
+        available_functions = {
+            "calculate": calculate
+        }
+        # Add the LLM's response to the conversation
+        messages.append(response_message)
+
+        # Process each tool call
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_to_call = available_functions[function_name]
+            function_args = json.loads(tool_call.function.arguments)
+            # Call the tool and get the response
+            function_response = function_to_call(
+                expression=function_args.get("expression")
+            )
+            # Add the tool response to the conversation
+            messages.append(
+                {
+                    "tool_call_id": tool_call.id,
+                    # indicates this message is from tool use
+                    "role": "tool",
+                    "name": function_name,
+                    "content": function_response
+                }
+            )
+        # Make a second API call with the updated conversation
+        second_response = groq_api_wrapper.create_chat_completion(messages)
+        print("second_response:", second_response)
+        return second_response.choices[0].message.content
+    print("Did not make second API call.")
+    return response_message.content
+
+def test_receive_and_handle_tool_results():
+    """
+    https://console.groq.com/docs/tool-use
+    """
+    user_prompt = "What is 25 * 10 + 10?"
+    result = run_conversation(user_prompt)
+    print("result:", result)
+
+    assert "260" in result
+
+# Define models
+ROUTING_MODEL = "llama3-70b-8192"
+TOOL_USE_MODEL = "llama-3.3-70b-versatile"
+GENERAL_MODEL = "llama3-70b-8192"
+
+def route_query(query, groq_api_wrapper):
+    """
+    Routing logic to let LLM decide if tools are needed.
+    """
+    routing_prompt = f"""
+        Given the following user query, determine if any tools are needed to
+        answer it.
+        If a calculation tool is needed, respond with 'TOOL: CALCULATE'.
+        If no tools are needed, respond with 'NO TOOL'.
+        
+        User query: {query}
+        
+        Response:
+        """
+    groq_api_wrapper.configuration.model = ROUTING_MODEL
+    # We only need a short response.
+    groq_api_wrapper.configuration.max_completion_tokens = 2048
+    messages = [
+        create_system_message(
+            (
+                "You are a routing assistant. Determine if tools are needed "
+                "based on the user query."),
+        create_user_message(query)
+    ]
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+    routing_decision = response.choices[0].message.content.strip()
+
+    if "TOOL: CALCULATE" in routing_decision:
+        return "calculate tool needed"
+    else:
+        return "no tool needed"
+
+def run_with_tool(query):
+    """
+    Use the tool use model to perform the calculation.
+    """
+
+def test_route_query():
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+    
+            create_system_message(routing_prompt),
+            create_user_message(query)
+        ]
+    )
+
+    response = 

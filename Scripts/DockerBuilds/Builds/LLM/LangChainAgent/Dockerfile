@@ -29,9 +29,6 @@ FROM ${BASE_IMAGE}
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
-ARG ARCH
-ARG PTX
-
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
@@ -70,9 +67,9 @@ RUN python3 -m pip install --upgrade pip && \
   #
   #
 ## transformers (hugging face), required to run LLMs as models.
-  git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
+  git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout master && \
+  git checkout main && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -121,7 +118,7 @@ RUN python3 -m pip install --upgrade pip && \
 ### langchain-core: Base abstractions and LangChain Expression Language.
 ### langchain-community: Third party integrations.
 
-RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchain && \
+RUN git clone https://github.com/langchain-ai/langchain.git /ThirdParty/langchain && \
   cd /ThirdParty/langchain/libs/langchain && \
   git checkout master && \
   # Install editable install from source.
@@ -142,6 +139,11 @@ RUN git clone https://github.com/InServiceOfX/langchain.git /ThirdParty/langchai
   pip install -U --quiet langmem && \
   pip install -U langchain-experimental && \
   pip install -U langchain-groq
+
+
+
+RUN pip install groq
+
 
 
 

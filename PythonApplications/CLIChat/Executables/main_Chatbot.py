@@ -11,7 +11,7 @@ import sys
 
 application_path = Path(__file__).resolve().parents[1]
 project_path = Path(__file__).resolve().parents[3]
-more_groq_path = project_path / "PythonLibraries" / "ThirdParties" / "MoreGroq"
+more_groq_path = project_path / "PythonLibraries" / "ThirdParties" / "APIs" / "MoreGroq"
 
 if not str(application_path) in sys.path:
     sys.path.append(str(application_path))

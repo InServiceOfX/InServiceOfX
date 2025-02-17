@@ -13,7 +13,7 @@ if (Path(__file__).resolve().parents[4] / "PythonLibraries" / "CoreCode").exists
 
 # To obtain modules from MoreGroq
 if (Path(__file__).resolve().parents[4] / \
-	"PythonLibraries" / "ThirdParties" / "MoreGroq").exists():
+	"PythonLibraries" / "ThirdParties" / "APIs" / "MoreGroq").exists():
 	sys.path.append(
 		str(Path(__file__).resolve().parents[4] / "PythonLibraries" / \
-			"ThirdParties" / "MoreGroq"))
+			"ThirdParties" / "APIs" / "MoreGroq"))

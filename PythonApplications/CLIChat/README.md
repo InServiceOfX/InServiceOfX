@@ -46,11 +46,11 @@ The high level steps are:
 
 * in the subdirectory containing `pyproject.toml`, run `poetry build` (should be `PythonApplications/CLIChat/`). In the resulting `dist` directory, copy the `.tar.gz` file into the `Deployment/clichat-installer/` subdirectory.
 * for each "dependency", go to that subdirectory, locate where the `pyproject.toml` file is, and run `poetry build` in that subdirectory
-  * e.g. in `PythonLibraries/ThirdParties/MoreGroq`, run `poetry build`
+  * e.g. in `PythonLibraries/ThirdParties/APIs/MoreGroq`, run `poetry build`
   * in the resulting `dist` directory, copy the `.tar.gz` file into the `Deployment/clichat-installer/` subdirectory.
 * in the subdirectory containing `installer.spec`, run `pyinstaller installer.spec` (should be `PythonApplications/CLIChat/Deployment/`)
 
-Make sure, if you made changes either to the `ThirdParties/MoreGroq` Python library/code or to the `CLIChat` Python application, that you run `poetry build` in each respective directory where there's a pyproject.toml file in order to build a new .tar.gz to place into the `clichat-installer` subdirectory.
+Make sure, if you made changes either to the `ThirdParties/APIs/MoreGroq` Python library/code or to the `CLIChat` Python application, that you run `poetry build` in each respective directory where there's a pyproject.toml file in order to build a new .tar.gz to place into the `clichat-installer` subdirectory.
 
 Run
 

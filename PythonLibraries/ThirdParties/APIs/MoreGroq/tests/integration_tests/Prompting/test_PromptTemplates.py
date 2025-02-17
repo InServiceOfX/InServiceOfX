@@ -1,6 +1,6 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 
-from moregroq.Prompting.PromptTemplates import (
+from commonapi.Messages import (
     create_user_message,
     create_system_message,
     create_assistant_message)

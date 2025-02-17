@@ -11,7 +11,7 @@ if (Path(__file__).resolve().parents[4] / "PythonLibraries" / "CoreCode").exists
 		str(Path(__file__).resolve().parents[4] / "PythonLibraries" / \
 			"CoreCode"))
 
-# To obtain modules from MoreGroq
+# To obtain modules from MoreSGLang
 if (Path(__file__).resolve().parents[4] / \
 	"PythonLibraries" / "ThirdParties" / "MoreSGLang").exists():
 	sys.path.append(

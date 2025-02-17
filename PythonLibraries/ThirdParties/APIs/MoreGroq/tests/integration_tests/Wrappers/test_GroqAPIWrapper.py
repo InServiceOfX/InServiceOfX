@@ -1,10 +1,10 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 
 from groq import Groq
-from moregroq.Prompting.PromptTemplates import (
+from moregroq.Wrappers import AsyncGroqAPIWrapper, GroqAPIWrapper
+from commonapi.Messages import (
     create_user_message,
     create_system_message)
-from moregroq.Wrappers import AsyncGroqAPIWrapper, GroqAPIWrapper
 
 import pytest
 
