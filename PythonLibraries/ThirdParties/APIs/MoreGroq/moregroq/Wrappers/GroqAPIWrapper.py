@@ -9,6 +9,9 @@ class BaseGroqWrapper(ABC):
         self.configuration = ChatCompletionConfiguration()
         self.client = self._create_client(api_key)
 
+    def clear_chat_completion_configuration(self):
+        self.configuration = ChatCompletionConfiguration()
+
     @abstractmethod
     def _create_client(self, api_key: str):
         """Create and return appropriate Groq client."""

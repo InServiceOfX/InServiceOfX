@@ -142,7 +142,10 @@ RUN git clone https://github.com/langchain-ai/langchain.git /ThirdParty/langchai
 
 
 
-RUN pip install groq
+RUN pip install groq && \
+    # For async API calls to AsyncGroq
+    pip install pytest-asyncio
+
 
 
 

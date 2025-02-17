@@ -1,4 +1,3 @@
-
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 from commonapi.Messages import (
     create_system_message,
@@ -6,7 +5,6 @@ from commonapi.Messages import (
 )
 from moregroq.Wrappers import GroqAPIWrapper
 from moregroq.Wrappers.ChatCompletionConfiguration import (
-    ChatCompletionConfiguration,
     FunctionDefinition,
     Tool)
 
@@ -313,6 +311,7 @@ def route_query(query, groq_api_wrapper):
         
         Response:
         """
+    groq_api_wrapper.clear_chat_completion_configuration()
     groq_api_wrapper.configuration.model = ROUTING_MODEL
     # We only need a short response.
     groq_api_wrapper.configuration.max_completion_tokens = 2048
@@ -320,7 +319,7 @@ def route_query(query, groq_api_wrapper):
         create_system_message(
             (
                 "You are a routing assistant. Determine if tools are needed "
-                "based on the user query."),
+                "based on the user query.")),
         create_user_message(query)
     ]
 
@@ -332,17 +331,214 @@ def route_query(query, groq_api_wrapper):
     else:
         return "no tool needed"
 
-def run_with_tool(query):
+def run_with_tool(query, groq_api_wrapper):
     """
     Use the tool use model to perform the calculation.
     """
+    messages = [
+        create_system_message(
+            "You are a calculator assistant. Use the calculate function to perform mathematical operations and provide the results."
+        ),
+        create_user_message(query)
+    ]
+    tools = [
+        Tool(type="function",
+             function=FunctionDefinition(
+                 name="calculate",
+                 description="Evaluate a mathematical expression",
+                 parameters={
+                     "type": "object",
+                     "properties": {
+                        "expression": {
+                            "type": "string",
+                            "description": "The mathematical expression to evaluate",
+                        }
+                     },
+                     "required": ["expression"],
+                 },
+             )
+        )
+    ]
+
+    groq_api_wrapper.clear_chat_completion_configuration()
+    groq_api_wrapper.configuration.model = TOOL_USE_MODEL
+    groq_api_wrapper.configuration.tools = tools
+    groq_api_wrapper.configuration.tool_choice = "auto"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    if tool_calls:
+        messages.append(response_message)
+        for tool_call in tool_calls:
+            function_args = json.loads(tool_call.function.arguments)
+            function_response = calculate(function_args.get("expression"))
+            messages.append(
+                {
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": "calculate",
+                    "content": function_response
+                }
+            )
+        groq_api_wrapper.clear_chat_completion_configuration()
+        groq_api_wrapper.configuration.model = TOOL_USE_MODEL
+        second_response = groq_api_wrapper.create_chat_completion(messages)
+        return second_response.choices[0].message.content
+    return response_message.content
+
+def run_general_model(query, groq_api_wrapper):
+    """
+    Use the general model to answer the query since no tool is needed.
+    """
+    groq_api_wrapper.clear_chat_completion_configuration()
+    groq_api_wrapper.configuration.model = GENERAL_MODEL
+
+    messages = [
+        create_system_message("You are a helpful assistant."),
+        create_user_message(query)
+    ]
+    response = groq_api_wrapper.create_chat_completion(messages)
+    return response.choices[0].message.content
+
+def process_query(query, groq_api_wrapper):
+    """
+    Process the query and route it to the appropriate model..
+    """
+    routing_decision = route_query(query, groq_api_wrapper)
+    if routing_decision == "calculate":
+        response = run_with_tool(query, groq_api_wrapper)
+    else:
+        response = run_general_model(query, groq_api_wrapper)
+    return {
+        "query": query,
+        "route": routing_decision,
+        "response": response
+    }
 
 def test_route_query():
     groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
     
-            create_system_message(routing_prompt),
-            create_user_message(query)
-        ]
-    )
+    queries = [
+        "What is the capital of the Netherlands?",
+        "Calculate 25 * 4 + 10"        
+    ]
+    results = []
+    for query in queries:
+        result = process_query(query, groq_api_wrapper)
+        results.append(result)
+        print(f"Query: {result['query']}\n")
+        print(f"Route: {result['route']}\n")
+        print(f"Response: {result['response']}\n")
 
-    response = 
+    assert results[0]["route"] == "no tool needed"
+    assert "Amsterdam" in results[0]["response"]
+    assert "110" in results[1]["response"]
+
+# Define weather tools
+def get_temperature(location: str):
+    # This is a mock tool/function. In a real scenario, you would call a weather
+    # API.    
+    temperatures = {"New York": 22, "London": 18, "Tokyo": 26, "Sydney": 28}
+    return temperatures.get(location, "Temperature data not available")
+
+def get_weather_condition(location: str):
+    # This is a mock tool/function. In a real scenario, you would call a weather
+    # API.    
+    conditions = {"New York": "Sunny", "London": "Rainy", "Tokyo": "Cloudy", "Sydney": "Clear"}
+    return conditions.get(location, "Weather condition data not available")
+
+
+def test_parallel_tool_use():
+    """
+    https://console.groq.com/docs/tool-use
+    """
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+
+    messages = [
+        create_system_message("You are a helpful weather assistant."),
+        create_user_message("What's the weather like in New York and London?")
+    ]
+
+    tools = [
+        Tool(
+            type="function",
+            function=FunctionDefinition(
+                name="get_temperature",
+                description="Get the temperature for a given location",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The name of the city",
+                        }
+                    },
+                    "required": ["location"],
+                },
+            ),
+        ),
+        Tool(
+            function=FunctionDefinition(
+                name="get_weather_condition",
+                description="Get the current weather condition in a given location",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The name of the city",
+                        }
+                    },
+                    "required": ["location"],
+                },
+            ),
+        )
+    ]
+
+    # Make the initial request.
+    groq_api_wrapper.clear_chat_completion_configuration()
+    model = "llama-3.3-70b-versatile"
+    groq_api_wrapper.configuration.model = model
+    groq_api_wrapper.configuration.tools = tools
+    groq_api_wrapper.configuration.tool_choice = "auto"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+    print("initial request response:", response)
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    print("initial request tool_calls:", tool_calls)
+    # Process each tool calls
+    messages.append(response_message)
+
+    available_functions = {
+        "get_temperature": get_temperature,
+        "get_weather_condition": get_weather_condition
+    }
+
+    for tool_call in tool_calls:
+        function_name = tool_call.function.name
+        function_to_call = available_functions[function_name]
+        function_args = json.loads(tool_call.function.arguments)
+        function_response = function_to_call(**function_args)
+        messages.append(
+            {
+                "role": "tool",
+                "content": str(function_response),
+                "tool_call_id": tool_call.id
+            }
+        )
+
+    # Make the final request with tool call results.
+    groq_api_wrapper.clear_chat_completion_configuration()
+    groq_api_wrapper.configuration.model = model
+    groq_api_wrapper.configuration.tools = tools
+    groq_api_wrapper.configuration.tool_choice = "auto"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+    final_response = groq_api_wrapper.create_chat_completion(messages)
+    print("final response:", final_response)
+    print("final response content:", final_response.choices[0].message.content)
+    assert "sunny" in final_response.choices[0].message.content
+    assert "rainy" in final_response.choices[0].message.content

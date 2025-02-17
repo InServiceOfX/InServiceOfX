@@ -2,14 +2,53 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Literal
 
 @dataclass
+class ParameterDefinition:
+    name: str
+    type: str
+    description: str
+    required: bool = True
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "string",  # Currently hardcoded to string, could be expanded
+            "description": self.description
+        }
+
+@dataclass
+class FunctionParameters:
+    parameters: List[ParameterDefinition]
+
+    def to_dict(self) -> Dict[str, Any]:
+        properties = {}
+        required = []
+        
+        for param in self.parameters:
+            properties[param.name] = param.to_dict()
+            if param.required:
+                required.append(param.name)
+
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": required
+        }
+
+@dataclass
 class FunctionDefinition:
     name: str
     description: str
-    parameters: Dict[str, Any]
+    parameters: FunctionParameters
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": self.parameters.to_dict()
+        }
 
 @dataclass
 class Tool:
-    type: Literal["function"] = "function"
+    type: str = "function"
     function: FunctionDefinition = None
 
 @dataclass
@@ -21,6 +60,11 @@ class ChatCompletionConfiguration:
     model: str = "llama-3.3-70b-versatile"
     # When smapling temperature to use, between 0 and 2.
     temperature: Optional[float] = 1.0
+    # max_completion_tokens integer or null Optional
+    # Deprecated in favor of max_completion_tokens. Max number of tokens that
+    # can be generated in chat completion. Total length of input tokens and
+    # generated tokens is limited by model's context length.
+    max_completion_tokens: Optional[int] = None
     # integer or null Optional
     # The maximum number of tokens that can be generated in the chat
     # completion. Total length of input tokens and generated tokens is
@@ -67,6 +111,8 @@ class ChatCompletionConfiguration:
 
         if self.temperature is not None:
             config_dict["temperature"] = self.temperature
+        if self.max_completion_tokens is not None:
+            config_dict["max_completion_tokens"] = self.max_completion_tokens
         if self.max_tokens is not None:
             config_dict["max_tokens"] = self.max_tokens
         if self.stop is not None:

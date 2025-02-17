@@ -4,6 +4,15 @@ from moregroq.Wrappers.ChatCompletionConfiguration import (
     Tool
 )
 
+def test_chat_completion_configuration_inits_with_default_values():
+    configuration = ChatCompletionConfiguration()
+    assert configuration.to_dict() == {
+        "model": "llama-3.3-70b-versatile",
+        "n": 1,
+        "stream": False,
+        "temperature": 1.0,
+    }
+
 def test_Tool_becomes_dict():
     tool = Tool(
         type="function",
