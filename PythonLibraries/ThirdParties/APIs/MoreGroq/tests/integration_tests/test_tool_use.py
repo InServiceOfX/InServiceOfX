@@ -6,6 +6,8 @@ from commonapi.Messages import (
 from moregroq.Wrappers import GroqAPIWrapper
 from moregroq.Wrappers.ChatCompletionConfiguration import (
     FunctionDefinition,
+    FunctionParameters,
+    ParameterProperty,
     Tool)
 
 import requests
@@ -222,16 +224,16 @@ def run_conversation(user_prompt):
         Tool(function=FunctionDefinition(
             name="calculate",
             description="Evaluate a mathematical expression",
-            parameters= {
-                "type": "object",
-                "properties": {
-                    "expression": {
-                        "type": "string",
-                        "description": "The mathematical expression to evaluate",
-                    }
-                },
-                "required": ["expression"],
-            },
+            parameters=FunctionParameters(
+                properties=[
+                    ParameterProperty(
+                        name="expression",
+                        type="string",
+                        description="The mathematical expression to evaluate",
+                        required=True
+                    )
+                ]
+            ),
         ))
     ]
 
@@ -467,34 +469,35 @@ def test_parallel_tool_use():
             function=FunctionDefinition(
                 name="get_temperature",
                 description="Get the temperature for a given location",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "The name of the city",
-                        }
-                    },
-                    "required": ["location"],
-                },
+                parameters=FunctionParameters(
+                    properties=[
+                        ParameterProperty(
+                            name="location",
+                            type="string",
+                            description="The name of the city",
+                            required=True
+                        )
+                    ],
+                ),
             ),
         ),
         Tool(
+            type="function",
             function=FunctionDefinition(
                 name="get_weather_condition",
                 description="Get the current weather condition in a given location",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "The name of the city",
-                        }
-                    },
-                    "required": ["location"],
-                },
+                parameters=FunctionParameters(
+                    properties=[
+                        ParameterProperty(
+                            name="location",
+                            type="string",
+                            description="The name of the city",
+                            required=True
+                        )
+                    ],
+                ),
             ),
-        )
+        ),
     ]
 
     # Make the initial request.
@@ -573,7 +576,7 @@ class ToolCall(BaseModel):
 class ResponseModel(BaseModel):
     tool_calls: list[ToolCall]
 
-def run_conversation(user_prompt, groq_api_wrapper):
+def run_conversation2(user_prompt, groq_api_wrapper):
     # Prepare the messages
     messages = [
         create_system_message(
@@ -599,7 +602,7 @@ def run_conversation(user_prompt, groq_api_wrapper):
 def test_tool_use_with_structured_outputs():
     groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
     user_prompt = "What's the weather like in San Francisco?"
-    tool_calls = run_conversation(user_prompt, groq_api_wrapper)
+    tool_calls = run_conversation2(user_prompt, groq_api_wrapper)
     for call in tool_calls:
         print(f"Input: {call.input_text}")
         print(f"Tool: {call.tool_name}")

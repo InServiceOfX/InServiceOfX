@@ -29,7 +29,7 @@ def test_function_parameters_to_dict():
     )
 
     function_parameters = FunctionParameters(
-        parameters=[parameter_property]
+        properties=[parameter_property]
     )
     assert function_parameters.to_dict() == {
             "type": "object",
@@ -41,6 +41,43 @@ def test_function_parameters_to_dict():
             },
             "required": ["location"]
         }
+
+def test_tool_to_dict():
+    tool = Tool(
+        function=FunctionDefinition(
+            name="get_bakery_prices",
+            description="Returns the prices for a given bakery product.",
+            parameters=FunctionParameters(
+                properties=[
+                    ParameterProperty(
+                        name="bakery_item",
+                        description="The name of the bakery item",
+                        type="string",
+                        required=True
+                    )
+                ]
+            )
+        )
+    )
+
+    assert tool.to_dict() == {
+        "type": "function",
+        "function": {
+            "name": "get_bakery_prices",
+            "description": "Returns the prices for a given bakery product.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "bakery_item": {
+                        "type": "string",
+                        "description": "The name of the bakery item",
+                    }
+                },
+                "required": ["bakery_item"],
+            },
+        },
+    }        
+
 
 def test_function_parameters_can_have_multiple_parameters():
     parameter_property_1 = ParameterProperty(
@@ -55,7 +92,7 @@ def test_function_parameters_can_have_multiple_parameters():
         required=False
     )
     function_parameters = FunctionParameters(
-        parameters=[parameter_property_1, parameter_property_2]
+        properties=[parameter_property_1, parameter_property_2]
     )
     assert function_parameters.to_dict() == {
           "type": "object",
@@ -80,7 +117,7 @@ def test_function_definition_to_dict():
     )
 
     function_parameters = FunctionParameters(
-        parameters=[parameter_property]
+        properties=[parameter_property]
     )
 
     function_definition = FunctionDefinition(
@@ -119,16 +156,16 @@ def test_Tool_becomes_dict():
         function=FunctionDefinition(
             name="calculate",
             description="Evaluate a mathematical expression",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "expression": {
-                    "type": "string",
-                    "description": "The mathematical expression to evaluate",
-                    }
-                },
-                "required": ["expression"],            
-            },
+            parameters=FunctionParameters(
+                properties=[
+                    ParameterProperty(
+                        name="expression",
+                        type="string",
+                        description="The mathematical expression to evaluate",
+                        required=True
+                    )
+                ],
+            ),
         ),
     )
     tools = [tool,]

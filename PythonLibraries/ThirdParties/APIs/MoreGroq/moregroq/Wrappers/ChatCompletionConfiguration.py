@@ -25,13 +25,13 @@ class ParameterProperty:
 
 @dataclass
 class FunctionParameters:
-    parameters: List[ParameterProperty]
+    properties: List[ParameterProperty]
 
     def to_dict(self) -> Dict[str, Any]:
         properties = {}
         required = []
         
-        for param in self.parameters:
+        for param in self.properties:
             properties[param.name] = param.to_dict()
             if param.required:
                 required.append(param.name)
@@ -59,6 +59,12 @@ class FunctionDefinition:
 class Tool:
     type: str = "function"
     function: FunctionDefinition = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": self.type,
+            "function": self.function.to_dict()
+        }
 
 @dataclass
 class ChatCompletionConfiguration:
@@ -137,10 +143,7 @@ class ChatCompletionConfiguration:
 
         # Add tool use parameters if specified
         if self.tools is not None:
-            config_dict["tools"] = [
-                {"type": tool.type, "function": tool.function.__dict__}
-                for tool in self.tools
-            ]
+            config_dict["tools"] = [tool.to_dict() for tool in self.tools]
         if self.tool_choice is not None:
             config_dict["tool_choice"] = self.tool_choice
         if self.parallel_tool_calls is not None:

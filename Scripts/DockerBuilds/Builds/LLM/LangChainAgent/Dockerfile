@@ -144,7 +144,12 @@ RUN git clone https://github.com/langchain-ai/langchain.git /ThirdParty/langchai
 
 RUN pip install groq && \
     # For async API calls to AsyncGroq
-    pip install pytest-asyncio
+    pip install pytest-asyncio && \
+    # "We recommend the Instuctor library to simplify the process of working "
+    # "with structured data and to ensure that the model's output adheres to a "
+    # "predefined schema."
+    # https://console.groq.com/docs/tool-use
+    pip install instructor
 
 
 
