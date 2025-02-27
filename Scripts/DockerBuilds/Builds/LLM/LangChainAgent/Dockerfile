@@ -155,3 +155,11 @@ RUN pip install groq && \
 
 
 
+RUN python3 -m pip install --upgrade pip && \
+  pip install --upgrade yfinance && \
+  pip install --upgrade plotly
+
+
+
+
+

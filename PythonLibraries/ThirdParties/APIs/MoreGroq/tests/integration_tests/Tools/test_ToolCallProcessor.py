@@ -12,7 +12,7 @@ from moregroq.Wrappers.ChatCompletionConfiguration import (
 
 from moregroq.Wrappers import GroqAPIWrapper
 from TestUtilities.TestSetup import get_bakery_prices
-from moregroq.Tools.ToolCallProcessor import ToolCallProcessor
+from moregroq.Tools import ToolCallProcessor
 
 load_environment_file()
 
@@ -65,6 +65,11 @@ def test_ToolCallProcessor_works_on_parallel_tool_use():
         response.choices[0].message)
 
     assert process_result == 2
+
+    # ToolCallProcessor.process_response(..) mutates the original messages
+    # input.
+
+    assert tool_call_processor.messages == messages
 
     response = groq_api_wrapper.create_chat_completion(messages)
     response_message = response.choices[0].message

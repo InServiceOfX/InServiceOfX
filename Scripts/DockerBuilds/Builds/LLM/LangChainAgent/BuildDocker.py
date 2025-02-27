@@ -35,11 +35,14 @@ class BuildDocker(BuildDockerBase):
                 "Dockerfile.rust",
                 self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),
             (
-                "Dockerfile.more_pip_installs",
+                "Dockerfile.langchain",
                 self.script_dir / "Dockerfile.langchain"),
             (
                 "Dockerfile.apis",
-                self.script_dir / "Dockerfile.apis")
+                self.script_dir / "Dockerfile.apis"),
+            (
+                "Dockerfile.more_pip_installs",
+                self.script_dir / "Dockerfile.more_pip_installs")
         ]
 
 def main():

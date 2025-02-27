@@ -3,6 +3,7 @@ from commonapi.Messages.Messages import (
     UserMessage,
     AssistantMessage,
     create_system_message,
+    create_tool_message,
     create_user_message,
     create_assistant_message,
 )
@@ -13,5 +14,6 @@ __all__ = [
     "AssistantMessage",
     "create_system_message",
     "create_user_message",
-    "create_assistant_message"
+    "create_assistant_message",
+    "create_tool_message"
 ]

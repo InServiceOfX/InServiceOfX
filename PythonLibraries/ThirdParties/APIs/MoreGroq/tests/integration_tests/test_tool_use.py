@@ -10,6 +10,8 @@ from moregroq.Wrappers.ChatCompletionConfiguration import (
     ParameterProperty,
     Tool)
 
+from TestUtilities.TestSetup import calculate
+
 import requests
 import json
 
@@ -176,18 +178,6 @@ def test_groq_tool_use_with_curl_request():
     #assert "parameters" in result["choices"][0]["message"]["tool_calls"][0]
     assert "name" in result["choices"][0]["message"]["tool_calls"][0]["function"]
     assert "arguments" in result["choices"][0]["message"]["tool_calls"][0]["function"]
-
-def calculate(expression):
-    """
-    https://console.groq.com/docs/tool-use
-    Evaluate a mathematical expression.
-    """
-    try:
-        # Attempt to evaluate the math expression
-        result = eval(expression)
-        return json.dumps({"result": result})
-    except Exception as e:
-        return json.dumps({"error": f"Invalid expression: {str(e)}"})
 
 def run_conversation(user_prompt):
     """

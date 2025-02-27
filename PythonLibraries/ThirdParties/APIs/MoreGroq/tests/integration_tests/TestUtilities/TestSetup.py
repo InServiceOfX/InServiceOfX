@@ -1,3 +1,15 @@
+import json
+
+# https://console.groq.com/docs/tool-use
+def calculate(expression):
+    """Evaluate a mathematical expression."""
+    try:
+        # Attempt to evaluate the math expression
+        result = eval(expression)
+        return json.dumps({"result": result})
+    except Exception as e:
+        return json.dumps({"error": f"Invalid expression: {str(e)}"})
+
 def get_bakery_prices(bakery_item: str):
     """
     Define a tool, or function, that the LLM can invoke to fetch pricing for
@@ -14,9 +26,8 @@ def get_bakery_prices(bakery_item: str):
 
 import yfinance as yf
 
-def get_stock_price(symbol: str, key: str):
-    """
-    Return the correct stock info value given the appropriate symbol and key.
+def get_stock_info(symbol: str, key: str):
+    """Return the correct stock info value given the appropriate symbol and key.
     Infer valid key from the user prompt; it must be one of the following:
 
     address1, city, state, zip, country, phone, website, industry, industryKey,
@@ -42,13 +53,12 @@ def get_stock_price(symbol: str, key: str):
     
     If asked generically for 'stock price', use currentPrice
     """
-    data = yf.Ticket(symbol)
+    data = yf.Ticker(symbol)
     stock_info = data.info
     return stock_info[key]
 
 def get_historical_price(symbol, start_date, end_date):
-    """
-    Fetches historical stock prices for a given symbol from 'start_date' to
+    """Fetches historical stock prices for a given symbol from 'start_date' to
     'end_date'.
     - symbol (str): Stock ticker symbol.
     - end_date (date): Typically today unless a specific end date is provided.
@@ -59,7 +69,7 @@ def get_historical_price(symbol, start_date, end_date):
     today's date). Default to '1900-01-01' if vaguely asked for historical
     price. Start date must always be before the current date
     """
-    data = yf.Ticket(symbol)
+    data = yf.Ticker(symbol)
     hist = data.history(start=start_date, end=end_date)
     hist = hist.reset_index()
     hist[symbol] = hist['Close']
