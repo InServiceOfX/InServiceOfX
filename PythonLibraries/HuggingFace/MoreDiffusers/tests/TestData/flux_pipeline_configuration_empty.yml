@@ -1,14 +1,8 @@
-diffusion_model_path :
-temporary_save_path :
+diffusion_model_path: /Data1/Models/Diffusion/black-forest-labs/FLUX.1-schnell
 scheduler :
-A1111_kdiffusion :
-height :
-width :
-seed :
-max_sequence_length :
-torch_dtype :
-is_enable_cpu_offload :
+a1111_kdiffusion :
+torch_dtype:
+is_enable_model_cpu_offload :
 is_enable_sequential_cpu_offload :
-is_to_cuda :
-variant :
-use_safetensors :
+is_to_cuda:
+cuda_device:

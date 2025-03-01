@@ -1,0 +1,14 @@
+lora_scale:
+lora_0:
+  directory_path: /Data/Models/Diffusion/LoRAs/w4r10ck
+  weight_name: add-detail-xl.safetensors
+  adapter_name: add_detail
+  # https://civitai.com/models/122359/detail-tweaker-xl?modelVersionId=135867
+  # Works with weights [-3, 3]
+  # Use positive weight to increase details and negative weight to reduce details.
+  adapter_weight: 1.0
+lora_1:
+  directory_path: /Data/Models/Diffusion/LoRAs/bdsqlsz
+  weight_name: DetailedEyes_V3.safetensors
+  adapter_name: detailed_eyes
+  adapter_weight: 1.0

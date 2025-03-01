@@ -1,0 +1,8 @@
+height: 1216
+width: 832
+num_inference_steps: 40
+num_images_per_prompt:
+seed: 873546738
+guidance_scale: 7.0
+clip_skip: 2
+temporary_save_path:

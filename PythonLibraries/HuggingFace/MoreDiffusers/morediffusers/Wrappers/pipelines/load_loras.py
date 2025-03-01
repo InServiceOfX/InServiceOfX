@@ -15,7 +15,7 @@ def load_loras(pipe, loras_configuration):
 
     return_load_state_dicts = []
 
-    for key, lora_parameters in loras_configuration.loras.items():
+    for _, lora_parameters in loras_configuration.loras.items():
 
         # This depends upon the interface or function signature of the class
         # methods to not change; in particular, monitor in diffusers
@@ -42,7 +42,3 @@ def load_loras(pipe, loras_configuration):
         # This is found in diffusers lora_base.py LorabaseMixin class, which
         # StableDiffusionXLLoraLoaderMixin and FluxLoraLoaderMixin inherit from.
         pipe.set_adapters(adapter_names, adapter_weights)
-
-def change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration):
-    if loras_configuration.is_to_cuda == True:
-        pipe.to("cuda")

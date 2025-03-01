@@ -1,5 +1,8 @@
 from morediffusers.Applications.FluxPipelineUserInput \
 	import FluxPipelineUserInput
+
+from morediffusers.Applications.StableDiffusionXLUserInput \
+    import StableDiffusionXLUserInput
 from morediffusers.Applications.UserInputWithLoras import UserInputWithLoras
 
 from morediffusers.Applications.create_image_filename_and_save import (

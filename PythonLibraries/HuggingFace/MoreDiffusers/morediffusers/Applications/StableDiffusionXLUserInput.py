@@ -3,16 +3,16 @@ from typing import Any, Optional
 from corecode.Utilities import get_user_input
 
 @dataclass
-class FluxPipelineUserInput:
-    guidance_scale_step_explanation = (
-        "Take the input guidance scale and input the value you would "
-        "like to add or subtract (use - sign) to it upon each iteration;"
-        " 7.0 + -0.5 = 6.5 on next iteration.\n")
-
+class StableDiffusionXLUserInput:
     generation_configuration: Any
     prompt: str = field(default_factory=lambda: get_user_input(str, "Prompt: "))
     prompt_2: Optional[str] = field(
         default_factory=lambda: get_user_input(str, "Prompt 2: ", ""))
+    negative_prompt: str = field(
+        default_factory=lambda: get_user_input(str, "Negative prompt: ", ""))
+    negative_prompt_2: Optional[str] = field(
+        default_factory=lambda: get_user_input(str, "Negative prompt 2: ", "")
+    )
     num_inference_steps: Optional[int] = field(
         default_factory=lambda: get_user_input(
             int,
@@ -41,7 +41,8 @@ class FluxPipelineUserInput:
     guidance_scale_step: float = field(
         default_factory=lambda: get_user_input(
             float,
-            FluxPipelineUserInput.guidance_scale_step_explanation,
+            "Guidance scale step value (small decimal): ",
+            0.0
         )
     )
 
@@ -49,6 +50,8 @@ class FluxPipelineUserInput:
         # Convert empty strings to None for optional prompts
         if self.prompt_2 == "":
             self.prompt_2 = None
+        if self.negative_prompt_2 == "":
+            self.negative_prompt_2 = None
             
         # Validate base_filename is not empty
         if not self.base_filename:
@@ -66,13 +69,17 @@ class FluxPipelineUserInput:
         """Create dictionary of generation parameters for pipeline __call__"""
         kwargs = {
             "prompt": self.prompt,
+            "negative_prompt": self.negative_prompt,
             "num_inference_steps": self.num_inference_steps
         }
         
         # Only add optional parameters if they are not None
         if self.prompt_2 is not None:
             kwargs["prompt_2"] = self.prompt_2
-                    
+        
+        if self.negative_prompt_2 is not None:
+            kwargs["negative_prompt_2"] = self.negative_prompt_2
+            
         if self.guidance_scale is not None:
             kwargs["guidance_scale"] = self.guidance_scale
         else:

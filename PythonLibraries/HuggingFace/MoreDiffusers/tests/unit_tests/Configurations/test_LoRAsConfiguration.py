@@ -23,8 +23,6 @@ def test_LoRAsConfiguration_inits_for_empty_file():
         lora_parameters.append(lora_parameter)
     assert keys == []
     assert lora_parameters == []
-    assert configuration.is_to_cuda != False
-    assert configuration.is_to_cuda == None
 
 
 def test_LoRAsConfiguration_inits():
@@ -50,4 +48,33 @@ def test_LoRAsConfiguration_inits():
     assert configuration.loras["pixel_art"]["weight_name"] == "pixel-art-xl.safetensors"
     assert configuration.loras["pixel_art"]["adapter_name"] == "pixel_art"
     assert configuration.loras["pixel_art"]["adapter_weight"] == None
-    assert configuration.is_to_cuda == True
+
+def test_LoRAsConfiguration_inits_with_sdxl_file():
+    test_file_path = test_data_directory / "sdxl_loras_configuration.yml"
+    assert test_file_path.exists()
+
+    configuration = LoRAsConfiguration(test_file_path)
+    assert configuration.lora_scale == None
+    assert len(configuration.loras) == 2
+    assert configuration.loras["add_detail"]["directory_path"] == \
+        "/Data/Models/Diffusion/LoRAs/w4r10ck"
+    assert configuration.loras["add_detail"]["weight_name"] == \
+        "add-detail-xl.safetensors"
+    assert configuration.loras["add_detail"]["adapter_name"] == "add_detail"
+    assert configuration.loras["add_detail"]["adapter_weight"] == 1.0
+
+def test_LoRAsConfiguration_inits_with_sdxl_file_complex():
+    test_file_path = test_data_directory / "sdxl_loras_configuration_complex.yml"
+    assert test_file_path.exists()
+
+    configuration = LoRAsConfiguration(test_file_path)
+    assert configuration.lora_scale == None
+    assert len(configuration.loras) == 5
+    assert configuration.loras["add_detail"]["directory_path"] == \
+        "/Data/Models/Diffusion/LoRAs/w4r10ck"
+    assert configuration.loras["add_detail"]["weight_name"] == \
+        "add-detail-xl.safetensors"
+    assert configuration.loras["add_detail"]["adapter_name"] == "add_detail"
+    assert configuration.loras["add_detail"]["adapter_weight"] == 1.0
+    assert configuration.loras["detailed_eyes"]["directory_path"] == \
+        "/Data/Models/Diffusion/LoRAs/bdsqlsz"

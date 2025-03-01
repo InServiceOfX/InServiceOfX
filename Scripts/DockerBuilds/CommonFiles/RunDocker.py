@@ -3,7 +3,7 @@
 more options.
 
 @details
-USAGE: python ./RunDocker.py [directory_path] [--arm64]
+USAGE: python ./RunDocker.py [directory_path] [--gpu GPU_ID]
 """
 
 from pathlib import Path
@@ -13,25 +13,36 @@ import argparse
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from CommonUtilities import (
-    CreateDockerRunCommand,
     DefaultValues,
     get_docker_builds_directory,
     get_project_directory,
     parse_run_configuration_file)
 
 from Utilities import (
+    CreateDockerRunCommand,
     ReadBuildConfigurationForMinimalStack)
+
 
 def print_help():
     help_text = """
-Usage: RunDocker.py [directory_path] [--arm64]
+Usage: RunDocker.py [directory_path] [--gpu GPU_ID]
 
 Options:
   directory_path      Path to the directory containing build configuration files
-  --arm64             Run for ARM 64 architecture
-  --help              Show this help message and exit
+  --gpu GPU_ID       Specific GPU ID to use (non-negative integer). If not specified, uses all GPUs.
+  --help             Show this help message and exit
 """
     print(help_text)
+
+
+def validate_gpu_id(value):
+    try:
+        gpu_id = int(value)
+        if gpu_id < 0:
+            raise ValueError("GPU ID must be non-negative")
+        return gpu_id
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
 
 
 def main():
@@ -45,9 +56,9 @@ def main():
         default=None,
         help='Path to the directory containing build configuration files')
     parser.add_argument(
-        '--arm64',
-        action='store_true',
-        help='Run for ARM 64 architecture')
+        '--gpu',
+        type=validate_gpu_id,
+        help='Specific GPU ID to use (non-negative integer)')
     parser.add_argument(
         '--help',
         action='store_true',
@@ -59,7 +70,6 @@ def main():
         print_help()
         sys.exit(0)
 
-    is_arm64 = args.arm64
     docker_builds_directory = get_docker_builds_directory()
 
     if args.directory_path:
@@ -88,7 +98,7 @@ def main():
         get_project_directory(),
         build_configuration,
         run_configuration,
-        is_arm64)
+        gpu_id=args.gpu)
 
     os.system(create_docker_run_command.docker_run_command)
 

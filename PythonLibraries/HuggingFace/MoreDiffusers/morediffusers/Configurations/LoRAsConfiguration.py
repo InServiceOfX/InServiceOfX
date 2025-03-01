@@ -1,34 +1,42 @@
-from corecode.FileIO import get_project_directory_path
+from dataclasses import dataclass, field
+from typing import Dict, Optional
 from pathlib import Path
 import re
 import yaml
+from corecode.FileIO import get_project_directory_path
 
+@dataclass
 class LoRAsConfiguration:
-    def __init__(self, configuration_path):
+    # Class variables
+    REQUIRED_LORA_FIELDS = {"directory_path", "weight_name", "adapter_name"}
+    
+    # Instance fields
+    configuration_path: Path
+    lora_scale: Optional[float] = None
+    loras: Dict[str, dict] = field(default_factory=dict)
+    
+    def __post_init__(self):
         self._lora_key_pattern = re.compile(r'lora_(\d+)')
-        f = open(str(configuration_path), 'r')
-        data = yaml.safe_load(f)
-        f.close()
-
+        self._load_from_yaml()
+    
+    def _load_from_yaml(self) -> None:
+        with self.configuration_path.open('r') as f:
+            data = yaml.safe_load(f) or {}
+            
         data = self._validate_configuration(data)
-        self.lora_scale = data["lora_scale"]
-
-        self.lora_scale = self.lora_scale if self.lora_scale is None else \
-            float(self.lora_scale)
-
-        self.loras = {}
-
+        
+        # Load lora scale
+        if data.get("lora_scale") is not None:
+            self.lora_scale = float(data["lora_scale"])
+            
+        # Load loras
         for key, lora_parameters in data.items():
             if self._lora_key_pattern.fullmatch(key):
-                if "adapter_weight" in lora_parameters.keys():
-                    adapter_weight_value = lora_parameters["adapter_weight"]
-                    lora_parameters["adapter_weight"] = adapter_weight_value \
-                        if adapter_weight_value == None else float(
-                            adapter_weight_value)
-
+                if "adapter_weight" in lora_parameters:
+                    value = lora_parameters["adapter_weight"]
+                    if value is not None:
+                        lora_parameters["adapter_weight"] = float(value)
                 self.loras[lora_parameters["adapter_name"]] = lora_parameters
-
-        self.is_to_cuda = data["is_to_cuda"]
 
     def _validate_configuration(self, data):
         for key, value in data.items():

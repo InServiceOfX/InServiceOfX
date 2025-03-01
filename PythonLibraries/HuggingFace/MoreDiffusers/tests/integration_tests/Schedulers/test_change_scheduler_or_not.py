@@ -5,14 +5,14 @@ from corecode.Utilities import (
     )
 from diffusers import (
     ControlNetModel,
+    DPMSolverMultistepScheduler,
+    DPMSolverSinglestepScheduler,
     EulerAncestralDiscreteScheduler,
-    PNDMScheduler,
     StableDiffusionControlNetPipeline,
-    UniPCMultistepScheduler
+    StableDiffusionXLPipeline,
     )
 from morediffusers.Schedulers import change_scheduler_or_not
 
-import pytest
 import torch
 
 data_sub_dirs = DataSubdirectories()
@@ -72,3 +72,33 @@ def test_change_scheduler_or_not_changes_scheduler():
 
     # Here's the "or not" part where we have scheduler_name=None.
     assert not change_scheduler_or_not(pipe, None)
+
+
+def test_change_scheduler_or_not_with_fluently():
+    path = data_sub_dirs.ModelsDiffusion / "fluently" / "Fluently-XL-v4"
+    assert path.exists()
+
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        path,
+        local_files_only=True,
+        use_safetensors=True)
+
+    assert isinstance(pipe.scheduler, EulerAncestralDiscreteScheduler)
+    assert pipe.scheduler.use_karras_sigmas == False
+
+    change_scheduler_or_not(pipe, "DPMSolverSinglestepScheduler")
+    assert isinstance(pipe.scheduler, DPMSolverSinglestepScheduler)
+    assert pipe.scheduler.use_karras_sigmas == False
+    assert pipe.scheduler.config.algorithm_type == "dpmsolver++"
+
+    change_scheduler_or_not(pipe, "DPMSolverMultistepScheduler", "DPM++ 2M SDE")
+    assert isinstance(pipe.scheduler, DPMSolverMultistepScheduler)
+    assert pipe.scheduler.use_karras_sigmas == False
+    assert pipe.scheduler.config.algorithm_type == "sde-dpmsolver++"
+
+    change_scheduler_or_not(
+        pipe,
+        "DPMSolverSinglestepScheduler",
+        "DPM++ SDE Karras")
+    assert isinstance(pipe.scheduler, DPMSolverSinglestepScheduler)
+    assert pipe.scheduler.use_karras_sigmas == True

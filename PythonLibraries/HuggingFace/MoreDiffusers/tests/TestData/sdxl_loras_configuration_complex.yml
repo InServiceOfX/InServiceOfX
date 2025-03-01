@@ -1,0 +1,52 @@
+#lora_scale: 1.0
+lora_0:
+  directory_path: /Data/Models/Diffusion/LoRAs/redcreamsoda
+  weight_name: NsfwPovAllInOneLoraSdxl-000009.safetensors
+  adapter_name: nsfwpovall
+#  adapter_weight: 0.2
+  adapter_weight: 0.5
+  #adapter_weight: 0.7
+lora_2:
+#lora_1:
+#lora_0:
+  directory_path: /Data/Models/Diffusion/LoRAs/enfugue
+  weight_name: sd_xl_dpo_lora_v1.safetensors
+  adapter_name: sd_xl_dpo
+  adapter_weight: 0.3
+  #adapter_weight: 0.15
+#lora_2:
+lora_3:
+  directory_path: /Data/Models/Diffusion/LoRAs/AndrexSel
+  weight_name: MJ52.safetensors
+  adapter_name: MidJmimic
+  adapter_weight: 0.15
+  #adapter_weight: 0.8
+lora_4:
+#lora_2:
+  directory_path: /Data/Models/Diffusion/LoRAs/w4r10ck
+  weight_name: add-detail-xl.safetensors
+  adapter_name: add_detail
+  # https://civitai.com/models/122359/detail-tweaker-xl?modelVersionId=135867
+  # Works with weights [-3, 3]
+  # Use positive weight to increase details and negative weight to reduce details.
+  adapter_weight: 1.0
+lora_5:
+#lora_9:
+  directory_path: /Data/Models/Diffusion/LoRAs/bdsqlsz
+  weight_name: DetailedEyes_V3.safetensors
+  adapter_name: detailed_eyes
+  adapter_weight: 1.0
+# lora_5:
+#   directory_path: /Data/Models/Diffusion/LoRAs/ntc
+#   weight_name: great_lighting.safetensors
+#   adapter_name: great_lighting
+#   # https://civitai.com/models/228974/great-lighting-slidersntcaixyz?modelVersionId=258416
+#   # Usage Tips Strength: 3
+#   # Give your generations great lighting. Examples at 4 strength
+#   adapter_weight: 3.0
+#
+#lora_5:
+#  directory_path: /Data/Models/Diffusion/LoRAs/rMada
+#  weight_name: RMSDXL_Enhance.safetensors
+#  adapter_name: rmsdxl_enhance
+#  adapter_weight: 1.0

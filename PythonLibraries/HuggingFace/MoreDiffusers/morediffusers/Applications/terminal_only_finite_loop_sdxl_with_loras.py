@@ -1,8 +1,3 @@
-"""
-@brief Generate N (hence "finite") number of images in a for loop (hence
-"loop"). Run this in your terminal, command prompt (hence "terminal only").
-"""
-
 from pathlib import Path
 import sys
 import time
@@ -22,13 +17,15 @@ from corecode.Utilities import clear_torch_cache_and_collect_garbage
 
 from morediffusers.Applications import (
     create_image_filename_and_save,
-    FluxPipelineUserInput,
-    print_pipeline_diagnostics
-    )
+    print_loras_diagnostics,
+    print_pipeline_diagnostics,
+    StableDiffusionXLUserInput
+)
 
 from morediffusers.Configurations import (
-    DiffusionPipelineConfiguration,
-    FluxGenerationConfiguration
+    LoRAsConfigurationForMoreDiffusers,
+    StableDiffusionXLGenerationConfiguration,
+    DiffusionPipelineConfiguration
 )
 
 from morediffusers.Schedulers import change_scheduler_or_not
@@ -36,23 +33,21 @@ from morediffusers.Schedulers import change_scheduler_or_not
 from morediffusers.Wrappers import create_seed_generator
 
 from morediffusers.Wrappers.pipelines import (
+    create_stable_diffusion_xl_pipeline,
     change_pipe_to_cuda_or_not,
-    create_flux_pipeline
+    load_loras
 )
 
-def terminal_only_finite_loop_flux():
+def terminal_only_finite_loop_sdxl_with_loras():
 
-    configuration = DiffusionPipelineConfiguration(
-        DiffusionPipelineConfiguration.DEFAULT_CONFIG_PATH.parent / \
-            "flux_pipeline_configuration.yml")
+    configuration = DiffusionPipelineConfiguration()
+    generation_configuration = StableDiffusionXLGenerationConfiguration()
 
-    generation_configuration = FluxGenerationConfiguration()
-
-    user_input = FluxPipelineUserInput(generation_configuration)
+    user_input = StableDiffusionXLUserInput(generation_configuration)
 
     start_time = time.time()
 
-    pipe = create_flux_pipeline(configuration)
+    pipe = create_stable_diffusion_xl_pipeline(configuration)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 
@@ -71,20 +66,25 @@ def terminal_only_finite_loop_flux():
         is_scheduler_changed,
         original_scheduler_name)
 
+    #
+    #
+    # LoRAs - Low Rank Adaptations
+    #
+    #
+
+    start_time = time.time()
+
+    loras_configuration = LoRAsConfigurationForMoreDiffusers()
+    load_loras(pipe, loras_configuration)
+
+    end_time = time.time()
+
+    print_loras_diagnostics(end_time - start_time, pipe)
 
     for index in range(user_input.iterations):
 
-        """
-        @details See
-        diffusers/src/diffusers/pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py
-        and def __call__(..) for possible arguments.
-
-        max_sequence_length: Maximum sequence length to use with the 'prompt',
-        empirically it was found that 512 is the maximum that can be used
-        without a runtime error.
-        """
-
         generation_kwargs = user_input.get_generation_kwargs()
+
         generation_kwargs.update(
             generation_configuration.get_generation_kwargs())
 
@@ -92,26 +92,19 @@ def terminal_only_finite_loop_flux():
             configuration,
             generation_configuration)
 
-        # From pipeline_flux.py of diffusers, __call__(..) function,
-        # Guidance Scale defined in
-        # [Classifier-Free Diffusion Guidance](https://arxiv.org/abs/2207.12598).
-        # guidance_scale defined as 'w' of equation 2. of
-        # [Imagen Paper](https://arxiv.org/pdf/2205.11487.pdf). Higher
-        # guidance scale encourages to generate images closely linked to
-        # text `prompt`, usually at expense of lower image quality.
-        images = pipe(**generation_kwargs).images
-
-        print("len(images): ", len(images))
+        image = pipe(**generation_kwargs).images[0]
 
         create_image_filename_and_save(
             user_input,
             index,
-            images[0],
+            image,
             generation_configuration,
             Path(configuration.diffusion_model_path).name)
+
+        user_input.update_guidance_scale()
 
     clear_torch_cache_and_collect_garbage()
 
 if __name__ == "__main__":
 
-    terminal_only_finite_loop_flux()
+    terminal_only_finite_loop_sdxl_with_loras()

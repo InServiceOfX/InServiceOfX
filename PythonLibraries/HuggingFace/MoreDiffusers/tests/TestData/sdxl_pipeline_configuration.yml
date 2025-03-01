@@ -1,0 +1,10 @@
+diffusion_model_path: /Data1/Models/Diffusion/fluently/Fluently-XL-Final
+# If your model is elsewhere, uncomment this out and change appropriately:
+# diffusion_model_path: /Data/Models/Diffusion/fluently/Fluently-XL-Final
+torch_dtype: torch.bfloat16
+is_enable_model_cpu_offload:
+is_enable_sequential_cpu_offload:
+is_to_cuda: true
+cuda_device: cuda:0
+scheduler:
+a1111_kdiffusion:

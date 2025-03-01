@@ -109,10 +109,12 @@ venv.bak/
 # Files to ignore that are specific to this repository (project)
 
 .config
-Configurations/HuggingFace/MoreDiffusers/configuration.yml
+Configurations/HuggingFace/MoreDiffusers/flux_generation_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/flux_pipeline_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/ip_adapter_configuration.yml
 Configurations/HuggingFace/MoreDiffusers/loras_configuration.yml
+Configurations/HuggingFace/MoreDiffusers/sdxl_generation_configuration.yml
+Configurations/HuggingFace/MoreDiffusers/sdxl_pipeline_configuration.yml
 Configurations/HuggingFace/MoreTransformers/configuration.yml
 Configurations/HuggingFace/MoreTransformers/generation_configuration.yml
 Configurations/ThirdParties/MoreInsightFace/configuration.yml

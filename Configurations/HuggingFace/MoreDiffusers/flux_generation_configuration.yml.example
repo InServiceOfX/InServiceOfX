@@ -1,0 +1,9 @@
+height: 1216
+width: 832
+num_inference_steps: 30
+num_images_per_prompt:
+#seed: 1449648782
+seed: 458766893
+guidance_scale: 5.5
+temporary_save_path: /Data/Private/
+max_sequence_length:
