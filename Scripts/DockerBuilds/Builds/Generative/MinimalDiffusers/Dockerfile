@@ -106,7 +106,9 @@ RUN pip install --upgrade pip && \
     pip install --upgrade transformer-engine && \
     pip uninstall -y flash-attn && \
     pip install --upgrade flash-attn && \
-    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')"
+    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')" && \
+    # For quantization of a Diffusion pipeline.
+    pip install --upgrade bitsandbytes
 
 
 
@@ -208,7 +210,12 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   # https://github.com/google/jax/blob/main/README.md#instructions
   #
   pip install -U "jax[cuda12]" && \
+  # https://huggingface.co/docs/diffusers/en/optimization/onnx
+  # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
+  python -m pip install optimum[onnxruntime]@git+https://github.com/huggingface/optimum.git && \
   cd /
+
+
 
 
 
