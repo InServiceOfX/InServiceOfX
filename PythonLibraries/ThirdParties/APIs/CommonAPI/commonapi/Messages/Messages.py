@@ -1,11 +1,22 @@
 from dataclasses import dataclass, asdict
-from typing import Literal, Optional, Dict, Any
+from typing import Literal, Optional, Dict, Any, Tuple
 
 @dataclass
 class Message:
     """Base message class for LLM interactions"""
     content: str
     role: str
+
+    @staticmethod
+    def to_string_and_counts(message: 'Message', prefix: Optional[str] = None) \
+        -> Tuple[str, int, int]:
+        """Convert message to string with optional prefix override and return
+        character and word counts of the content"""
+        role = prefix if prefix else message.role.capitalize()
+        formatted = f"{role}: {message.content}"
+        char_count = len(message.content)
+        word_count = len(message.content.split())
+        return formatted, char_count, word_count
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert message to dictionary format for API requests"""
@@ -16,18 +27,31 @@ class SystemMessage(Message):
     """System message for setting AI behavior"""
     content: str
     role: Literal["system"] = "system"
+    
+    @staticmethod
+    def to_string_and_counts(message: 'SystemMessage') -> Tuple[str, int, int]:
+        return Message.to_string_and_counts(message, "System")
 
 @dataclass
 class UserMessage(Message):
     """User message for queries/prompts"""
     content: str
     role: Literal["user"] = "user"
+    
+    @staticmethod
+    def to_string_and_counts(message: 'UserMessage') -> Tuple[str, int, int]:
+        return Message.to_string_and_counts(message, "Human")
 
 @dataclass
 class AssistantMessage(Message):
     """Assistant message for AI responses"""
     content: str
     role: Literal["assistant"] = "assistant"
+    
+    @staticmethod
+    def to_string_and_counts(message: 'AssistantMessage') -> \
+        Tuple[str, int, int]:
+        return Message.to_string_and_counts(message, "AI")
 
 @dataclass
 class ToolMessage(Message):
@@ -36,6 +60,17 @@ class ToolMessage(Message):
     role: Literal["tool"] = "tool"
     name: Optional[str] = None
     tool_call_id: Optional[str] = None
+    
+    @staticmethod
+    def to_string_and_counts(message: 'ToolMessage') -> Tuple[str, int, int]:
+        base = Message.to_string_and_counts(message, "Tool")[0]
+        if message.name:
+            base += f" [{message.name}]"
+        if message.tool_call_id:
+            base += f" (call_id: {message.tool_call_id})"
+        char_count = len(base)
+        word_count = len(base.split())
+        return base, char_count, word_count
 
 @dataclass
 class DeveloperMessage(Message):

@@ -29,7 +29,7 @@ RUN python3 -m pip install --upgrade pip && \
   #
   #
 ## candle (hugging face)
-  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
   git checkout master && \
   #
