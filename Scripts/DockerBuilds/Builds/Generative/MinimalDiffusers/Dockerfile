@@ -183,9 +183,9 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   #
   #
 ## candle (hugging face)
-  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
-  git checkout master && \
+  git checkout main && \
   #
   #
 ## PEFT (Parameter-Efficient Fine-Tuning)
@@ -212,9 +212,10 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   pip install -U "jax[cuda12]" && \
   # https://huggingface.co/docs/diffusers/en/optimization/onnx
   # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
-  python -m pip install optimum[onnxruntime]@git+https://github.com/huggingface/optimum.git && \
+  #python -m pip install optimum[onnxruntime,quanto]@git+https://github.com/huggingface/optimum.git && \
+  #cd /
+  pip install optimum-quanto && \
   cd /
-
 
 
 

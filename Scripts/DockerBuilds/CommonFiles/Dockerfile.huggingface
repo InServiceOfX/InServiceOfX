@@ -31,7 +31,7 @@ RUN python3 -m pip install --upgrade pip && \
 ## candle (hugging face)
   git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
-  git checkout master && \
+  git checkout main && \
   #
   #
   # See Huggingface's transformers/src/transformers/pipelines/__init__.py for
