@@ -1,4 +1,5 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
+from corecode.Utilities.Strings import ThreadSafeStringBuilder
 
 from groq import Groq
 from moregroq.Wrappers import AsyncGroqAPIWrapper, GroqAPIWrapper
@@ -100,26 +101,6 @@ def test_GroqAPIWrapper_chat_completion_works_with_no_max_tokens():
 
     assert isinstance(result.choices[0].message.content, str)
     assert len(result.choices[0].message.content) > 0
-
-"""
-Make a thread safe dynamically allocated string.
-"""
-
-from threading import Lock
-from io import StringIO
-
-class ThreadSafeStringBuilder:
-    def __init__(self):
-        self._lock = Lock()
-        self._buffer = StringIO()
-
-    def append(self, text: str) -> None:
-        with self._lock:
-            self._buffer.write(text)
-
-    def get_value(self) -> str:
-        with self._lock:
-            return self._buffer.getvalue()
 
 
 def test_GroqAPIWrapper_chat_completion_works_with_stream():

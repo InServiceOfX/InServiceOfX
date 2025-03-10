@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 import hashlib
-from commonapi.Messages import Message
+from commonapi.Messages.Messages import Message
 
 @dataclass
 class ConversationHistory:
@@ -19,8 +19,13 @@ class ConversationHistory:
     
     def append_message(self, message: Message) -> None:
         self.messages.append(message)
-        self.content_hashes.append(self._hash_content(message.content))
-        
+        try:
+            self.content_hashes.append(self._hash_content(message.content))
+        except AttributeError as err:
+            print(f"Error hashing message content: {err}")
+            print("type(message): ", type(message))
+            print("message: ", message)
+
     def pop_messages(self, count: int = 1, from_start: bool = False) \
         -> List[Message]:
         """Remove and return messages from either end of history"""
