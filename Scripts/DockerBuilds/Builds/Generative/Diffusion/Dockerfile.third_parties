@@ -1,5 +1,15 @@
 ### Further third party code/repositories
 
+# TODO: On ASUS Zephyrus G15, pip install fails even with ninja-build installed.
+# Also, see https://github.com/facebookresearch/fairseq/issues/4246
+# pip uninstall apex works for me.
+# RUN git clone https://github.com/NVIDIA/apex /ThirdParty/apex && \
+#     cd /ThirdParty/apex && \
+#     git checkout master && \
+#     pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
+
+RUN pip uninstall -y apex
+
 ## onnxruntime, ONNX Runtime, needed by insightface.
 ## https://onnxruntime.ai/docs/install/
 RUN pip install onnxruntime-gpu --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
@@ -30,5 +40,3 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
   #TODO: amend master branch to remove dependency on opencv.
   #poetry install && \
   #cd /
-
-

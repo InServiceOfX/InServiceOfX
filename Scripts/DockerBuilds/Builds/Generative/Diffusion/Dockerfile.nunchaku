@@ -1,0 +1,18 @@
+ARG ARCH
+ARG COMPUTE_CAPABILITY
+ARG PTX
+# https://huggingface.co/mit-han-lab/nunchaku/tree/main
+RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchaku-0.1.4+torch2.6-cp310-cp310-linux_x86_64.whl
+    # TODO: Try to get build from source to work
+    # git clone https://github.com/mit-han-lab/nunchaku /ThirdParty/nunchaku && \
+    # cd /ThirdParty/nunchaku && \
+    # git submodule init && \
+    # sed -i 's/raise AssertionError("No SM targets found")/# raise AssertionError("No SM targets found")/g' setup.py && \
+    # echo -e "#!/bin/bash\necho 86" > /usr/local/bin/nvidia-smi && \
+    # chmod +x /usr/local/bin/nvidia-smi && \
+    # echo "Testing nvidia-smi:" && \
+    # /usr/local/bin/nvidia-smi --query-gpu=compute_cap --format=csv,noheader && \
+    # export CUTLASS_NVCC_FLAGS="-gencode=arch=compute_86,code=sm_86" && \
+    # FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST=8.6 pip install -e . --no-build-isolation
+
+
