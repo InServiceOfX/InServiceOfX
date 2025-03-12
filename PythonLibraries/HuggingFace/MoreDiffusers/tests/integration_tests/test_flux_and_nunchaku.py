@@ -6,14 +6,12 @@ from corecode.Utilities import (
 from morediffusers.Configurations import DiffusionPipelineConfiguration
 from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
-    create_flux_pipeline,
     )
 
 from diffusers import FluxPipeline
 from transformers import T5EncoderModel
 
 from pathlib import Path
-import json
 import torch
 
 # Instructions from README.md of
@@ -568,6 +566,92 @@ def test_nunchaku_wrappers():
         generation_configuration).images[0]
 
     save_path = Path.cwd() / "test_nunchaku_wrappers.png"
+    image.save(str(save_path))
+
+    transformer_inference.delete_variables_on_device(
+        pipeline,
+        transformer)
+
+    clear_torch_cache_and_collect_garbage()
+
+def test_nunchaku_svdq_lora():
+    test_file_path = test_data_directory / "flux_pipeline_configuration_empty.yml"
+    configuration = DiffusionPipelineConfiguration(test_file_path)
+    configuration.cuda_device = "cuda:0"
+    configuration.torch_dtype = torch.bfloat16
+    configuration.is_to_cuda = True
+
+    prompt=(
+        "GHIBSKY style, cozy mountain cabin covered in snow, with smoke curling"
+        " from the chimney and a warm, inviting light spilling through the "
+        "windows")
+
+    path = pretrained_diffusion_model_name_or_path.parents[1] / \
+        "mit-han-lab" / "svdq-flux.1-t5"
+
+    text_encoder_2 = text_encoder_2_inference.create_flux_text_encoder_2(
+        path,
+        configuration)
+
+    pipeline = text_encoder_2_inference.create_flux_text_encoder_2_pipeline(
+        pretrained_diffusion_model_name_or_path,
+        configuration,
+        text_encoder_2)
+
+    change_pipe_to_cuda_or_not(configuration, pipeline)
+
+    generation_configuration = FluxGenerationConfiguration()
+
+    generation_configuration.height = 1216
+    generation_configuration.width = 832
+    generation_configuration.num_inference_steps = 34
+    generation_configuration.seed = 1544597505
+    generation_configuration.guidance_scale = 1.5
+    generation_configuration.max_sequence_length = 512
+
+    prompt_embeds, pooled_prompt_embeds, text_ids = \
+        text_encoder_2_inference.encode_prompt(
+            pipeline,
+            generation_configuration,
+            prompt)
+
+    del pipeline.text_encoder
+    del pipeline.text_encoder_2
+    del pipeline.tokenizer
+    del pipeline.tokenizer_2
+    del text_encoder_2
+
+    clear_torch_cache_and_collect_garbage()
+
+    path = pretrained_diffusion_model_name_or_path.parents[1] / \
+        "mit-han-lab" / "svdq-int4-flux.1-dev"
+    assert path.exists()
+
+    transformer = transformer_inference.create_flux_transformer(path)
+
+    pipeline = transformer_inference.create_flux_transformer_pipeline(
+        pretrained_diffusion_model_name_or_path,
+        configuration,
+        transformer)
+
+    change_pipe_to_cuda_or_not(configuration, pipeline)
+
+    filepath = pretrained_diffusion_model_name_or_path.parents[1] / \
+        "mit-han-lab" / "svdquant-lora-collection" / \
+        "svdq-int4-flux.1-dev-realism.safetensors"
+    assert filepath.exists()
+
+    transformer.update_lora_params(str(filepath))
+    transformer.set_lora_strength(1)
+
+    image = transformer_inference.call_pipeline(
+        pipeline,
+        prompt_embeds,
+        pooled_prompt_embeds,
+        configuration,
+        generation_configuration).images[0]
+
+    save_path = Path.cwd() / "test_nunchaku_svdq_lora.png"
     image.save(str(save_path))
 
     transformer_inference.delete_variables_on_device(

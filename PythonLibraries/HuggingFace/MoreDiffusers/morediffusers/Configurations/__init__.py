@@ -9,6 +9,11 @@ from morediffusers.Configurations.LoRAsConfiguration import (
     LoRAsConfiguration,
     LoRAsConfigurationForMoreDiffusers
     )
+from morediffusers.Configurations.NunchakuLoRAsConfiguration import (
+    NunchakuLoRAsConfiguration,
+    NunchakuLoRAsConfigurationForMoreDiffusers
+    )
+
 from morediffusers.Configurations.DiffusionPipelineConfiguration \
     import DiffusionPipelineConfiguration
 from morediffusers.Configurations.StableDiffusionXLGenerationConfiguration \

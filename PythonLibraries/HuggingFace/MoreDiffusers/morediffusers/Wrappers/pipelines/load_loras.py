@@ -42,3 +42,5 @@ def load_loras(pipe, loras_configuration):
         # This is found in diffusers lora_base.py LorabaseMixin class, which
         # StableDiffusionXLLoraLoaderMixin and FluxLoraLoaderMixin inherit from.
         pipe.set_adapters(adapter_names, adapter_weights)
+
+    return return_load_state_dicts
