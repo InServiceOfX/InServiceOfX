@@ -32,7 +32,7 @@ class BuildDocker(BuildDockerBase):
                 "Dockerfile.rust",
                 self.parent_dir / "CommonFiles" / "Dockerfile.rust"),
             (
-                "Dockerfile.rust",
+                "Dockerfile.huggingface",
                 self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),
             (
                 "Dockerfile.langchain",

@@ -90,9 +90,9 @@ RUN python3 -m pip install --upgrade pip && \
   #
   #
 ## candle (hugging face)
-  git clone https://github.com/InServiceOfX/candle.git /ThirdParty/candle && \
+  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
   cd /ThirdParty/candle && \
-  git checkout master && \
+  git checkout main && \
   #
   #
   # See Huggingface's transformers/src/transformers/pipelines/__init__.py for
@@ -157,7 +157,12 @@ RUN pip install groq && \
 
 RUN python3 -m pip install --upgrade pip && \
   pip install --upgrade yfinance && \
-  pip install --upgrade plotly
+  pip install --upgrade plotly && \
+  # For saving plots locally.
+  pip install --upgrade kaleido && \
+  # Follow what langchain does for loading (i.e. document_loader) pdfs,
+  # https://python.langchain.com/docs/how_to/document_loader_pdf/
+  pip install -q --upgrade pypdf
 
 
 
