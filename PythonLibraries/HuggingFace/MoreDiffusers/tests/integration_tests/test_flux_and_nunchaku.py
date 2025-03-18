@@ -9,7 +9,6 @@ from morediffusers.Wrappers.pipelines import (
     )
 
 from diffusers import FluxPipeline
-from transformers import T5EncoderModel
 
 from pathlib import Path
 import torch

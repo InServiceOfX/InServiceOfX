@@ -1,0 +1,12 @@
+# https://huggingface.co/facebook/musicgen-medium
+# Audiocraft Usage
+RUN apt-get install -y ffmpeg
+
+RUN git clone https://github.com/InServiceOfX/audiocraft.git /ThirdParty/audiocraft && \
+  cd /ThirdParty/audiocraft && \
+  git checkout master && \
+  pip install -e . && \
+  cd /
+
+
+
