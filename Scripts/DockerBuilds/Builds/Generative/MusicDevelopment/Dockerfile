@@ -89,7 +89,14 @@ RUN pip install --upgrade pip && \
   # Install xformers for audiocraft as xformers is one of its requirements.
   # See this for how we adapted the installation instructions for CUDA 12.6.
   # https://github.com/facebookresearch/xformers
-  pip install -U xformers --index-url https://download.pytorch.org/whl/cu126
+  pip install -U xformers --index-url https://download.pytorch.org/whl/cu126 && \
+  # For this error:
+  # ImportError: /usr/local/lib/python3.12/dist-packages/fused_layer_norm_cuda.cpython-312-x86_64-linux-gnu.so: undefined symbol: _ZN3c106detail14torchCheckFailEPKcS2_jRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+  # I uninstall apex:
+  # https://github.com/huggingface/diffusers/issues/8624#issuecomment-2180405409
+  # "I am running pytorch 2.x which provides much of what apex did for pytorch
+  #1, so I resolved the issue by just uninstalling apex."
+  pip uninstall -y apex
 
 
 

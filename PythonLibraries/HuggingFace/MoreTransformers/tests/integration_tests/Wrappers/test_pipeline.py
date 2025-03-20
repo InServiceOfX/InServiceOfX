@@ -12,7 +12,41 @@ if not pretrained_model_name_or_path.exists():
 from transformers import pipeline
 import scipy
 
+import torch
+
 def test_pipeline_constructs():
+    """
+    In __init__.py of src/transformers,
+    in __init__.py of src/transformers/pipelines,
+    in src/transformers/pipelines/base.py,
+    class Pipeline(_ScikitCompat, PushToHubMixin)
+
+    in __init__.py of src.transfomers/pipelines,
+    def pipeline(task: str=None,
+      model: Optional[..]=None,
+      ...
+      device: Optional[..]=None,
+      device_map=None,
+      torch_dtype=None) -> Pipeline
+
+    task is only one of a few str options hardcoded in code comments.
+
+    Do not use device and device_map at the same time as they'll conflict.
+
+    In src/transformers/pipelines/base.py
+    def __call__(self, inputs, *args, num_workers=None, ..., **kwargs)
+
+    if args:
+        logger.warning(f"Ignoring args : {args}")
+    if num_works is None:
+        if self._num_workers is None:
+            num_workers = 0
+    if batch_size is None:
+        if self._batch_size is None:
+            batch_size = 1
+
+    
+    """
     synthesizer = pipeline("text-to-audio", pretrained_model_name_or_path)
 
     # This warning is obtained:
@@ -30,5 +64,29 @@ def test_pipeline_constructs():
 
     scipy.io.wavfile.write(
         "musicgen_out.wav",
+        rate=music["sampling_rate"],
+        data=music["audio"])
+
+def test_pipeline_constructs_with_device():
+    synthesizer = pipeline(
+        "text-to-audio",
+        pretrained_model_name_or_path,
+        device="cuda:0",
+        torch_dtype=torch.float16)
+
+    assert synthesizer.device.type == "cuda"
+    # "pt" for pytorch.
+    assert synthesizer.framework == "pt"
+    from transformers import Pipeline
+    assert isinstance(synthesizer, Pipeline)
+
+    music = synthesizer(
+        "lo-fi music with a soothing melody",
+        forward_params={"do_sample": True})
+
+    assert isinstance(music, dict)
+
+    scipy.io.wavfile.write(
+        "musicgen_out1.wav",
         rate=music["sampling_rate"],
         data=music["audio"])
