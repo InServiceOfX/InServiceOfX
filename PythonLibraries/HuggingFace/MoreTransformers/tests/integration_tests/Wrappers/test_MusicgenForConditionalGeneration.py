@@ -164,7 +164,6 @@ def test_consider_GenerationConfig():
     look at class GenerationConfig(..) as generate(..) code takes kwargs and
     inputs them into a GenerationConfig.
     """
-
     processor = MusicgenProcessor.from_pretrained(
         pretrained_model_name_or_path,
         local_files_only=True,
@@ -208,3 +207,125 @@ def test_consider_GenerationConfig():
         "musicgen_out2.wav",
         rate=sampling_rate,
         data=audio_values_cpu[0, 0].numpy())
+
+pretrained_medium_model_name_or_path = \
+    data_sub_dirs.Models / "Generation" / "facebook" / "musicgen-stereo-medium"
+if not pretrained_medium_model_name_or_path.exists():
+    pretrained_medium_model_name_or_path = \
+        data_sub_dirs.Data.parent / "Data1" / "Models" / "Generation" / \
+            "facebook" / "musicgen-stereo-medium"
+
+import soundfile as sf
+
+def test_musicgen_stereo_medium():
+    """
+    https://huggingface.co/facebook/musicgen-stereo-medium
+    """
+
+    processor = MusicgenProcessor.from_pretrained(
+        pretrained_medium_model_name_or_path,
+        local_files_only=True,
+        device_map="cuda:0")
+
+    inputs = processor(
+        text=[
+            "80s pop track with bassy drums and synth",
+            "90s rock song with loud guitars and heavy drums"
+        ],
+        padding=True,
+        return_tensors="pt",)
+
+    del processor
+
+    inputs.to("cuda:0")
+
+    model = MusicgenForConditionalGeneration.from_pretrained(
+        pretrained_medium_model_name_or_path,
+        local_files_only=True,
+        attn_implementation="eager",
+        device_map="cuda:0")
+
+    audio_values = model.generate(
+        **inputs,
+        max_new_tokens=512,
+        temperature=1.0,
+        top_k=50,
+        top_p=1.0)
+
+    # Move tensor to CPU before converting to numpy
+    audio_values_cpu = audio_values.cpu()
+    
+    sampling_rate = model.config.audio_encoder.sampling_rate
+    sf.write(
+        "musicgen_stereo_medium_out.wav",
+        audio_values_cpu.numpy()[0].T,
+        sampling_rate)
+
+pretrained_large_model_name_or_path = \
+    data_sub_dirs.Models / "Generation" / "facebook" / "musicgen-stereo-large"
+if not pretrained_large_model_name_or_path.exists():
+    pretrained_large_model_name_or_path = \
+        data_sub_dirs.Data.parent / "Data1" / "Models" / "Generation" / \
+            "facebook" / "musicgen-stereo-large"
+
+import torch
+
+def test_musicgen_stereo_large():
+    """
+    https://huggingface.co/facebook/musicgen-stereo-large
+    """
+
+    processor = MusicgenProcessor.from_pretrained(
+        pretrained_large_model_name_or_path,
+        local_files_only=True,
+        device_map="cuda:0")
+
+    inputs = processor(
+        text=[
+            "80s pop track with bassy drums and synth",
+            "90s rock song with loud guitars and heavy drums"
+        ],
+        padding=True,
+        return_tensors="pt",)
+
+    del processor
+    clear_torch_cache_and_collect_garbage()
+
+    inputs.to("cuda:0")
+
+    model = MusicgenForConditionalGeneration.from_pretrained(
+        pretrained_large_model_name_or_path,
+        local_files_only=True,
+        attn_implementation="eager",
+        device_map="cuda:0",
+        torch_dtype=torch.float16)
+
+    # AttributeError: 'MusicgenForConditionalGeneration' object has no attribute 'text_encoder'. Did you mean: 'get_encoder'?
+    # del model.text_encoder
+
+    print(dir(model))
+
+    audio_values = model.generate(
+        **inputs,
+        max_new_tokens=512,
+        temperature=1.0,
+        top_k=50,
+        top_p=1.0)
+
+    # Move tensor to CPU before converting to numpy
+    audio_values_cpu = audio_values.cpu()
+
+    # If you don't do this step you get this error when saving with either
+    # soundfile or scipy.
+    # ValueError: dtype must be one of ['float32', 'float64', 'int16', 'int32'] and not 'float16'
+    audio_values_cpu = audio_values_cpu.to(dtype=torch.float32)
+
+    sampling_rate = model.config.audio_encoder.sampling_rate
+    sf.write(
+        "musicgen_stereo_large_out.wav",
+        audio_values_cpu.numpy()[0].T,
+        sampling_rate)
+    # scipy.io.wavfile.write(
+    #     "musicgen_out2.wav",
+    #     rate=sampling_rate,
+    #     data=audio_values_cpu[0, 0].numpy())

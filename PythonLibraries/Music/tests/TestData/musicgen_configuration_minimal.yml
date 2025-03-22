@@ -1,0 +1,4 @@
+pretrained_model_name_or_path: "musicgen-stereo-large"
+device_map:
+attn_implementation:
+torch_dtype:

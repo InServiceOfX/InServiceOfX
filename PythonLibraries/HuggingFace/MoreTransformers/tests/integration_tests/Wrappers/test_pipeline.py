@@ -90,3 +90,42 @@ def test_pipeline_constructs_with_device():
         "musicgen_out1.wav",
         rate=music["sampling_rate"],
         data=music["audio"])
+
+pretrained_large_model_name_or_path = \
+    data_sub_dirs.Models / "Generation" / "facebook" / "musicgen-stereo-large"
+if not pretrained_large_model_name_or_path.exists():
+    pretrained_large_model_name_or_path = \
+        data_sub_dirs.Data.parent / "Data1" / "Models" / "Generation" / \
+            "facebook" / "musicgen-stereo-large"
+
+from transformers.models.musicgen import MusicgenProcessor
+
+def test_pipeline_and_musicgen_stereo_large():
+    processor = MusicgenProcessor.from_pretrained(
+        pretrained_large_model_name_or_path,
+        local_files_only=True,
+        device_map="cuda:0")
+
+    inputs = processor(
+        text="lo-fi music with a soothing melody",
+        padding=True,
+        return_tensors="pt",)
+
+    del processor
+
+    inputs.to("cuda:0")
+
+    synthesizer = pipeline(
+        "text-to-audio",
+        pretrained_model_name_or_path,
+        device="cuda:0",
+        torch_dtype=torch.float16)
+
+    # AttributeError: 'TextToAudioPipeline' object has no attribute 'text_encoder'
+    #assert synthesizer.text_encoder is not None
+    # AttributeError: 'TextToAudioPipeline' object has no attribute 'text_encoder_2'
+    #assert synthesizer.text_encoder_2 is not None
+    assert synthesizer.tokenizer is not None
+    # AttributeError: 'TextToAudioPipeline' object has no attribute 'tokenizer_2'. Did you mean: 'tokenizer'
+    #assert synthesizer.tokenizer_2 is not None
+    assert synthesizer.transformer is not None
