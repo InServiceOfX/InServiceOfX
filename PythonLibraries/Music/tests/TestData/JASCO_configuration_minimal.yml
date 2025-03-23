@@ -1,0 +1,4 @@
+pretrained_model_name_or_path: "jasco-chords-drums-melody-1B"
+device_map:
+torch_dtype:
+chords_mapping_path: "chord_to_index_mapping.pkl"
