@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 from typing import List, Tuple
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[4]))
 
 from Utilities import (
     BuildDockerBase,
@@ -13,11 +13,9 @@ from Utilities import (
 class BuildDocker(BuildDockerBase):
     def __init__(self):
         super().__init__(
-            "Build Docker image for music generation",
-            # path to this script
+            "Build Docker image for deep salience for music",
             Path(__file__).resolve(),
-            # parent_dir_level
-            3,
+            4,
             configuration_reader_class=ReadBuildConfigurationForMinimalStack,
             docker_builder_class=BuildDockerImageNoArguments)
 
@@ -28,13 +26,7 @@ class BuildDocker(BuildDockerBase):
                 self.parent_dir / "CommonFiles" / "Dockerfile.header"),
             (
                 "Dockerfile.minimal_base",
-                self.parent_dir / "CommonFiles" / "Dockerfile.minimal_base"),
-            (
-                "Dockerfile.transformers",
-                self.script_dir / "Dockerfile.transformers"),
-            (
-                 "Dockerfile.pip_installs",
-                 self.script_dir / "Dockerfile.pip_installs"),
+                self.script_dir / "Dockerfile.base"),
             (
                  "Dockerfile.third_parties",
                  self.script_dir / "Dockerfile.third_parties"),

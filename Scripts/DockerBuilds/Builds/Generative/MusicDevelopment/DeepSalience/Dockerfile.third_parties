@@ -1,0 +1,47 @@
+RUN apt-get update && \
+  apt-get install -y python3.7 python3.7-dev python3.7-venv && \
+  apt-get install -y software-properties-common && \
+  add-apt-repository -y ppa:deadsnakes/ppa && \
+  apt-get update && \
+  apt-get install -y curl && \
+  apt-get install -y python3-distutils && \
+  curl https://bootstrap.pypa.io/pip/3.7/get-pip.py -o get-pip.py && \
+  python3.7 get-pip.py && \
+  apt-get install -y git && \
+  # Without libsndfile1, this error is obtained:
+  # 
+  # Traceback (most recent call last):
+  #   File "/usr/local/lib/python3.7/dist-packages/soundfile.py", line 181, in <module>
+  #     import _soundfile_data  # ImportError if this doesn't exist
+  # ModuleNotFoundError: No module named '_soundfile_data'
+  #
+  # During handling of the above exception, another exception occurred:
+  #
+  # Traceback (most recent call last):
+  #   File "/usr/local/lib/python3.7/dist-packages/soundfile.py", line 190, in <module>
+  #     raise OSError('sndfile library not found using ctypes.util.find_library')
+  # OSError: sndfile library not found using ctypes.util.find_library
+  #
+  # During handling of the above exception, another exception occurred:
+  #
+  # Traceback (most recent call last):
+  #   File "predict/predict_saliency.py", line 4, in <module>
+  #     import librosa
+  #   File "/usr/local/lib/python3.7/dist-packages/librosa/__init__.py", line 12, in <module>
+  #     from . import core
+  #   File "/usr/local/lib/python3.7/dist-packages/librosa/core/__init__.py", line 126, in <module>
+  #     from .audio import *  # pylint: disable=wildcard-import
+  #   File "/usr/local/lib/python3.7/dist-packages/librosa/core/audio.py", line 10, in <module>
+  #     import soundfile as sf
+  #   File "/usr/local/lib/python3.7/dist-packages/soundfile.py", line 212, in <module>
+  #     _snd = _ffi.dlopen(_explicit_libname)
+  # OSError: cannot load library 'libsndfile.so': libsndfile.so: cannot open shared object file: No such file or directory
+  apt-get install -y libsndfile1
+
+RUN git clone https://github.com/InServiceOfX/ismir2017-deepsalience.git /ThirdParty/ismir2017-deepsalience && \
+  cd /ThirdParty/ismir2017-deepsalience && \
+  git checkout main && \
+  pip install -r requirements.txt
+
+
+

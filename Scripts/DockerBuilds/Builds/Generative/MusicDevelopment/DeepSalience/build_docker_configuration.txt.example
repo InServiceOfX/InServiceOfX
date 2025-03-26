@@ -1,0 +1,2 @@
+DOCKER_IMAGE_NAME=deep-salience-nvidia-cuda-11.7.0-cudnn8-devel-ubuntu20.04
+BASE_IMAGE=nvcr.io/nvidia/cuda:11.7.0-cudnn8-devel-ubuntu20.04

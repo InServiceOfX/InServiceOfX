@@ -2,6 +2,8 @@ from corecode.Utilities import DataSubdirectories
 from pathlib import Path
 import torch
 
+from music.Utilities.get_stem import get_drums_stem
+
 data_sub_dirs = DataSubdirectories()
 
 pretrained_model_name_or_path = \
@@ -275,3 +277,117 @@ def test_jasco_wrapper_drums_conditional_generation():
         wrapper.model.sample_rate,
         strategy="loudness",
         loudness_compressor=True)
+
+# https://github.com/facebookresearch/audiocraft/blob/main/demos/jasco_demo.ipynb
+def test_jasco_wrapper_drums_and_chords_conditioning_generation():
+    configuration = JASCOConfiguration.from_yaml(
+        test_data_dir / "JASCO_configuration_minimal.yml")
+    configuration.fill_defaults()
+    configuration.device_map = "cuda:0"
+    configuration.torch_dtype = torch.float
+    configuration.pretrained_model_name_or_path = \
+        pretrained_model_name_or_path
+    configuration.chords_mapping_path = path_to_chords_mapping
+
+    generation_configuration = JASCOGenerationConfiguration.from_yaml(
+        test_data_dir / "JASCO_generation_configuration_minimal.yml")
+    generation_configuration.cfg_coef_all = 1.5
+    generation_configuration.cfg_coef_txt = 3.0
+
+    wrapper = JASCOWrapper(configuration, generation_configuration)
+
+    # set textual prompt
+    text = "string quartet, orchestral, dramatic"
+    descriptions = [text]
+
+    drums_waveform, sample_rate = torchaudio.load(
+        Path("/ThirdParty/audiocraft/assets/sep_drums_1.mp3"))
+
+    # define chord progression
+    chords = [('C', 0.0), ('D', 2.0), ('F', 4.0), ('Ab', 6.0), ('Bb', 7.0), ('C', 8.0)]
+
+    wrapper.model.duration = 16.0
+
+    output = wrapper.model.generate_music(
+        descriptions=descriptions,
+        drums_wav=drums_waveform,
+        drums_sample_rate=sample_rate,
+        chords=chords,
+        progress=True)
+
+    audio_write(
+        'jasco_drums_and_chords_conditioning_generation',
+        output.cpu().squeeze(0),
+        wrapper.model.sample_rate,
+        strategy="loudness",
+        loudness_compressor=True)
+
+# https://github.com/facebookresearch/audiocraft/blob/main/demos/jasco_demo.ipynb
+def test_jasco_wrapper_melody_drums_and_chords_conditioning_inference():
+    configuration = JASCOConfiguration.from_yaml(
+        test_data_dir / "JASCO_configuration_minimal.yml")
+    configuration.fill_defaults()
+    configuration.device_map = "cuda:0"
+    configuration.pretrained_model_name_or_path = \
+        pretrained_model_name_or_path
+    configuration.chords_mapping_path = path_to_chords_mapping
+
+    generation_configuration = JASCOGenerationConfiguration.from_yaml(
+        test_data_dir / "JASCO_generation_configuration_minimal.yml")
+    generation_configuration.cfg_coef_all = 1.5
+    generation_configuration.cfg_coef_txt = 2.5
+
+    filenames = ["salience_1", "salience_2"]
+    file_idx = 0
+    melody_prompt_wav, melody_prompt_sample_rate = torchaudio.load(
+        Path("/ThirdParty/audiocraft/assets/") / (filenames[file_idx] + ".wav"))
+
+    chords = [
+        ('N',  0.0),
+        ('Eb7',  1.088000000),
+        ('C#',  4.352000000),
+        ('D',  4.864000000),
+        ('Dm7',  6.720000000),
+        ('G7',  8.256000000),
+        ('Am7b5/G',  9.152000000)
+    ]
+
+    drums_wav = get_drums_stem(
+        melody_prompt_wav,
+        melody_prompt_sample_rate,
+        configuration.device_map)
+
+    texts = [
+        '90s rock with heavy drums and hammond',
+        '80s pop with groovy synth bass and drum machine',
+        'folk song with leading accordion',]
+
+    melody = torch.load(Path("/ThirdParty/audiocraft/assets/salience_1.th"))
+
+    wrapper = JASCOWrapper(configuration, generation_configuration)
+
+    output = wrapper.model.generate_music(
+        descriptions=texts,
+        drums_wav=drums_wav,
+        drums_sample_rate=melody_prompt_sample_rate,
+        chords=chords,
+        melody_salience_matrix=melody.permute(1, 0),
+        progress=True)
+
+    assert isinstance(output, torch.Tensor)
+    
+    # Save each output separately
+    for i, text in enumerate(texts):
+        # Extract the i-th sample from the batch
+        sample = output[i]
+        
+        # Create a descriptive filename based on the text prompt
+        # Replace spaces with underscores and limit length
+        text_slug = text.replace(' ', '_')[:5]
+        
+        audio_write(
+            f'jasco_melody_drums_chords_{i}_{text_slug}',
+            sample.cpu(),
+            wrapper.model.sample_rate,
+            strategy="loudness",
+            loudness_compressor=True)

@@ -46,7 +46,7 @@ class BuildDockerBase:
         if (str(self.parent_dir) not in sys.path):
             sys.path.append(str(self.parent_dir))
 
-        from CommonUtilities import DefaultValues, concatenate_dockerfiles
+        from CommonUtilities import concatenate_dockerfiles
 
         if args.help:
             self.print_help()
@@ -60,6 +60,8 @@ class BuildDockerBase:
         components = self.get_dockerfile_components()
         
         try:
+            # The key names do not matter for components, we just extract the
+            # paths to parts of the Dockerfile for path in components.
             concatenate_dockerfiles(
                 dockerfile_path,
                 *[path for _, path in components]
