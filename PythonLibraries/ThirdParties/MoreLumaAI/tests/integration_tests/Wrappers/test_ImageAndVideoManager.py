@@ -83,7 +83,7 @@ def test_ImageAndVideoManager_can_generate_video_from_end_frame():
     print(image_and_video_manager.generate_video.current_generation)
     print(type(image_and_video_manager.generate_video.current_generation))
 
-def test_ImageAndVideoManager_cannot_generate_with_start_and_end_keyframes_for_ray2():
+def test_ImageAndVideoManager_can_generate_with_start_and_end_keyframes_for_ray1():
     """
     https://docs.lumalabs.ai/docs/python-video-generation#with-start-and-end-keyframes
     """
@@ -123,7 +123,78 @@ def test_ImageAndVideoManager_cannot_generate_with_start_and_end_keyframes_for_r
     print(image_and_video_manager.generate_video.current_generation)
     print(type(image_and_video_manager.generate_video.current_generation))
 
-def test_ImageAndVideoManager_cannot_extend_video_with_ray2():
+def test_ImageAndVideoManager_can_generate_with_start_and_end_keyframes_for_ray2():
+    """
+    https://docs.lumalabs.ai/docs/python-video-generation#with-start-and-end-keyframes
+    """
+    generation_configuration = GenerationConfiguration.from_yaml(
+        test_data_directory / "generation_configuration.yml")
+
+    generation_configuration.model = "ray-2"
+    generation_configuration.duration = "9s"
+
+    image_and_video_manager = ImageAndVideoManager(generation_configuration)
+
+    image_and_video_manager.add_image(
+        "https://pbs.twimg.com/media/GjzK1IFbsAAKbz3?format=jpg",
+        "Human figure 0")
+
+    image_and_video_manager.add_image(
+        "https://pbs.twimg.com/media/GjzK1H5bcAAvRxl?format=jpg",
+        "Human figure 1")
+
+    image_and_video_manager.set_start_frame(
+        image_and_video_manager.available_images[0])
+
+    image_and_video_manager.set_end_frame(
+        image_and_video_manager.available_images[1])
+
+    prompt = (
+        "Tall and beautiful 25 year old woman, long blond hair, standing "
+        "in a high class hotel room, poses for a camera that slowly Orbit Left "
+        "around in as the young woman makes static poses for the camera that "
+        "stops slowly to Static pose and Static background.")
+
+    generate_result = image_and_video_manager.generate(prompt)
+    print(generate_result)
+    print(image_and_video_manager.generate_video.current_generation)
+    print(type(image_and_video_manager.generate_video.current_generation))
+
+def test_ImageAndVideoManager_can_generate_with_public_start_and_end_keyframes_for_ray2():
+    """
+    https://docs.lumalabs.ai/docs/python-video-generation#with-start-and-end-keyframes
+    """
+    generation_configuration = GenerationConfiguration.from_yaml(
+        test_data_directory / "generation_configuration.yml")
+
+    generation_configuration.model = "ray-2"
+    # Failed on 9s
+    generation_configuration.duration = "5s"
+
+    image_and_video_manager = ImageAndVideoManager(generation_configuration)
+
+    image_and_video_manager.add_image(
+        "https://www.michaeldivine.com/wp-content/uploads/2021/01/Station-to-Station-1.jpg",
+        "station 0")
+
+    image_and_video_manager.add_image(
+        "https://storage.cdn-luma.com/dream_machine/c7eb054c-f590-4ed6-91a8-e19082fa1cde/65aa76f2-b758-47ce-9370-b5b6790757ee_result87c8d073fe08f0a7.jpg",
+        "station 1")
+
+    image_and_video_manager.set_start_frame(
+        image_and_video_manager.available_images[0])
+
+    image_and_video_manager.set_end_frame(
+        image_and_video_manager.available_images[1])
+
+    prompt = "Camera slowly subtly slightly zoom in into the station center"
+
+    generate_result = image_and_video_manager.generate(prompt)
+    print(generate_result)
+    print(image_and_video_manager.generate_video.current_generation)
+    print(type(image_and_video_manager.generate_video.current_generation))
+
+def test_ImageAndVideoManager_can_extend_video_with_ray1():
     """
     https://docs.lumalabs.ai/docs/python-video-generation#extend-video
     """
@@ -151,6 +222,31 @@ def test_ImageAndVideoManager_cannot_extend_video_with_ray2():
         "slowly sips her the coffee hidden inside her cup."
     )
     # lumaai.BadRequestError: Error code: 400 - {'detail': '400: Ray 2 with extend or interpolate is not available yet'}
+    generate_result = image_and_video_manager.generate(prompt)
+    print(generate_result)
+    print(image_and_video_manager.generate_video.current_generation)
+    # <class 'lumaai.types.generation.Generation'>
+    print(type(image_and_video_manager.generate_video.current_generation))
+
+def test_ImageAndVideoManager_can_extend_video_with_ray2():
+    """
+    https://docs.lumalabs.ai/docs/python-video-generation#extend-video
+    """
+    generation_configuration = GenerationConfiguration.from_yaml(
+        test_data_directory / "generation_configuration.yml")
+
+    generation_configuration.model = "ray-2"
+    generation_configuration.duration = "9s"
+
+    image_and_video_manager = ImageAndVideoManager(generation_configuration)
+
+    image_and_video_manager.update_generations_list()
+
+    generation_id = "e01df218-f3ab-4f14-85b7-98a7bb167d02"
+    image_and_video_manager.set_start_frame(
+        image_and_video_manager._get_generation_by_id(generation_id))
+
+    prompt = "Slowly enter the station while in hyperspace the beam structures rotate"
     generate_result = image_and_video_manager.generate(prompt)
     print(generate_result)
     print(image_and_video_manager.generate_video.current_generation)

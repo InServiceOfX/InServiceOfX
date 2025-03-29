@@ -16,6 +16,7 @@ class VideoGenerationPrompts:
     CMD_DELETE_GENERATION = '.delete_generation'
     CMD_HELP = '.help'
     CMD_EXIT = '.exit'
+    CMD_LIST_GENERATION_IDS = '.list_generation_ids'
     
     # List of all commands in desired order
     COMMANDS = [
@@ -27,7 +28,9 @@ class VideoGenerationPrompts:
         CMD_LIST_GENERATIONS,
         CMD_DELETE_GENERATION,
         CMD_HELP,
-        CMD_EXIT]
+        CMD_EXIT,
+        CMD_LIST_GENERATION_IDS
+    ]
 
     def __init__(self, prompt_modes, manager=None):
         self.prompt_modes = prompt_modes
@@ -41,7 +44,8 @@ class VideoGenerationPrompts:
             self.CMD_LIST_GENERATIONS: self.handle_list_generations,
             self.CMD_DELETE_GENERATION: self.handle_delete_generation,
             self.CMD_HELP: self.show_help,
-            self.CMD_EXIT: self.handle_exit
+            self.CMD_EXIT: self.handle_exit,
+            self.CMD_LIST_GENERATION_IDS: self.handle_list_generation_ids
         }
 
     async def handle_command(self, command: str) -> Tuple[bool, Optional[str], Optional[str]]:
@@ -335,6 +339,52 @@ class VideoGenerationPrompts:
         print()  # Add blank line at end
         return True, None, None
 
+    async def handle_list_generation_ids(self) -> Tuple[bool, Optional[str], Optional[str]]:
+        """Handle listing all available generations with full IDs"""
+        print_formatted_text(HTML("\n<ansigreen>=== Available Generations (Full IDs) ===</ansigreen>"))
+        
+        # Update generations list
+        try:
+            self.manager.update_generations_list()
+        except Exception as e:
+            print_formatted_text(HTML(
+                f"\n<ansired>Failed to fetch generations: {str(e)}</ansired>"))
+            return True, None, None
+        
+        if not self.manager.parsed_generations:
+            print_formatted_text(HTML("\n<ansiyellow>No generations found</ansiyellow>"))
+            return True, None, None
+        
+        # Format each generation into a list of strings
+        formatted_items = []
+        for gen in self.manager.parsed_generations.values():
+            created_str = gen.created_at.strftime("%Y-%m-%d %H:%M") if gen.created_at else "N/A"
+            # Show full ID (no truncation)
+            id_full = gen.id
+            # Significantly shorten prompt to make room for full ID
+            prompt_short = shorten(gen.request_prompt or "No prompt", 20)
+            
+            item = (
+                f"<ansiyellow>{id_full}</ansiyellow> | "
+                f"{created_str} | "
+                f"{gen.assets_video or 'No video'} | "
+                f"{prompt_short}"
+            )
+            formatted_items.append(item)
+        
+        # Print header with adjusted column widths for full IDs
+        print_formatted_text(HTML(
+            "\n<ansiblue>ID                                       | Created At       | Video URL | Prompt</ansiblue>"
+            "\n" + "-" * 120
+        ))
+        
+        # Print items
+        for item in formatted_items:
+            print_formatted_text(HTML(item))
+        
+        print()  # Add blank line at end
+        return True, None, None
+
     async def handle_delete_generation(self) -> Tuple[bool, Optional[str], Optional[str]]:
         """Handle deletion of a generation"""
         print_formatted_text(HTML("\n<ansigreen>=== Delete Generation ===</ansigreen>"))
@@ -405,6 +455,7 @@ class VideoGenerationPrompts:
         print("  .add_image         - Add an image with optional description")
         print("  .list_images       - Show all available images")
         print("  .list_generations  - Show all available generations")
+        print("  .list_generation_ids  - Show all available generation IDs")
         print("  .delete_generation - Delete a specific generation")
         print("  .set_start         - Set or clear the start frame")
         print("  .set_end           - Set or clear the end frame")
