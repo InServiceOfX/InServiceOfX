@@ -1,5 +1,4 @@
 from diffusers import FluxPipeline
-from typing import Optional, Dict, Any
 
 def create_flux_pipeline(configuration):
     kwargs = configuration.get_pretrained_kwargs()
@@ -29,6 +28,8 @@ def create_flux_pipeline(configuration):
         # define 'gpu_id" or not pass the index as part of the device.
         if getattr(configuration, "cuda_device", None) is not None:
             kwargs["device"] = configuration.cuda_device
+        if configuration.get_cuda_device_index() is not None:
+            kwargs["gpu_id"] = configuration.get_cuda_device_index()
         pipe.enable_sequential_cpu_offload(**kwargs)
 
     return pipe

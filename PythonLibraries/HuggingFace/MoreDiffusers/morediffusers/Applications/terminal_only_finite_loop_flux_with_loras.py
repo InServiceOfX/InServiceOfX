@@ -5,6 +5,7 @@
 
 from pathlib import Path
 import sys
+import torch
 import time
 
 python_libraries_path = Path(__file__).resolve().parents[4]
@@ -22,48 +23,50 @@ from corecode.Utilities import clear_torch_cache_and_collect_garbage
 
 from morediffusers.Applications import (
     create_image_filename_and_save,
-    create_image_filenames_and_save_images,
     print_loras_diagnostics,
     print_pipeline_diagnostics,
     FluxPipelineUserInput
     )
 
-from morediffusers.Configurations import FluxPipelineConfiguration
+from morediffusers.Configurations import (
+    DiffusionPipelineConfiguration,
+    FluxGenerationConfiguration)
 from morediffusers.Configurations import LoRAsConfigurationForMoreDiffusers
 
 from morediffusers.Schedulers import change_scheduler_or_not
 
+from morediffusers.Wrappers import create_seed_generator
+
 from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
-    change_pipe_with_loras_to_cuda_or_not,
     load_loras,
     create_flux_pipeline)
 
-
 def terminal_only_finite_loop_flux_with_loras():
+    # Load configuration
+    pipeline_config = DiffusionPipelineConfiguration(
+        DiffusionPipelineConfiguration.DEFAULT_CONFIG_PATH.parent / 
+        "flux_pipeline_configuration.yml")
+    
+    generation_config = FluxGenerationConfiguration()
+    
+    user_input = FluxPipelineUserInput(generation_config)
 
     start_time = time.time()
 
-    configuration = FluxPipelineConfiguration()
-
-    pipe = create_flux_pipeline(
-        configuration.diffusion_model_path,
-        torch_dtype=configuration.torch_dtype,
-        variant=configuration.variant,
-        use_safetensors=configuration.use_safetensors,
-        is_enable_cpu_offload=configuration.is_enable_cpu_offload,
-        is_enable_sequential_cpu_offload=configuration.is_enable_sequential_cpu_offload)
+    # Create pipeline with LoRAs
+    pipe = create_flux_pipeline(pipeline_config)
 
     original_scheduler_name = pipe.scheduler.config._class_name
 
     is_scheduler_changed = None
-    if (configuration.scheduler != "" and configuration.scheduler != None):
+    if (pipeline_config.scheduler != "" and pipeline_config.scheduler != None):
         is_scheduler_changed = change_scheduler_or_not(
             pipe,
-            configuration.scheduler,
-            configuration.a1111_kdiffusion)
+            pipeline_config.scheduler,
+            pipeline_config.a1111_kdiffusion)
 
-    change_pipe_to_cuda_or_not(configuration, pipe)
+    change_pipe_to_cuda_or_not(pipeline_config, pipe)
 
     end_time = time.time()
 
@@ -73,84 +76,38 @@ def terminal_only_finite_loop_flux_with_loras():
         is_scheduler_changed,
         original_scheduler_name)
 
-    #
-    #
-    # LoRAs - Low Rank Adaptations
-    #
-    #
-
+    # Load LoRAs configuration
     start_time = time.time()
 
-    loras_configuration = LoRAsConfigurationForMoreDiffusers()
-    resulting_loras_state_dict = load_loras(pipe, loras_configuration)
-
-    change_pipe_with_loras_to_cuda_or_not(pipe, loras_configuration)
+    loras_config = LoRAsConfigurationForMoreDiffusers()
+    load_loras(pipe, loras_config)
 
     end_time = time.time()
 
     print_loras_diagnostics(end_time - start_time, pipe)
 
-    print("\n  ----- loras state dict: ", resulting_loras_state_dict)
+    for index in range(user_input.iterations):
+        generation_kwargs = user_input.get_generation_kwargs()
+        
+        generation_kwargs.update(
+            generation_config.get_generation_kwargs())
 
-    user_input = FluxPipelineUserInput(configuration)
+        generation_kwargs["generator"] = create_seed_generator(
+            pipeline_config,
+            generation_config)
 
-    for index in range(user_input.iterations.value):
+        image = pipe(**generation_kwargs).images[0]
 
-        """
-        @details See
-        diffusers/src/diffusers/pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py
-        and def __call__(..) for possible arguments.
+        create_image_filename_and_save(
+            user_input,
+            index,
+            image,
+            generation_config,
+            Path(pipeline_config.diffusion_model_path).name)
 
-        max_sequence_length: Maximum sequence length to use with the 'prompt',
-        empirically it was found that 512 is the maximum that can be used
-        without a runtime error.
-        """
-
-        images = pipe(
-            prompt=user_input.prompt.value,
-            prompt_2=user_input.prompt_2.value,
-            height=configuration.height,
-            width=configuration.width,
-            num_inference_steps=user_input.number_of_steps.value,
-            # From pipeline_flux.py of diffusers, __call__(..) function,
-            # Guidance Scale defined in
-            # [Classifier-Free Diffusion Guidance](https://arxiv.org/abs/2207.12598).
-            # guidance_scale defined as 'w' of equation 2. of
-            # [Imagen Paper](https://arxiv.org/pdf/2205.11487.pdf). Higher
-            # guidance scale encourages to generate images closely linked to
-            # text `prompt`, usually at expense of lower image quality.
-            guidance_scale=user_input.guidance_scale,
-            num_images_per_prompt=user_input.num_images_per_prompt.value,
-            generator=user_input.generator,
-            max_sequence_length=configuration.max_sequence_length,
-            ).images
-
-        number_of_images = len(images)
-
-        if number_of_images == 1:
-
-            create_image_filename_and_save(
-                user_input,
-                index,
-                images[0],
-                configuration)
-
-        else:
-
-            for i in range(number_of_images):
-
-                create_image_filenames_and_save_images(
-                    user_input,
-                    index,
-                    images,
-                    configuration)
-
-        # Update parameters for iterative steps.
-        if user_input.guidance_scale is not None:
-            user_input.guidance_scale += user_input.guidance_scale_step.value
+        user_input.update_guidance_scale()
 
     clear_torch_cache_and_collect_garbage()
 
 if __name__ == "__main__":
-
     terminal_only_finite_loop_flux_with_loras()
