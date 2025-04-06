@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # Scripts/install_kubernetes_components.py
+# See also
+# https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
 import subprocess
 import getpass
 import os
 import sys
+import argparse
 
 def run_command(command):
     """Run a command and return its output and success status"""
@@ -73,7 +76,8 @@ def run_sudo_command(command, password=None):
 
 def is_package_installed(package_name):
     """Check if a package is already installed"""
-    output, success = run_command(f"dpkg-query -W -f='${{Status}}' {package_name} 2>/dev/null")
+    output, success = run_command(
+        f"dpkg-query -W -f='${{Status}}' {package_name} 2>/dev/null")
     return success and "installed" in output
 
 def is_package_on_hold(package_name):
@@ -81,7 +85,61 @@ def is_package_on_hold(package_name):
     output, success = run_command(f"apt-mark showhold | grep '^{package_name}$'")
     return success and package_name in output
 
+def add_kubernetes_repository(password, k8s_version):
+    """Add the Kubernetes repository to apt sources.
+    
+    See
+    https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/"""
+    print("\nAdding Kubernetes repository...")
+    
+    # Install prerequisites
+    if not run_sudo_command("apt-get update", password):
+        return False
+    
+    if not run_sudo_command("apt-get install -y apt-transport-https ca-certificates curl gnupg", password):
+        return False
+    
+    # Download and add the Kubernetes GPG key
+    key_cmd = f"curl -fsSL https://pkgs.k8s.io/core:/stable:/v{k8s_version}/deb/Release.key | " \
+              f"sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg"
+    if not run_command(key_cmd)[1]:
+        return False
+    
+    # Set proper permissions for the keyring
+    if not run_sudo_command(
+        "chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg",
+        password):
+        return False
+    
+    # Add the Kubernetes repository
+    repo_cmd = f"echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] " \
+               f"https://pkgs.k8s.io/core:/stable:/v{k8s_version}/deb/ /' | " \
+               f"sudo tee /etc/apt/sources.list.d/kubernetes.list"
+    if not run_command(repo_cmd)[1]:
+        return False
+    
+    # Set proper permissions for the sources list
+    if not run_sudo_command(
+        "chmod 644 /etc/apt/sources.list.d/kubernetes.list",
+        password):
+        return False
+    
+    # Update package lists again
+    if not run_sudo_command("apt-get update", password):
+        return False
+    
+    return True
+
+def parse_arguments():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description="Install Kubernetes components")
+    parser.add_argument("--k8s-version", default="1.32", help="Kubernetes version to install (default: 1.32)")
+    return parser.parse_args()
+
 def main():
+    args = parse_arguments()
+    k8s_version = args.k8s_version
+    
     print("Kubernetes Components Installer")
     print("===============================")
     print("This script will install and configure the following Kubernetes components:")
@@ -94,6 +152,8 @@ def main():
     print()
     print("3. kubectl - The command-line tool for interacting with the Kubernetes API")
     print("   Used to deploy applications, inspect and manage cluster resources.")
+    print()
+    print(f"Kubernetes version: v{k8s_version}")
     print()
     
     # Ask for sudo password once
@@ -123,7 +183,8 @@ def main():
     
     # Ask for confirmation if some components are already on hold
     if on_hold and to_install:
-        confirm = input("\nSome components are already on hold. Continue with installation? (y/n): ")
+        confirm = input(
+            "\nSome components are already on hold. Continue with installation? (y/n): ")
         if confirm.lower() != 'y':
             print("Installation aborted.")
             sys.exit(0)
@@ -138,9 +199,22 @@ def main():
     if to_install:
         install_cmd = f"apt-get install -y {' '.join(to_install)}"
         print(f"\nInstalling: {' '.join(to_install)}...")
-        if not run_sudo_command(install_cmd, password):
-            print("Installation failed. Please try again.")
-            sys.exit(1)
+        
+        # Try standard installation first
+        standard_install_success = run_sudo_command(install_cmd, password)
+        
+        # If standard installation fails, try adding the Kubernetes repository
+        if not standard_install_success:
+            print("\nStandard installation failed. Adding Kubernetes repository...")
+            if not add_kubernetes_repository(password, k8s_version):
+                print("Failed to add Kubernetes repository. Aborting.")
+                sys.exit(1)
+            
+            # Try installation again
+            print(f"\nRetrying installation: {' '.join(to_install)}...")
+            if not run_sudo_command(install_cmd, password):
+                print("Installation failed even after adding the repository. Please check your network connection and try again.")
+                sys.exit(1)
     else:
         print("\nAll components are already installed.")
     
