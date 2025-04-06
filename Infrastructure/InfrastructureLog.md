@@ -126,12 +126,35 @@ configmap/kube-flannel-cfg created
 daemonset.apps/kube-flannel-ds created
 ```
 
+# `minikube`
 
+## Get started with `minikube`
 
+See
+https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download
 
+```
+curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
+```
 
+```
+minikube start
 
+# po is for pods
+kubectl get po -A
+# or
+kubectl get pods -A
 
+minikube dashboard
+```
+
+### Start and Stop minikube
+
+```
+minikube start
+minikube stop
+```
 
 
 # `kind`
@@ -155,3 +178,31 @@ kubectl get nodes
 kind create cluster --name kind-dev
 ```
 
+# `helm`
+
+https://helm.sh/docs/intro/quickstart/
+
+```
+helm repo list
+
+helm search repo prometheus
+```
+
+# `prometheus`
+
+## Installing prometheus using helm
+
+https://artifacthub.io/packages/helm/prometheus-community/prometheus
+
+```
+helm install --generate-name prometheus-community/prometheus
+```
+
+## Running prometheus on minikube
+
+```
+# Find the name of the service
+kubectl get services -A
+
+minikube service prometheus-1743949465-server
+```

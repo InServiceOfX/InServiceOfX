@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diffusion-runner
+  namespace: development
+  labels:
+    app: diffusion-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diffusion-runner
+  template:
+    metadata:
+      labels:
+        app: diffusion-runner
+    spec:
+      containers:
+      - name: diffusion-container
+        image: diffusion-nvidia-python-24.07
+        command: ["/bin/bash"]
+        args: ["-c", "sleep infinity"]
+        ports:
+        - containerPort: 7860  # For Gradio applications
+        - containerPort: 8888  # For Jupyter
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "1"  # Using GPU device 1 as specified
+        - name: NVIDIA_DISABLE_REQUIRE
+          value: "1"
+        volumeMounts:
+        - name: project-volume
+          mountPath: /InServiceOfX
+        - name: data-volume
+          mountPath: /Data
+        - name: data1-volume
+          mountPath: /Data1
+        stdin: true
+        tty: true
+      volumes:
+      - name: project-volume
+        hostPath:
+          path: /home/propdev/Prop/InServiceOfX
+          type: Directory
+      - name: data-volume
+        hostPath:
+          path: /media/propdev/9dc1a908-7eff-4e1c-8231-41c342271da7/home/propdev/Data
+          type: Directory
+      - name: data1-volume
+        hostPath:
+          path: /home/propdev/Data
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diffusion-runner-service
+  namespace: development
+  labels:
+    app: diffusion-runner
+spec:
+  selector:
+    app: diffusion-runner
+  ports:
+  - name: gradio
+    port: 7860
+    targetPort: 7860
+    protocol: TCP
+  - name: jupyter
+    port: 8888
+    targetPort: 8888
+    protocol: TCP
+  type: NodePort

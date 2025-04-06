@@ -1,0 +1,64 @@
+# kubectl apply -f ubuntu-example.manifest.yml
+# but rather apply kustomization.yml using
+# kubectl apply -k .
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-network-tools
+  namespace: development
+  labels:
+    app: ubuntu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubuntu-network-tools
+  template:
+    metadata:
+      labels:
+        app: ubuntu-network-tools
+    spec:
+      containers:
+      - name: ubuntu
+        image: ubuntu:22.04
+        command: 
+          - "/bin/bash"
+          - "-c"
+          - |
+            apt-get update && \
+            apt-get install -y iproute2 net-tools iperf3 && \
+            sleep infinity
+        ports:
+        - containerPort: 5201
+        stdin: true
+        tty: true
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: tools-volume
+          mountPath: /tools
+      volumes:
+      - name: tools-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubuntu-network-tools-service
+  namespace: development
+  labels:
+    app: ubuntu-network-tools
+spec:
+  selector:
+    app: ubuntu-network-tools
+  ports:
+  - port: 5201
+    targetPort: 5201
+    protocol: TCP
+  type: NodePort
