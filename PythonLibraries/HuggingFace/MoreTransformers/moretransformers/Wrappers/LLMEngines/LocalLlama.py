@@ -14,7 +14,7 @@ from transformers import (
 
 import torch
 
-class LocalLlamaAgent:
+class LocalLlama:
     def __init__(
         self,
         configuration : Configuration,
@@ -46,7 +46,7 @@ class LocalLlamaAgent:
     def generate_for_llm_engine(
         self,
         messages : List[Dict[str, str]],
-        stop_sequences=["Task"]):
+        ):
         #-> str:
         return_output = self.tokenizer.apply_chat_template(
             messages,
@@ -71,7 +71,8 @@ class LocalLlamaAgent:
 
         # Strip the EOT token if present
         if self.tokenizer.eos_token in output_buffer:
-            output_buffer = output_buffer.replace(self.tokenizer.eos_token, "").strip()
+            output_buffer = output_buffer.replace(
+                self.tokenizer.eos_token, "").strip()
 
         return output_buffer
 

@@ -1,1 +1,1 @@
-from moretransformers.Wrappers.LLMEngines.LocalLlamaAgent import LocalLlamaAgent
+from moretransformers.Wrappers.LLMEngines.LocalLlama import LocalLlama

@@ -1,5 +1,5 @@
 from moretransformers.Configurations import Configuration, GenerationConfiguration
-from moretransformers.Wrappers.LLMEngines import LocalLlamaAgent
+from moretransformers.Wrappers.LLMEngines import LocalLlama
 
 from transformers import LlamaForCausalLM, PreTrainedTokenizerFast
 
@@ -15,11 +15,11 @@ configuration_llama3 = Configuration(
 generation_configuration_llama3 = GenerationConfiguration(
     test_data_directory / "generation_configuration-llama3.yml")
 
-def test_LocalLlamaAgent_inits():
-    agent = LocalLlamaAgent(
+def test_LocalLlama_inits():
+    agent = LocalLlama(
         configuration_llama3,
         generation_configuration_llama3)
-    assert isinstance(agent, LocalLlamaAgent)
+    assert isinstance(agent, LocalLlama)
     assert isinstance(agent.model, LlamaForCausalLM)
     assert isinstance(agent.tokenizer, PreTrainedTokenizerFast)
     assert agent.model.config.pad_token_id == \
@@ -28,9 +28,9 @@ def test_LocalLlamaAgent_inits():
     assert agent.model.config.name_or_path == \
         "/Data/Models/LLM/meta-llama/Llama-3.2-1B-Instruct"
 
-def test_LocalLlamaAgent_generate_for_llm_engine_fails_on_empty_messages():
+def test_LocalLlama_generate_for_llm_engine_fails_on_empty_messages():
 
-    agent = LocalLlamaAgent(
+    agent = LocalLlama(
         configuration_llama3,
         generation_configuration_llama3)
 
@@ -40,8 +40,8 @@ def test_LocalLlamaAgent_generate_for_llm_engine_fails_on_empty_messages():
         agent.generate_for_llm_engine(messages)
     assert "list index out of range" in str(err.value)
 
-def test_LocalLlamaAgent_generate_for_llm_engine_generates():
-    agent = LocalLlamaAgent(
+def test_LocalLlama_generate_for_llm_engine_generates():
+    agent = LocalLlama(
         configuration_llama3,
         generation_configuration_llama3)
 

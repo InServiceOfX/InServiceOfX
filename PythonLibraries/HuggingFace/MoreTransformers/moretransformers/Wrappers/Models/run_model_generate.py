@@ -1,9 +1,9 @@
 def run_model_generate(
     input_ids,
     model,
-    eos_token_id,
+    eos_token_id=None,
     # Use get_pad_token_id to determine pad_token_id.
-    pad_token_id,
+    pad_token_id=None,
     streamer=None,
     generation_configuration=None,
     generation_config=None,
@@ -45,18 +45,15 @@ def run_model_generate(
 
     if generation_configuration is not None:
 
-        generation_kwargs = {
-            'max_new_tokens': generation_configuration.max_new_tokens,
-            'do_sample': False if generation_configuration.temperature == 0 else True,
-            'top_k': generation_configuration.top_k,
-            'top_p': generation_configuration.top_p,
-            'temperature': generation_configuration.temperature,
-            'eos_token_id': eos_token_id,
-            'pad_token_id': pad_token_id,
-            'streamer': streamer,
-            'repetition_penalty': 1.1,  # Add repetition penalty
-            'use_cache': True,  # Enable KV caching
-        }
+        generation_kwargs = generation_configuration.to_dict()
+
+        generation_kwargs['streamer'] = streamer
+
+        if eos_token_id is not None:
+            generation_kwargs['eos_token_id'] = eos_token_id
+
+        if pad_token_id is not None:
+            generation_kwargs['pad_token_id'] = pad_token_id
 
         if attention_mask is not None:
             generation_kwargs['attention_mask'] = attention_mask
