@@ -3,6 +3,8 @@ from moretransformers.Wrappers.LLMEngines import LocalLlama
 
 from transformers import LlamaForCausalLM, PreTrainedTokenizerFast
 
+from commonapi.Messages import create_system_message, create_user_message
+
 from pathlib import Path
 
 import pytest
@@ -51,6 +53,40 @@ def test_LocalLlama_generate_for_llm_engine_generates():
     ]
 
     response = agent.generate_for_llm_engine(messages)
+    assert isinstance(response, str)
+    assert len(response) > 0
+
+    print("response:", response)
+
+def test_LocalLlama_generates_with_messages():
+    import copy
+    import torch
+
+    configuration = copy.deepcopy(configuration_llama3)
+    configuration.device_map = "cuda:0"
+    configuration.torch_dtype = torch.bfloat16
+    generation_configuration_llama3.do_sample = True
+
+    agent = LocalLlama(
+        configuration,
+        generation_configuration_llama3)
+
+    assert agent.model.device.type == "cuda"
+    assert agent.model.device == torch.device("cuda:0")
+
+    messages = [
+        create_system_message(
+            (
+                "You are an academician specializing in physics. "
+                "Provide detailed and accurate explanations using "
+                "technical terminology")),
+        create_user_message(
+            "Write 10 subject lines for emails promoting eco-friendly products")
+    ]
+
+    response = agent.generate_for_llm_engine(messages)
+
+    assert torch.get_default_device() == torch.device("cuda:0")
     assert isinstance(response, str)
     assert len(response) > 0
 

@@ -19,7 +19,6 @@ class LocalLlama:
         self,
         configuration : Configuration,
         generation_configuration : GenerationConfiguration,
-        device_map="auto"
         ):
         # Initialize tokenizer first
         self.tokenizer = PreTrainedTokenizerFast.from_pretrained(
@@ -33,7 +32,7 @@ class LocalLlama:
         self.model = LlamaForCausalLM.from_pretrained(
             configuration.model_path,
             torch_dtype=configuration.torch_dtype,
-            device_map=device_map,
+            device_map=configuration.device_map,
             pad_token_id=pad_token_id)
 
         self.generation_configuration = generation_configuration
@@ -42,6 +41,8 @@ class LocalLlama:
             self.tokenizer,
             timeout=generation_configuration.timeout,
             skip_prompt=True)
+        
+        self._configuration = configuration
 
     def generate_for_llm_engine(
         self,
@@ -53,6 +54,9 @@ class LocalLlama:
             add_generation_prompt=True,
             return_tensors="pt",
             return_dict=True).to(self.model.device)
+
+        if self.model.device.type == "cuda":
+            torch.set_default_device(self._configuration.device_map)
 
         with torch.no_grad():
 

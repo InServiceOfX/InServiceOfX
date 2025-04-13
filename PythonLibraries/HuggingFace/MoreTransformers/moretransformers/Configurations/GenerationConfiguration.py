@@ -40,7 +40,7 @@ class GenerationConfiguration:
     """
     
     # Class constants
-    DEFAULT_CONFIG_PATH: ClassVar[Path] = Path("path/to/default/generation_configuration.yml")
+    DEFAULT_CONFIG_PATH: ClassVar[Path] = Path("generation_configuration.yml")
     FIELDS_TO_EXCLUDE: ClassVar[List[str]] = ["configuration_path", "timeout"]
     
     # Instance fields with defaults for empty construction
@@ -53,24 +53,23 @@ class GenerationConfiguration:
     # This default value was 8192, but as of right now, class GenerationConfig
     # in transformers/src/transformers/generation/configuration_utils.py
     # has None for max_new_tokens parameter default value.
-    max_new_tokens: int = None
+    max_new_tokens: Optional[int] = None
 
-    do_sample: bool = False
+    do_sample: Optional[bool] = None
 
     # Parameters that control the cache
-    use_cache: bool = True
+    use_cache: Optional[bool] = None
 
     # Parameters for manipulation of the model output logits
-    temperature: float = 1.0
-    top_k: int = 50
-    top_p: float = 1.0
+    temperature: Optional[float] = None
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
     # class Generationconfig in def __init__() uses 1.0 as default value.
-    repetition_penalty: float = 1.1
+    repetition_penalty: Optional[float] = None
 
     # Special tokens that can be used at generation time
-    eos_token_id: List[int] = field(
-        default_factory=lambda: [1280001, 128008, 128009])
-    pad_token_id: int = None
+    eos_token_id: Optional[List[int]] = None
+    pad_token_id: Optional[int] = None
 
     def __post_init__(self):
         """Initialize after construction."""
@@ -80,9 +79,23 @@ class GenerationConfiguration:
         
         # Validate types
         self._validate_types()
-    
+
+    def fill_default_values(self) -> None:
+        """Fill default values for fields."""
+        self.max_new_tokens = self.max_new_tokens or 8192
+        self.do_sample = self.do_sample or False
+        self.use_cache = self.use_cache or True
+        self.temperature = self.temperature or 1.0
+        self.top_k = self.top_k or 50
+        self.top_p = self.top_p or 1.0
+        self.repetition_penalty = self.repetition_penalty or 1.1
+        self.eos_token_id = self.eos_token_id or [1280001, 128008, 128009]
+        self.pad_token_id = self.pad_token_id or None
+
+
     @classmethod
-    def from_yaml(cls, configuration_path: Optional[Path] = None) -> 'GenerationConfiguration':
+    def from_yaml(cls, configuration_path: Optional[Path] = None) \
+        -> 'GenerationConfiguration':
         """Create a GenerationConfiguration instance from a YAML file."""
         path = configuration_path or cls.DEFAULT_CONFIG_PATH
         return cls(configuration_path=path)
@@ -107,29 +120,45 @@ class GenerationConfiguration:
     
     def _validate_types(self) -> None:
         """Validate and convert types for configuration values."""
-        # Validate top_k is an integer
-        if not isinstance(self.top_k, int):
+        # Validate temperature is a float or None
+        if self.temperature is not None and not isinstance(
+            self.temperature,
+            float):
+            try:
+                self.temperature = float(self.temperature)
+            except ValueError:
+                raise ValueError(
+                    f"temperature must be a float or None, got {self.temperature}")
+
+        # Validate top_k is an integer or None
+        if self.top_k is not None and not isinstance(self.top_k, int):
             try:
                 self.top_k = int(self.top_k)
             except ValueError:
-                raise ValueError(f"top_k must be an integer, got {self.top_k}")
+                raise ValueError(
+                    f"top_k must be an integer or None, got {self.top_k}")
         
-        # Validate top_p is a float
-        if not isinstance(self.top_p, float):
+        # Validate top_p is a float or None
+        if self.top_p is not None and not isinstance(self.top_p, float):
             try:
                 self.top_p = float(self.top_p)
             except ValueError:
-                raise ValueError(f"top_p must be a float, got {self.top_p}")
+                raise ValueError(
+                    f"top_p must be a float or None, got {self.top_p}")
         
-        # Validate eos_token_id is a list
-        if not isinstance(self.eos_token_id, list):
+        # Validate eos_token_id is a list or None
+        if self.eos_token_id is not None and not isinstance(self.eos_token_id, list):
             raise ValueError(
-                f"eos_token_id must be a list, got {type(self.eos_token_id)}")
+                f"eos_token_id must be a list or None, got {type(self.eos_token_id)}")
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert configuration to dictionary, excluding specified fields."""
-        return {k: v for k, v in asdict(self).items() 
-                if k not in self.FIELDS_TO_EXCLUDE}
+        """Convert configuration to dictionary, excluding specified fields and
+        None values."""
+        config_dict = {}
+        for k, v in asdict(self).items():
+            if k not in self.FIELDS_TO_EXCLUDE and v is not None:
+                config_dict[k] = v
+        return config_dict
         
     def save_to_yaml(self, path: Optional[Path] = None) -> None:
         """Save configuration to YAML file."""

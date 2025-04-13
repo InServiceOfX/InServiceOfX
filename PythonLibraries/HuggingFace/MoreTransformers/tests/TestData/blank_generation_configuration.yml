@@ -1,0 +1,11 @@
+configuration_path:
+timeout:
+max_new_tokens:
+do_sample:
+use_cache:
+temperature:
+top_k:
+top_p:
+repetition_penalty:
+eos_token_id:
+pad_token_id:

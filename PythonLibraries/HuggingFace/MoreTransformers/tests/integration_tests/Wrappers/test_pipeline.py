@@ -44,7 +44,6 @@ def test_pipeline_constructs():
     if batch_size is None:
         if self._batch_size is None:
             batch_size = 1
-
     
     """
     synthesizer = pipeline("text-to-audio", pretrained_model_name_or_path)
