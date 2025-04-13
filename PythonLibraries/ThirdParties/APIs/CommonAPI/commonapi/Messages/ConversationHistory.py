@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 import hashlib
 from commonapi.Messages.Messages import Message
 
@@ -61,7 +61,10 @@ class ConversationHistory:
         word_count = len(conversation_text.split())
         
         return conversation_text, char_count, word_count
-    
+
+    def as_list_of_dicts(self) -> List[Dict[str, Any]]:
+        return [message.to_dict() for message in self.messages]
+
     def clear(self) -> None:
         self.messages.clear()
         self.content_hashes.clear()

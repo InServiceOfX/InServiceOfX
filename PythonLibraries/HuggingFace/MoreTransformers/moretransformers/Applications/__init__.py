@@ -1,1 +1,2 @@
 from moretransformers.Applications.UserInput import UserInput
+from moretransformers.Applications.LocalLlama3 import LocalLlama3

@@ -6,6 +6,7 @@ from commonapi.Messages.Messages import (
     create_tool_message,
     create_user_message,
     create_assistant_message,
+    parse_dict_into_specific_message
 )
 
 from commonapi.Messages.ConversationHistory import ConversationHistory
@@ -18,5 +19,6 @@ __all__ = [
     "create_user_message",
     "create_assistant_message",
     "create_tool_message",
+    "parse_dict_into_specific_message",
     "ConversationHistory"
 ]

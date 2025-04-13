@@ -15,3 +15,4 @@ top_p: 1.0
 # ID of "end of sequence" token; optionally, use a list to set multiple
 # "end of sequence" tokens.
 eos_token_id: [128001,128008,128009]
+do_sample: true
