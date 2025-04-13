@@ -102,3 +102,16 @@ def create_tool_message(
 def create_developer_message(content: str) -> Dict[str, str]:
     """Create a developer message dictionary"""
     return DeveloperMessage(content=content).to_dict()
+
+def parse_dict_into_specific_message(message):
+    if "role" not in message:
+        raise RuntimeError("Message must have a role")
+
+    if message['role'] == 'system':
+        return SystemMessage(content=message['content'])
+    elif message['role'] == 'user':
+        return UserMessage(content=message['content'])
+    elif message['role'] == 'assistant':
+        return AssistantMessage(content=message['content'])
+    else:
+        raise RuntimeError(f"Unknown message role: {message['role']}")

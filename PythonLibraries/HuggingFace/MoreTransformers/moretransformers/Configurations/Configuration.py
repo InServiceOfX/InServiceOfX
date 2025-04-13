@@ -1,4 +1,3 @@
-from corecode.FileIO import get_project_directory_path
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, ClassVar, Union
@@ -10,10 +9,7 @@ class Configuration:
     """Configuration class for model settings."""
     
     # Class constants
-    DEFAULT_CONFIG_PATH: ClassVar[Path] = Path(
-        get_project_directory_path() / "Configurations" / "HuggingFace" / \
-            "MoreTransformers" / "configuration.yml"
-    )
+    DEFAULT_CONFIG_PATH: ClassVar[Path] = Path.cwd() / "configuration.yml"
     
     # Instance fields with defaults for empty construction
     configuration_path: Optional[Path] = None
