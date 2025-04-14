@@ -5,7 +5,6 @@ from commonapi.Messages import (
     ConversationHistory,
     SystemMessage,
     UserMessage,
-    parse_dict_into_specific_message
 )
 
 class LocalLlama3:

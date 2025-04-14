@@ -65,9 +65,9 @@ def terminal_only_infinite_loop_llama():
                 user_prompt_input.user_prompt.value)
 
             print("response:", response)
-            print("last conversation_history:",
-                local_llama.conversation_history.messages[-1].role,
-                local_llama.conversation_history.messages[-1].content)
+            # print("last conversation_history:",
+            #     local_llama.conversation_history.messages[-1].role,
+            #     local_llama.conversation_history.messages[-1].content)
 
         except KeyboardInterrupt:
             print("\nProcess interrupted. Exiting...")

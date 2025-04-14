@@ -11,6 +11,7 @@ top_k: 20
 # If set to float < 1, only smallest set of most probable tokens with
 # probabilities that add up to top_p  or higher are kept for generation.
 top_p: 1.0
+repetition_penalty: 1.0
 # Special tokens that can be used at generation time.
 # ID of "end of sequence" token; optionally, use a list to set multiple
 # "end of sequence" tokens.

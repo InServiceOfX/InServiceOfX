@@ -1,0 +1,2 @@
+DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.12
+BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3

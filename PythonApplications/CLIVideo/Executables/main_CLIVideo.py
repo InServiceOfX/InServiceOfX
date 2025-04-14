@@ -3,7 +3,7 @@ Usage: This is one way it can work:
 python main_CLIVideo.py
 or
 python main_CLIVideo.py --dev
-where you run it from the CLIVideo/Executables subdirectory wwhere this file
+where you run it from the CLIVideo/Executables subdirectory where this file
 is stored.
 """
 from pathlib import Path

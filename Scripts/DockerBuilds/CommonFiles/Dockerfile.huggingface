@@ -14,13 +14,6 @@ RUN python3 -m pip install --upgrade pip && \
   pip install -e . && \
   #
   #
-## datasets (hugging face)
-  git clone https://github.com/huggingface/datasets.git /ThirdParty/datasets && \
-  cd /ThirdParty/datasets && \
-  git checkout main && \
-  pip install -e . && \
-  #
-  #
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \

@@ -1,5 +1,4 @@
 from pathlib import Path
-from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import clear
