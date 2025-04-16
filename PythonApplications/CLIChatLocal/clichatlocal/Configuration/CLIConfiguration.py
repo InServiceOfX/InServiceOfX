@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from pathlib import Path
 
-class CLIChatLocalConfiguration(BaseModel):
+class CLIConfiguration(BaseModel):
     # Command settings
     exit_command: str = Field(default=".exit")
     help_command: str = Field(default=".help")

@@ -1,14 +1,13 @@
 from pathlib import Path
 # import sys
-# import asyncio
+import asyncio
 
 # from prompt_toolkit import PromptSession
 # from prompt_toolkit.formatted_text import HTML
 # from prompt_toolkit.shortcuts import print_formatted_text, clear
 
-# from clichatlocal.Configuration.CLIChatLocalConfiguration import CLIChatLocalConfiguration
-# from clichatlocal.Terminal.TerminalUI import TerminalUI
-from clichatlocal.Terminal import PromptSessionManager
+from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
+from clichatlocal.Terminal import TerminalUI, PromptSessionManager
 # from clichatlocal.Persistence.ConversationManager import ConversationManager
 # from clichatlocal.Persistence.SystemMessagesManager import SystemMessagesManager
 # from clichatlocal.Commands.CommandHandler import CommandHandler
@@ -31,11 +30,13 @@ class CLIChatLocal:
             self.llama3_configuration,
             self.llama3_generation_configuration)
 
+        self.cli_configuration = CLIConfiguration()
+
         # # Setup paths for model configurations
         # self.setup_paths()
         
         # # Initialize components
-        # self.terminal_ui = TerminalUI(self.config)
+        self.terminal_ui = TerminalUI(self.cli_configuration)
         # self.system_messages_manager = SystemMessagesManager(self.config)
         # self.conversation_manager = ConversationManager(self.config)
         
@@ -45,12 +46,13 @@ class CLIChatLocal:
         # # Setup command handler
         # self.command_handler = CommandHandler(self)
         
-        # # Create prompt session
-        # self.session = PromptSession()
-        
-        # # Track history
-        # self.prompt_history = []
-        # self.last_prompt = None
+        # Create prompt session
+        self.prompt_session_manager = PromptSessionManager(
+            self.cli_configuration)
+
+        # Track history
+        self.prompt_history = []
+        self.last_prompt = None
     
     # def setup_paths(self):
     #     """Setup necessary paths for configurations"""
@@ -80,47 +82,47 @@ class CLIChatLocal:
     #     self.terminal_ui.print_info(f"Model loaded: {self.model_config.model_path}")
     #     self.terminal_ui.print_info(f"Max position embeddings: {self.llm.llm_engine.model.config.max_position_embeddings}")
     
-    # async def run_iterative(self):
-    #     """Single iteration of chat interaction"""
-    #     try:
-    #         prompt = await self.session.prompt_async(
-    #             "Chat prompt (or type .help for options): "
-    #         )
+    async def run_iterative(self):
+        """Single iteration of chat interaction"""
+        try:
+            prompt = await self.prompt_session_manager.session.prompt_async(
+                "Chat prompt (or type .help for options): "
+            )
             
-    #         if not prompt.strip():
-    #             return True
+            if not prompt.strip():
+                return True
                 
-    #         if prompt.startswith('.'):
-    #             should_continue = await self.command_handler.handle_command(prompt)
-    #             return should_continue
+            # if prompt.startswith('.'):
+            #     should_continue = await self.command_handler.handle_command(prompt)
+            #     return should_continue
             
-    #         # Process regular prompt
-    #         self.last_prompt = prompt
-    #         self.prompt_history.append(prompt)
+            # Process regular prompt
+            self.last_prompt = prompt
+            self.prompt_history.append(prompt)
             
-    #         # Generate response
-    #         self.terminal_ui.print_user_message(prompt)
-    #         response = self.llm.generate_from_single_user_content(prompt)
-    #         self.terminal_ui.print_assistant_message(response)
+            # Generate response
+            # self.terminal_ui.print_user_message(prompt)
+            response = self.llama3_engine.generate_from_single_user_content(
+                prompt)
+            self.terminal_ui.print_assistant_message(response)
             
-    #         return True
+            return True
             
-    #     except KeyboardInterrupt:
-    #         # Handle Ctrl+C exit
-    #         self.terminal_ui.print_info("Saving conversation history...")
-    #         self.conversation_manager.save_current_conversation(self.llm.conversation_history)
-    #         self.terminal_ui.print_info("Goodbye!")
-    #         return False
-    #     except Exception as e:
-    #         self.terminal_ui.print_error(f"Error: {str(e)}")
-    #         return True
+        except KeyboardInterrupt:
+            # Handle Ctrl+C exit
+            self.terminal_ui.print_info("Saving conversation history...")
+            #self.conversation_manager.save_current_conversation(self.llm.conversation_history)
+            self.terminal_ui.print_info("Goodbye!")
+            return False
+        except Exception as e:
+            self.terminal_ui.print_error(f"Error: {str(e)}")
+            return True
     
     def run(self):
         """Main run loop"""
         print("Running CLIChatLocal")
-    #     clear()
-    #     self.terminal_ui.print_header("Welcome to CLIChatLocal!")
-    #     self.terminal_ui.print_info("Press Ctrl+C to exit.")
+        self.terminal_ui.print_header("Welcome to CLIChatLocal!")
+        self.terminal_ui.print_info("Press Ctrl+C to exit.")
         
     #     # Set default system message if none is active
     #     if not self.llm.current_system_message:
@@ -129,10 +131,10 @@ class CLIChatLocal:
     #             self.llm.set_system_message(default_message)
     #             self.terminal_ui.print_system_message(f"Using system message: {default_message[:50]}...")
         
-    #     async def run_async():
-    #         continue_running = True
-    #         while continue_running:
-    #             continue_running = await self.run_iterative()
-        
-    #     asyncio.run(run_async())
+        async def run_async():
+            continue_running = True
+            while continue_running:
+                continue_running = await self.run_iterative()
+
+        asyncio.run(run_async())
     #     self.terminal_ui.print_info("Thank you for using CLIChatLocal!")

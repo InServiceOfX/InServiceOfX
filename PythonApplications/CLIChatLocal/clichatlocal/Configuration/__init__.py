@@ -1,0 +1,1 @@
+from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration

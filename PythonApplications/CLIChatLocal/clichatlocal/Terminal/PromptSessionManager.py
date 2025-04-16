@@ -14,8 +14,8 @@ from prompt_toolkit.layout.processors import HighlightMatchingBracketProcessor
 class PromptSessionManager:
     """Manages the prompt session with advanced features."""
     
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self, cli_configuration):
+        self.cli_configuration = cli_configuration
         self.kb = KeyBindings()
         
         # Define available commands with descriptions
@@ -46,37 +46,11 @@ class PromptSessionManager:
     
     def _setup_key_bindings(self):
         """Setup key bindings for the prompt session."""
-        
-        # Add multiline toggle (Ctrl+M)
-        @self.kb.add('c-m')
-        def _(event):
-            """Toggle multiline mode"""
-            event.app.multiline = not event.app.multiline
-            event.app.invalidate()
-        
-        # Add clear screen (Ctrl+L)
+# Add clear screen (Ctrl+L)
         @self.kb.add('c-l')
         def _(event):
             """Clear the screen"""
             event.app.renderer.clear()
-        
-        # Add newline in multiline mode (Enter)
-        @self.kb.add('enter', filter=Condition(lambda: event.app.multiline))
-        def _(event):
-            """Insert newline in multiline mode"""
-            event.current_buffer.insert_text('\n')
-        
-        # Add submit in multiline mode (Ctrl+Enter)
-        @self.kb.add('c-enter', filter=Condition(lambda: event.app.multiline))
-        def _(event):
-            """Submit in multiline mode"""
-            event.current_buffer.validate_and_handle()
-        
-        # Add submit in single-line mode (Enter)
-        @self.kb.add('enter', filter=Condition(lambda: not event.app.multiline))
-        def _(event):
-            """Submit in single-line mode"""
-            event.current_buffer.validate_and_handle()
     
     def _create_session(self) -> PromptSession:
         """Create and configure the prompt session."""
@@ -84,10 +58,10 @@ class PromptSessionManager:
         # Create a style based on configuration
         style = Style.from_dict({
             # User input style
-            '': self.configuration.user_color,
+            '': self.cli_configuration.user_color,
             
             # Prompt indicator
-            'indicator': self.configuration.info_color,
+            'indicator': self.cli_configuration.info_color,
             
             # Completion menu styles
             'completion-menu': 'bg:#333333 #ffffff',
@@ -103,7 +77,8 @@ class PromptSessionManager:
         })
         
         # Create history file path
-        history_file = self.configuration.conversations_dir / "command_history.txt"
+        history_file = self.cli_configuration.conversations_dir / \
+            "command_history.txt"
         history_file.parent.mkdir(parents=True, exist_ok=True)
         
         def get_bottom_toolbar():
@@ -111,7 +86,7 @@ class PromptSessionManager:
             multiline_status = "ON" if getattr(self.session.app, "multiline", False) else "OFF"
             return HTML(
                 f'<b>CLIChatLocal</b> | '
-                f'<style fg="{self.configuration.info_color}">Multiline: {multiline_status}</style> '
+                f'<style fg="{self.cli_configuration.info_color}">Multiline: {multiline_status}</style> '
                 f'(Ctrl+M to toggle) | Type .help for commands'
             )
         
