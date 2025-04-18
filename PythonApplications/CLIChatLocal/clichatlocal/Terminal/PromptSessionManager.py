@@ -77,10 +77,9 @@ class PromptSessionManager:
         })
         
         # Create history file path
-        history_file = self.cli_configuration.conversations_dir / \
-            "command_history.txt"
-        history_file.parent.mkdir(parents=True, exist_ok=True)
-        
+        history_file_path = self.cli_configuration.file_history_path
+        history_file_path.parent.mkdir(parents=True, exist_ok=True)
+    
         def get_bottom_toolbar():
             """Returns bottom toolbar text"""
             multiline_status = "ON" if getattr(self.session.app, "multiline", False) else "OFF"
@@ -97,7 +96,7 @@ class PromptSessionManager:
             key_bindings=self.kb,
             style=style,
             wrap_lines=True,
-            history=FileHistory(str(history_file)),
+            history=FileHistory(str(history_file_path)),
             auto_suggest=AutoSuggestFromHistory(),
             input_processors=[HighlightMatchingBracketProcessor()],
             complete_in_thread=True,

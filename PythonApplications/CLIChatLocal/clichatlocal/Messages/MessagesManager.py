@@ -14,9 +14,8 @@ class Message:
             d["timestamp"] = self.timestamp
         return d
 
-class MessageManager:
-    def __init__(self, system_messages_manager: SystemMessagesManager):
-        self.system_messages_manager = system_messages_manager
+class MessagesManager:
+    def __init__(self):
         self.messages: List[Dict[str, str]] = []
         self.reset_messages()
     

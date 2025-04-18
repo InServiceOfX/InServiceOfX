@@ -1,19 +1,22 @@
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 import hashlib
-from commonapi.Messages.Messages import Message
+from commonapi.Messages.Messages import Message, SystemMessage
 
 @dataclass
 class ConversationHistory:
     """Stores an ordered history of messages with optional content hashing"""
     messages: List[Message] = None
     content_hashes: List[str] = None
-    
+    hash_to_index_reverse_map: Dict[str, int] = None
+
     def __post_init__(self):
         self.messages = self.messages or []
         self.content_hashes = self.content_hashes or []
-    
-    def _hash_content(self, content: str) -> str:
+        self.hash_to_index_reverse_map = self.hash_to_index_reverse_map or {}
+
+    @staticmethod
+    def _hash_content(content: str) -> str:
         """Generate SHA256 hash of message content"""
         return hashlib.sha256(content.encode()).hexdigest()
     
@@ -21,6 +24,8 @@ class ConversationHistory:
         self.messages.append(message)
         try:
             self.content_hashes.append(self._hash_content(message.content))
+            self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
+                len(self.content_hashes) - 1
         except AttributeError as err:
             print(f"Error hashing message content: {err}")
             print("type(message): ", type(message))
@@ -36,10 +41,14 @@ class ConversationHistory:
             removed_messages = self.messages[:count]
             self.messages = self.messages[count:]
             self.content_hashes = self.content_hashes[count:]
+            for hash in removed_messages:
+                del self.hash_to_index_reverse_map[hash]
         else:
             removed_messages = self.messages[-count:]
             self.messages = self.messages[:-count]
             self.content_hashes = self.content_hashes[:-count]
+            for hash in removed_messages:
+                del self.hash_to_index_reverse_map[hash]
             
         return removed_messages
     
@@ -68,3 +77,9 @@ class ConversationHistory:
     def clear(self) -> None:
         self.messages.clear()
         self.content_hashes.clear()
+        self.hash_to_index_reverse_map.clear()
+
+    def get_all_system_messages(self) -> List[SystemMessage]:
+        return [message for message in self.messages \
+            if isinstance(message, SystemMessage)]
+

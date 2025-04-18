@@ -13,21 +13,17 @@ class CLIConfiguration(BaseModel):
     system_color: str = Field(default="ansiyellow")
     info_color: str = Field(default="ansicyan")
     error_color: str = Field(default="ansired")
-    
-    # File paths
-    conversations_dir: Optional[Path] = Field(default=None)
-    system_messages_file: Optional[Path] = Field(default=None)
-    
-    def __init__(self, **data):
+
+    file_history_path: Optional[Path] = None
+
+    def __init__(self, is_dev: bool = False, **data):
+
         super().__init__(**data)
-        
-        # Set default paths if not provided
-        if not self.conversations_dir:
-            self.conversations_dir = Path.home() / \
-                ".clichatlocal" / "conversations"
-            self.conversations_dir.mkdir(parents=True, exist_ok=True)
-            
-        if not self.system_messages_file:
-            system_dir = Path.home() / ".clichatlocal" / "system_messages"
-            system_dir.mkdir(parents=True, exist_ok=True)
-            self.system_messages_file = system_dir / "system_messages.json"
+
+        if "file_history_path" not in data or data["file_history_path"] is None:
+            if is_dev:
+                self.file_history_path = Path(__file__).parents[1] / \
+                    "Configurations" / "file_history.txt"
+            else:
+                self.file_history_path = Path.home() / ".clichatlocal" / \
+                    "file_history.txt"

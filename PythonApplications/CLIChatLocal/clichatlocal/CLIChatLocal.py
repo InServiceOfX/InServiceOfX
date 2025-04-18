@@ -1,8 +1,6 @@
 from pathlib import Path
-# import sys
 import asyncio
 
-# from prompt_toolkit import PromptSession
 # from prompt_toolkit.formatted_text import HTML
 # from prompt_toolkit.shortcuts import print_formatted_text, clear
 
@@ -54,34 +52,6 @@ class CLIChatLocal:
         self.prompt_history = []
         self.last_prompt = None
     
-    # def setup_paths(self):
-    #     """Setup necessary paths for configurations"""
-    #     # Get paths similar to terminal_only_infinite_loop_llama.py
-    #     python_libraries_path = Path(__file__).resolve().parents[3]
-    #     self.config_path = python_libraries_path.parent / "Configurations" / "HuggingFace" / "MoreTransformers"
-        
-    #     # Add necessary paths to sys.path
-    #     corecode_directory = python_libraries_path / "CoreCode"
-    #     more_transformers_directory = python_libraries_path / "HuggingFace" / "MoreTransformers"
-    #     commonapi_directory = python_libraries_path / "ThirdParties" / "APIs" / "CommonAPI"
-        
-    #     for directory in [corecode_directory, more_transformers_directory, commonapi_directory]:
-    #         if str(directory) not in sys.path:
-    #             sys.path.append(str(directory))
-    
-    # def initialize_llm(self):
-    #     """Initialize the LocalLlama3 model"""
-    #     # Load configurations
-    #     self.model_config = Configuration(self.config_path / "configuration.yml")
-    #     self.generation_config = GenerationConfiguration(self.config_path / "generation_configuration.yml")
-        
-    #     # Initialize LocalLlama3
-    #     self.llm = LocalLlama3(self.model_config, self.generation_config)
-        
-    #     # Print model info
-    #     self.terminal_ui.print_info(f"Model loaded: {self.model_config.model_path}")
-    #     self.terminal_ui.print_info(f"Max position embeddings: {self.llm.llm_engine.model.config.max_position_embeddings}")
-    
     async def run_iterative(self):
         """Single iteration of chat interaction"""
         try:
@@ -123,13 +93,6 @@ class CLIChatLocal:
         print("Running CLIChatLocal")
         self.terminal_ui.print_header("Welcome to CLIChatLocal!")
         self.terminal_ui.print_info("Press Ctrl+C to exit.")
-        
-    #     # Set default system message if none is active
-    #     if not self.llm.current_system_message:
-    #         default_message = self.system_messages_manager.get_default_message()
-    #         if default_message:
-    #             self.llm.set_system_message(default_message)
-    #             self.terminal_ui.print_system_message(f"Using system message: {default_message[:50]}...")
         
         async def run_async():
             continue_running = True

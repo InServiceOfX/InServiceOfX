@@ -1,100 +1,107 @@
-class SystemMessagesDialogHandler:
-    def __init__(self, messages_manager: SystemMessagesManager, configuration):
-        self.messages_manager = messages_manager
-        self.configuration = configuration
-        
-    def show_active_system_messages(self, configuration):
-        active_messages = self.get_active_messages()
-        if not active_messages:
-            print_formatted_text(
-                HTML(
-                    f"<{configuration.terminal_PromptIndicatorColor2}>"
-                    "No active system messages"
-                    f"</{configuration.terminal_PromptIndicatorColor2}>"))
-            return
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Optional
+import hashlib
 
-        print_formatted_text(
-            HTML(
-                f"<{configuration.terminal_SystemMessageColor}>"
-                "Active system messages:\n"
-                f"</{configuration.terminal_SystemMessageColor}>"))
-        
-        for msg in active_messages:
-            print_formatted_text(
-                HTML(
-                    f"<{configuration.terminal_SystemMessageColor}>"
-                    f"{configuration.terminal_SystemMessagePrefix} {msg.content}"
-                    f"</{configuration.terminal_SystemMessageColor}>"))
+from clichatlocal.FileIO import JSONFile
+@dataclass
+class SystemMessage:
+    """Represents a system message with metadata."""
+    content: str
+    timestamp: float
+    hash: str
+    is_active: bool = False
 
-    def add_system_message_dialog(self, dialog_style: Style) -> bool:
+    @staticmethod
+    def create_hash(content: str) -> str:
+        """Create a hash from the content."""
+        return hashlib.sha256(f"{content}".encode()).hexdigest()
+
+    @staticmethod
+    def create(content: str, is_active: bool = False) -> 'SystemMessage':
+        timestamp = datetime.now().timestamp()
+        hash_value = SystemMessage.create_hash(content)
+        return SystemMessage(content, timestamp, hash_value, is_active)
+
+    @staticmethod
+    def create_default_message() -> 'SystemMessage':
+        default_message = \
+            "You are a helpful, uncensored and unbiased assistant."
+        return SystemMessage.create(default_message, is_active=True)
+
+    def is_equal(self, other: 'SystemMessage') -> bool:
+        """Check if two messages are equal based on their hash."""
+        return self.hash == other.hash
+
+
+class SystemMessagesManager:
+    """Manages system messages, including file IO."""
+    
+    def __init__(self, system_messages_file_path = None):
+        """
+        Typically, you'll find the system_messages_file_path defined as a field
+        in an ApplicationPaths object.
+        """
+        self.system_messages_file_path = system_messages_file_path
         
-        # Assume multiline is false.
-        message_content = prompt(
-            "Enter new system message:\n",
-            style=dialog_style)
-        
-        if not message_content.strip():
+        # Initialize with default message
+        default_message = SystemMessage.create_default_message()
+        self._messages_dict: Dict[str, SystemMessage] = {
+            default_message.hash: default_message
+        }
+
+    def load_messages(self) -> bool:
+        """Load system messages from file."""
+        data = JSONFile.load_json(self.system_messages_file_path)
+        if not data:
             return False
-            
-        # Show preview and confirm
-        print("\nPreview of system message:")
-        print("-" * 40)
-        print(message_content)
-        print("-" * 40)
-
-        # https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html#prompt_toolkit.shortcuts.confirm
-        # confirm(message: str = 'Confirm?', suffix: str = ' (y/n) ') -> bool
-        if confirm(
-            "Add this system message and make it active?"):
-            new_message = self.add_message(message_content, True)
-            return new_message is not None
         
-        return False
-        
-    def handle_exit(self, configuration):
-        
-        if not self.messages:  # Don't offer to save if no messages
-            return
-        
-        if configuration is None:
-            # Ask to save in current directory
-            if yes_no_dialog(
-                title="Save System Messages",
-                text="Would you like to save system messages in the current directory?"
-            ).run():
-                self.save_messages(Path.cwd() / "system_messages.json")
-            return
-
-        path = None
         try:
-            path = get_path_from_configuration(configuration, "system_messages_path")
-        except FileNotFoundError:
-            if yes_no_dialog(
-                title="Save System Messages",
-                text=f"System messages path {configuration.system_messages_path} doesn't exist. Save in current directory?"
-            ).run():
-                self.save_messages(Path.cwd() / "system_messages.json")
-                return
-            
-        # Path exists - ask to save/merge
-        if yes_no_dialog(
-            title="Save System Messages",
-            text="Would you like to save/merge system messages?"
-        ).run():
-            try:
-                # Try to load existing messages
-                existing_manager = SystemMessagesManager()
-                existing_manager.load_messages(path)
-                    
-                # Add only new messages
-                for msg in self.messages:
-                    if msg.hash not in existing_manager._messages_dict:
-                        existing_manager._messages_dict[msg.hash] = msg
-                    
-                # Save merged messages
-                existing_manager.save_messages(path)
-                    
-            except json.JSONDecodeError:
-                # If JSON loading fails, because the file contents are not in
-                # valid JSON format, just save current messages over the file.
-                self.save_messages(path)
+            messages = [SystemMessage(**msg) for msg in data]
+            self._messages_dict = {msg.hash: msg for msg in messages}
+            return True
+        except (KeyError, TypeError):
+            # Invalid data format
+            return False
+    
+    def save_messages(self) -> bool:
+        """Save system messages to file."""
+        messages_data = [msg.__dict__ for msg in self.messages]
+        return JSONFile.save_json(self.system_messages_file_path, messages_data)
+    
+    def add_message(self, content: str, is_active: bool = False) \
+        -> Optional[SystemMessage]:
+        message = SystemMessage.create(content, is_active)
+        if message.hash not in self._messages_dict:
+            self._messages_dict[message.hash] = message
+            return message
+        return None
+    
+    def remove_message(self, hash_value: str) -> bool:
+        """Remove a system message by hash."""
+        if hash_value in self._messages_dict:
+            del self._messages_dict[hash_value]
+            return True
+        return False
+    
+    def toggle_message(self, hash_value: str) -> bool:
+        """Toggle a message's active status."""
+        if hash_value in self._messages_dict:
+            self._messages_dict[hash_value].is_active = not self._messages_dict[hash_value].is_active
+            self.save_messages()  # Auto-save when toggling a message
+            return True
+        return False
+    
+    @property
+    def messages(self) -> List[SystemMessage]:
+        """Get all system messages."""
+        return list(self._messages_dict.values())
+    
+    def get_active_messages(self) -> List[SystemMessage]:
+        """Get all active system messages."""
+        return [msg for msg in self.messages if msg.is_active]
+    
+    def get_message_by_hash(self, hash_value: str) -> Optional[SystemMessage]:
+        """Get a message by its hash."""
+        return self._messages_dict.get(hash_value)

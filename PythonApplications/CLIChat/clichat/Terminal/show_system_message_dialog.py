@@ -1,7 +1,7 @@
 from prompt_toolkit.shortcuts import checkboxlist_dialog, radiolist_dialog
 from prompt_toolkit.styles import Style
 from typing import List, Tuple, Optional
-from clichat.Persistence import SystemMessage, SystemMessagesManager
+from clichat.Persistence import SystemMessagesManager
 
 def show_system_message_dialog(
     system_message_manager: SystemMessagesManager,

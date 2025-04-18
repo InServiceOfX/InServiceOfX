@@ -11,5 +11,3 @@ def test_CLIConfiguration_inits_with_default_values():
     assert config.system_color == "ansiyellow"
     assert config.info_color == "ansicyan"
     assert config.error_color == "ansired"
-    assert config.conversations_dir == Path.home() / ".clichatlocal" / \
-        "conversations"

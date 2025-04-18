@@ -11,6 +11,10 @@ from commonapi.Messages.Messages import (
 
 from commonapi.Messages.ConversationHistory import ConversationHistory
 
+from commonapi.Messages.SystemMessagesManager import (
+    RecordedSystemMessage,
+    SystemMessagesManager)
+
 __all__ = [
     "SystemMessage",
     "UserMessage",
@@ -20,5 +24,7 @@ __all__ = [
     "create_assistant_message",
     "create_tool_message",
     "parse_dict_into_specific_message",
-    "ConversationHistory"
+    "ConversationHistory",
+    "RecordedSystemMessage",
+    "SystemMessagesManager"
 ]

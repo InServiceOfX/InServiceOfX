@@ -11,6 +11,8 @@ class ApplicationPaths:
     project_path: Path
     inhouse_library_paths: dict[str, Path]
     configuration_file_paths: dict[str, Path]
+    system_messages_file_path: Path
+    conversations_file_path: Path
 
     @classmethod
     def create(cls, is_development: bool = False) -> 'ApplicationPaths':
@@ -39,6 +41,11 @@ class ApplicationPaths:
                         "llama3_generation_configuration.yml"
             }
 
+            system_messages_file_path = \
+                app_path / "Configurations" / "system_messages.json"
+            conversations_file_path = \
+                app_path / "Configurations" / "conversations.json"
+
         else:
             config_dir = Path.home() / ".config" / "clichatlocal"
             configuration_file_paths = {
@@ -49,9 +56,16 @@ class ApplicationPaths:
                         "llama3_generation_configuration.yml"
             }
 
+            system_messages_file_path = \
+                config_dir / "system_messages.json"
+            conversations_file_path = \
+                config_dir / "conversations.json"
+
         return cls(
             application_path=app_path,
             project_path=project_path,
             inhouse_library_paths=inhouse_library_paths,
-            configuration_file_paths=configuration_file_paths
+            configuration_file_paths=configuration_file_paths,
+            system_messages_file_path=system_messages_file_path,
+            conversations_file_path=conversations_file_path
         )
