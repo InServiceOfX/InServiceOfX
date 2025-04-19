@@ -5,10 +5,10 @@ import asyncio
 # from prompt_toolkit.shortcuts import print_formatted_text, clear
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
-from clichatlocal.Terminal import TerminalUI, PromptSessionManager
-# from clichatlocal.Persistence.ConversationManager import ConversationManager
-# from clichatlocal.Persistence.SystemMessagesManager import SystemMessagesManager
-# from clichatlocal.Commands.CommandHandler import CommandHandler
+from clichatlocal.Terminal import (
+    TerminalUI,
+    PromptSessionManager,
+    CommandHandler)
 
 from moretransformers.Applications import LocalLlama3
 from moretransformers.Configurations import Configuration, GenerationConfiguration
@@ -35,14 +35,10 @@ class CLIChatLocal:
         
         # # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)
-        # self.system_messages_manager = SystemMessagesManager(self.config)
         # self.conversation_manager = ConversationManager(self.config)
         
-        # # Initialize LLM
-        # self.initialize_llm()
-        
         # # Setup command handler
-        # self.command_handler = CommandHandler(self)
+        self.command_handler = CommandHandler(self)
         
         # Create prompt session
         self.prompt_session_manager = PromptSessionManager(
@@ -61,14 +57,23 @@ class CLIChatLocal:
             
             if not prompt.strip():
                 return True
+
+            # Check if it's a command
+            if prompt.strip().startswith('.'):
+                continue_running, command_handled = \
+                    await self.command_handler.handle_command(prompt)
+
+                # If command wasn't handled, treat as regular user input
+                if not command_handled:
+                    self.terminal_ui.print_user_message(prompt)
+                    response = self.llama3_engine.generate_from_single_user_content(prompt)
+                    self.terminal_ui.print_assistant_message(response)
                 
-            # if prompt.startswith('.'):
-            #     should_continue = await self.command_handler.handle_command(prompt)
-            #     return should_continue
-            
+                return continue_running
+
             # Process regular prompt
-            self.last_prompt = prompt
             self.prompt_history.append(prompt)
+            self.last_prompt = prompt
             
             # Generate response
             # self.terminal_ui.print_user_message(prompt)
@@ -100,4 +105,4 @@ class CLIChatLocal:
                 continue_running = await self.run_iterative()
 
         asyncio.run(run_async())
-    #     self.terminal_ui.print_info("Thank you for using CLIChatLocal!")
+        self.terminal_ui.print_info("Thank you for using CLIChatLocal!")

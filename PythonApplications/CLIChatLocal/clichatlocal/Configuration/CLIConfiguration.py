@@ -16,6 +16,9 @@ class CLIConfiguration(BaseModel):
 
     file_history_path: Optional[Path] = None
 
+    terminal_CommandEntryColor2: str = Field(default="ansigreen")
+    terminal_PromptIndicatorColor2: str = Field(default="ansicyan")
+
     def __init__(self, is_dev: bool = False, **data):
 
         super().__init__(**data)

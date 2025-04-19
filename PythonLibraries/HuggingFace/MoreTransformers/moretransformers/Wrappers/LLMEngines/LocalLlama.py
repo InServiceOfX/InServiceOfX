@@ -79,15 +79,3 @@ class LocalLlama:
                 self.tokenizer.eos_token, "").strip()
 
         return output_buffer
-
-    def run(self, task, **kwargs):
-        """Implement Agent interface"""
-        messages = self._convert_task_to_messages(task)
-        return self.generate_for_llm_engine(messages)
-
-    def _convert_task_to_messages(self, task):
-        """Convert task to chat messages format"""
-        return [
-            {"role": "system", "content": "You are a helpful AI assistant"},
-            {"role": "user", "content": task}
-        ]

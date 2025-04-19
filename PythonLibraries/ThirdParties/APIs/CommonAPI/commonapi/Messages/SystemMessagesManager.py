@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
+from typing import Dict, List, Optional
 
 @dataclass
 class RecordedSystemMessage:
@@ -57,14 +58,20 @@ class SystemMessagesManager:
             return True
         return False
 
-    def toggle_message(self, hash_value: str) -> bool:
-        """Toggle a message's active status."""
+    def toggle_message_to_active(self, hash_value: str) -> bool:
+        """Toggle a message's active status to active."""
         if hash_value in self._messages_dict:
-            self._messages_dict[hash_value].is_active = \
-                not self._messages_dict[hash_value].is_active
+            self._messages_dict[hash_value].is_active = True
             return True
         return False
-    
+
+    def toggle_message_to_inactive(self, hash_value: str) -> bool:
+        """Toggle a message's active status to inactive."""
+        if hash_value in self._messages_dict:
+            self._messages_dict[hash_value].is_active = False
+            return True
+        return False
+
     @property
     def messages(self) -> List[RecordedSystemMessage]:
         """Get all system messages."""

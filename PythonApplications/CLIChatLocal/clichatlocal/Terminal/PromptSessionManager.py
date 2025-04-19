@@ -101,7 +101,8 @@ class PromptSessionManager:
             input_processors=[HighlightMatchingBracketProcessor()],
             complete_in_thread=True,
             complete_while_typing=True,
-            mouse_support=True,
+            # It seems to disallow being able to copy-paste text?
+            #mouse_support=True,
             enable_history_search=True,
             search_ignore_case=True,
             enable_system_prompt=True,

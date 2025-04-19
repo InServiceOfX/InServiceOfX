@@ -45,3 +45,10 @@ class TerminalUI:
     def print_error(self, message):
         """Print an error message"""
         print_formatted_text(HTML(f"<error>Error: {message}</error>"))
+
+    def create_prompt_style(self):
+        return Style.from_dict({
+            "": self.config.terminal_CommandEntryColor2,
+            "indicator": self.config.terminal_PromptIndicatorColor2,
+        })
+            

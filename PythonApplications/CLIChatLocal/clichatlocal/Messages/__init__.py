@@ -1,11 +1,8 @@
 from clichatlocal.Messages.MessagesManager import MessagesManager
-from clichatlocal.Messages.SystemMessagesManager import (
-    SystemMessage,
-    SystemMessagesManager
-)
+from clichatlocal.Messages.SystemMessagesDialogHandler import (
+    SystemMessagesDialogHandler)
 
 __all__ = [
     "MessagesManager",
-    "SystemMessagesManager",
-    "SystemMessage"
+    "SystemMessagesDialogHandler"
 ]

@@ -31,6 +31,15 @@ class ConversationHistory:
             print("type(message): ", type(message))
             print("message: ", message)
 
+    def delete_message_by_hash(self, hash: str) -> None:
+        if hash in self.hash_to_index_reverse_map:
+            index = self.hash_to_index_reverse_map[hash]
+            del self.hash_to_index_reverse_map[hash]
+            self.messages.pop(index)
+            self.content_hashes.pop(index)
+        else:
+            print(f"Hash {hash} not found in hash_to_index_reverse_map")
+
     def pop_messages(self, count: int = 1, from_start: bool = False) \
         -> List[Message]:
         """Remove and return messages from either end of history"""

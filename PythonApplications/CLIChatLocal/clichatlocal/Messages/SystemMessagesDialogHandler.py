@@ -6,19 +6,15 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import confirm, checkboxlist_dialog, radiolist_dialog
 from prompt_toolkit.styles import Style
 
-from clichatlocal.Messages.SystemMessagesManager import SystemMessagesManager, SystemMessage
-
 class SystemMessagesDialogHandler:
     """Handles UI interactions for system messages."""
     
-    def __init__(self, messages_manager: SystemMessagesManager, configuration):
+    def __init__(self, configuration):
         """Initialize with a SystemMessagesManager and configuration."""
-        self.messages_manager = messages_manager
         self.configuration = configuration
     
-    def show_active_system_messages(self):
-        """Display all active system messages."""
-        active_messages = self.messages_manager.get_active_messages()
+    def show_active_system_messages(self, system_messages_manager):
+        active_messages = system_messages_manager.get_active_messages()
         if not active_messages:
             print_formatted_text(
                 HTML(
@@ -37,10 +33,10 @@ class SystemMessagesDialogHandler:
             print_formatted_text(
                 HTML(
                     f"<{self.configuration.system_color}>"
-                    f"{self.configuration.system_prefix} {msg.content}"
+                    f"{msg.content}"
                     f"</{self.configuration.system_color}>"))
     
-    async def add_system_message_dialog(self) -> bool:
+    def add_system_message_dialog(self, prompt_style, llm_engine) -> bool:
         """
         Dialog for adding a new system message.
         Returns True if a message was added, False otherwise.
@@ -48,8 +44,11 @@ class SystemMessagesDialogHandler:
         # Use prompt_toolkit's prompt for input
         message_content = prompt(
             "Enter new system message:\n",
-            style=self.configuration.prompt_style,
-            multiline=True)  # Allow multiline input for system messages
+            style=prompt_style,)
+            # This allow multiline input for system messages. We do not choose
+            # to do so because we then have to depend on key binding for entry;
+            # in testing, Alt-Enter entered the multiple lines.
+            #multiline=True)
         
         if not message_content.strip():
             return False
@@ -61,21 +60,19 @@ class SystemMessagesDialogHandler:
         print("-" * 40)
 
         if confirm("Add this system message and make it active?"):
-            new_message = self.messages_manager.add_message(message_content, True)
+            new_message = llm_engine.add_system_message(message_content)
             if new_message:
                 print_formatted_text(
                     HTML(
                         f"<{self.configuration.info_color}>"
                         "System message added and activated."
                         f"</{self.configuration.info_color}>"))
-                # Save changes immediately
-                self.messages_manager.save_messages()
                 return True
             else:
                 print_formatted_text(
                     HTML(
                         f"<{self.configuration.error_color}>"
-                        "This message already exists."
+                        f"This message was not added, {message_content}."
                         f"</{self.configuration.error_color}>"))
         
         return False
