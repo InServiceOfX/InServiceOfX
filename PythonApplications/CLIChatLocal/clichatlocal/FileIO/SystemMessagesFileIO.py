@@ -1,5 +1,5 @@
 from clichatlocal.FileIO import JSONFile
-from commonapi.Messages import RecordedSystemMessage
+from commonapi.Messages import RecordedSystemMessage, SystemMessagesManager
 from pathlib import Path
 from typing import List
 class SystemMessagesFileIO:
@@ -32,3 +32,12 @@ class SystemMessagesFileIO:
     
     def is_file_path_valid(self) -> bool:
         return self.file_path is not None and Path(self.file_path).exists()
+
+    def put_messages_into_system_messages_manager(
+        self,
+        system_messages_manager: SystemMessagesManager) -> bool:
+        if self.messages != None and self.messages != []:
+            for _, message in self.messages.items():
+                system_messages_manager.add_previously_recorded_message(message)
+            return True
+        return False

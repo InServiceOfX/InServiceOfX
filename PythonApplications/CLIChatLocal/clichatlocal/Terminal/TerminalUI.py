@@ -1,6 +1,7 @@
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import print_formatted_text, clear
 from prompt_toolkit.styles import Style
+from html import escape
 
 class TerminalUI:
     def __init__(self, config):
@@ -32,7 +33,9 @@ class TerminalUI:
     
     def print_assistant_message(self, message):
         """Print an assistant message"""
-        print_formatted_text(HTML(f"\n<assistant>Assistant:</assistant> {message}\n"))
+        # Escape any HTML-like content in the message
+        safe_message = escape(message)
+        print_formatted_text(HTML(f"\n<assistant>Assistant:</assistant> {safe_message}\n"))
     
     def print_system_message(self, message):
         """Print a system message"""

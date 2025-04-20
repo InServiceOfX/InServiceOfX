@@ -30,6 +30,11 @@ class CLIChatLocal:
             self.llama3_configuration,
             self.llama3_generation_configuration)
 
+        load_messages_result = self.system_messages_file_io.load_messages()
+        if load_messages_result:
+            self.system_messages_file_io.put_messages_into_system_messages_manager(
+                self.llama3_engine.system_messages_manager)
+
         self.cli_configuration = CLIConfiguration()
         
         # # Initialize components

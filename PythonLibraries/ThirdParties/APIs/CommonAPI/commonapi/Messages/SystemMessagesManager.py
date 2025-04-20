@@ -50,7 +50,14 @@ class SystemMessagesManager:
             self._messages_dict[message.hash] = message
             return message
         return None
-    
+
+    def add_previously_recorded_message(self, message: RecordedSystemMessage) \
+        -> bool:
+        if message.hash not in self._messages_dict:
+            self._messages_dict[message.hash] = message
+            return True
+        return False
+
     def remove_message(self, hash_value: str) -> bool:
         """Remove a system message by hash."""
         if hash_value in self._messages_dict:
