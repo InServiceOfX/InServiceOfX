@@ -1,2 +1,6 @@
 DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.12
 BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
+
+# For an older GPU like NVIDIA GeForce 1050 Ti, consider using this base image:
+# DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.06
+# BASE_IMAGE=nvcr.io/nvidia/pytorch:24.06-py3
