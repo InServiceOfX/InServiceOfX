@@ -111,6 +111,7 @@ RUN python3 -m pip install --upgrade pip && \
 RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
   cd /ThirdParty/InServiceOfX/ && \
   git sparse-checkout init && \
+  git sparse-checkout add PythonApplications/CLIChatLocal && \
   git sparse-checkout add PythonLibraries/CoreCode && \
   git sparse-checkout add PythonLibraries/HuggingFace/MoreTransformers && \
   git sparse-checkout add PythonLibraries/ThirdParties/APIs/CommonAPI && \
