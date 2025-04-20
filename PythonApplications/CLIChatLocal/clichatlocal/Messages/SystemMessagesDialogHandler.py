@@ -3,8 +3,11 @@ from pathlib import Path
 
 from prompt_toolkit import print_formatted_text, prompt
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.shortcuts import confirm, checkboxlist_dialog, radiolist_dialog
-from prompt_toolkit.styles import Style
+from prompt_toolkit.shortcuts import (
+    confirm,
+    checkboxlist_dialog,
+    radiolist_dialog,
+    yes_no_dialog)
 
 class SystemMessagesDialogHandler:
     """Handles UI interactions for system messages."""
@@ -77,12 +80,13 @@ class SystemMessagesDialogHandler:
         
         return False
     
-    async def configure_system_messages_dialog(self) -> Optional[str]:
+    def configure_system_messages_dialog(self, llm_engine, dialog_style) \
+        -> Optional[str]:
         """
         Dialog for configuring which system messages are active.
         Returns action to take with conversation or None if canceled.
         """
-        messages = self.messages_manager.messages
+        messages = llm_engine.system_messages_manager.messages
         if not messages:
             print_formatted_text(
                 HTML(
@@ -93,21 +97,89 @@ class SystemMessagesDialogHandler:
         
         # Create values for checkbox dialog
         values = [
-            (msg.hash, msg.content[:60] + "..." if len(msg.content) > 60 else msg.content)
-            for msg in messages
-        ]
+            (
+                msg.hash, msg.content[:60] + "..." if len(msg.content) > 60 \
+                    else msg.content)
+            for msg in messages]
         
         default_values = [
             msg.hash 
-            for msg in self.messages_manager.get_active_messages()
-        ]
+            for msg in llm_engine.system_messages_manager.get_active_messages()]
+
+        selected_hashes = checkboxlist_dialog(
+            title="System Messages",
+            text="Select active system messages:",
+            values=values,
+            default_values=default_values,
+            style=dialog_style
+        ).run()
+        
+        if selected_hashes is None:
+            return None
+            
+        # Update active states
+        changes_made = False
+        for msg in messages:
+            should_be_active = msg.hash in selected_hashes
+            if msg.is_active != should_be_active:
+                llm_engine.system_messages_manager.toggle_message(msg.hash)
+                changes_made = True
+        
+        if changes_made:
+            
+            # Show options for conversation management
+            return radiolist_dialog(
+                title="System Messages Updated",
+                text="What would you like to do with the conversation?",
+                values=[
+                    (
+                        "reset",
+                        "Reset conversation (keep only active system messages)"
+                    ),
+                    (
+                        "append",
+                        (
+                            "Append active system messages to current "
+                            "conversation, while removing any non-active "
+                            "system messages.")
+                    ),
+                    ("nothing", "Do nothing")],
+                style=dialog_style
+            ).run()
+        
+        return None
+    
+    async def configure_system_messages_dialog_async(self, llm_engine, dialog_style) -> Optional[str]:
+        """
+        Async dialog for configuring which system messages are active.
+        Returns action to take with conversation or None if canceled.
+        """
+        messages = llm_engine.system_messages_manager.messages
+        if not messages:
+            print_formatted_text(
+                HTML(
+                    f"<{self.configuration.error_color}>"
+                    "No system messages available"
+                    f"</{self.configuration.error_color}>"))
+            return None
+        
+        # Create values for checkbox dialog
+        values = [
+            (
+                msg.hash, msg.content[:60] + "..." if len(msg.content) > 60 \
+                    else msg.content)
+            for msg in messages]
+        
+        default_values = [
+            msg.hash 
+            for msg in llm_engine.system_messages_manager.get_active_messages()]
 
         selected_hashes = await checkboxlist_dialog(
             title="System Messages",
             text="Select active system messages:",
             values=values,
             default_values=default_values,
-            style=self.configuration.prompt_style
+            style=dialog_style
         ).run_async()
         
         if selected_hashes is None:
@@ -115,15 +187,13 @@ class SystemMessagesDialogHandler:
             
         # Update active states
         changes_made = False
-        for msg in self.messages_manager.messages:
+        for msg in messages:
             should_be_active = msg.hash in selected_hashes
             if msg.is_active != should_be_active:
-                self.messages_manager.toggle_message(msg.hash)
+                llm_engine.system_messages_manager.toggle_message(msg.hash)
                 changes_made = True
         
-        # Save changes immediately
         if changes_made:
-            self.messages_manager.save_messages()
             
             # Show options for conversation management
             return await radiolist_dialog(
@@ -136,10 +206,13 @@ class SystemMessagesDialogHandler:
                     ),
                     (
                         "append",
-                        "Append active system messages to current conversation"
+                        (
+                            "Append active system messages to current "
+                            "conversation, while removing any non-active "
+                            "system messages.")
                     ),
                     ("nothing", "Do nothing")],
-                style=self.configuration.prompt_style
+                style=dialog_style
             ).run_async()
         
         return None
@@ -199,3 +272,42 @@ class SystemMessagesDialogHandler:
                     return True
         
         return False
+
+    async def handle_exit(self, llm_engine, system_messages_file_io):
+        # Don't offer to save if no messages
+        if not llm_engine.system_messages_manager.messages:  
+            return
+
+        print(
+            (f"System messages file configured to be here: "
+             f"{system_messages_file_io.file_path}"))
+
+        if system_messages_file_io.is_file_path_valid():
+            if await yes_no_dialog(
+                title="Save System Messages",
+                text=(
+                    f"Would you like to save current system messages in the "
+                    f"{system_messages_file_io.file_path} file?")
+            ).run_async():
+                try:
+                    system_messages_file_io.save_messages(
+                        llm_engine.system_messages_manager.messages)
+                except json.JSONDecodeError:
+                    pass
+            return
+        else:
+            if await yes_no_dialog(
+                title="Save System Messages",
+                text=(
+                    f"System messages path "
+                    f"{system_messages_file_io.file_path} doesn't exist. "
+                    f"Would you like to save current system messages in there?"
+            )).run_async():
+                try:
+                    with open(system_messages_file_io.file_path, "w") as f:
+                        pass
+                    system_messages_file_io.save_messages(
+                        llm_engine.system_messages_manager.messages)
+                except json.JSONDecodeError:
+                    pass
+            return

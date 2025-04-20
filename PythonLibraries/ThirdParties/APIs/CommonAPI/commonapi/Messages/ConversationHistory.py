@@ -92,3 +92,5 @@ class ConversationHistory:
         return [message for message in self.messages \
             if isinstance(message, SystemMessage)]
 
+    def is_message_in_conversation_history_by_hash(self, hash: str) -> bool:
+        return hash in self.hash_to_index_reverse_map

@@ -1,10 +1,8 @@
 from pathlib import Path
 import asyncio
 
-# from prompt_toolkit.formatted_text import HTML
-# from prompt_toolkit.shortcuts import print_formatted_text, clear
-
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
+from clichatlocal.FileIO import SystemMessagesFileIO
 from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
@@ -17,8 +15,12 @@ class CLIChatLocal:
     def __init__(
         self,
         llama3_configuration_path: Path,
-        llama3_generation_configuration_path: Path
+        llama3_generation_configuration_path: Path,
+        system_messages_file_path: Path
     ):
+        self.system_messages_file_io = SystemMessagesFileIO(
+            system_messages_file_path)
+
         self.llama3_configuration = Configuration.from_yaml(
             llama3_configuration_path)
         self.llama3_generation_configuration = \
@@ -29,13 +31,9 @@ class CLIChatLocal:
             self.llama3_generation_configuration)
 
         self.cli_configuration = CLIConfiguration()
-
-        # # Setup paths for model configurations
-        # self.setup_paths()
         
         # # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)
-        # self.conversation_manager = ConversationManager(self.config)
         
         # # Setup command handler
         self.command_handler = CommandHandler(self)
@@ -46,7 +44,6 @@ class CLIChatLocal:
 
         # Track history
         self.prompt_history = []
-        self.last_prompt = None
     
     async def run_iterative(self):
         """Single iteration of chat interaction"""
@@ -73,7 +70,6 @@ class CLIChatLocal:
 
             # Process regular prompt
             self.prompt_history.append(prompt)
-            self.last_prompt = prompt
             
             # Generate response
             # self.terminal_ui.print_user_message(prompt)

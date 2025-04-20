@@ -18,6 +18,7 @@ class CommandHandler:
             ".clear": self.handle_clear,
             ".system_show_active": self.handle_show_active_system_messages,
             ".system_add": self.handle_add_system_message,
+            ".system_configure": self.handle_configure_system_messages,
             # Add more commands as needed
         }
 
@@ -47,7 +48,10 @@ class CommandHandler:
             return True, False
     
     async def handle_exit(self) -> bool:
-        """Handle the exit command."""
+        await self.system_dialog_handler.handle_exit(
+            self.app.llama3_engine,
+            self.app.system_messages_file_io)
+
         self.app.terminal_ui.print_info("Exiting...")
         return False
     
@@ -60,6 +64,7 @@ class CommandHandler:
         .clear              - Clear the screen
         .system_show_active - Show active system messages
         .system_add         - Add a system message
+        .system_configure   - Configure system messages to be used or i.e. make active
         """
         print_formatted_text(HTML(f"<{self.app.cli_configuration.info_color}>{help_text}</{self.app.cli_configuration.info_color}>"))
         return True
@@ -86,4 +91,20 @@ class CommandHandler:
                 self.app.terminal_ui.create_prompt_style(),
                 self.app.llama3_engine)
         )
+        return True
+    
+    async def handle_configure_system_messages(self) -> bool:
+        action = await self.system_dialog_handler.configure_system_messages_dialog_async(
+            self.app.llama3_engine,
+            self.app.terminal_ui.create_prompt_style())
+
+        if action == "reset":
+            self.app.llama3_engine.clear_conversation_history()
+            self.app.terminal_ui.print_info(
+                "Conversation reset with new system messages.")
+        elif action == "append":
+            self.app.llama3_engine.add_only_active_system_messages_to_conversation_history()
+            self.app.terminal_ui.print_info(
+                "Active system messages appended to conversation.")
+        
         return True

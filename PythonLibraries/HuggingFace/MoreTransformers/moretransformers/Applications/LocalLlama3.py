@@ -3,6 +3,7 @@ from moretransformers.Wrappers.LLMEngines import LocalLlama as LocalLlamaEngine
 from commonapi.Messages import (
     AssistantMessage,
     ConversationHistory,
+    RecordedSystemMessage,
     SystemMessage,
     SystemMessagesManager,
     UserMessage,
@@ -52,6 +53,25 @@ class LocalLlama3:
             SystemMessage(system_message_content))
 
         return add_message_result
+
+    def add_only_active_system_messages_to_conversation_history(self):
+        active_system_messages = \
+            self.system_messages_manager.get_active_messages()
+
+        conversation_history_system_messages = \
+            self.conversation_history.get_all_system_messages()
+
+        for system_message in conversation_history_system_messages:
+            message_hash = ConversationHistory._hash_content(
+                system_message.content)
+            if not self.system_messages_manager.is_message_active(message_hash):
+                self.conversation_history.delete_message_by_hash(message_hash)
+
+        for active_system_message in active_system_messages:
+            if not self.conversation_history.is_message_in_conversation_history_by_hash(
+                active_system_message.hash):
+                self.conversation_history.append_message(
+                    SystemMessage(active_system_message.content))
 
     def generate_from_single_user_content(self, user_content):
         user_message = UserMessage(content=user_content)

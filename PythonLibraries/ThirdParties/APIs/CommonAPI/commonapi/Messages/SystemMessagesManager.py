@@ -58,6 +58,14 @@ class SystemMessagesManager:
             return True
         return False
 
+    def toggle_message(self, hash_value: str) -> bool:
+        """Toggle a message's active status."""
+        if hash_value in self._messages_dict:
+            self._messages_dict[hash_value].is_active = \
+                not self._messages_dict[hash_value].is_active
+            return True
+        return False
+
     def toggle_message_to_active(self, hash_value: str) -> bool:
         """Toggle a message's active status to active."""
         if hash_value in self._messages_dict:
@@ -82,5 +90,9 @@ class SystemMessagesManager:
         return [msg for msg in self.messages if msg.is_active]
     
     def get_message_by_hash(self, hash_value: str) -> Optional[RecordedSystemMessage]:
-        """Get a message by its hash."""
         return self._messages_dict.get(hash_value)
+
+    def is_message_active(self, hash_value: str) -> bool:
+        if hash_value in self._messages_dict:
+            return self._messages_dict[hash_value].is_active
+        return False

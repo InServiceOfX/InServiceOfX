@@ -1,4 +1,4 @@
-from clichatlocal.FileIO.ApplicationPaths import ApplicationPaths
 from clichatlocal.FileIO.JSONFile import JSONFile
+from clichatlocal.FileIO.SystemMessagesFileIO import SystemMessagesFileIO
 
-__all__ = ["ApplicationPaths", "JSONFile"]
+__all__ = ["JSONFile", "SystemMessagesFileIO"]

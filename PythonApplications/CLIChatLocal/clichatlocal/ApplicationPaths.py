@@ -16,7 +16,7 @@ class ApplicationPaths:
 
     @classmethod
     def create(cls, is_development: bool = False) -> 'ApplicationPaths':
-        app_path = Path(__file__).resolve().parents[2]
+        app_path = Path(__file__).resolve().parents[1]
         project_path = app_path.parents[1]
         
         inhouse_library_paths = {

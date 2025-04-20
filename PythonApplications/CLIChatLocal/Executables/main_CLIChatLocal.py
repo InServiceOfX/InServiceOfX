@@ -15,7 +15,7 @@ application_path = Path(__file__).resolve().parents[1]
 if not str(application_path) in sys.path:
     sys.path.append(str(application_path))
 
-from clichatlocal.FileIO import ApplicationPaths
+from clichatlocal import ApplicationPaths
 
 def main_CLIChatLocal():
     parser = argparse.ArgumentParser()
@@ -51,7 +51,8 @@ def main_CLIChatLocal():
     cli_chat_local = CLIChatLocal(
         application_paths.configuration_file_paths["llama3_configuration"],
         application_paths.configuration_file_paths[
-            "llama3_generation_configuration"])
+            "llama3_generation_configuration"],
+        application_paths.system_messages_file_path)
     cli_chat_local.run()
 
 if __name__ == "__main__":
