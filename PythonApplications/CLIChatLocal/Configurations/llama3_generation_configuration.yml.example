@@ -1,0 +1,11 @@
+# Copy this file to llama3_generation_configuration.yml and modify the values to
+#your liking
+
+timeout: 60.0
+#max_new_tokens: 8192
+max_new_tokens: 131072
+top_k: 20
+top_p: 1.0
+temperature: 0.8
+eos_token_id: [128001,128008,128009]
+repetition_penalty: 1.0
