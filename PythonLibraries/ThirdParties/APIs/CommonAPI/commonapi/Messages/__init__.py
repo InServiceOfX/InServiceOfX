@@ -15,6 +15,9 @@ from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
     SystemMessagesManager)
 
+from commonapi.Messages.PermanentConversationHistory import (
+    PermanentConversationHistory)
+
 __all__ = [
     "SystemMessage",
     "UserMessage",
@@ -26,5 +29,6 @@ __all__ = [
     "parse_dict_into_specific_message",
     "ConversationHistory",
     "RecordedSystemMessage",
-    "SystemMessagesManager"
+    "SystemMessagesManager",
+    "PermanentConversationHistory"
 ]

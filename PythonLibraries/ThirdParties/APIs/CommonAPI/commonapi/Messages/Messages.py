@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import Literal, Optional, Dict, Any, Tuple
+import hashlib
 
 @dataclass
 class Message:
@@ -21,6 +22,11 @@ class Message:
     def to_dict(self) -> Dict[str, Any]:
         """Convert message to dictionary format for API requests"""
         return asdict(self)
+
+    @staticmethod
+    def _hash_content(content: str) -> str:
+        """Generate SHA256 hash of message content"""
+        return hashlib.sha256(content.encode()).hexdigest()
 
 @dataclass
 class SystemMessage(Message):

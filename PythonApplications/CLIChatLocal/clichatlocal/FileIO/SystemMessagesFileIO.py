@@ -1,7 +1,9 @@
 from clichatlocal.FileIO import JSONFile
 from commonapi.Messages import RecordedSystemMessage, SystemMessagesManager
+from commonapi.Messages.RecordedMessages import RecordedMessage
 from pathlib import Path
 from typing import List
+
 class SystemMessagesFileIO:
     def __init__(self, file_path = None):
         self.file_path = file_path
@@ -39,5 +41,20 @@ class SystemMessagesFileIO:
         if self.messages != None and self.messages != []:
             for _, message in self.messages.items():
                 system_messages_manager.add_previously_recorded_message(message)
+            return True
+        return False
+
+    def put_messages_into_permanent_conversation_history(
+        self,
+        permanent_conversation_history) -> bool:
+        if self.messages != None and self.messages != []:
+            for _, message in self.messages.items():
+                recorded_message = RecordedMessage(
+                    message.content,
+                    message.timestamp,
+                    message.hash,
+                    "system")
+                permanent_conversation_history.append_recorded_message(
+                    recorded_message)
             return True
         return False

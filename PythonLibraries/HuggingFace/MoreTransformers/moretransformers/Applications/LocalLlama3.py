@@ -3,7 +3,6 @@ from moretransformers.Wrappers.LLMEngines import LocalLlama as LocalLlamaEngine
 from commonapi.Messages import (
     AssistantMessage,
     ConversationHistory,
-    RecordedSystemMessage,
     SystemMessage,
     SystemMessagesManager,
     UserMessage,

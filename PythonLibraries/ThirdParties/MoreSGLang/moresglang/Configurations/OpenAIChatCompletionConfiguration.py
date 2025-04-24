@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union, Dict
+from typing import Optional, Union
 import yaml
 
 @dataclass

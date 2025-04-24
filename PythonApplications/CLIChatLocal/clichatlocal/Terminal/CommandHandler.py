@@ -52,6 +52,9 @@ class CommandHandler:
             self.app.llama3_engine,
             self.app.system_messages_file_io)
 
+        self.app.conversation_history_file_io.save_messages(
+            self.app.permanent_conversation_history.recorded_messages)
+
         self.app.terminal_ui.print_info("Exiting...")
         return False
     
@@ -85,18 +88,32 @@ class CommandHandler:
         """Add a system message."""
         # Use the event loop's run_in_executor to run the blocking function
         loop = asyncio.get_event_loop()
-        _ = await loop.run_in_executor(
+        result = await loop.run_in_executor(
             None,
             lambda: self.system_dialog_handler.add_system_message_dialog(
                 self.app.terminal_ui.create_prompt_style(),
                 self.app.llama3_engine)
         )
+
+        if result:
+            self.app.terminal_ui.print_info(
+                "System message added and activated.")
+            self.app.permanent_conversation_history.append_active_system_messages(
+                self.app.llama3_engine.system_messages_manager.get_active_messages())
+        else:
+            self.app.terminal_ui.print_error(
+                "System message not added.")
+
         return True
     
     async def handle_configure_system_messages(self) -> bool:
         action = await self.system_dialog_handler.configure_system_messages_dialog_async(
             self.app.llama3_engine,
             self.app.terminal_ui.create_prompt_style())
+
+        if action == "reset" or action == "append":
+            self.app.permanent_conversation_history.append_active_system_messages(
+                self.app.llama3_engine.system_messages_manager.get_active_messages())
 
         if action == "reset":
             self.app.llama3_engine.clear_conversation_history()

@@ -3,6 +3,7 @@ import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
 from clichatlocal.FileIO import SystemMessagesFileIO
+from clichatlocal.FileIO import ConversationHistoryFileIO
 from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
@@ -11,15 +12,21 @@ from clichatlocal.Terminal import (
 from moretransformers.Applications import LocalLlama3
 from moretransformers.Configurations import Configuration, GenerationConfiguration
 
+from commonapi.Messages import PermanentConversationHistory
+
 class CLIChatLocal:
     def __init__(
         self,
         llama3_configuration_path: Path,
         llama3_generation_configuration_path: Path,
-        system_messages_file_path: Path
+        system_messages_file_path: Path,
+        conversations_file_path: Path
     ):
         self.system_messages_file_io = SystemMessagesFileIO(
             system_messages_file_path)
+
+        self.conversation_history_file_io = ConversationHistoryFileIO(
+            conversations_file_path)
 
         self.llama3_configuration = Configuration.from_yaml(
             llama3_configuration_path)
@@ -30,10 +37,15 @@ class CLIChatLocal:
             self.llama3_configuration,
             self.llama3_generation_configuration)
 
+        self.permanent_conversation_history = PermanentConversationHistory()
+
         load_messages_result = self.system_messages_file_io.load_messages()
         if load_messages_result:
             self.system_messages_file_io.put_messages_into_system_messages_manager(
                 self.llama3_engine.system_messages_manager)
+
+            self.system_messages_file_io.put_messages_into_permanent_conversation_history(
+                self.permanent_conversation_history)
 
         self.cli_configuration = CLIConfiguration()
         
@@ -46,9 +58,6 @@ class CLIChatLocal:
         # Create prompt session
         self.prompt_session_manager = PromptSessionManager(
             self.cli_configuration)
-
-        # Track history
-        self.prompt_history = []
     
     async def run_iterative(self):
         """Single iteration of chat interaction"""
@@ -73,15 +82,16 @@ class CLIChatLocal:
                 
                 return continue_running
 
-            # Process regular prompt
-            self.prompt_history.append(prompt)
-            
+            self.permanent_conversation_history.append_user_content(prompt)
+
             # Generate response
-            # self.terminal_ui.print_user_message(prompt)
+            self.terminal_ui.print_user_message(prompt)
             response = self.llama3_engine.generate_from_single_user_content(
                 prompt)
             self.terminal_ui.print_assistant_message(response)
-            
+
+            self.permanent_conversation_history.append_assistant_content(response)
+
             return True
             
         except KeyboardInterrupt:

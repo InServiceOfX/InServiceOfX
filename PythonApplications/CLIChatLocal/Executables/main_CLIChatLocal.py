@@ -52,7 +52,8 @@ def main_CLIChatLocal():
         application_paths.configuration_file_paths["llama3_configuration"],
         application_paths.configuration_file_paths[
             "llama3_generation_configuration"],
-        application_paths.system_messages_file_path)
+        application_paths.system_messages_file_path,
+        application_paths.conversations_file_path)
     cli_chat_local.run()
 
 if __name__ == "__main__":
