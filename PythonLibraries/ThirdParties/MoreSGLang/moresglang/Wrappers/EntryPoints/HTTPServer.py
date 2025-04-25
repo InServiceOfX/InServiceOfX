@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import atexit
 import time
-from pathlib import Path
 from typing import Optional
 from sglang.utils import (
     execute_shell_command,

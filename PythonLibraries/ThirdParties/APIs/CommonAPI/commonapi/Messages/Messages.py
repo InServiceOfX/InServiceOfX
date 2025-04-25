@@ -1,11 +1,11 @@
 from dataclasses import dataclass, asdict
-from typing import Literal, Optional, Dict, Any, Tuple
+from typing import Literal, Optional, Dict, Any, Tuple, Union, List
 import hashlib
 
 @dataclass
 class Message:
     """Base message class for LLM interactions"""
-    content: str
+    content: Union[str, List[str]]
     role: str
 
     @staticmethod
@@ -31,7 +31,7 @@ class Message:
 @dataclass
 class SystemMessage(Message):
     """System message for setting AI behavior"""
-    content: str
+    content: Union[str, List[str]]
     role: Literal["system"] = "system"
     
     @staticmethod
@@ -41,7 +41,7 @@ class SystemMessage(Message):
 @dataclass
 class UserMessage(Message):
     """User message for queries/prompts"""
-    content: str
+    content: Union[str, List[str]]
     role: Literal["user"] = "user"
     
     @staticmethod
@@ -51,7 +51,7 @@ class UserMessage(Message):
 @dataclass
 class AssistantMessage(Message):
     """Assistant message for AI responses"""
-    content: str
+    content: Union[str, List[str]]
     role: Literal["assistant"] = "assistant"
     
     @staticmethod
@@ -62,7 +62,7 @@ class AssistantMessage(Message):
 @dataclass
 class ToolMessage(Message):
     """Tool message for function calls/responses"""
-    content: str
+    content: Union[str, List[str]]
     role: Literal["tool"] = "tool"
     name: Optional[str] = None
     tool_call_id: Optional[str] = None
@@ -80,16 +80,41 @@ class ToolMessage(Message):
 
 @dataclass
 class DeveloperMessage(Message):
-    """Developer message for API debugging/testing"""
+    content: Union[str, List[str]]
     role: Literal["developer"] = "developer"
 
 def create_system_message(content: str) -> Dict[str, str]:
     """Create a system message dictionary"""
     return SystemMessage(content=content).to_dict()
 
-def create_user_message(content: str) -> Dict[str, str]:
-    """Create a user message dictionary"""
-    return UserMessage(content=content).to_dict()
+def create_system_message(
+    content: Union[str, List[str]],
+    name: Optional[str] = None) -> Dict[str, str]:
+    """
+    https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
+
+    Developer-provided instructions that model should follow, regardless of
+    messages sent by the user. With o1 models and newer, use developer
+    messages for this purpose instead.
+    """
+    message = SystemMessage(content=content).to_dict()
+    if name is not None:
+        message["name"] = name
+    return message
+
+def create_user_message(
+    content: Union[str, List[str]],
+    name: Optional[str] = None) -> Dict[str, str]:
+    """
+    https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
+
+    Messages sent by an end user.
+    """
+    message = UserMessage(content=content).to_dict()
+
+    if name is not None:
+        message["name"] = name
+    return message
 
 def create_assistant_message(content: str) -> Dict[str, str]:
     """Create an assistant message dictionary"""
@@ -105,9 +130,22 @@ def create_tool_message(
         name=name,
         tool_call_id=tool_call_id).to_dict()
 
-def create_developer_message(content: str) -> Dict[str, str]:
-    """Create a developer message dictionary"""
-    return DeveloperMessage(content=content).to_dict()
+def create_developer_message(
+        content: Union[str, List[str]],
+        name: Optional[str] = None) -> Dict[str, str]:
+    """Create a developer message dictionary
+    
+    https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
+
+    Developer-provided instructions that model should follow, regardless of
+    messages sent by user. With o1 models and newer, use developer messages
+    for this purpose instead.  
+    """
+    message = DeveloperMessage(content=content).to_dict()
+
+    if name is not None:
+        message["name"] = name
+    return message
 
 def parse_dict_into_specific_message(message):
     if "role" not in message:

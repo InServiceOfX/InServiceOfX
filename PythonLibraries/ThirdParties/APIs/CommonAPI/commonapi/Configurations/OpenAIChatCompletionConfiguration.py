@@ -8,13 +8,14 @@ class OpenAIChatCompletionConfiguration:
     """
     https://github.com/openai/openai-python/blob/main/src/openai/resources/chat/completions/completions.py
     """
-    model: str = ""
+    model: Optional[str] = None
     function_call: Optional[Any] = None
     functions: Optional[Iterable[Any]] = None
     max_completion_tokens: Optional[int] = None
     max_tokens: Optional[int] = None
     n: Optional[int] = None
     parallel_tool_calls: Optional[bool] = None
+    # "low", "medium", or "high"; this is validated below.
     reasoning_effort: Optional[Any] = None
     response_format: Optional[Any] = None
     response_model: Optional[Any] = None
@@ -44,9 +45,6 @@ class OpenAIChatCompletionConfiguration:
             
         with open(yaml_path, 'r') as f:
             config_dict = yaml.safe_load(f)
-            
-        if 'model' not in config_dict:
-            raise ValueError("YAML must specify 'model' field")
             
         # Only pass fields that exist in the dataclass
         valid_fields = {f.name for f in fields(cls)}

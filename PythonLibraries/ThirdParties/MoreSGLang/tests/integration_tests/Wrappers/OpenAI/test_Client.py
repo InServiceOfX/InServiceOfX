@@ -1,7 +1,14 @@
 from corecode.FileIO import is_directory_empty_or_missing
 from corecode.Utilities import DataSubdirectories
+from commonapi.Configurations import (
+    OpenAIChatCompletionConfiguration
+)
+from commonapi.Messages import (
+    create_system_message,
+    create_user_message
+)
+
 from moresglang.Configurations import (
-    OpenAIChatCompletionConfiguration,
     ServerConfiguration)
 from moresglang.Wrappers.EntryPoints import HTTPServer
 from moresglang.Wrappers.OpenAI import Client
@@ -15,6 +22,10 @@ data_sub_dirs = DataSubdirectories()
 
 MODEL_DIR = data_sub_dirs.ModelsLLM / "deepseek-ai" / \
     "DeepSeek-R1-Distill-Qwen-1.5B"
+
+if not Path(MODEL_DIR).exists():
+    MODEL_DIR = Path(
+        "/Data1/Models/LLM/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
 
 # Skip reason that will show in pytest output
 skip_reason = f"Directory {MODEL_DIR} is empty or doesn't exist"
@@ -118,6 +129,10 @@ def test_Client_create_chat_completion_works():
     finally:
         server.shutdown()
 
+@pytest.mark.skipif(
+    is_directory_empty_or_missing(MODEL_DIR),
+    reason=skip_reason
+)
 def test_Client_get_finish_reason_and_token_usage_works():
     config = ServerConfiguration.from_yaml(
         test_data_directory / "server_configuration.yml")
@@ -133,9 +148,8 @@ def test_Client_get_finish_reason_and_token_usage_works():
         client = Client(config, open_ai_configuration)
 
         messages = [
-            Client.create_system_message(
-                "You are a helpful and precise assistant."),
-            Client.create_user_message("What is 1 + 1?")]
+            create_system_message("You are a helpful and precise assistant."),
+            create_user_message("What is 1 + 1?")]
 
         response = client.create_chat_completion(messages)
 
@@ -154,6 +168,10 @@ def test_Client_get_finish_reason_and_token_usage_works():
     finally:
         server.shutdown()
 
+@pytest.mark.skipif(
+    is_directory_empty_or_missing(MODEL_DIR),
+    reason=skip_reason
+)
 def test_Client_get_parsed_completion_works():
     config = ServerConfiguration.from_yaml(
         test_data_directory / "server_configuration.yml")
@@ -169,9 +187,8 @@ def test_Client_get_parsed_completion_works():
         client = Client(config, open_ai_configuration)
 
         messages = [
-            Client.create_system_message(
-                "You are a helpful and precise assistant."),
-            Client.create_user_message("What is 1 + 2?")]
+            create_system_message("You are a helpful and precise assistant."),
+            create_user_message("What is 1 + 2?")]
 
         response = client.create_chat_completion(messages)
 

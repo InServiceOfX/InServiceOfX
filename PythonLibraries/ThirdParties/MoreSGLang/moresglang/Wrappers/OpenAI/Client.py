@@ -1,10 +1,10 @@
+from commonapi.Configurations import OpenAIChatCompletionConfiguration
+
 from moresglang.Configurations import (
-    OpenAIChatCompletionConfiguration,
     ServerConfiguration
 )
 
 import openai
-from typing import Union, List, Optional, Dict
 
 class Client:
     def __init__(
@@ -21,7 +21,11 @@ class Client:
 
         self.current_chat_completion = None
 
-    def create_chat_completion(self, messages, response_format=None,tools=None):
+    def create_chat_completion(
+            self,
+            messages,
+            response_format=None,
+            tools=None):
         """
         https://platform.openai.com/docs/api-reference/chat/create
 
@@ -54,61 +58,6 @@ class Client:
         self.current_chat_completion = self.client.chat.completions.create(
             **kwargs)
         return self.current_chat_completion
-
-    @staticmethod
-    def create_developer_message(
-        content: Union[str, List[str]],
-        name: Optional[str] = None) -> Dict[str, str]:
-        """
-        https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
-
-        Developer-provided instructions that model should follow, regardless of
-        messages sent by user. With o1 models and newer, use developer messages
-        for this purpose instead.
-        """
-        message = {
-            "role": "developer",
-            "content": content
-        }
-        if name is not None:
-            message["name"] = name
-        return message
-
-    @staticmethod
-    def create_system_message(
-        content: Union[str, List[str]],
-        name: Optional[str] = None) -> Dict[str, str]:
-        """
-        https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
-
-        Developer-provided instructions that model should follow, regardless of
-        messages sent by the user. With o1 models and newer, use developer
-        messages for this purpose instead.
-        """
-        message = {
-            "role": "system",
-            "content": content
-        }
-        if name is not None:
-            message["name"] = name
-        return message
-
-    @staticmethod
-    def create_user_message(
-        content: Union[str, List[str]],
-        name: Optional[str] = None) -> Dict[str, str]:
-        """
-        https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages
-
-        Messages sent by an end user.
-        """
-        message = {
-            "role": "user",
-            "content": content
-        }
-        if name is not None:
-            message["name"] = name
-        return message
 
     @staticmethod
     def get_finish_reason_and_token_usage(response: openai.ChatCompletion):
