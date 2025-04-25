@@ -28,8 +28,18 @@ class TerminalUI:
         print_formatted_text(HTML(f"<header>{'=' * 50}</header>\n"))
     
     def print_user_message(self, message):
-        """Print a user message"""
-        print_formatted_text(HTML(f"\n<user>You:</user> {message}\n"))
+        """
+        Print a user message with proper formatting.
+        
+        Args:
+            message: The message to print
+        """
+        # Escape any HTML special characters in the message
+        escaped_message = escape(message)
+        
+        formatted_message = \
+            f"<{self.config.user_color}>User: {escaped_message}</{self.config.user_color}>"
+        print_formatted_text(HTML(formatted_message))
     
     def print_assistant_message(self, message):
         """Print an assistant message"""

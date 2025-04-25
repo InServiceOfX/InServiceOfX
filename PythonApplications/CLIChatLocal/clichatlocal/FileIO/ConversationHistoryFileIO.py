@@ -1,4 +1,6 @@
-from clichatlocal.FileIO import JSONFile
+# This avoids circular import errors; notice that JSONFile.py is in the same
+# directory as this file.
+from clichatlocal.FileIO.JSONFile import JSONFile
 from commonapi.Messages.RecordedMessages import RecordedMessage, RecordedUserMessage, RecordedAssistantMessage
 from pathlib import Path
 from typing import List
@@ -18,6 +20,7 @@ class ConversationHistoryFileIO:
             return False
 
         try:
+            messages = []
             for msg in data:
                 if msg['role'] == 'user':
                     messages.append(RecordedUserMessage(**msg))
@@ -25,7 +28,8 @@ class ConversationHistoryFileIO:
                     messages.append(RecordedAssistantMessage(**msg))
                 elif msg['role'] == 'system':
                     messages.append(RecordedMessage(**msg))
-
+            
+            self.messages = messages
             return True
         except (KeyError, TypeError):
             return False
@@ -75,3 +79,42 @@ class ConversationHistoryFileIO:
                 permanent_conversation_history.append_recorded_message(message)
             return True
         return False
+
+    def ensure_file_exists(self, file_path=None) -> bool:
+        """
+        Ensures that the conversation history file exists, creating it if
+        necessary. Optionally updates the file path.
+        
+        Args:
+            file_path: Optional new file path to use
+            
+        Returns:
+            bool: True if file exists or was created successfully, False
+            otherwise
+        """
+        # Update file path if provided
+        if file_path is not None:
+            self.file_path = file_path
+        
+        # Check if file path is set
+        if self.file_path is None:
+            return False
+        
+        path = Path(self.file_path)
+        
+        # Check if file already exists
+        if path.exists():
+            return True
+        
+        try:
+            # Create parent directories if they don't exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Create empty file
+            with open(path, 'w') as f:
+                f.write('[]')  # Initialize with empty JSON array
+            
+            return True
+        except Exception as e:
+            print(f"Error creating conversation history file: {e}")
+            return False

@@ -15,18 +15,18 @@ class CreateDockerRunCommand:
             gpu_id (int, optional): Specific GPU ID to use. If None, uses all GPUs.
         """
         self.docker_image_name = build_configuration["DOCKER_IMAGE_NAME"]
-        self.mount_paths = configuration["mount_paths"]
+        self.configuration = configuration
         self.gpu_id = gpu_id
 
         self.docker_run_command = self.create_docker_run_command(
             project_directory,
-            self.mount_paths,
+            self.configuration,
             self.docker_image_name)
 
     def create_docker_run_command(
         self,
         project_directory,
-        mount_paths,
+        configuration,
         docker_image_name
         ):
         """
@@ -63,11 +63,16 @@ class CreateDockerRunCommand:
         docker_run_command += "-it "
 
         # Add mount paths from configuration file
-        for mount_path in mount_paths:
-            docker_run_command += f"-v {mount_path} "
+        if "mount_paths" in configuration:
+            for mount_path in configuration["mount_paths"]:
+                docker_run_command += f"-v {mount_path} "
 
         # Enable CUDA Forward Compatibility
         docker_run_command += "-e NVIDIA_DISABLE_REQUIRE=1 "
+
+        if "ports" in configuration:
+            for port in configuration["ports"]:
+                docker_run_command += f"-p {port}:{port} "
 
         # Add ports for gradio and jupyter
         docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "

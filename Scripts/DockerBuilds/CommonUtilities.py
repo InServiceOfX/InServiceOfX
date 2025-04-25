@@ -167,6 +167,7 @@ def build_docker_image_for_arm64(
 def parse_run_configuration_file(configuration_file_path):
     configuration = {}
     mount_paths = []
+    ports = []
 
     if configuration_file_path.exists():
         with open(configuration_file_path, 'r') as file:
@@ -179,9 +180,18 @@ def parse_run_configuration_file(configuration_file_path):
 
                 if '=' in stripped_line:
                     key, value = stripped_line.split('=', 1)
+                    key = key.strip()
 
-                    if key.strip().startswith("MOUNT_PATH_") or \
-                        key.strip().starts_with("MOUNT_PATH"):
+                    if key.startswith("EXPOSE_PORT_") or \
+                        key.startswith("EXPOSE_PORT"):
+                        try:
+                            port = int(value.strip())
+                            ports.append(port)
+                        except ValueError:
+                            print(f"Invalid port number: {value}")
+
+                    if key.startswith("MOUNT_PATH_") or \
+                        key.startswith("MOUNT_PATH"):
 
                         print(value)
                         print(Path(value.split(':', 1)[0]).resolve())
@@ -197,6 +207,7 @@ def parse_run_configuration_file(configuration_file_path):
         print(f"Configuration file '{configuration_file_path}' does not exist.")
 
     configuration['mount_paths'] = mount_paths
+    configuration['ports'] = ports
     return configuration
 
 class CreateDockerRunCommand:

@@ -27,6 +27,7 @@ class CLIChatLocal:
 
         self.conversation_history_file_io = ConversationHistoryFileIO(
             conversations_file_path)
+        self.conversation_history_file_io.ensure_file_exists()
 
         self.llama3_configuration = Configuration.from_yaml(
             llama3_configuration_path)
@@ -49,10 +50,10 @@ class CLIChatLocal:
 
         self.cli_configuration = CLIConfiguration()
         
-        # # Initialize components
+        # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)
         
-        # # Setup command handler
+        # Setup command handler
         self.command_handler = CommandHandler(self)
         
         # Create prompt session
@@ -97,7 +98,8 @@ class CLIChatLocal:
         except KeyboardInterrupt:
             # Handle Ctrl+C exit
             self.terminal_ui.print_info("Saving conversation history...")
-            #self.conversation_manager.save_current_conversation(self.llm.conversation_history)
+            self.conversation_history_file_io.save_messages(
+                self.permanent_conversation_history.recorded_messages)
             self.terminal_ui.print_info("Goodbye!")
             return False
         except Exception as e:
