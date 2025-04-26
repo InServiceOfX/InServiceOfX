@@ -34,9 +34,12 @@ class BuildDocker(BuildDockerBase):
             (
                 "Dockerfile.huggingface",
                 self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),
-            (
-                "Dockerfile.sglang",
-                self.script_dir / "Dockerfile.sglang"),
+            # (
+            #     "Dockerfile.more_pip_installs",
+            #     self.script_dir / "Dockerfile.more_pip_installs"),
+            # (
+            #     "Dockerfile.sglang",
+            #     self.script_dir / "Dockerfile.sglang"),
             (
                 "Dockerfile.third_parties",
                 self.script_dir / "Dockerfile.third_parties")

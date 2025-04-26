@@ -12,6 +12,7 @@ import sys
 import argparse
 import subprocess
 from pathlib import Path
+import os
 
 # ==============================================================================
 # CONFIGURATION CONSTANTS
@@ -161,6 +162,23 @@ def build_docker_command(image_name, volumes, gpu_device, ports):
     return cmd
 
 
+def run_docker_with_app(docker_cmd):
+    docker_cmd.extend([
+        "bash",
+        "-c",
+        "cd /ThirdParty/InServiceOfX/PythonApplications/CLIChatLocal/Executables && python main_CLIChatLocal.py --dev"
+    ])
+    
+    try:
+        # If container already exists, remove it
+        subprocess.run(docker_cmd)
+    except:
+        pass
+        
+    # Run the Docker command
+    subprocess.run(docker_cmd)
+
+
 def main():
     """Main function to run the Docker container."""
     args = parse_arguments()
@@ -185,7 +203,7 @@ def main():
     print("\n")
     
     # Execute the command
-    subprocess.run(docker_cmd)
+    run_docker_with_app(docker_cmd)
 
 
 if __name__ == "__main__":

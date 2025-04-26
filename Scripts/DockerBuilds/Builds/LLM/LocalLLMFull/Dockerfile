@@ -101,27 +101,6 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
-# See
-# https://docs.sglang.ai/start/install.html#method-2-from-source
-# TODO: Consider installing FlashInfer from source for AOT mode for production.
-# https://docs.flashinfer.ai/installation.html
-
-# Originally, the documentation said to install by cloning this specific version:
-# git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang
-RUN git clone https://github.com/InServiceOfX/sglang.git /ThirdParty/sglang && \
-    cd /ThirdParty/sglang && \
-    git checkout main && \
-    pip install --upgrade pip && \
-    pip install sgl-kernel --force-reinstall --no-deps && \
-    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/ && \
-    # If this isn't done, this is obtained:
-    # WARNING 01-29 14:48:12 cuda.py:23] You are using a deprecated `pynvml` package. Please install `nvidia-ml-py` instead, and make sure to uninstall `pynvml`.
-    pip uninstall -y pynvml && \
-    pip install nvidia-ml-py
-
-
-
-
 ### Further third party code/repositories
 
 #
