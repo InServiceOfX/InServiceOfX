@@ -85,8 +85,8 @@ def test_Client_create_chat_completion_works():
         client = Client(config, open_ai_configuration)
 
         messages = [
-            Client.create_system_message("You are a helpful assistant."),
-            Client.create_user_message("What is the capital of France?")]
+            create_system_message("You are a helpful assistant."),
+            create_user_message("What is the capital of France?")]
 
         response = client.create_chat_completion(messages)
 
@@ -105,9 +105,9 @@ def test_Client_create_chat_completion_works():
         assert response.choices[0].message.role == "assistant"
 
         messages = [
-            Client.create_system_message(
+            create_system_message(
                 "You are a helpful and resourceful assistant."),
-            Client.create_user_message("What is the capital of Germany?")]
+            create_user_message("What is the capital of Germany?")]
 
         response = client.create_chat_completion(messages)
 

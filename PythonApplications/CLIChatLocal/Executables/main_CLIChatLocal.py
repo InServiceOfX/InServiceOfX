@@ -49,9 +49,7 @@ def main_CLIChatLocal():
     from clichatlocal.CLIChatLocal import CLIChatLocal
 
     cli_chat_local = CLIChatLocal(
-        application_paths.configuration_file_paths["llama3_configuration"],
-        application_paths.configuration_file_paths[
-            "llama3_generation_configuration"],
+        application_paths.configuration_file_paths,
         application_paths.system_messages_file_path,
         application_paths.conversations_file_path)
     cli_chat_local.run()

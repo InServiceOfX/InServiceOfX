@@ -17,8 +17,7 @@ from commonapi.Messages import PermanentConversationHistory
 class CLIChatLocal:
     def __init__(
         self,
-        llama3_configuration_path: Path,
-        llama3_generation_configuration_path: Path,
+        configuration_file_paths,
         system_messages_file_path: Path,
         conversations_file_path: Path
     ):
@@ -29,11 +28,13 @@ class CLIChatLocal:
             conversations_file_path)
         self.conversation_history_file_io.ensure_file_exists()
 
+        self.cli_configuration = CLIConfiguration()
+
         self.llama3_configuration = Configuration.from_yaml(
-            llama3_configuration_path)
+            configuration_file_paths["llama3_configuration"])
         self.llama3_generation_configuration = \
             GenerationConfiguration.from_yaml(
-                llama3_generation_configuration_path)
+                configuration_file_paths["llama3_generation_configuration"])
         self.llama3_engine = LocalLlama3(
             self.llama3_configuration,
             self.llama3_generation_configuration)
@@ -47,8 +48,6 @@ class CLIChatLocal:
 
             self.system_messages_file_io.put_messages_into_permanent_conversation_history(
                 self.permanent_conversation_history)
-
-        self.cli_configuration = CLIConfiguration()
         
         # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)

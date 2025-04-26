@@ -38,7 +38,9 @@ class ApplicationPaths:
                     app_path / "Configurations" / "llama3_configuration.yml",
                 "llama3_generation_configuration": \
                     app_path / "Configurations" / \
-                        "llama3_generation_configuration.yml"
+                        "llama3_generation_configuration.yml",
+                "cli_configuration": \
+                    app_path / "Configurations" / "cli_configuration.yml"
             }
 
             system_messages_file_path = \
@@ -53,7 +55,9 @@ class ApplicationPaths:
                     config_dir / "Configurations" / "llama3_configuration.yml",
                 "llama3_generation_configuration": \
                     config_dir / "Configurations" / \
-                        "llama3_generation_configuration.yml"
+                        "llama3_generation_configuration.yml",
+                "cli_configuration": \
+                    config_dir / "Configurations" / "cli_configuration.yml"
             }
 
             system_messages_file_path = \
