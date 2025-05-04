@@ -27,14 +27,14 @@ class CLIConfiguration(BaseModel):
 
         if "file_history_path" not in data or data["file_history_path"] is None:
             if is_dev:
-                self.file_history_path = Path(__file__).parents[1] / \
+                self.file_history_path = Path(__file__).parents[2] / \
                     "Configurations" / "file_history.txt"
             else:
                 self.file_history_path = Path.home() / ".clichatlocal" / \
                     "file_history.txt"
     
     @classmethod
-    def from_yaml(cls, file_path: Path) -> "CLIConfiguration":
+    def from_yaml(cls, file_path: Path, is_dev: bool = False) -> "CLIConfiguration":
         """
         Args:
             file_path: Path to the YAML configuration file
@@ -44,7 +44,7 @@ class CLIConfiguration(BaseModel):
             if not file_path.exists():
                 print(
                     f"Warning: Configuration file {file_path} not found. Using default values.")
-                return cls()
+                return cls(is_dev=is_dev)
             
             # Load YAML file
             with open(file_path, 'r') as f:
@@ -54,16 +54,16 @@ class CLIConfiguration(BaseModel):
             if config_data is None:
                 print(
                     f"Warning: Configuration file {file_path} is empty. Using default values.")
-                return cls()
+                return cls(is_dev=is_dev)
             
             # Create configuration with loaded values
-            config = cls(**config_data)
+            config = cls(is_dev=is_dev, **config_data)
             
             return config
             
         except Exception as e:
             print(f"Error loading configuration from {file_path}: {str(e)}")
             print("Using default configuration values.")
-            return cls()
+            return cls(is_dev=is_dev)
 
     

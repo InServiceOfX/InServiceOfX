@@ -1,7 +1,5 @@
 from clichatlocal.Configuration import CLIConfiguration
 
-from pathlib import Path
-
 def test_CLIConfiguration_inits_with_default_values():
     config = CLIConfiguration()
     assert config.exit_command == ".exit"

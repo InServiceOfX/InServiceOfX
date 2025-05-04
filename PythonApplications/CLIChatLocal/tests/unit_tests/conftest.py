@@ -13,7 +13,13 @@ if (Path(__file__).resolve().parents[4] / "PythonLibraries" / "CoreCode").exists
 
 # To obtain modules from MoreSGLang
 if (Path(__file__).resolve().parents[4] / \
-	"PythonLibraries" / "ThirdParties" / "MoreSGLang").exists():
+	"PythonLibraries" / "ThirdParties" / "APIs" / "MoreSGLang").exists():
 	sys.path.append(
 		str(Path(__file__).resolve().parents[4] / "PythonLibraries" / \
-			"ThirdParties" / "MoreSGLang"))
+			"ThirdParties" / "APIs" / "MoreSGLang"))
+
+if (Path(__file__).resolve().parents[4] / \
+	"PythonLibraries" / "ThirdParties" / "APIs" / "CommonAPI").exists():
+	sys.path.append(
+		str(Path(__file__).resolve().parents[4] / "PythonLibraries" / \
+			"ThirdParties" / "APIs" / "CommonAPI"))
