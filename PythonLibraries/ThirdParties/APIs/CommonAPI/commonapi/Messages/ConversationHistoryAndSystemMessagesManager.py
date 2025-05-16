@@ -1,22 +1,14 @@
-from moretransformers.Wrappers.LLMEngines import LocalLlama as LocalLlamaEngine
-
 from commonapi.Messages import (
-    AssistantMessage,
     ConversationHistory,
     SystemMessage,
-    SystemMessagesManager,
-    UserMessage,
 )
 
-class LocalLlama3:
-    def __init__(self, configuration, generation_configuration):
-        self._configuration = configuration
-        self._generation_configuration = generation_configuration
+# Since ConversationHistoryAndSystemMessagesManager is in the same parent
+# directory as SystemMessagesManager, we import it directly.
+from commonapi.Messages.SystemMessagesManager import SystemMessagesManager
 
-        self.llm_engine = LocalLlamaEngine(
-            configuration,
-            generation_configuration)
-
+class ConversationHistoryAndSystemMessagesManager:
+    def __init__(self):
         self.conversation_history = ConversationHistory()
         self.system_messages_manager = SystemMessagesManager()
 
@@ -53,6 +45,7 @@ class LocalLlama3:
 
         return add_message_result
 
+
     def add_only_active_system_messages_to_conversation_history(self):
         active_system_messages = \
             self.system_messages_manager.get_active_messages()
@@ -71,15 +64,3 @@ class LocalLlama3:
                 active_system_message.hash):
                 self.conversation_history.append_message(
                     SystemMessage(active_system_message.content))
-
-    def generate_from_single_user_content(self, user_content):
-        user_message = UserMessage(content=user_content)
-        self.conversation_history.append_message(user_message)
-
-        response = self.llm_engine.generate_for_llm_engine(
-            self.conversation_history.as_list_of_dicts())
-        
-        self.conversation_history.append_message(
-            AssistantMessage(content=response))
-
-        return response

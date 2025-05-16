@@ -1,4 +1,4 @@
-from commonapi.Messages.Messages import (
+from commonapi.Messages.Messages import (    
     SystemMessage,
     UserMessage,
     AssistantMessage,
@@ -11,6 +11,9 @@ from commonapi.Messages.Messages import (
 
 from commonapi.Messages.ConversationHistory import ConversationHistory
 
+from commonapi.Messages.ConversationHistoryAndSystemMessagesManager import (
+    ConversationHistoryAndSystemMessagesManager)
+
 from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
     SystemMessagesManager)
@@ -19,6 +22,7 @@ from commonapi.Messages.PermanentConversationHistory import (
     PermanentConversationHistory)
 
 __all__ = [
+    "ConversationHistoryAndSystemMessagesManager",
     "SystemMessage",
     "UserMessage",
     "AssistantMessage",

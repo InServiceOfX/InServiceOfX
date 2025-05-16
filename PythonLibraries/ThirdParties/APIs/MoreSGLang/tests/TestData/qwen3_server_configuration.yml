@@ -1,0 +1,4 @@
+model_path: LLM/Qwen/Qwen3-0.6B
+mem_fraction_static: 0.8125
+port: 30000
+host: "0.0.0.0"

@@ -1,8 +1,7 @@
 from corecode.FileIO import is_directory_empty_or_missing
 from corecode.Utilities import DataSubdirectories
-from commonapi.Configurations import (
-    OpenAIChatCompletionConfiguration
-)
+from commonapi.Configurations import OpenAIChatCompletionConfiguration
+
 from commonapi.Messages import (
     create_system_message,
     create_user_message
