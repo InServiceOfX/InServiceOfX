@@ -43,6 +43,9 @@ class BuildDocker(BuildDockerBase):
             #     "Dockerfile.sglang",
             #     self.script_dir / "Dockerfile.sglang"),
             (
+                "Dockerfile.mcp",
+                self.script_dir / "Dockerfile.mcp"),
+            (
                 "Dockerfile.third_parties",
                 self.script_dir / "Dockerfile.third_parties")
         ]

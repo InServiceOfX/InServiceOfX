@@ -101,6 +101,12 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
+RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty/python-sdk && \
+    cd /ThirdParty/python-sdk && \
+    pip install -e ".[cli]"
+
+
+
 ### Further third party code/repositories
 
 #
