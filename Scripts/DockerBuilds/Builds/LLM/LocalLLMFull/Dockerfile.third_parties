@@ -1,5 +1,8 @@
 ### Further third party code/repositories
 
+# MoreGroq would need this.
+RUN pip install groq instructor
+
 #
 #
 # InServiceOfX

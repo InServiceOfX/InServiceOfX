@@ -80,18 +80,194 @@ def test_parse_for_docstring_arguments_name():
     assert param_info['end_date']['kind'] == 'POSITIONAL_OR_KEYWORD'
     assert name == 'get_historical_price'
 
+# Following examples are from
+# https://modelcontextprotocol.io/quickstart/server
+
+async def get_alerts(state: str) -> str:
+    """Get weather alerts for a US state.
+
+    Args:
+        state: Two-letter US state code (e.g. CA, NY)
+    """
+    url = f"{NWS_API_BASE}/alerts/active/area/{state}"
+    data = await make_nws_request(url)
+
+    if not data or "features" not in data:
+        return "Unable to fetch alerts or no alerts found."
+
+    if not data["features"]:
+        return "No active alerts for this state."
+
+    alerts = [format_alert(feature) for feature in data["features"]]
+    return "\n---\n".join(alerts)
+
+async def get_forecast(latitude: float, longitude: float) -> str:
+    """Get weather forecast for a location.
+
+    Args:
+        latitude: Latitude of the location
+        longitude: Longitude of the location
+    """
+    # First get the forecast grid endpoint
+    points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
+    points_data = await make_nws_request(points_url)
+
+    if not points_data:
+        return "Unable to fetch forecast data for this location."
+
+    # Get the forecast URL from the points response
+    forecast_url = points_data["properties"]["forecast"]
+    forecast_data = await make_nws_request(forecast_url)
+
+    if not forecast_data:
+        return "Unable to fetch detailed forecast."
+
+    # Format the periods into a readable forecast
+    periods = forecast_data["properties"]["periods"]
+    forecasts = []
+    for period in periods[:5]:  # Only show next 5 periods
+        forecast = f"""
+{period['name']}:
+Temperature: {period['temperature']}°{period['temperatureUnit']}
+Wind: {period['windSpeed']} {period['windDirection']}
+Forecast: {period['detailedForecast']}
+"""
+        forecasts.append(forecast)
+
+    return "\n---\n".join(forecasts)
+
+from inspect import Parameter
+
+def test__get_detailed_type_info():
+    type_info, type_annotation = \
+        ParseFunctionAsTool._get_detailed_type_info(get_stock_info)
+    assert type_info['symbol'] == 'Any'
+    assert type_info['key'] == 'Any'
+
+    assert type_annotation['symbol'] == Parameter.empty
+    assert type_annotation['key'] == Parameter.empty
+
+    type_info, type_annotation = \
+        ParseFunctionAsTool._get_detailed_type_info(get_historical_price)
+    assert type_info['symbol'] == 'Any'
+    assert type_info['start_date'] == 'Any'
+    assert type_info['end_date'] == 'Any'
+
+    assert type_annotation['symbol'] == Parameter.empty
+    assert type_annotation['start_date'] == Parameter.empty
+    assert type_annotation['end_date'] == Parameter.empty
+
+    type_info, type_annotation = \
+        ParseFunctionAsTool._get_detailed_type_info(get_alerts)
+    assert type_info['state'] == 'str'
+
+    assert type_annotation['state'] == str
+
+    type_info, type_annotation = \
+        ParseFunctionAsTool._get_detailed_type_info(get_forecast)
+    assert type_info['latitude'] == 'float'
+    assert type_info['longitude'] == 'float'
+
+    assert type_annotation['latitude'] == float
+    assert type_annotation['longitude'] == float
+
+from inspect import cleandoc
+
+def test__parse_docstring_sections():
+    sections = \
+        ParseFunctionAsTool._parse_docstring_sections(get_stock_info)
+    assert len(sections) == 1
+    assert sections['description'] == cleandoc(get_stock_info.__doc__)
+
+    sections = \
+        ParseFunctionAsTool._parse_docstring_sections(get_historical_price)
+    assert len(sections) == 1
+    assert sections['description'] == cleandoc(get_historical_price.__doc__)
+
+    sections = \
+        ParseFunctionAsTool._parse_docstring_sections(get_alerts)
+    assert len(sections) == 2
+    assert sections['description'] == "Get weather alerts for a US state."
+    assert sections['Args'] == "state: Two-letter US state code (e.g. CA, NY)"
+
+    sections = \
+        ParseFunctionAsTool._parse_docstring_sections(get_forecast)
+    assert len(sections) == 2
+    assert sections['description'] == "Get weather forecast for a location."
+    assert sections['Args'] == \
+        "latitude: Latitude of the location\n    longitude: Longitude of the location"
+
+def test__extract_parameter_descriptions():
+    param_descriptions = \
+        ParseFunctionAsTool._extract_parameter_descriptions(get_stock_info)
+    assert param_descriptions == {'symbol': '', 'key': ''}
+
+    param_descriptions = \
+        ParseFunctionAsTool._extract_parameter_descriptions(get_historical_price)
+    assert param_descriptions == {'symbol': '', 'start_date': '', 'end_date': ''}
+
+    param_descriptions = \
+        ParseFunctionAsTool._extract_parameter_descriptions(get_alerts)
+    assert param_descriptions['state'] == "Two-letter US state code (e.g. CA, NY)"
+
+    param_descriptions = \
+        ParseFunctionAsTool._extract_parameter_descriptions(get_forecast)
+    assert param_descriptions['latitude'] == "Latitude of the location"
+    assert param_descriptions['longitude'] == "Longitude of the location"
+    
+
 def test_parse_for_function_definition():
     function_definition = \
         ParseFunctionAsTool.parse_for_function_definition(get_stock_info)
     assert function_definition.name == 'get_stock_info'
     assert function_definition.description == get_stock_info.__doc__
     assert function_definition.parameters.properties[0].name == 'symbol'
-    assert function_definition.parameters.properties[0].type == 'string'
-    assert function_definition.parameters.properties[0].description == \
-        get_stock_info.__doc__
+    assert function_definition.parameters.properties[0].type == 'Any'
+    assert function_definition.parameters.properties[0].description == ""
     assert function_definition.parameters.properties[0].required == True
     assert function_definition.parameters.properties[1].name == 'key'
-    assert function_definition.parameters.properties[1].type == 'string'
+    assert function_definition.parameters.properties[1].type == 'Any'
+    assert function_definition.parameters.properties[1].description == ""
+    assert function_definition.parameters.properties[1].required == True
+    
+    function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(get_historical_price)
+    assert function_definition.name == 'get_historical_price'
+    assert function_definition.description == get_historical_price.__doc__
+    assert function_definition.parameters.properties[0].name == 'symbol'
+    assert function_definition.parameters.properties[0].type == 'Any'
+    assert function_definition.parameters.properties[0].description == ""
+    assert function_definition.parameters.properties[0].required == True
+    assert function_definition.parameters.properties[1].name == 'start_date'
+    assert function_definition.parameters.properties[1].type == 'Any'
+    assert function_definition.parameters.properties[1].description == ""
+    assert function_definition.parameters.properties[1].required == True
+    assert function_definition.parameters.properties[2].name == 'end_date'
+    assert function_definition.parameters.properties[2].type == 'Any'
+    assert function_definition.parameters.properties[2].description == ""
+    assert function_definition.parameters.properties[2].required == True
+
+    function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(get_alerts)
+    assert function_definition.name == 'get_alerts'
+    assert function_definition.description == get_alerts.__doc__
+    assert function_definition.parameters.properties[0].name == 'state'
+    assert function_definition.parameters.properties[0].type == 'str'
+    assert function_definition.parameters.properties[0].description == \
+        "Two-letter US state code (e.g. CA, NY)"
+    assert function_definition.parameters.properties[0].required == True
+
+    function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(get_forecast)
+    assert function_definition.name == 'get_forecast'
+    assert function_definition.description == get_forecast.__doc__
+    assert function_definition.parameters.properties[0].name == 'latitude'
+    assert function_definition.parameters.properties[0].type == 'float'
+    assert function_definition.parameters.properties[0].description == \
+        "Latitude of the location"
+    assert function_definition.parameters.properties[0].required == True
+    assert function_definition.parameters.properties[1].name == 'longitude'
+    assert function_definition.parameters.properties[1].type == 'float'
     assert function_definition.parameters.properties[1].description == \
-        get_stock_info.__doc__
+        "Longitude of the location"
     assert function_definition.parameters.properties[1].required == True

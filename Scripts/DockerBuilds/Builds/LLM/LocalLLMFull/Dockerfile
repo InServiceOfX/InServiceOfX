@@ -109,6 +109,8 @@ RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty
 
 ### Further third party code/repositories
 
+RUN pip install groq
+
 #
 #
 # InServiceOfX

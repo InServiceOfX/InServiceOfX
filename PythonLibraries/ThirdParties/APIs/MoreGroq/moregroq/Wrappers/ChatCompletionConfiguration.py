@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Type
 
 @dataclass
 class ParameterProperty:
     name: str
     type: str
+    actual_type: Optional[Type] = None
     description: Optional[str] = None
     enum: Optional[List[str]] = None
     required: bool = True
