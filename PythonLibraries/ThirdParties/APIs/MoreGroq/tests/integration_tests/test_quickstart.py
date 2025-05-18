@@ -41,3 +41,6 @@ def test_get_all_active_models_works():
     assert set(response.json().keys()) == set(["object", "data"])
     # Uncomment out and run pytest with -s flag (for no capture) to see output.
     #print(response.json())
+    for model in response.json()["data"]:
+        print("id:", model["id"])
+        print("\t data: ", model)

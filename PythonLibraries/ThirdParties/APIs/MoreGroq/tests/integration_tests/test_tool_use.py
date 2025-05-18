@@ -70,7 +70,9 @@ def test_groq_tool_use_with_curl_request():
     )
     
     result = response.json()
-    print(json.dumps(result, indent=2))
+    print(
+        "test_groq_tool_use_with_curl_request response 1:",
+        json.dumps(result, indent=2))
 
     assert response.status_code == 200
 
@@ -131,7 +133,9 @@ def test_groq_tool_use_with_curl_request():
     )
 
     result = response.json()
-    print("result:", json.dumps(result, indent=2))
+    print(
+        "test_groq_tool_use_with_curl_request response 2:",
+        json.dumps(result, indent=2))
 
     # This is an example tool call response:
     # "model": "llama-3.3-70b-versatile",
@@ -164,7 +168,7 @@ def test_groq_tool_use_with_curl_request():
     print("result[choices][0][message]:", result["choices"][0]["message"])
 
     # https://console.groq.com/docs/tool-use
-    # When a model decides to use a tool, it returns a respons with a tool_calls
+    # When a model decides to use a tool, it returns a response with a tool_calls
     # object:
     # id: unique identifier for tool call
     assert "id" in result["choices"][0]["message"]["tool_calls"][0]
@@ -185,7 +189,9 @@ def run_conversation(user_prompt):
     """
     messages = [
         create_system_message(
-            "You are a calculator assistant. Use the calculate function to perform mathematical operations and provide the results."),
+            (
+                "You are a calculator assistant. Use the calculate function to "
+                "perform mathematical operations and provide the results.")),
         create_user_message(user_prompt)
     ]
 
@@ -211,6 +217,7 @@ def run_conversation(user_prompt):
     #     }
     # ]
     tools = [
+        # Tool, FunctionDefinition, etc. are our own custom wrappers.
         Tool(function=FunctionDefinition(
             name="calculate",
             description="Evaluate a mathematical expression",
@@ -243,6 +250,7 @@ def run_conversation(user_prompt):
     if tool_calls:
         # Define the available tools that can be called by the LLM
         available_functions = {
+            # calculate is the actual Python function.
             "calculate": calculate
         }
         # Add the LLM's response to the conversation
