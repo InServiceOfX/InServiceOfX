@@ -28,10 +28,12 @@ def test_get_list_of_available_models_works():
     assert len(result) > 0
     assert set(result[0].keys()) == set(["id", "owned_by", "context_window"])
 
+    TODO: Fix this.
     assert any(
         entry.get('id') == 'llama-3.3-70b-versatile' \
         and \
-        entry.get('context_window') == 32768 for entry in result)
+        # This used to be 32768.
+        entry.get('context_window') == 131072 for entry in result)
 
     # Uncomment out and run pytest with -s flag (for no capture) to see output.
     for entry in result:

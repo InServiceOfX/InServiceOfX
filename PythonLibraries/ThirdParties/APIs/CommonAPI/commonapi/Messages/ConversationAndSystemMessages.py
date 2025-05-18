@@ -2,12 +2,14 @@ from commonapi.Messages import (
     ConversationHistory,
     SystemMessage,
 )
+from commonapi.Messages.Messages import Message
+from typing import Any, List, Dict
 
 # Since ConversationHistoryAndSystemMessagesManager is in the same parent
 # directory as SystemMessagesManager, we import it directly.
 from commonapi.Messages.SystemMessagesManager import SystemMessagesManager
 
-class ConversationHistoryAndSystemMessagesManager:
+class ConversationAndSystemMessages:
     def __init__(self):
         self.conversation_history = ConversationHistory()
         self.system_messages_manager = SystemMessagesManager()
@@ -45,6 +47,14 @@ class ConversationHistoryAndSystemMessagesManager:
 
         return add_message_result
 
+    def append_message(self, message: Message) -> None:
+        self.conversation_history.append_message(message)
+
+    def append_general_message(self, message: Any) -> None:
+        self.conversation_history.append_general_message(message)
+
+    def get_conversation_as_list_of_dicts(self) -> List[Dict[str, Any]]:
+        return self.conversation_history.as_list_of_dicts()
 
     def add_only_active_system_messages_to_conversation_history(self):
         active_system_messages = \

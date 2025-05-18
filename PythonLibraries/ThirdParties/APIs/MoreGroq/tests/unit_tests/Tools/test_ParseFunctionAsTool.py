@@ -1,5 +1,9 @@
 from moregroq.Tools import ParseFunctionAsTool
 
+from inspect import cleandoc
+
+from TestUtilities.TestSetup import calculate
+
 # From
 # https://github.com/groq/groq-api-cookbook/blob/main/tutorials/llama3-stock-market-function-calling/llama3-stock-market-function-calling.ipynb
 
@@ -197,6 +201,15 @@ def test__parse_docstring_sections():
     assert sections['Args'] == \
         "latitude: Latitude of the location\n    longitude: Longitude of the location"
 
+def test__parse_docstring_sections_on_calculate():
+    sections = \
+        ParseFunctionAsTool._parse_docstring_sections(calculate)
+    assert len(sections) == 3
+    assert sections['description'] == "Evaluate a mathematical expression."
+
+    assert sections['Args'] == \
+        "expression: The mathematical expression to evaluate."
+
 def test__extract_parameter_descriptions():
     param_descriptions = \
         ParseFunctionAsTool._extract_parameter_descriptions(get_stock_info)
@@ -220,7 +233,12 @@ def test_parse_for_function_definition():
     function_definition = \
         ParseFunctionAsTool.parse_for_function_definition(get_stock_info)
     assert function_definition.name == 'get_stock_info'
-    assert function_definition.description == get_stock_info.__doc__
+
+    # Uncomment to print the function_definition
+    #print("function_definition.description: ", function_definition.description)
+
+    assert function_definition.description == cleandoc(get_stock_info.__doc__)
+
     assert function_definition.parameters.properties[0].name == 'symbol'
     assert function_definition.parameters.properties[0].type == 'Any'
     assert function_definition.parameters.properties[0].description == ""
@@ -233,7 +251,7 @@ def test_parse_for_function_definition():
     function_definition = \
         ParseFunctionAsTool.parse_for_function_definition(get_historical_price)
     assert function_definition.name == 'get_historical_price'
-    assert function_definition.description == get_historical_price.__doc__
+    assert function_definition.description == cleandoc(get_historical_price.__doc__)
     assert function_definition.parameters.properties[0].name == 'symbol'
     assert function_definition.parameters.properties[0].type == 'Any'
     assert function_definition.parameters.properties[0].description == ""
@@ -250,9 +268,10 @@ def test_parse_for_function_definition():
     function_definition = \
         ParseFunctionAsTool.parse_for_function_definition(get_alerts)
     assert function_definition.name == 'get_alerts'
-    assert function_definition.description == get_alerts.__doc__
+    assert function_definition.description == \
+        "Get weather alerts for a US state."
     assert function_definition.parameters.properties[0].name == 'state'
-    assert function_definition.parameters.properties[0].type == 'str'
+    assert function_definition.parameters.properties[0].type == 'string'
     assert function_definition.parameters.properties[0].description == \
         "Two-letter US state code (e.g. CA, NY)"
     assert function_definition.parameters.properties[0].required == True
@@ -260,14 +279,25 @@ def test_parse_for_function_definition():
     function_definition = \
         ParseFunctionAsTool.parse_for_function_definition(get_forecast)
     assert function_definition.name == 'get_forecast'
-    assert function_definition.description == get_forecast.__doc__
+    assert function_definition.description == \
+        "Get weather forecast for a location."
     assert function_definition.parameters.properties[0].name == 'latitude'
-    assert function_definition.parameters.properties[0].type == 'float'
+    assert function_definition.parameters.properties[0].type == 'number'
     assert function_definition.parameters.properties[0].description == \
         "Latitude of the location"
     assert function_definition.parameters.properties[0].required == True
     assert function_definition.parameters.properties[1].name == 'longitude'
-    assert function_definition.parameters.properties[1].type == 'float'
+    assert function_definition.parameters.properties[1].type == 'number'
     assert function_definition.parameters.properties[1].description == \
         "Longitude of the location"
     assert function_definition.parameters.properties[1].required == True
+
+def test_parse_for_function_definition_with_calculate():
+    function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(calculate)
+    assert function_definition.name == 'calculate'
+    assert function_definition.description == \
+        "Evaluate a mathematical expression."
+    assert function_definition.parameters.properties[0].name == 'expression'
+    assert function_definition.parameters.properties[0].type == 'string'
+    print("function_definition:", function_definition)

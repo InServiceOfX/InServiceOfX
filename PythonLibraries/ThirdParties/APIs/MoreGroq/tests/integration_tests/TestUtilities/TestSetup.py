@@ -1,8 +1,15 @@
 import json
 
 # https://console.groq.com/docs/tool-use
-def calculate(expression):
-    """Evaluate a mathematical expression."""
+def calculate(expression: str):
+    """Evaluate a mathematical expression.
+    
+    Args:
+        expression: The mathematical expression to evaluate.
+
+    Returns:
+        str: The result of the mathematical expression.
+    """
     try:
         # Attempt to evaluate the math expression
         result = eval(expression)
@@ -74,3 +81,72 @@ def get_historical_price(symbol, start_date, end_date):
     hist = hist.reset_index()
     hist[symbol] = hist['Close']
     return hist[['Date', symbol]]
+
+# Test functions
+
+def echo(message: str) -> str:
+    """Echo a message back to the user.
+    
+    Args:
+        message (str): The message to echo back to the user.
+
+    Returns:
+        str: The message echoed back to the user.
+    """
+    return message
+
+def reverse_string(input_string: str) -> str:
+    """Reverse a string.
+    
+    Args:
+        input_string (str): The string to reverse.
+
+    Returns:
+        str: The reversed string.
+    """
+    return input_string[::-1]
+
+def count_words(text: str):
+    """Count the number of words in a string.
+    
+    Args:
+        text (str): The string to count the words in.
+
+    Returns:
+        int: The number of words in the string.
+    """
+    return len(text.split())
+
+def get_current_system_time():
+    """Get the current system time.
+    
+    Returns:
+        str: The current system time.
+    """
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def create_purchasing_order(product_id: str, quantity: int) -> dict:
+    """Create a purchasing order.
+    
+    Args:
+        product_id (str): The ID of the product to purchase.
+        quantity (int): The quantity of the product to purchase.
+
+    Returns:
+        dict: The purchasing order.
+    """
+    # Initialize counter if it doesn't exist
+    if not hasattr(create_purchasing_order, "counter"):
+        create_purchasing_order.counter = 0
+    
+    # Increment counter
+    create_purchasing_order.counter += 1
+    
+    # Create order with unique ID
+    order = {
+        "order_id": f"PO-{create_purchasing_order.counter:04d}",
+        "product_id": product_id,
+        "quantity": quantity}
+    
+    return order
+

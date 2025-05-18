@@ -27,3 +27,6 @@ else:
 		" location. Expected parent path directory: " + str(path)
 	)
 	raise Exception(error_message)
+
+# To obtain TestUtilities from integration_tests
+sys.path.append(str(Path(__file__).resolve().parents[1] / "integration_tests"))

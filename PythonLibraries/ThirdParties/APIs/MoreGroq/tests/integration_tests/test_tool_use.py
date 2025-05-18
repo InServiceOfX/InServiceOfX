@@ -186,6 +186,9 @@ def test_groq_tool_use_with_curl_request():
 def run_conversation(user_prompt):
     """
     https://console.groq.com/docs/tool-use
+
+    See Tools/test_ToolCallProcessing.py for how we wrap and handle these tool
+    calls.
     """
     messages = [
         create_system_message(

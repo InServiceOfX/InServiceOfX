@@ -10,7 +10,7 @@ class ToolCallProcessor:
     Handles processing of tool calls and message management for multi-step LLM
     interactions
     """
-    available_functions: Dict[str, Callable]
+    available_functions: Dict[str, Callable] = None
     messages: List[Dict[str, Any]] = None
 
     current_tool_calls: List[Any] = None
@@ -55,19 +55,37 @@ class ToolCallProcessor:
             
         return len(tool_calls)
 
+    def add_function(self, function_name: str, function: Callable):
+        if self.available_functions is None:
+            self.available_functions = {}
+
+        self.available_functions[function_name] = function
+
     def call_with_tool_calls(
             self,
             messages: List[Dict[str, Any]],
             groq_api_wrapper):
+        """
+        Returns:
+            response - if in first .create_chat_completion(..) call, there was
+            no 'choices' or no 'choices[0]' or no 'choices[0].message'
+            None, response - if there were no tool_calls, but there was a
+            response message.
+            process_result, response - if there were tool_calls, and the
+            process_result is the number of tool_calls.
+        """
         response = groq_api_wrapper.create_chat_completion(messages)
         self.messages = messages
         if (getattr(response, 'choices', None) and \
             len(response.choices) > 0 and \
             getattr(response.choices[0], 'message', None)):
             process_result = self.process_response(response.choices[0].message)
+
+            if process_result is None:
+                return process_result, response
         else:
-            return None
+            return response
 
-        response = groq_api_wrapper.create_chat_completion(self.messages)
+        second_response = groq_api_wrapper.create_chat_completion(self.messages)
 
-        return process_result, response
+        return process_result, response, second_response

@@ -11,6 +11,27 @@ import typing
 class ParseFunctionAsTool:
 
     @staticmethod
+    def _convert_Python_type_for_Groq_API_JSON_schema(type_name: str):
+        """This function was necessitated by this error:
+
+        groq.BadRequestError: Error code: 400 - {'error': {'message': 'schema is not valid JSON Schema for tool calculate parameters: jsonschema file:///home/di/params.json compilation failed: \'/properties/expression/type\' does not validate with https://json-schema.org/draft/2020-12/schema#/allOf/1/$ref/properties/properties/additionalProperties/$dynamicRef/allOf/3/$ref/properties/type/anyOf/0/$ref/enum:
+        value must be one of "array", "boolean", "integer", "null", "number", "object", "string"', 'type': 'invalid_request_error'}}
+        """
+        if type_name == "int":
+            return "integer"
+        elif type_name == "float":
+            return "number"
+        elif type_name == "str":
+            return "string"
+        elif type_name == "bool":
+            return "boolean"
+        elif type_name == "list" or type_name == "tuple" \
+            or type_name == "List" or type_name.startswith("List["):
+            return "array"
+        else:
+            return type_name
+ 
+    @staticmethod
     def parse_for_docstring_arguments_name(input_function: Callable):
         docstring = input_function.__doc__
         
@@ -172,12 +193,14 @@ class ParseFunctionAsTool:
 
     @staticmethod
     def parse_for_function_definition(input_function: Callable):
-        docstring, _, param_info, name = \
+        _, _, param_info, name = \
             ParseFunctionAsTool.parse_for_docstring_arguments_name(
                 input_function)
 
         type_info, type_annotation = \
             ParseFunctionAsTool._get_detailed_type_info(input_function)
+
+        sections = ParseFunctionAsTool._parse_docstring_sections(input_function)
 
         param_descriptions = \
             ParseFunctionAsTool._extract_parameter_descriptions(input_function)
@@ -185,7 +208,8 @@ class ParseFunctionAsTool:
         function_properties = [
             ParameterProperty(
                 name=argument_name,
-                type=type_info[argument_name],
+                type=ParseFunctionAsTool._convert_Python_type_for_Groq_API_JSON_schema(
+                    type_info[argument_name]),
                 actual_type=type_annotation[argument_name],
                 description=param_descriptions[argument_name],
                 required=True
@@ -195,7 +219,7 @@ class ParseFunctionAsTool:
 
         function_definition = FunctionDefinition(
             name=name,
-            description=docstring,
+            description=sections['description'],
             parameters=FunctionParameters(
                 properties=function_properties
             )

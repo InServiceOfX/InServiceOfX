@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 import hashlib
-from commonapi.Messages.Messages import Message, SystemMessage
+from commonapi.Messages.Messages import Message, SystemMessage, AssistantMessage
 
 @dataclass
 class ConversationHistory:
@@ -30,6 +30,45 @@ class ConversationHistory:
             print(f"Error hashing message content: {err}")
             print("type(message): ", type(message))
             print("message: ", message)
+
+    def append_general_message(self, message: Any) -> None:
+        """Because the type returned from an API call could be anything
+        proprietary, at least handle the case that the type has attribute "role"
+        and handle if "role" is "assistant". If there are no "tool_calls" then
+        use our defined AssistantMessage type.        
+        """
+        # Deal with this case:
+        # ChatCompletionMessage(content='The result of the mathematical expression 25 * 10 + 10 is 260.', role='assistant', executed_tools=None, function_call=None, reasoning=None, tool_calls=None)
+        if hasattr(message, "role") and \
+            message.role == "assistant" and \
+            hasattr(message, "tool_calls") and \
+            (message.tool_calls is None or len(message.tool_calls) == 0):
+            self.append_message(AssistantMessage(content=message.content))
+        else:
+            self.messages.append(message)
+            if isinstance(message, dict) and "content" in message:
+                self.content_hashes.append(self._hash_content(message["content"]))
+                self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
+                    len(self.content_hashes) - 1
+            # We need to handle the case where the message is of type
+            # groq.types.chat.chat_completion_message.ChatCompletionMessage
+            # where the content can be None or a string. Consider also this specific
+            # example:
+            # ChatCompletionMessage(content=None, role='assistant', executed_tools=None, function_call=None, reasoning=None, tool_calls=[ChatCompletionMessageToolCall(id='call_b16f', function=Function(arguments='{"expression": "25 * 10 + 10"}', name='calculate'), type='function')])
+            elif hasattr(message, "content"):
+                if message.content is not None:
+                    self.content_hashes.append(self._hash_content(message.content))
+                    self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
+                        len(self.content_hashes) - 1
+            else:
+                try:
+                    self.content_hashes.append(self._hash_content(message))
+                    self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
+                        len(self.content_hashes) - 1
+                except Exception as err:
+                    print(f"Error hashing message content: {err}")
+                    print("type(message): ", type(message))
+                    print("message: ", message)
 
     def delete_message_by_hash(self, hash: str) -> None:
         if hash in self.hash_to_index_reverse_map:
@@ -81,7 +120,10 @@ class ConversationHistory:
         return conversation_text, char_count, word_count
 
     def as_list_of_dicts(self) -> List[Dict[str, Any]]:
-        return [message.to_dict() for message in self.messages]
+        return [
+            message.to_dict() if isinstance(message, Message) 
+            else message if isinstance(message, dict) 
+            else message for message in self.messages]
 
     def clear(self) -> None:
         self.messages.clear()

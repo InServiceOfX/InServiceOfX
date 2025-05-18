@@ -11,8 +11,8 @@ from commonapi.Messages.Messages import (
 
 from commonapi.Messages.ConversationHistory import ConversationHistory
 
-from commonapi.Messages.ConversationHistoryAndSystemMessagesManager import (
-    ConversationHistoryAndSystemMessagesManager)
+from commonapi.Messages.ConversationAndSystemMessages import (
+    ConversationAndSystemMessages)
 
 from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
