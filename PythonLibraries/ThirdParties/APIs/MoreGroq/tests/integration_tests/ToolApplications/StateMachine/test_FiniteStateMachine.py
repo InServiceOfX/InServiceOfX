@@ -10,6 +10,8 @@ from moregroq.ToolApplications.StateMachine.FiniteStateMachine import (
     create_fsm_tools_with_strings
 )
 
+from TestUtilities.TestSetup import PizzaCustomerSupportFiniteStateMachine
+
 import pytest
 
 load_environment_file()
@@ -171,3 +173,54 @@ def test_customer_support_fsm_steps(customer_support_fsm_runner):
     print(
         "\n\t customer_support_fsm_runner.transition_history:",
         customer_support_fsm_runner.transition_history)
+
+def test_pizza_customer_support_fsm_steps():
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+    groq_api_wrapper.configuration.model = "gemma2-9b-it"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)
+    groq_api_and_tool_call.set_tool_choice()
+
+    groq_api_and_tool_call.add_system_message(
+        PizzaCustomerSupportFiniteStateMachine.SYSTEM_PROMPT)
+
+    fsm = FiniteStateMachine(
+        states=PizzaCustomerSupportFiniteStateMachine.STATES,
+        alphabet=PizzaCustomerSupportFiniteStateMachine.ALPHABET,
+        initial_state=PizzaCustomerSupportFiniteStateMachine.INITIAL_STATE,
+        transition_function=PizzaCustomerSupportFiniteStateMachine.get_transition_function(),
+        final_states=PizzaCustomerSupportFiniteStateMachine.FINAL_STATES
+    )
+
+    fsm_runner = FiniteStateMachineRunner(fsm)
+    fsm_runner.reset()
+
+    input_get_current_state, input_run_step = create_fsm_functions(fsm_runner)
+
+    get_current_state, run_step = \
+        create_fsm_tools_with_strings(input_get_current_state, input_run_step)
+
+    groq_api_and_tool_call.add_tool(get_current_state)
+    groq_api_and_tool_call.add_tool(run_step)
+
+    user_prompt = "I want to order a pizza"
+    tool_call_result = \
+        groq_api_and_tool_call.create_chat_completion_with_user_message_until_tool_call_ends(
+            user_prompt)
+
+    print("\n\t len(tool_call_result):", len(tool_call_result))
+    print("\n\t tool_call_result:", tool_call_result)
+
+    for index in range(len(tool_call_result)):
+        print(
+            "\n\t tool_call_result[", index, "]:",
+            tool_call_result[index])
+
+    print("\n\t get_current_state():", get_current_state())
+    print(
+        "\n\t fsm_runner.current_state:",
+        fsm_runner.current_state)
+    print(
+        "\n\t fsm_runner.transition_history:",
+        fsm_runner.transition_history)

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 
 # https://console.groq.com/docs/tool-use
@@ -150,3 +151,70 @@ def create_purchasing_order(product_id: str, quantity: int) -> dict:
     
     return order
 
+class PizzaCustomerSupportFiniteStateMachine:
+    STATES = {
+        'start',
+        'selecting_type',
+        'customizing_toppings',
+        'confirming_order',
+        'order_placed',
+        'order_cancelled'
+    }
+
+    ALPHABET = {
+        'order_pizza',
+        'select_type',
+        'add_topping',
+        'remove_topping',
+        'confirm_order',
+        'cancel_order',
+        'unknown_input'}
+
+    INITIAL_STATE = 'start'
+
+    FINAL_STATES = {'order_placed', 'order_cancelled'}
+
+    @staticmethod
+    def get_transition_function():
+
+        transition_function = {}
+        for s in PizzaCustomerSupportFiniteStateMachine.STATES:
+            for a in PizzaCustomerSupportFiniteStateMachine.ALPHABET:
+                if s == 'start':
+                    transition_function[(s, a)] = 'selecting_type' \
+                        if a == 'order_pizza' else 'start'
+                elif s == 'selecting_type':
+                    transition_function[(s, a)] = 'customizing_toppings' \
+                        if a == 'select_type' else 'order_cancelled' \
+                            if a == 'cancel_order' else 'selecting_type'
+                elif s == 'customizing_toppings':
+                    transition_function[(s, a)] = 'customizing_toppings' \
+                        if a in {'add_topping', 'remove_topping'} \
+                        else 'confirming_order' \
+                            if a == 'confirm_order' else 'order_cancelled' \
+                                if a == 'cancel_order' else 'customizing_toppings'
+                elif s == 'confirming_order':
+                    transition_function[(s, a)] = 'order_placed' \
+                        if a == 'confirm_order' else 'order_cancelled' \
+                            if a == 'cancel_order' else 'confirming_order'
+                elif s == 'order_placed':
+                    transition_function[(s, a)] = 'order_placed'
+                elif s == 'order_cancelled':
+                    transition_function[(s, a)] = 'order_cancelled'
+        return transition_function
+
+    SYSTEM_PROMPT = \
+    """
+You are a customer support chatbot for a pizza restaurant. Your task is to guide users through the process of ordering a pizza using a state machine. The state machine has the following input alphabet symbols: 'order_pizza', 'select_type', 'add_topping', 'remove_topping', 'confirm_order', 'cancel_order', 'unknown_input'.
+
+Based on the user's message, determine their intent and map it to one of these symbols. Here are examples:
+- 'I want to order a pizza' → 'order_pizza'
+- 'I’d like a pepperoni pizza' → 'select_type'
+- 'Add extra cheese' → 'add_topping'
+- 'Remove olives' → 'remove_topping'
+- 'Yes, place the order' → 'confirm_order'
+- 'No, cancel it' → 'cancel_order'
+- 'What’s the weather like?' → 'unknown_input'
+
+If the user’s intent is unclear or doesn’t match these categories, use 'unknown_input' and ask for clarification. Always respond with a JSON object containing the symbol, e.g., {'symbol': 'order_pizza'}. Only use symbols from the defined alphabet.
+"""
