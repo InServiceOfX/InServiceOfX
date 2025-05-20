@@ -89,3 +89,45 @@ class ToolCallProcessor:
         second_response = groq_api_wrapper.create_chat_completion(self.messages)
 
         return process_result, response, second_response
+
+    # But what if the second create_chat_completion(..) call returns yet another
+    # tool call?
+
+    def call_with_tool_calls_until_end(
+        self,
+        messages: List[Dict[str, Any]],
+        groq_api_wrapper,
+        call_limit = None):
+        """
+        Returns:
+            response - if in first .create_chat_completion(..) call, there was
+            no 'choices' or no 'choices[0]' or no 'choices[0].message'
+        """
+        DEFAULT_CALL_LIMIT = 32
+        if call_limit is None or call_limit < 1:
+            call_limit = DEFAULT_CALL_LIMIT
+
+        responses = []
+
+        self.messages = messages
+
+        index = 0
+        while index < call_limit:
+
+            response = groq_api_wrapper.create_chat_completion(self.messages)
+            if hasattr(response, 'choices') and \
+                len(response.choices) > 0 and \
+                hasattr(response.choices[0], 'message'):
+                process_result = self.process_response(
+                    response.choices[0].message)
+
+                if process_result is None:
+                    responses.append(response)
+                    return process_result, responses
+            else:
+                responses.append(response)
+                return responses
+
+            index += 1
+
+        return None, responses

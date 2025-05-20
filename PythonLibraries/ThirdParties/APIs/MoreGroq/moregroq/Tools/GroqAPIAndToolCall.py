@@ -111,3 +111,70 @@ class GroqAPIAndToolCall:
                 second_response)
 
         return process_result, response, second_response
+
+    def create_chat_completion_with_user_message_until_tool_call_ends(
+        self,
+        user_message: str = None,
+        call_limit = None):
+        """This function will
+        * Add user message to conversation history directly.
+        * Have tool_call_processor call Groq API once with the messages. 
+        - If tool call result length is 1, then no response message was returned.
+        - If tool call result length is 2, then no request for a tool_call was
+        made at the very end. Responses length equal to N number of tool calls.
+        """
+        if user_message is None or user_message == "":
+            print("No user message provided.")
+            return
+
+        self.conversation_and_system_messages.append_message(
+            UserMessage(content=user_message))
+
+        tool_call_result = \
+            self.tool_call_processor.call_with_tool_calls_until_end(
+                    messages=\
+                        self.conversation_and_system_messages.get_conversation_as_list_of_dicts(),
+                    groq_api_wrapper=self.groq_api_wrapper,
+                    call_limit=call_limit)
+
+        if tool_call_result is None or len(tool_call_result) < 1:
+            return
+
+        if len(tool_call_result) == 1:
+            return tool_call_result[0]
+
+        if len(tool_call_result) == 2:
+            process_result, responses = tool_call_result
+            for response in responses:
+                if response is not None and hasattr(response, "choices") and \
+                    len(response.choices) > 0 and \
+                    hasattr(response.choices[0], "message"):
+                    # This function call also handles if the given message, of some
+                    # type, at least has the "role" attribute and the role is
+                    # assistant.
+                    self.conversation_and_system_messages.append_general_message(
+                        response.choices[0].message)
+                else:
+                    print("No response message returned with response:", response)
+            return process_result, response
+        # We don't expect this to happen.
+        else:
+            try:
+                process_result = tool_call_result[0]
+                responses = tool_call_result[1]
+                for response in responses:
+                    if response is not None and hasattr(response, "choices") and \
+                        len(response.choices) > 0 and \
+                        hasattr(response.choices[0], "message"):
+                        self.conversation_and_system_messages.append_general_message(
+                            response.choices[0].message)
+                    else:
+                        print(
+                            "No response message returned with response:",
+                            response)
+                return process_result, responses
+            except Exception as e:
+                print(
+                    "Error in create_chat_completion_with_user_message_until_tool_call_ends:",
+                    e)
+                return None, []

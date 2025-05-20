@@ -121,3 +121,60 @@ class FiniteStateMachineRunner:
         """Is current state in final states?"""
         return self.current_state in self.fsm.final_states
 
+def create_fsm_functions(fsm_runner):
+    """
+    Function factory that creates functions bound to a specific
+    FiniteStateMachineRunner instance.
+    
+    Args:
+        fsm_runner: An instance of FiniteStateMachineRunner
+        
+    Returns:
+        tuple: (get_current_state, run_step) functions that operate on the
+        provided fsm_runner
+    """
+    def get_current_state():
+        """
+        Get the current state of the FSM.
+        
+        Returns:
+            Any: The current state of the FSM
+        """
+        return fsm_runner.current_state
+    
+    def run_step(symbol):
+        """
+        Run a step in the FSM with the given symbol.
+        
+        Args:
+            symbol: Any - The input symbol to process
+            
+        Returns:
+            Any: The new current state after processing the symbol
+        """
+        fsm_runner.step(symbol)
+        return fsm_runner.current_state
+    
+    return get_current_state, run_step
+
+def create_fsm_tools_with_strings(input_get_current_state, input_run_step):
+    def get_current_state():
+        """Get the current state of the state machine.
+
+        Returns:
+            str: The current state of the state machine.
+        """
+        return str(input_get_current_state())
+    
+    def run_step(symbol: str):
+        """Run a step in the state machine with the given symbol.
+
+        Args:
+            symbol: The input symbol to process
+
+        Returns:
+            str: The new current state after processing the symbol
+        """
+        return str(input_run_step(symbol))
+
+    return get_current_state, run_step

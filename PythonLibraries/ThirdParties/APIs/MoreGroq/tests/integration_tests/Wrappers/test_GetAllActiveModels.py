@@ -28,7 +28,6 @@ def test_get_list_of_available_models_works():
     assert len(result) > 0
     assert set(result[0].keys()) == set(["id", "owned_by", "context_window"])
 
-    TODO: Fix this.
     assert any(
         entry.get('id') == 'llama-3.3-70b-versatile' \
         and \
