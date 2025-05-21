@@ -55,6 +55,29 @@ class ToolCallProcessor:
             
         return len(tool_calls)
 
+    def handle_possible_tool_calls(self, response_message: Any):
+        tool_calls = getattr(response_message, 'tool_calls', None)
+        if not tool_calls:
+            return None
+
+        tool_call_messages = []
+    
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_to_call = self.available_functions.get(function_name)
+
+            if function_to_call:
+                function_args = json.loads(tool_call.function.arguments)
+                function_response = function_to_call(**function_args)
+                
+                tool_call_messages.append(
+                    create_tool_message(
+                        content=str(function_response),
+                        name=function_name,
+                        tool_call_id=tool_call.id))
+        return tool_call_messages
+
+
     def add_function(self, function_name: str, function: Callable):
         if self.available_functions is None:
             self.available_functions = {}
@@ -115,6 +138,7 @@ class ToolCallProcessor:
         while index < call_limit:
 
             response = groq_api_wrapper.create_chat_completion(self.messages)
+            responses.append(response)
             if hasattr(response, 'choices') and \
                 len(response.choices) > 0 and \
                 hasattr(response.choices[0], 'message'):
@@ -122,12 +146,13 @@ class ToolCallProcessor:
                     response.choices[0].message)
 
                 if process_result is None:
-                    responses.append(response)
                     return process_result, responses
             else:
-                responses.append(response)
                 return responses
 
             index += 1
 
-        return None, responses
+        try:
+            return process_result, responses
+        except:
+            return None, responses

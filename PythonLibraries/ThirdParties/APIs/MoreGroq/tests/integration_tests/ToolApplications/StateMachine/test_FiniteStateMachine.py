@@ -210,7 +210,7 @@ def test_pizza_customer_support_fsm_steps():
             user_prompt)
 
     print("\n\t len(tool_call_result):", len(tool_call_result))
-    print("\n\t tool_call_result:", tool_call_result)
+    #print("\n\t tool_call_result:", tool_call_result)
 
     for index in range(len(tool_call_result)):
         print(
@@ -224,3 +224,40 @@ def test_pizza_customer_support_fsm_steps():
     print(
         "\n\t fsm_runner.transition_history:",
         fsm_runner.transition_history)
+
+    if len(tool_call_result) > 1:
+        try:
+            print("\n\t len(tool_call_result[1]): ", len(tool_call_result[1]))
+
+            for index in range(len(tool_call_result[1])):
+                print(
+                    "\n\t tool_call_result[1][", index, "]:",
+                    tool_call_result[1][index])
+        except:
+            print("\n\t tool_call_result[1] is not a list")
+
+    user_prompt = "I want to order a medium pizza. Add pepperoni and mushrooms toppings."
+    tool_call_result = \
+        groq_api_and_tool_call.create_chat_completion_with_user_message_until_tool_call_ends(
+            user_prompt)
+
+    print("\n\t len(tool_call_result):", len(tool_call_result))
+
+    print("\n\t get_current_state():", get_current_state())
+    print(
+        "\n\t fsm_runner.current_state:",
+        fsm_runner.current_state)
+    print(
+        "\n\t fsm_runner.transition_history:",
+        fsm_runner.transition_history)
+
+    if len(tool_call_result) > 1:
+        try:
+            print("\n\t len(tool_call_result[1]): ", len(tool_call_result[1]))
+
+            for index in range(len(tool_call_result[1])):
+                print(
+                    "\n\t tool_call_result[1][", index, "]:",
+                    tool_call_result[1][index])
+        except:
+            print("\n\t tool_call_result[1] is not a list")

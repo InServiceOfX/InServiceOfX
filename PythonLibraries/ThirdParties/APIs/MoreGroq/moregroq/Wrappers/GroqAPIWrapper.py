@@ -28,6 +28,15 @@ class BaseGroqWrapper(ABC):
         """Create chat completion with current configuration."""
         pass
 
+    @staticmethod
+    def is_has_message_response(response) -> bool:
+        if response is not None and \
+            hasattr(response, "choices") and \
+            len(response.choices) > 0 and \
+            hasattr(response.choices[0], "message"):
+            return True
+        return False
+
 class GroqAPIWrapper(BaseGroqWrapper):
     def _create_client(self, api_key: str) -> Groq:
         return Groq(api_key=api_key)
