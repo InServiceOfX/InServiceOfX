@@ -12,7 +12,6 @@ import sys
 import argparse
 import subprocess
 from pathlib import Path
-import os
 
 # ==============================================================================
 # CONFIGURATION CONSTANTS
@@ -26,6 +25,9 @@ PROJECT_DIR = "/home/propdev/Prop/InServiceOfX"
 # Usually this doesn't need to be changed
 CONTAINER_MOUNT_PATH = "/InServiceOfX"
 
+# Base directory for Docker builds
+DOCKER_BUILDS_BASE = "../DockerBuilds/Builds/"
+
 # ==============================================================================
 
 
@@ -38,8 +40,9 @@ def parse_arguments():
     parser.add_argument(
         "--build-dir", 
         type=str,
-        default="../DockerBuilds/Builds/LLM/LocalLLMFull/",
-        help="Path to directory containing Docker configuration files"
+        default="LLM/LocalLLMFull/",
+        help=\
+            "Path relative to ../DockerBuilds/Builds/ (e.g., LLM/LocalLLMFull/)"
     )
     parser.add_argument(
         "--gpu", 
@@ -53,6 +56,11 @@ def parse_arguments():
         default=[8888, 7860],
         help="Ports to expose (default: 8888 7860)"
     )
+    parser.add_argument(
+        "--clichatlocal",
+        action="store_true",
+        help="Run the CLI chat local application instead of dropping to shell"
+    )
     
     return parser.parse_args()
 
@@ -64,20 +72,21 @@ def get_script_dir():
 
 def resolve_build_dir(build_dir_path):
     """Resolve the build directory path, handling relative paths."""
-    build_dir = Path(build_dir_path)
+    # Combine the base directory with the provided path
+    full_path = Path(DOCKER_BUILDS_BASE) / build_dir_path
     
     # If it's a relative path, make it relative to the script directory
-    if not build_dir.is_absolute():
-        build_dir = get_script_dir() / build_dir
+    if not full_path.is_absolute():
+        full_path = get_script_dir() / full_path
     
     # Resolve to absolute path
-    build_dir = build_dir.resolve()
+    full_path = full_path.resolve()
     
-    if not build_dir.exists():
-        print(f"Error: Build directory '{build_dir}' does not exist.")
+    if not full_path.exists():
+        print(f"Error: Build directory '{full_path}' does not exist.")
         sys.exit(1)
         
-    return build_dir
+    return full_path
 
 
 def read_docker_image_name(build_dir):
@@ -162,7 +171,24 @@ def build_docker_command(image_name, volumes, gpu_device, ports):
     return cmd
 
 
+def run_docker_with_shell(docker_cmd):
+    """Run Docker container and drop into an interactive shell."""
+    docker_cmd.extend([
+        "bash",
+        "-c",
+        "cd /InServiceOfX/PythonLibraries && bash"
+    ])
+    
+    try:
+        subprocess.run(docker_cmd)
+    except KeyboardInterrupt:
+        print("\nExiting Docker container...")
+    except Exception as e:
+        print(f"Error running Docker container: {e}")
+
+
 def run_docker_with_app(docker_cmd):
+    """Run Docker container with CLI chat local application."""
     docker_cmd.extend([
         "bash",
         "-c",
@@ -170,13 +196,11 @@ def run_docker_with_app(docker_cmd):
     ])
     
     try:
-        # If container already exists, remove it
         subprocess.run(docker_cmd)
-    except:
-        pass
-        
-    # Run the Docker command
-    subprocess.run(docker_cmd)
+    except KeyboardInterrupt:
+        print("\nExiting Docker container...")
+    except Exception as e:
+        print(f"Error running Docker container: {e}")
 
 
 def main():
@@ -195,15 +219,18 @@ def main():
     volumes = read_mount_volumes(build_dir)
     print(f"Found {len(volumes)} volume mounts")
     
-    # Build and execute Docker command
+    # Build Docker command
     docker_cmd = build_docker_command(image_name, volumes, args.gpu, args.port)
     
     print("\nExecuting Docker command:")
     print(" ".join(docker_cmd))
     print("\n")
     
-    # Execute the command
-    run_docker_with_app(docker_cmd)
+    # Execute the command with either shell or app
+    if args.clichatlocal:
+        run_docker_with_app(docker_cmd)
+    else:
+        run_docker_with_shell(docker_cmd)
 
 
 if __name__ == "__main__":

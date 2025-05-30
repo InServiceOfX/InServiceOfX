@@ -110,7 +110,9 @@ RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty
 ### Further third party code/repositories
 
 # MoreGroq would need this.
-RUN pip install groq instructor
+RUN pip install groq instructor && \
+  # Immediately needed for the tests for MoreGroq.
+  pip install yfinance
 
 #
 #
