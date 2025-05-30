@@ -12,8 +12,7 @@ from moregroq.Wrappers import GroqAPIWrapper
 from moregroq.Wrappers.ChatCompletionConfiguration import (
     FunctionDefinition,
     FunctionParameters,
-    ParameterProperty,
-    Tool)
+    ParameterProperty,)
 
 from pprint import pprint
 

@@ -232,7 +232,7 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
 
     handle_possible_tool_calls_result = None
 
-    if GroqAPIWrapper.is_has_message_response(response):
+    if GroqAPIWrapper.has_message_response(response):
         print("response.choices[0].message: ", response.choices[0].message)
         handle_possible_tool_calls_result = \
             tool_call_processor.handle_possible_tool_calls(
@@ -256,12 +256,12 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
     else:
         print("No response message returned with response:", response)
 
-    if GroqAPIWrapper.is_has_message_response(response) and \
+    if GroqAPIWrapper.has_message_response(response) and \
         handle_possible_tool_calls_result is not None and \
         len(handle_possible_tool_calls_result) > 0:
         response = groq_api_wrapper.create_chat_completion(messages)
 
-        if GroqAPIWrapper.is_has_message_response(response):
+        if GroqAPIWrapper.has_message_response(response):
             print("response.choices[0].message: ", response.choices[0].message)
             messages.append(response.choices[0].message)
             handle_possible_tool_calls_result = \
@@ -282,7 +282,7 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
                     messages.append(tool_call)
         else:
             print("No response message returned with response:", response)
-    elif GroqAPIWrapper.is_has_message_response(response):
+    elif GroqAPIWrapper.has_message_response(response):
         print("response.choices[0].message: ", response.choices[0].message)
         messages.append(response.choices[0].message)
     else:
@@ -295,4 +295,19 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
 
     user_prompt = "Reverse the string 'Hello, world!'"
     print("user_prompt: ", user_prompt)
+
+    messages.append(create_user_message(user_prompt))
+
+    response = groq_api_wrapper.create_chat_completion(messages)
+
+    print("response: ", response)
+
+    if GroqAPIWrapper.has_message_response(response) and \
+        handle_possible_tool_calls_result is None:
+        print("response.choices[0].message: ", response.choices[0].message)
+        handle_possible_tool_calls_result = \
+            tool_call_processor.handle_possible_tool_calls(
+                response.choices[0].message)
+
+    print("handle_possible_tool_calls_result: ", handle_possible_tool_calls_result)
 

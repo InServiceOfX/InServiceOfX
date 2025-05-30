@@ -29,7 +29,7 @@ class BaseGroqWrapper(ABC):
         pass
 
     @staticmethod
-    def is_has_message_response(response) -> bool:
+    def has_message_response(response) -> bool:
         if response is not None and \
             hasattr(response, "choices") and \
             len(response.choices) > 0 and \

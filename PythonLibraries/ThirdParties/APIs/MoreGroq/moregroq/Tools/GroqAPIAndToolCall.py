@@ -30,8 +30,8 @@ class GroqAPIAndToolCall:
         self._current_response = None
 
     @staticmethod
-    def is_has_message_response(response) -> bool:
-        return BaseGroqWrapper.is_has_message_response(response)
+    def has_message_response(response) -> bool:
+        return BaseGroqWrapper.has_message_response(response)
 
     def set_tool_choice(self, tool_choice: str = "auto"):
         """
