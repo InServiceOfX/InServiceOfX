@@ -151,3 +151,23 @@ class ChatCompletionConfiguration:
             config_dict["parallel_tool_calls"] = self.parallel_tool_calls
             
         return config_dict
+
+    def to_dict_for_json_response(self) -> Dict[str, Any]:
+        """
+        TODO: check what necessary parameters are for JSON response.
+        """
+        config_dict = {
+            "model": self.model,
+            "n": self.n,
+            "stream": self.stream
+        }
+
+        if self.max_tokens is not None:
+            config_dict["max_tokens"] = self.max_tokens
+        if self.response_format is not None:
+            config_dict["response_format"] = self.response_format
+        if self.temperature is not None:
+            config_dict["temperature"] = self.temperature
+
+        return config_dict
+

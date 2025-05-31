@@ -1,5 +1,4 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
-from corecode.Utilities.Strings import ThreadSafeStringBuilder
 
 from commonapi.Messages import ConversationHistory
 
@@ -76,7 +75,9 @@ def test_create_agent_on_other_system_prompt():
     response = agent(helper_response, input, messages)
     print("expert planner response: ", response.choices[0].message.content)
 
-    groq_api_wrapper.configuration.model = "mixtral-8x7b-32768"
+    # groq.BadRequestError: Error code: 400 - {'error': {'message':
+    # 'The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported.
+    groq_api_wrapper.configuration.model = "llama-3.1-8b-instant"
 
     agent = create_agent(
         groq_api_wrapper,
@@ -102,7 +103,10 @@ async def test_concatenate_responses():
 
     async_groq_api_wrapper_1 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
-    async_groq_api_wrapper_1.configuration.model = "mixtral-8x7b-32768"
+
+    # groq.BadRequestError: Error code: 400 - {'error': {'message':
+    # 'The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported.
+    async_groq_api_wrapper_1.configuration.model = "llama-3.1-8b-instant"
 
     async_groq_api_wrapper_2 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
@@ -161,7 +165,10 @@ async def test_async_layer_agents():
 
     async_groq_api_wrapper_1 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
-    async_groq_api_wrapper_1.configuration.model = "mixtral-8x7b-32768"
+
+    # groq.BadRequestError: Error code: 400 - {'error': {'message':
+    # 'The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported.
+    async_groq_api_wrapper_1.configuration.model = "llama-3.1-8b-instant"
 
     async_groq_api_wrapper_2 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
@@ -212,7 +219,10 @@ async def test_chat_cycles():
 
     async_groq_api_wrapper_1 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
-    async_groq_api_wrapper_1.configuration.model = "mixtral-8x7b-32768"
+
+    # groq.BadRequestError: Error code: 400 - {'error': {'message':
+    # 'The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported.
+    async_groq_api_wrapper_1.configuration.model = "llama-3.1-8b-instant"
 
     async_groq_api_wrapper_2 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
@@ -301,7 +311,10 @@ async def test_chat_to_response():
 
     async_groq_api_wrapper_1 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))
-    async_groq_api_wrapper_1.configuration.model = "mixtral-8x7b-32768"
+
+    # groq.BadRequestError: Error code: 400 - {'error': {'message':
+    # 'The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported.
+    async_groq_api_wrapper_1.configuration.model = "llama-3.1-8b-instant"
 
     async_groq_api_wrapper_2 = AsyncGroqAPIWrapper(
         api_key=get_environment_variable("GROQ_API_KEY"))

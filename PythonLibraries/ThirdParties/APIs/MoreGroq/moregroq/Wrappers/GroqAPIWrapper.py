@@ -29,7 +29,7 @@ class BaseGroqWrapper(ABC):
         pass
 
     @staticmethod
-    def has_message_response(response) -> bool:
+    def has_message_in_response(response) -> bool:
         if response is not None and \
             hasattr(response, "choices") and \
             len(response.choices) > 0 and \
@@ -45,21 +45,16 @@ class GroqAPIWrapper(BaseGroqWrapper):
         config_dict = self.configuration.to_dict()
         return self.client.chat.completions.create(
             messages=messages,
-            **config_dict
-        )
+            **config_dict)
 
     def get_json_response(self, messages: list[dict]):
         self.configuration.response_format = {"type": "json_object"}
 
-        return self.client.chat.completions.create(
-            model=self.configuration.model,
-            messages=messages,
-            max_tokens=self.configuration.max_tokens,
-            n=self.configuration.n,
-            response_format=self.configuration.response_format,
-            stream=self.configuration.stream,
-            temperature=self.configuration.temperature)
+        config_dict = self.configuration.to_dict_for_json_response()
 
+        return self.client.chat.completions.create(
+            messages=messages,
+            **config_dict)
 
 class AsyncGroqAPIWrapper(BaseGroqWrapper):
     def _create_client(self, api_key: str) -> AsyncGroq:
@@ -69,17 +64,13 @@ class AsyncGroqAPIWrapper(BaseGroqWrapper):
         config_dict = self.configuration.to_dict()
         return await self.client.chat.completions.create(
             messages=messages,
-            **config_dict
-        )
+            **config_dict)
 
     async def get_json_response(self, messages: list[dict]):
         self.configuration.response_format = {"type": "json_object"}
 
+        config_dict = self.configuration.to_dict_for_json_response()
+
         return await self.client.chat.completions.create(
-            model=self.configuration.model,
             messages=messages,
-            max_tokens=self.configuration.max_tokens,
-            n=self.configuration.n,
-            response_format=self.configuration.response_format,
-            stream=self.configuration.stream,
-            temperature=self.configuration.temperature)
+            **config_dict)

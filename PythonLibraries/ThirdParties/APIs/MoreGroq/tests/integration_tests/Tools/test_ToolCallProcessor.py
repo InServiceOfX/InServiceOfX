@@ -58,32 +58,34 @@ def test_ToolCallProcessor_works_on_parallel_tool_use():
 
     response = groq_api_wrapper.create_chat_completion(messages)
 
-    print(response.choices[0].message.tool_calls)
-
     tool_call_processor = ToolCallProcessor(
         available_functions={
             "get_bakery_prices": get_bakery_prices
-        },
-        messages=messages
-    )
+        },)
 
-    process_result = tool_call_processor.process_response(
-        response.choices[0].message)
+    if GroqAPIWrapper.has_message_in_response(response):
+        response_message = response.choices[0].message
+        print(response_message.tool_calls)
+        handle_possible_tool_calls_result = \
+            tool_call_processor.handle_possible_tool_calls(
+                response.choices[0].message)
 
-    assert process_result == 2
+        messages.append(response_message)
+        if handle_possible_tool_calls_result is not None:
+            for tool_call in handle_possible_tool_calls_result:
+                messages.append(tool_call)
 
-    # ToolCallProcessor.process_response(..) mutates the original messages
-    # input.
+        response = groq_api_wrapper.create_chat_completion(messages)
+        response_message = response.choices[0].message
+        print("response_message: ", response_message)
+        print(response_message.tool_calls)
+        print(response_message.content)
+        assert "4.25" in response_message.content
+        assert "4.75" in response_message.content
 
-    assert tool_call_processor.messages == messages
+    else:
+        raise Exception("No message in response")
 
-    response = groq_api_wrapper.create_chat_completion(messages)
-    response_message = response.choices[0].message
-    print(response_message)
-    print(response_message.tool_calls)
-    print(response_message.content)
-    assert "4.25" in response_message.content
-    assert "4.75" in response_message.content
 
 def setup_calculate_tool():
     function_definition = ParseFunctionAsTool.parse_for_function_definition(
@@ -102,7 +104,7 @@ def setup_calculate_tool():
 
     return tool, messages
 
-def test_ToolCallProcessor_call_with_tool_calls_on_calculate():
+def test_ToolCallProcessor_handle_possible_tool_calls_on_calculate():
     tool, messages = setup_calculate_tool()
 
     groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
@@ -114,27 +116,30 @@ def test_ToolCallProcessor_call_with_tool_calls_on_calculate():
     tool_call_processor = ToolCallProcessor(
         available_functions={
             "calculate": calculate
-        },
-        messages=messages)
+        },)
 
-    call_with_tool_calls_result = tool_call_processor.call_with_tool_calls(
-        messages=messages,
-        groq_api_wrapper=groq_api_wrapper)
+    response = groq_api_wrapper.create_chat_completion(messages)
 
-    if len(call_with_tool_calls_result) == 1:
-        print("No tool calls returned.")
-        print("call_with_tool_calls_result: ", call_with_tool_calls_result)
-    elif len(call_with_tool_calls_result) == 2:
-        print("No tool calls.")
-        print("call_with_tool_calls_result: ", call_with_tool_calls_result)
-    else:
-        process_result, response, second_response = call_with_tool_calls_result
-        print("process_result: ", process_result)
-        print("response: ", response)
-        print("second_response: ", second_response)
+    if GroqAPIWrapper.has_message_in_response(response):
+        response_message = response.choices[0].message
+        handle_possible_tool_calls_result = \
+            tool_call_processor.handle_possible_tool_calls(
+                response_message)
 
-    for message in tool_call_processor.messages:
-        print("message: ", message)
+        messages.append(response_message)
+
+        print("response_message: ", response_message)
+        if handle_possible_tool_calls_result is not None:
+            for tool_call in handle_possible_tool_calls_result:
+                print("tool_call: ", tool_call)
+                messages.append(tool_call)
+
+            second_response = groq_api_wrapper.create_chat_completion(messages)
+
+            print("second_response: ", second_response)
+        else:
+            print("No tool calls returned.")
+ 
 
 def test_ToolCallProcessor_handles_one_tool_call():
     tool, messages = setup_calculate_tool()
@@ -149,8 +154,7 @@ def test_ToolCallProcessor_handles_one_tool_call():
         available_functions={
             "calculate": calculate,
             "reverse_string": reverse_string
-        },
-        messages=messages)
+        },)
 
     response = groq_api_wrapper.create_chat_completion(messages)
 
@@ -225,14 +229,13 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
         available_functions={
             "calculate": calculate,
             "reverse_string": reverse_string
-        },
-        messages=messages)
+        },)
 
     response = groq_api_wrapper.create_chat_completion(messages)
 
     handle_possible_tool_calls_result = None
 
-    if GroqAPIWrapper.has_message_response(response):
+    if GroqAPIWrapper.has_message_in_response(response):
         print("response.choices[0].message: ", response.choices[0].message)
         handle_possible_tool_calls_result = \
             tool_call_processor.handle_possible_tool_calls(
@@ -256,12 +259,12 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
     else:
         print("No response message returned with response:", response)
 
-    if GroqAPIWrapper.has_message_response(response) and \
+    if GroqAPIWrapper.has_message_in_response(response) and \
         handle_possible_tool_calls_result is not None and \
         len(handle_possible_tool_calls_result) > 0:
         response = groq_api_wrapper.create_chat_completion(messages)
 
-        if GroqAPIWrapper.has_message_response(response):
+        if GroqAPIWrapper.has_message_in_response(response):
             print("response.choices[0].message: ", response.choices[0].message)
             messages.append(response.choices[0].message)
             handle_possible_tool_calls_result = \
@@ -282,7 +285,7 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
                     messages.append(tool_call)
         else:
             print("No response message returned with response:", response)
-    elif GroqAPIWrapper.has_message_response(response):
+    elif GroqAPIWrapper.has_message_in_response(response):
         print("response.choices[0].message: ", response.choices[0].message)
         messages.append(response.choices[0].message)
     else:
@@ -302,7 +305,7 @@ def test_ToolCallProcessor_handles_two_tools_one_call_at_a_time():
 
     print("response: ", response)
 
-    if GroqAPIWrapper.has_message_response(response) and \
+    if GroqAPIWrapper.has_message_in_response(response) and \
         handle_possible_tool_calls_result is None:
         print("response.choices[0].message: ", response.choices[0].message)
         handle_possible_tool_calls_result = \

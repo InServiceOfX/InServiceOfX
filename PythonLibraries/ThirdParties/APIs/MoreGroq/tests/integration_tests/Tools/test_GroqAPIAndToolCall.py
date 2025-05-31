@@ -61,24 +61,53 @@ def test_replicate_run_conversation():
     assert conversation_history[0]["role"] == "system"
     assert conversation_history[0]["content"] == system_message
 
-    tool_call_result = \
-        groq_api_and_tool_call.create_chat_completion_with_user_message(
-            user_prompt)
+    ready_to_call_new_user_prompt = True
 
-    print("\t len(tool_call_result):", len(tool_call_result))
-    print("\t tool_call_result:", tool_call_result)
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
 
-    if len(tool_call_result) == 2:
-        process_result, response = tool_call_result
-    elif len(tool_call_result) == 3:
-        process_result, response, second_response = tool_call_result
-        print("\t second_response:", second_response)
-    print("\t process_result:", process_result)
-    print("\t response:", response)
+    ready_to_call_new_user_prompt = False
 
-    for message in \
-        groq_api_and_tool_call.conversation_and_system_messages.get_conversation_as_list_of_dicts():
-        print("\t message: \n", message)
+    assert groq_api_and_tool_call._current_response is not None
+    assert groq_api_and_tool_call._handle_possible_tool_calls_result is None
+
+    print(
+        "\n\t 0: groq_api_and_tool_call._current_response: \n",
+        groq_api_and_tool_call._current_response)
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+
+    conversation_history = \
+        groq_api_and_tool_call.conversation_and_system_messages.get_conversation_as_list_of_dicts()
+    assert len(conversation_history) == 3
+
+    assert groq_api_and_tool_call._current_response is None
+    assert groq_api_and_tool_call._handle_possible_tool_calls_result is not None
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    assert groq_api_and_tool_call.create_chat_completion()
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
+
+    for index, message in enumerate(
+        groq_api_and_tool_call.conversation_and_system_messages.get_conversation_as_list_of_dicts()):
+        print(
+            "\n\t index: ", index,
+            "\n\t message: \n", message)
 
 def test_add_more_than_one_tool():
     system_message = (
@@ -116,33 +145,141 @@ def test_add_more_than_one_tool():
     assert tool_call_available_functions["reverse_string"] == reverse_string
 
     user_prompt = "What is 25 * 11 + 12?"
-    tool_call_result = \
-        groq_api_and_tool_call.create_chat_completion_with_user_message(
-            user_prompt)
 
-    print("\n\t len(tool_call_result):", len(tool_call_result))
-    print("\n\t tool_call_result:", tool_call_result)
+    ready_to_call_new_user_prompt = True
+    iterations_after_create_chat_completion = 0
+
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
+    ready_to_call_new_user_prompt = False
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion > 1
+
+    assert groq_api_and_tool_call.create_chat_completion()
+    iterations_after_create_chat_completion = 0
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion == 1
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
 
     user_prompt = "Reverse the string 'Hello, world!'"
-    tool_call_result = \
-        groq_api_and_tool_call.create_chat_completion_with_user_message(
-            user_prompt)
 
-    print("\n\t len(tool_call_result):", len(tool_call_result))
-    print("\n\t tool_call_result:", tool_call_result)
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
+    iterations_after_create_chat_completion = 0
+    ready_to_call_new_user_prompt = False
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion > 1
+
+    assert groq_api_and_tool_call.create_chat_completion()
+    iterations_after_create_chat_completion = 0
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion == 1
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
 
     user_prompt = "What is 26 * 13 + 14?"
-    tool_call_result = \
-        groq_api_and_tool_call.create_chat_completion_with_user_message(
-            user_prompt)
 
-    print("\n\t len(tool_call_result):", len(tool_call_result))
-    print("\n\t tool_call_result:", tool_call_result)
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
+    iterations_after_create_chat_completion = 0
+    ready_to_call_new_user_prompt = False
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion > 1
+
+    assert groq_api_and_tool_call.create_chat_completion()
+    iterations_after_create_chat_completion = 0
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion == 1
+
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
+
+    user_prompt = "What is 26 * 13 + 14?"
+
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
+    iterations_after_create_chat_completion = 0
+    ready_to_call_new_user_prompt = False
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion > 1
+
+    assert groq_api_and_tool_call.create_chat_completion()
+    iterations_after_create_chat_completion = 0
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion == 1
+
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
 
     user_prompt = "What is the capital of Germany?"
-    tool_call_result = \
-        groq_api_and_tool_call.create_chat_completion_with_user_message(
-            user_prompt)
+    assert groq_api_and_tool_call.create_chat_completion(user_prompt)
+    iterations_after_create_chat_completion = 0
+    ready_to_call_new_user_prompt = False
 
-    print("\n\t len(tool_call_result):", len(tool_call_result))
-    print("\n\t tool_call_result:", tool_call_result)
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+    iterations_after_create_chat_completion += 1
+
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert iterations_after_create_chat_completion == 1
+
+    ready_to_call_new_user_prompt = True
+
+    assert ready_to_call_new_user_prompt
