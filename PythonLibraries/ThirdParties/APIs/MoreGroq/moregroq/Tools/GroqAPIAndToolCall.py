@@ -123,3 +123,35 @@ class GroqAPIAndToolCall:
         else:
             return False
 
+class GroqAPIAndToolCallRunner:
+    def __init__(self, groq_api_and_tool_call: GroqAPIAndToolCall):
+        self._groq_api_and_tool_call = groq_api_and_tool_call
+        self._ready_to_call_new_user_prompt = True
+        self._iterations_after_create_chat_completion = 0
+
+    def run_iteratively(self):
+
+        if self._ready_to_call_new_user_prompt:
+            user_message = input("Enter user prompt: ")
+            self._groq_api_and_tool_call.create_chat_completion(user_message)
+            self._ready_to_call_new_user_prompt = False
+            self._iterations_after_create_chat_completion = 0
+            return
+
+        if self._groq_api_and_tool_call._is_no_response_and_no_tool_calls():
+            if self._iterations_after_create_chat_completion == 1:
+                self._ready_to_call_new_user_prompt = True
+                return
+            elif self._iterations_after_create_chat_completion > 1:
+                self._groq_api_and_tool_call.create_chat_completion()
+                self._iterations_after_create_chat_completion = 0
+                return
+            # assert that self._iterations_after_create_chat_completion < 1
+            else:
+                self._groq_api_and_tool_call.create_chat_completion()
+                self._iterations_after_create_chat_completion = 0
+                return
+        else:
+            self._groq_api_and_tool_call.iteratively_handle_responses_and_tool_calls()
+            self._iterations_after_create_chat_completion += 1
+            return

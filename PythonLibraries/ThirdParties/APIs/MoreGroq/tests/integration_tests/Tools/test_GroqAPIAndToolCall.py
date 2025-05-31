@@ -1,6 +1,6 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 
-from moregroq.Tools import GroqAPIAndToolCall
+from moregroq.Tools import GroqAPIAndToolCall, GroqAPIAndToolCallRunner
 from moregroq.Wrappers import GroqAPIWrapper
 
 from TestUtilities.TestSetup import calculate, reverse_string
@@ -283,3 +283,141 @@ def test_add_more_than_one_tool():
     ready_to_call_new_user_prompt = True
 
     assert ready_to_call_new_user_prompt
+
+def test_GroqAPIAndToolCallRunner_replicates_run_conversation_iteratively(monkeypatch):
+    system_message = (
+        "You are a calculator assistant. Use the calculate function to "
+        "perform mathematical operations and provide the results.")
+    user_prompt = "What is 25 * 10 + 10?"
+
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+    groq_api_wrapper.configuration.model = "llama-3.3-70b-versatile"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)
+    groq_api_and_tool_call.set_tool_choice()
+
+    groq_api_and_tool_call.add_system_message(system_message)
+    groq_api_and_tool_call.add_tool(calculate)
+
+    runner = GroqAPIAndToolCallRunner(groq_api_and_tool_call)
+
+    monkeypatch.setattr('builtins.input', lambda _: user_prompt)
+
+    assert runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert runner._iterations_after_create_chat_completion == 0
+    assert not runner._ready_to_call_new_user_prompt
+    assert groq_api_and_tool_call._current_response is not None
+    assert groq_api_and_tool_call._handle_possible_tool_calls_result is None
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+
+    runner.run_iteratively()
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert runner._iterations_after_create_chat_completion == 1
+    assert groq_api_and_tool_call._current_response is None
+    assert groq_api_and_tool_call._handle_possible_tool_calls_result is not None
+
+    runner.run_iteratively()
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert not runner._ready_to_call_new_user_prompt
+    assert runner._iterations_after_create_chat_completion == 2
+
+    runner.run_iteratively()
+    assert not groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert runner._iterations_after_create_chat_completion == 0
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert runner._iterations_after_create_chat_completion == 1
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert groq_api_and_tool_call._is_no_response_and_no_tool_calls()
+    assert runner._iterations_after_create_chat_completion == 1
+    assert runner._ready_to_call_new_user_prompt
+
+    for index, message in enumerate(
+        groq_api_and_tool_call.conversation_and_system_messages.get_conversation_as_list_of_dicts()):
+        print(
+            "\n\t index: ", index,
+            "\n\t message: \n", message)
+
+def test_GroqAPIAndToolCallRunner_with_more_than_one_tool(monkeypatch):
+    system_message = (
+        "You are either a calculator assistant or you help reverse a given "
+        "string. Use the appropriate tool for the task; either use the "
+        "calculate function to perform mathematical operations and provide the "
+        "results, or use the reverse_string function to reverse a given string "
+        "if asked and provide the results."
+    )
+
+    groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
+    groq_api_wrapper.configuration.model = "llama-3.3-70b-versatile"
+    groq_api_wrapper.configuration.max_completion_tokens = 4096
+
+    groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)
+    groq_api_and_tool_call.set_tool_choice()
+
+    groq_api_and_tool_call.add_system_message(system_message)
+    groq_api_and_tool_call.add_tool(calculate)
+    groq_api_and_tool_call.add_tool(reverse_string)
+
+    runner = GroqAPIAndToolCallRunner(groq_api_and_tool_call)
+
+    user_prompt = "What is 25 * 11 + 12?"
+
+    monkeypatch.setattr('builtins.input', lambda _: user_prompt)
+
+    runner.run_iteratively()
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert not runner._ready_to_call_new_user_prompt
+
+    runner.run_iteratively()
+    assert runner._ready_to_call_new_user_prompt
+
+    user_prompt = "Reverse the string 'Hello, world!'"
+
+    monkeypatch.setattr('builtins.input', lambda _: user_prompt)
+
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    assert runner._ready_to_call_new_user_prompt
+
+    user_prompt = "What is 26 * 13 + 14?"
+
+    monkeypatch.setattr('builtins.input', lambda _: user_prompt)
+
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    assert runner._ready_to_call_new_user_prompt
+
+    user_prompt = "What is the capital of Germany?"
+    monkeypatch.setattr('builtins.input', lambda _: user_prompt)
+    runner.run_iteratively()
+    runner.run_iteratively()
+    runner.run_iteratively()
+    assert runner._ready_to_call_new_user_prompt
