@@ -38,3 +38,5 @@ LUMAAI_API_KEY=luma-xxxxxx
 
 # https://fal.ai/dashboard/keys
 FAL_KEY=abcdefgh-xxxxxx
+
+ANTHROPIC_API_KEY=
