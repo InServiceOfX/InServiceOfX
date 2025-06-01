@@ -178,3 +178,14 @@ def create_fsm_tools_with_strings(input_get_current_state, input_run_step):
         return str(input_run_step(symbol))
 
     return get_current_state, run_step
+
+def get_user_input():
+    """Get user input. The reason behind this function is to handle the
+    following possible examples: the LLM model needs user input to continue to
+    run some tool or agent or to complete a task. The LLM model needs
+    clarification from the user.
+
+    Returns:
+        str: The user input
+    """
+    return input("Enter input: ")
