@@ -1,7 +1,16 @@
 # InServiceOfX
 Monorepo (single or "mono" repository) for deep learning.
 
-## Creating and starting a virtual environment for Python 3
+## Creating and starting a uv environment for Python 3 to get started
+
+```
+uv venv
+uv .venv/bin/activate
+```
+
+Then proceed to build one of the Docker images in `Scripts/DockerBuilds/Builds/` (Make a local copy and configure the necessary `*.txt` files, then run `python BuildDocker.py`)
+
+## (Deprecating) Creating and starting a virtual environment for Python 3
 
 Create a directory for a virtual environment:
 

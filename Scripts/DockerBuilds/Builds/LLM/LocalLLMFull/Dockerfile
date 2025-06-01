@@ -112,7 +112,8 @@ RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty
 # MoreGroq would need this.
 RUN pip install groq instructor && \
   # Immediately needed for the tests for MoreGroq.
-  pip install yfinance
+  pip install yfinance && \
+  pip install pydantic-ai
 
 #
 #
@@ -132,8 +133,13 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 #
 #
 
-
-
+# https://ai.pydantic.dev/install/#__tabbed_1_2
+# https://docs.astral.sh/uv/getting-started/installation/
+# TODO: Since Docker is already a containerized environment, it might not make
+# sense to install uv.
+#RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+#  source $HOME/.local/bin/env && \
+#  uv add pydantic-ai
 
 
 
