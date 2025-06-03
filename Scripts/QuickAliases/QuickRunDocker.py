@@ -13,13 +13,48 @@ import argparse
 import subprocess
 from pathlib import Path
 
+def read_project_dir_from_config():
+    """Read PROJECT_DIR from configuration file."""
+    config_file = Path(__file__).parent / "quick_run_docker_configuration.txt"
+
+    if not config_file.exists():
+        print("\nError: Configuration file not found!")
+        print(f"Please create: {config_file}")
+        print("\nThe file should contain a line like:")
+        print('PROJECT_DIR = "/path/to/your/project"')
+        print('or')
+        print('PROJECT_DIR="/path/to/your/project"')
+        print("\nThis should be the path to your main project directory that will be mounted in Docker.")
+        sys.exit(1)
+
+    try:
+        with open(config_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('PROJECT_DIR'):
+                    # Handle both "=" and " = " formats
+                    parts = line.split('=', 1)
+                    if len(parts) == 2:
+                        # Remove quotes and whitespace
+                        project_dir = parts[1].strip().strip('"\'')
+                        return project_dir
+        
+        print("\nError: PROJECT_DIR not found in configuration file!")
+        print(f"Please add PROJECT_DIR to: {config_file}")
+        print("\nFormat should be:")
+        print('PROJECT_DIR = "/path/to/your/project"')
+        sys.exit(1)
+        
+    except Exception as e:
+        print(f"\nError reading configuration file: {e}")
+        sys.exit(1)
+
 # ==============================================================================
 # CONFIGURATION CONSTANTS
 # ==============================================================================
 
-# The main project directory that will be mounted in the Docker container
-# MODIFY THIS to match your environment's project directory path
-PROJECT_DIR = "/home/propdev/Prop/InServiceOfX"
+# Read the project directory from configuration file
+PROJECT_DIR = read_project_dir_from_config()
 
 # The path where the project will be mounted inside the Docker container
 # Usually this doesn't need to be changed
