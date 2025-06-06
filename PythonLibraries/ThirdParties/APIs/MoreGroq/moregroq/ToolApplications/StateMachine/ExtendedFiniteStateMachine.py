@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from typing import Any, Set, Dict, Tuple, List, Callable
+from typing import Any, Set, Dict, Tuple, List, Callable, Optional
 
 @dataclass
 class ExtendedFiniteStateMachine:
@@ -21,56 +21,74 @@ class ExtendedFiniteStateMachine:
     states: Set[Any]
     enabling_functions: Dict[Any, Any]
     update_functions: Dict[Any, Any]
-    transition_relation: Dict[Tuple[Any, Any, Any], Tuple[Any, Any, Any]] | \
-        Callable[[Any, Any, Any], Tuple[Any, Any, Any]]
+    transition_relation: Callable
 
     def __post_init__(self):
         if not self.states:
             raise ValueError("States must be non-empty.")
-    
-    def get_variable(self, variable_name: Any) -> Any:
-        return self.variables.get(variable_name, None)
-
-    def set_variable(self, variable_name: Any, value: Any):
-        self.variables[variable_name] = value
-
-    def get_transition_relation(self, state: Any, input_symbol: Any) -> Tuple[Any, Any, Any]:
-        return self.transition_relation.get((state, input_symbol), None)
 
 @dataclass
 class ExtendedFiniteStateMachineRunner:
     efsm: ExtendedFiniteStateMachine
-    current_state: Any = None
+    current_state: Optional[Any] = None
 
-    # Variables in D, where a variable belongs to a linear space D_i
-    variables: Dict[Any, Any]
+    # (
+    #   variables,
+    #   previous_state,
+    #   input_symbol,
+    #   enable_function,
+    #   new_state,
+    #   output_symbol,
+    #   update_function)
+    transition_history: \
+        List[Tuple[Any, Any, Any, Any, Any, Any, Any]] = None
 
-    transition_history: List[Tuple[Any, Any, Any, Any, Any, Any]] = None
+    current_transition: Optional[Callable] = None
 
-    def reset(self, initial_state: Any, initial_variables: Dict[Any, Any]):
+    current_input_symbol: Optional[Any] = None
+    current_enable_function: Optional[Callable] = None
+    current_output_symbol: Optional[Any] = None
+    current_update_function: Optional[Callable] = None
+
+    def reset(self, initial_state: Any):
         self.current_state = initial_state
-        self.current_output_symbol = None
-        self.current_update_function = None
-        self.variables = initial_variables
         self.transition_history = []
 
-    def transition(self, input_symbol: Any, enable_function: Any, update_function: Any):
+        self.current_transition_function = None
+        self.current_input_symbol = None
+        self.current_enable_function = None
+        self.current_output_symbol = None
+        self.current_update_function = None
+
+    def get_transition_function(self, input_symbol: Any, enable_function: Any):
+        self.current_transition_function = self.efsm.transition_relation(
+            self.current_state,
+            input_symbol,
+            enable_function)
+
+        self.current_input_symbol = input_symbol
+        self.current_enable_function = enable_function
+
+        return self.current_transition_function
+
+    def transition(self, variables):
+
         previous_state = self.current_state
+
         self.current_state, self.current_output_symbol, self.current_update_function = \
-            self.efsm.transition_relation[
-                (previous_state, input_symbol, enable_function)]
+            self.current_transition_function(variables)
 
         self.transition_history.append(
             (
+                variables,
                 previous_state,
-                input_symbol,
-                enable_function,
+                self.current_input_symbol,
+                self.current_enable_function,
                 self.current_state,
                 self.current_output_symbol,
                 self.current_update_function))
 
-    def update(self)
+        return self.current_state, self.current_output_symbol
 
-        self.variables = self.current_update_function(self.variables)
-        return self.current_output_symbol
-        
+    def update(self, variables):
+        return self.current_update_function(variables)

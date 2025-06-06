@@ -7,3 +7,5 @@ if (Path(__file__).resolve().parents[4] / "CoreCode").exists():
 	sys.path.append(
 		str(Path(__file__).resolve().parents[4] / "CoreCode"))
 
+if (Path(__file__).resolve().parents[1]).exists():
+	sys.path.append(str(Path(__file__).resolve().parents[1]))

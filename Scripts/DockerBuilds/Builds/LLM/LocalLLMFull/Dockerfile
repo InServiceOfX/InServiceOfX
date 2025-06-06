@@ -113,7 +113,16 @@ RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty
 RUN pip install groq instructor && \
   # Immediately needed for the tests for MoreGroq.
   pip install yfinance && \
-  pip install pydantic-ai
+  # https://logfire.pydantic.dev/docs/#about-logfire
+  # TODO: See if this has a protobuf dependency version that mismatches
+  # other versions.
+  #pip install logfire && \
+  pip install pydantic-ai && \
+  pip install pytest-asyncio
+
+# deno is for MCP using pydantic-ai.
+# https://github.com/denoland/deno_docker
+COPY --from=denoland/deno:bin-2.3.5 /deno /usr/local/bin/deno
 
 #
 #
