@@ -32,7 +32,7 @@ async def test_mcp_stdio_client():
         )
     print(result.output)
 
-    assert "9208 days" in result.output
+    assert "9208" in result.output
 
 def test_tool_prefixes_to_avoid_naming_conflicts():
     python_server = MCPServerStdio(

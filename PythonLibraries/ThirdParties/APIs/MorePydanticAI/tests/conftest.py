@@ -3,9 +3,16 @@ import pytest
 import sys
 
 # To obtain modules from CoreCode
-if (Path(__file__).resolve().parents[4] / "CoreCode").exists():
-	sys.path.append(
-		str(Path(__file__).resolve().parents[4] / "CoreCode"))
+corecode_path = Path(__file__).resolve().parents[4] / "CoreCode"
 
-if (Path(__file__).resolve().parents[1]).exists():
-	sys.path.append(str(Path(__file__).resolve().parents[1]))
+if corecode_path.exists():
+	sys.path.append(str(corecode_path))
+else:
+	print(f"CoreCode path does not exist: {corecode_path}")
+
+morepydanticai_path = Path(__file__).resolve().parents[4] / "MorePydanticAI"
+
+if morepydanticai_path.exists():
+	sys.path.append(str(morepydanticai_path))
+else:
+	print(f"MorePydanticAI path does not exist: {morepydanticai_path}")
