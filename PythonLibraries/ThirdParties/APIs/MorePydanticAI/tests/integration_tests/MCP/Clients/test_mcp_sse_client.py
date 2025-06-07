@@ -30,6 +30,8 @@ async def test_mcp_sse_client():
         )
     print(result.output)
 
+    assert "9208" in result.output
+
 def test_tool_prefixes_to_avoid_naming_conflicts():
     # Create two servers with different prefixes.
     weather_server = MCPServerHTTP(
