@@ -77,6 +77,10 @@ class CreateDockerRunCommand:
         # Add ports for gradio and jupyter
         docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
 
+        # Add network if specified
+        if "network" in configuration:
+            docker_run_command += f"--network {configuration['network']} "
+
         # Add image name and default command
         docker_run_command += f"{docker_image_name}"
 

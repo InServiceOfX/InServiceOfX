@@ -9,6 +9,8 @@ USAGE: python ./RunDocker.py [directory_path] [--gpu GPU_ID]
 from pathlib import Path
 import os, sys
 import argparse
+import subprocess
+import yaml
 
 # Import the parse_run configuration_file function from the parent module
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -94,6 +96,38 @@ def main():
 
     print()
 
+    # Check for docker-compose.yml first
+    databases_dir = dir_path / "Databases"
+    docker_compose_path = databases_dir / "docker-compose.yml"
+
+    network_name = None
+    if docker_compose_path.exists():
+        try:
+            # Run docker-compose up -d
+            subprocess.run(
+                [
+                    'docker',
+                    'compose',
+                    '-f',
+                    str(docker_compose_path),
+                    'up',
+                    '-d'],
+                check=True
+            )
+
+            # Get network name from docker-compose.yml
+            with open(docker_compose_path, 'r') as f:
+                compose_config = yaml.safe_load(f)
+                if 'networks' in compose_config:
+                    network_name = next(iter(compose_config['networks'].keys()))
+        except Exception as e:
+            print(f"Warning: Failed to start docker-compose: {e}")
+
+    # Add network to run configuration if we have one
+    if network_name:
+        run_configuration['network'] = network_name
+
+    # Create and run docker command
     create_docker_run_command = CreateDockerRunCommand(
         get_project_directory(),
         build_configuration,

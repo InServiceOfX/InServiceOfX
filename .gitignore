@@ -127,12 +127,11 @@ PythonApplications/CLIChat/Deployment/build
 PythonApplications/CLIChat/Deployment/dist/
 PythonApplications/CLIChat/dist/
 PythonApplications/CLIChat/tests/TestData/chat_history.txt
+Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalCUDA/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalPytorchAndCUDA/nvidia_compute_capabilities.txt
-Scripts/DockerBuilds/OctoAI/mount_paths.txt
-Scripts/DockerBuilds/OctoAI/nvidia_compute_capabilities.txt
 Scripts/QuickAliases/quick_run_docker_configuration.txt
 Scripts/QuickAliases/StartDocker.sh
 Scripts/PyTorchGPUDocker/mount_paths.txt
