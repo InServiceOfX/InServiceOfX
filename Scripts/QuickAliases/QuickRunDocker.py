@@ -175,8 +175,45 @@ def read_mount_volumes(build_dir):
     
     return volumes
 
+def read_database_docker_compose(build_dir):
+    """Only if there is a 'Databases' subdirectory with docker-compose.yml will
+    this run docker-compose as a subprocess.
+    """
+    databases_dir = build_dir / "Databases"
+    docker_compose_path = databases_dir / "docker-compose.yml"
 
-def build_docker_command(image_name, volumes, gpu_device, ports):
+    if not docker_compose_path.exists():
+        return None
+
+    try:
+        # Run docker-compose up -d
+        subprocess.run(
+            [
+                'docker',
+                'compose',
+                '-f',
+                str(docker_compose_path),
+                'up',
+                '-d'],
+            check=True
+        )
+
+        # Get network name from docker-compose.yml
+        with open(docker_compose_path, 'r') as f:
+            compose_config = yaml.safe_load(f)
+            if 'networks' in compose_config:
+                network_name = next(iter(compose_config['networks'].keys()))
+        return network_name
+    except Exception as e:
+        print(f"Warning: Failed to start docker-compose: {e}")
+        return None
+
+def build_docker_command(
+        image_name,
+        volumes,
+        gpu_device,
+        ports,
+        database_network = None):
     """Build the Docker run command."""
     cmd = ["docker", "run"]
     
@@ -199,6 +236,10 @@ def build_docker_command(image_name, volumes, gpu_device, ports):
     # Add port mappings
     for port in ports:
         cmd.extend(["-p", f"{port}:{port}"])
+    
+    # Add network if specified
+    if database_network is not None:
+        cmd.extend(["--network", database_network])
     
     # Add remaining options
     cmd.extend(["--rm", "--ipc=host", image_name])
@@ -253,9 +294,19 @@ def main():
     # Read mount volumes
     volumes = read_mount_volumes(build_dir)
     print(f"Found {len(volumes)} volume mounts")
-    
+
+    # Read database network
+    database_network = read_database_docker_compose(build_dir)
+    print(f"Using database network: {database_network}")
+
     # Build Docker command
-    docker_cmd = build_docker_command(image_name, volumes, args.gpu, args.port)
+    docker_cmd = build_docker_command(
+        image_name,
+        volumes,
+        args.gpu,
+        args.port,
+        database_network
+    )
     
     print("\nExecuting Docker command:")
     print(" ".join(docker_cmd))

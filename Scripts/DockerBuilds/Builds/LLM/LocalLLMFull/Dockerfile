@@ -120,7 +120,8 @@ RUN pip install groq instructor && \
   pip install pydantic-ai && \
   pip install pytest-asyncio && \
   # PostgreSQL database
-  pip install psycopg2-binary
+  pip install psycopg2-binary && \
+  pip install asyncpg
 
 # deno is for MCP using pydantic-ai.
 # https://github.com/denoland/deno_docker
