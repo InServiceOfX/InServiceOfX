@@ -14,6 +14,10 @@ RUN pip install groq instructor && \
   pip install psycopg2-binary && \
   pip install asyncpg
 
+# For commands pg_isready and psql, to help debug PostgreSQL issues.
+RUN apt-get update && apt-get install -y postgresql-client-common && \
+  apt-get install -y postgresql-client
+
 # deno is for MCP using pydantic-ai.
 # https://github.com/denoland/deno_docker
 COPY --from=denoland/deno:bin-2.3.5 /deno /usr/local/bin/deno

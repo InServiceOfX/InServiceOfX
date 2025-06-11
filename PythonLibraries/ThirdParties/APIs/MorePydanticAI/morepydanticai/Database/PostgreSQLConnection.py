@@ -3,105 +3,116 @@ from typing import Any, AsyncGenerator, Optional
 import asyncpg
 
 class PostgreSQLConnection:
+    # For PostgreSQL, the system database is called "postgres"
+    DEFAULT_SYSTEM_DB = "postgres"
+
     def __init__(self, server_data_source_name: str, database_name: str):
+        """
+        Args:
+            server_data_source_name: The DSN without database name (e.g.,
+                "postgresql://user:pass@host:port")
+            database_name: The database to connect to
+        """
+        # Ensure the DSN doesn't include a database name
         self._server_data_source_name = server_data_source_name
         self._database_name = database_name
         self._connection: asyncpg.Connection | None = None
 
+    @property
+    def system_dsn(self) -> str:
+        """Get the DSN for connecting to the system database."""
+        return f"{self._server_data_source_name}/{self.DEFAULT_SYSTEM_DB}"
+
+    async def list_all_databases(self) -> list[str]:
+        """List all non-template databases by connecting to the system database."""
+        try:
+            # Connect to the system database
+            conn = await asyncpg.connect(self.system_dsn)
+            try:
+                rows = await conn.fetch(
+                    "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname;"
+                )            
+                return [row["datname"] for row in rows]
+            finally:
+                await conn.close()
+        except Exception as e:
+            print(f"Error listing databases: {e}")
+            raise
+
+    async def database_exists(self, database_name: str) -> bool:
+        try:
+            conn = await asyncpg.connect(self.system_dsn)
+            # pg_database is a PostgreSQL's internal system tables (system
+            # catalogs)
+            exists = await conn.fetchval(
+                'SELECT 1 FROM pg_database WHERE datname = $1',
+                database_name
+            )
+            return exists is not None
+        except Exception as e:
+            print(f"Error checking if database exists: {e}")
+            raise
+
     @asynccontextmanager
     async def connect(self, database_name: Optional[str] = None) -> \
         AsyncGenerator[Any, None]:
-        if database_name is None:
+        if database_name is None and self._database_name is None:
+            raise ValueError(
+                "No database name provided and no default database name set")
+        elif database_name is None:
             database_name = self._database_name
         else:
             self._database_name = database_name
 
-        if self._connection is None:
-            self._connection = await asyncpg.connect(
-                self._server_data_source_name)
-            try:
-                database_exists = await self._connection.fetchval(
-                    # pg_database is a PostgreSQL's internal system tables
-                    # (system catalogs)
-                    f'SELECT 1 FROM pg_database WHERE datname = $1',
-                    database_name
-                )
-                if not database_exists:
-                    yield None
-                    return
+        database_exists = await self.database_exists(database_name)
 
-            finally:
+        if not database_exists:
+            raise ValueError(
+                f"Database {database_name} does not exist")
+
+        if self._connection is not None:
+            if not self._connection.closed:
                 await self._connection.close()
+            self._connection = None
 
-            self._connection = await asyncpg.connect(
-                f"{self._server_data_source_name}/{database_name}"
-            )
+        self._connection = await asyncpg.connect(
+            f"{self._server_data_source_name}/{database_name}")
 
-        try:
-            # yield creates a generator function, pauses function execution and
-            # returns a value; when function called again, it resumes from where
-            # it left off.
-            yield self._connection
-        except Exception as error:
-            if self._connection:
-                await self._connection.close()
-                self._connection = None
-            raise error
+        yield self._connection
 
     async def create_database(self, database_name: str):
-        print(f"Attempting to create database: {database_name}")
+        database_exists = await self.database_exists(database_name)
+        if database_exists:
+            print(f"Database {database_name} already exists")
+            return
+
         self._database_name = database_name
 
-        try:
-            print(f"Connecting to server with DSN: {self._server_data_source_name}")
-            connection = await asyncpg.connect(self._server_data_source_name)
-            print("Successfully connected to server")
-        except Exception as e:
-            print(f"Failed to connect to server: {str(e)}")
-            raise
+        connection = await asyncpg.connect(self.system_dsn)
 
         try:
-            print("Checking if database exists...")
-            database_exists = await connection.fetchval(
-                'SELECT 1 FROM pg_database WHERE datname = $1',
-                database_name
+            print(f"Creating database {database_name}...")
+            # First check if we have permission
+            is_superuser = await connection.fetchval("""
+                SELECT usesuper FROM pg_user WHERE usename = current_user
+            """)
+            print(f"Current user is superuser: {is_superuser}")
+                    
+            if not is_superuser:
+                can_create = await connection.fetchval("""
+                    SELECT has_database_privilege(current_user, 'CREATE')
+                """)
+                print(f"Current user can create databases: {can_create}")
+                if not can_create:
+                    raise PermissionError(
+                        "Current user does not have permission to create databases")
+
+            # Try to create the database
+            await connection.execute(
+                f'CREATE DATABASE {database_name}'
             )
-
-            if not database_exists:
-                print(f"Creating database {database_name}...")
-                try:
-                    # First check if we have permission
-                    is_superuser = await connection.fetchval("""
-                        SELECT usesuper FROM pg_user WHERE usename = current_user
-                    """)
-                    print(f"Current user is superuser: {is_superuser}")
+            print("Database creation command executed successfully")
                     
-                    if not is_superuser:
-                        can_create = await connection.fetchval("""
-                            SELECT has_database_privilege(current_user, 'CREATE')
-                        """)
-                        print(f"Current user can create databases: {can_create}")
-                        if not can_create:
-                            raise PermissionError(
-                                "Current user does not have permission to create databases")
-
-                    # Try to create the database
-                    await connection.execute(
-                        f'CREATE DATABASE {database_name}'
-                    )
-                    print("Database creation command executed successfully")
-                    
-                    # Verify the database was created
-                    created = await connection.fetchval(
-                        'SELECT 1 FROM pg_database WHERE datname = $1',
-                        database_name
-                    )
-                    print(f"Database creation verification: {created is not None}")
-
-                except Exception as e:
-                    print(f"Error during database creation: {str(e)}")
-                    raise
-
         except Exception as e:
             print(f"Error in database operations: {str(e)}")
             raise
@@ -109,19 +120,11 @@ class PostgreSQLConnection:
             print("Closing connection to server")
             await connection.close()
 
-        print("Creating connection to new database...")
-        try:
-            # Connect to the new database
-            new_dsn = f"{self._server_data_source_name}/{database_name}"
-            print(f"Connecting to new database with DSN: {new_dsn}")
-            self._connection = await asyncpg.connect(new_dsn)
-            print("Successfully connected to new database")
-        except Exception as e:
-            print(f"Error connecting to new database: {str(e)}")
-            raise
-
     async def close(self):
-        await self._connection.close()
+        if self._connection is not None:
+            if not self._connection.closed:
+                await self._connection.close()
+            self._connection = None
 
     async def execute(self, query: str, *args):
         return await self._connection.execute(query, *args)
