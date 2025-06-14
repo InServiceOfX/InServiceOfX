@@ -1,16 +1,31 @@
-from nunchaku import NunchakuFluxTransformer2dModel
-
-def create_flux_transformer(directory_path):
-    assert "svdq-int4-flux.1-dev" in str(directory_path)
-
-    return NunchakuFluxTransformer2dModel.from_pretrained(directory_path)
-
 from diffusers import FluxPipeline
 
 def create_flux_transformer_pipeline(
     pretrained_flux_model_path,
     configuration,
     transformer):
+    """
+    This function creates a Flux pipeline with a transformer.
+
+    Recall the function signature of __init__(..) for FluxPipeline,
+
+    def __init__(
+        self,
+        ...
+        text_encoder: CLIPTextModel,
+        tokenizer: CLIPTokenizer,
+        text_encoder_2: T5EncoderModel,
+        tokenizer_2: T5TokenizerFast,
+        transformer: FluxTransformer2DModel,
+        image_encoder: CLIPVisionModelWithProjection = None
+    )
+
+    Recall that def from_pretrained(..) is inherited from DiffusionPipeline
+    and it finally instantiates the pipeline class as
+    model = pipeline_class(**init_kwargs)
+    ...
+    return model
+    """
     return FluxPipeline.from_pretrained(
         pretrained_flux_model_path,
         text_encoder=None,
@@ -41,6 +56,28 @@ def call_pipeline(
     pooled_prompt_embeds,
     configuration,
     generation_configuration):
+    """
+    In pipeline_flux.py, class FluxPipeline(..), recall the function signature
+    of def __call__(..),
+    def __call__(
+        self,
+        prompt: Union[str, List[str]] = None,
+        prompt_2: Optional[Union[str, List[str]] = None,
+        negative_prompt: Union[str, List[str]] = None,
+        negative_prompt_2: Optional[Union[str, List[str]]] = None,
+        ...
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        num_inference_steps: int = 28,
+        ...
+        guidance_scale: float = 3.5,
+        num_images_per_prompt: Optional[int] = 1,
+        generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
+        ...
+        prompt_embeds: Optional[torch.FloatTensor] = None,
+        ...
+        ):
+    """
     return pipeline(
         prompt_embeds=prompt_embeds,
         pooled_prompt_embeds=pooled_prompt_embeds,

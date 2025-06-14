@@ -1,19 +1,29 @@
 from nunchaku import NunchakuT5EncoderModel
 
 def create_flux_text_encoder_2(directory_path, configuration):
-    assert "svdq-flux.1-t5" in str(directory_path)
     text_encoder_2 = NunchakuT5EncoderModel.from_pretrained(
         directory_path,
         torch_dtype=configuration.torch_dtype)
     return text_encoder_2
 
-from diffusers import FluxPipeline
+from diffusers import FluxPipeline, FluxControlPipeline
 
 def create_flux_text_encoder_2_pipeline(
     pretrained_flux_model_path,
     configuration,
     text_encoder_2):
     return FluxPipeline.from_pretrained(
+        pretrained_flux_model_path,
+        text_encoder_2=text_encoder_2,
+        transformer=None,
+        vae=None,
+        torch_dtype=configuration.torch_dtype)
+
+def create_flux_control_text_encoder_2_pipeline(
+    pretrained_flux_model_path,
+    configuration,
+    text_encoder_2):
+    return FluxControlPipeline.from_pretrained(
         pretrained_flux_model_path,
         text_encoder_2=text_encoder_2,
         transformer=None,
@@ -34,6 +44,31 @@ def encode_prompt(
     # is obtained:
     # TypeError: FluxPipeline.encode_prompt() missing 1 required positional argument: 'prompt_2'
     kwargs["prompt_2"] = prompt2
+    with torch.no_grad():
+        return pipeline.encode_prompt(**kwargs)
+
+def flux_control_encode_prompt(
+    pipeline,
+    configuration,
+    generation_configuration,
+    prompt,
+    prompt2="",
+    lora_scale=None):
+    kwargs = {}
+    kwargs["max_sequence_length"] = generation_configuration.max_sequence_length
+    kwargs["prompt"] = prompt
+    # "prompt_2" has to have a value, even if it's ""; otherwise, this error
+    # is obtained:
+    # TypeError: FluxControlPipeline.encode_prompt() missing 1 required positional argument: 'prompt_2'
+    kwargs["prompt_2"] = prompt2
+    if configuration.cuda_device is not None:
+        kwargs["device"] = torch.device(configuration.cuda_device)
+    if generation_configuration.num_images_per_prompt is not None:
+        kwargs["num_images_per_prompt"] = \
+            generation_configuration.num_images_per_prompt
+    if lora_scale is not None:
+        kwargs["lora_scale"] = float(lora_scale)
+
     with torch.no_grad():
         return pipeline.encode_prompt(**kwargs)
 

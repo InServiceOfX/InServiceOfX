@@ -548,7 +548,7 @@ def test_nunchaku_wrappers():
         "mit-han-lab" / "svdq-int4-flux.1-dev"
     assert path.exists()
 
-    transformer = transformer_inference.create_flux_transformer(path)
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(path)
 
     pipeline = transformer_inference.create_flux_transformer_pipeline(
         pretrained_diffusion_model_name_or_path,
@@ -626,7 +626,7 @@ def test_nunchaku_svdq_lora():
         "mit-han-lab" / "svdq-int4-flux.1-dev"
     assert path.exists()
 
-    transformer = transformer_inference.create_flux_transformer(path)
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(path)
 
     pipeline = transformer_inference.create_flux_transformer_pipeline(
         pretrained_diffusion_model_name_or_path,

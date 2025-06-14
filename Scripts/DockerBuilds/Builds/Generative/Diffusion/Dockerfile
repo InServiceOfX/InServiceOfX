@@ -268,8 +268,9 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
 ARG ARCH
 ARG COMPUTE_CAPABILITY
 ARG PTX
+# Look for your version here:
 # https://huggingface.co/mit-han-lab/nunchaku/tree/main
-RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchaku-0.1.4+torch2.6-cp310-cp310-linux_x86_64.whl
+RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchaku-0.2.0+torch2.6-cp310-cp310-linux_x86_64.whl
     # TODO: Try to get build from source to work
     # git clone https://github.com/mit-han-lab/nunchaku /ThirdParty/nunchaku && \
     # cd /ThirdParty/nunchaku && \
@@ -282,5 +283,11 @@ RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchak
     # export CUTLASS_NVCC_FLAGS="-gencode=arch=compute_86,code=sm_86" && \
     # FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST=8.6 pip install -e . --no-build-isolation
 
+RUN git clone https://github.com/huggingface/image_gen_aux.git /ThirdParty/image_gen_aux && \
+    cd /ThirdParty/image_gen_aux && \
+    pip install -e .
 
+# For svdq-int4-flux.1-canny-dev
+# https://huggingface.co/mit-han-lab/svdq-int4-flux.1-canny-dev
+RUN pip install controlnet_aux mediapipe
 

@@ -38,6 +38,8 @@ from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
 )
 
+from nunchaku import NunchakuFluxTransformer2dModel
+
 def terminal_only_finite_loop_flux_and_nunchaku():
 
     configuration = DiffusionPipelineConfiguration(
@@ -49,8 +51,6 @@ def terminal_only_finite_loop_flux_and_nunchaku():
     user_input = FluxPipelineUserInput(generation_configuration)
 
     generation_configuration.max_sequence_length = 512
-
-    start_time = time.time()
 
     path = Path(configuration.diffusion_model_path).parents[1] / \
         "mit-han-lab" / "svdq-flux.1-t5"
@@ -84,7 +84,7 @@ def terminal_only_finite_loop_flux_and_nunchaku():
     path = Path(configuration.diffusion_model_path).parents[1] / \
         "mit-han-lab" / "svdq-int4-flux.1-dev"
 
-    transformer = transformer_inference.create_flux_transformer(path)
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(path)
 
     pipeline = transformer_inference.create_flux_transformer_pipeline(
         configuration.diffusion_model_path,

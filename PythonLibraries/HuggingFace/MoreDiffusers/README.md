@@ -36,3 +36,7 @@ or
 ```
 /InServiceOfX/PythonLibraries/HuggingFace/MoreDiffusers/tests# pytest ./integration_tests/Wrappers/test_create_stable_diffusion_xl_pipeline.py::test_create_stable_diffusion_xl_pipeline_no_cpu_offload
 ```
+
+### Creating a nunchaku-compatible LoRA (that's quantized)
+
+Use, in `MoreDiffusers/Scripts/`, `create_nunchaku_lora.py`.

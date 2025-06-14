@@ -39,6 +39,8 @@ from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
 )
 
+from nunchaku import NunchakuFluxTransformer2dModel
+
 def terminal_only_finite_loop_flux_and_nunchaku():
 
     configuration = DiffusionPipelineConfiguration(
@@ -56,8 +58,6 @@ def terminal_only_finite_loop_flux_and_nunchaku():
 
     generation_configuration.max_sequence_length = 512
 
-    start_time = time.time()
-
     path = Path(configuration.diffusion_model_path).parents[1] / \
         "mit-han-lab" / "svdq-flux.1-t5"
 
@@ -74,10 +74,10 @@ def terminal_only_finite_loop_flux_and_nunchaku():
 
     prompt_embeds, pooled_prompt_embeds, text_ids = \
         text_encoder_2_inference.encode_prompt(
-            pipeline,
-            generation_configuration,
-            user_input.prompt,
-            user_input.prompt_2)
+            pipeline=pipeline,
+            generation_configuration=generation_configuration,
+            prompt=user_input.prompt,
+            prompt2=user_input.prompt_2)
 
     del pipeline.text_encoder
     del pipeline.text_encoder_2
@@ -90,7 +90,7 @@ def terminal_only_finite_loop_flux_and_nunchaku():
     path = Path(configuration.diffusion_model_path).parents[1] / \
         "mit-han-lab" / "svdq-int4-flux.1-dev"
 
-    transformer = transformer_inference.create_flux_transformer(path)
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(str(path))
 
     pipeline = transformer_inference.create_flux_transformer_pipeline(
         configuration.diffusion_model_path,
@@ -108,18 +108,21 @@ def terminal_only_finite_loop_flux_and_nunchaku():
         transformer.update_lora_params(str(lora[0]))
         transformer.set_lora_strength(lora[1])
 
-    if transformer.unquantized_loras is None or \
-        transformer.unquantized_loras == {}:
+    if transformer._unquantized_part_loras is None or \
+        transformer._unquantized_part_loras == {}:
         print(
-            "transformer.unquantized_loras: ",
-            transformer.unquantized_loras)
+            "transformer._unquantized_part_loras: ",
+            transformer._unquantized_part_loras)
     else:
-        for element in transformer.unquantized_loras:
+        print(
+            "transformer._unquantized_part_loras: ",
+            len(transformer._unquantized_part_loras))
+        for element in transformer._unquantized_part_loras.keys():
             print(element)
-
-    print(
-        "transformer.unquantized_state_dict: ",
-        transformer.unquantized_state_dict)
+    # TODO: This may have been removed by 2.0.0; it was in 1.4.1.
+    # print(
+    #     "transformer.unquantized_state_dict: ",
+    #     transformer.unquantized_state_dict)
 
     end_time = time.time()
 
