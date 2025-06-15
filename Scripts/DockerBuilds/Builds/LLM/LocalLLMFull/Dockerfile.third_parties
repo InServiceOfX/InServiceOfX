@@ -16,7 +16,9 @@ RUN pip install groq instructor && \
 
 # For commands pg_isready and psql, to help debug PostgreSQL issues.
 RUN apt-get update && apt-get install -y postgresql-client-common && \
-  apt-get install -y postgresql-client
+  apt-get install -y postgresql-client && \
+  # Useful with postgreSQL
+  apt-get install -y iproute2 && \
 
 # deno is for MCP using pydantic-ai.
 # https://github.com/denoland/deno_docker

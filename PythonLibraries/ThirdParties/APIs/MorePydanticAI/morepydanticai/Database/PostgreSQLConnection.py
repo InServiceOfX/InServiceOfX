@@ -71,7 +71,7 @@ class PostgreSQLConnection:
                 f"Database {database_name} does not exist")
 
         if self._connection is not None:
-            if not self._connection.closed:
+            if not self._connection.is_closed():
                 await self._connection.close()
             self._connection = None
 
@@ -122,7 +122,7 @@ class PostgreSQLConnection:
 
     async def close(self):
         if self._connection is not None:
-            if not self._connection.closed:
+            if not self._connection.is_closed():
                 await self._connection.close()
             self._connection = None
 

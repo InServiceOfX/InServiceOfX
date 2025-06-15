@@ -11,6 +11,7 @@ build directories.
 import sys
 import argparse
 import subprocess
+import yaml
 from pathlib import Path
 
 def read_project_dir_from_config():

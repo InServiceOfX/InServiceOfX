@@ -16,17 +16,16 @@ import pytest
 import pytest_asyncio
 import asyncpg
 from morepydanticai.Database import PostgreSQLConnection
-from TestSetup.TestData import pydantic_ai_sql_generation_test_data
 
 # port number is found in docker-compose.yml file for postgres service.
 DATABASE_PORT = 5432
 # Because we're using docker-compose and if we're connecting from another
 # running Docker container, IP address may not be localhost; try the IP address
 # of host machine.
-IP_ADDRESS = "192.168.86.91"
+IP_ADDRESS = "192.168.86.201"
 # TODO: Have docker-compose.yml have user and password as environment variables.
 POSTGRES_USER = "inserviceofx"
-POSTGRES_PASSWORD = "inserviceofx"
+POSTGRES_PASSWORD = "mypassword"
 # Connect to default postgres database
 TEST_DSN = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{IP_ADDRESS}:{DATABASE_PORT}"
 TEST_DB_NAME = "test_pydantic_ai_database"
