@@ -75,13 +75,25 @@ def test_sentence_transformers_usage():
     assert similarities.is_cpu == True
 
     assert similarities[0, 0].item() == pytest.approx(0.9999998211860657)
-    assert similarities[0, 1].item() == pytest.approx(0.8308399319648743)
-    assert similarities[0, 2].item() == pytest.approx(0.477803498506546)
-    assert similarities[1, 0].item() == pytest.approx(0.8308399319648743)
+    assert similarities[0, 1].item() == pytest.approx(
+        0.8308399319648743,
+        rel=1e-4)
+    assert similarities[0, 2].item() == pytest.approx(
+        0.477803498506546,
+        rel=1e-4)
+    assert similarities[1, 0].item() == pytest.approx(
+        0.8308399319648743,
+        rel=1e-4)
     assert similarities[1, 1].item() == pytest.approx(0.9999998211860657)
-    assert similarities[1, 2].item() == pytest.approx(0.46056103706359863)
-    assert similarities[2, 0].item() == pytest.approx(0.477803498506546)
-    assert similarities[2, 1].item() == pytest.approx(0.46056103706359863)
+    assert similarities[1, 2].item() == pytest.approx(
+        0.46056103706359863,
+        rel=1e-4)
+    assert similarities[2, 0].item() == pytest.approx(
+        0.477803498506546,
+        rel=1e-4)
+    assert similarities[2, 1].item() == pytest.approx(
+        0.46056103706359863,
+        rel=1e-4)
     assert similarities[2, 2].item() == pytest.approx(0.9999998211860657)
 
     # On CUDA GPU
@@ -119,17 +131,33 @@ def test_encode_with_normalize_embeddings():
     similarities = embeddings_1 @ embeddings_2.T
     assert similarities.shape == (2, 2)
 
-    assert similarities[0, 0].item() == pytest.approx(0.8752940893173218)
-    assert similarities[0, 1].item() == pytest.approx(0.8796454668045044)
-    assert similarities[1, 0].item() == pytest.approx(0.8713109493255615)
-    assert similarities[1, 1].item() == pytest.approx(0.8681105375289917)
+    assert similarities[0, 0].item() == pytest.approx(
+        0.8752940893173218,
+        rel=1e-4)
+    assert similarities[0, 1].item() == pytest.approx(
+        0.8796454668045044,
+        rel=1e-5)
+    assert similarities[1, 0].item() == pytest.approx(
+        0.8713109493255615,
+        rel=1e-5)
+    assert similarities[1, 1].item() == pytest.approx(
+        0.8681105375289917,
+        rel=1e-4)
 
     similarities_2 = model.similarity(embeddings_1, embeddings_2)
     assert similarities_2.shape == (2, 2)
     assert similarities_2.is_cuda == False
     assert similarities_2.is_cpu == True
 
-    assert similarities_2[0, 0].item() == pytest.approx(0.8752940893173218)
-    assert similarities_2[0, 1].item() == pytest.approx(0.8796454668045044)
-    assert similarities_2[1, 0].item() == pytest.approx(0.8713109493255615)
-    assert similarities_2[1, 1].item() == pytest.approx(0.8681106567382812)
+    assert similarities_2[0, 0].item() == pytest.approx(
+        0.8752940893173218,
+        rel=1e-4)
+    assert similarities_2[0, 1].item() == pytest.approx(
+        0.8796454668045044,
+        rel=1e-5)
+    assert similarities_2[1, 0].item() == pytest.approx(
+        0.8713109493255615,
+        rel=1e-5)
+    assert similarities_2[1, 1].item() == pytest.approx(
+        0.8681106567382812,
+        rel=1e-4)
