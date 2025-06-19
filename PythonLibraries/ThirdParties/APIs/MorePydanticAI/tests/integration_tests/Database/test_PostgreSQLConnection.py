@@ -14,60 +14,38 @@ root@5a53362ce66a:/InServiceOfX/PythonLibraries/ThirdParties/APIs/MorePydanticAI
 """
 import pytest
 import pytest_asyncio
-import asyncpg
 from morepydanticai.Database import PostgreSQLConnection
 
-# port number is found in docker-compose.yml file for postgres service.
-DATABASE_PORT = 5432
-# Because we're using docker-compose and if we're connecting from another
-# running Docker container, IP address may not be localhost; try the IP address
-# of host machine.
-IP_ADDRESS = "192.168.86.201"
-# TODO: Have docker-compose.yml have user and password as environment variables.
-POSTGRES_USER = "inserviceofx"
-POSTGRES_PASSWORD = "mypassword"
-# Connect to default postgres database
-TEST_DSN = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{IP_ADDRESS}:{DATABASE_PORT}"
-TEST_DB_NAME = "test_pydantic_ai_database"
+from TestSetup.PostgreSQLDatabaseSetup import (
+    cleanup_test_database,
+    PostgreSQLDatabaseSetupData,
+    postgres_connection
+)
 
+@pytest_asyncio.fixture(scope="session")
+def test_dsn():
+    """Provide the test database connection string."""
+    # You can customize this based on environment or configuration
+    return PostgreSQLDatabaseSetupData.TEST_DSN
 
 @pytest_asyncio.fixture(scope="function")
-async def postgres_connection(db_name: str = TEST_DB_NAME):
-    """Create a PostgreSQLConnection instance for testing."""
-    conn = PostgreSQLConnection(TEST_DSN, db_name)
-    yield conn
-    # Cleanup after test
-    await cleanup_test_database(db_name)
-
-async def cleanup_test_database(db_name: str = TEST_DB_NAME):
-    """Clean up test database by dropping it and terminating all connections."""
-    # Connect to default postgres database to drop the test database
-    sys_conn = await asyncpg.connect(
-        TEST_DSN + "/" + PostgreSQLConnection.DEFAULT_SYSTEM_DB)
-    try:
-        # First terminate all connections to the test database
-        await sys_conn.execute(f"""
-            SELECT pg_terminate_backend(pid) 
-            FROM pg_stat_activity 
-            WHERE datname = $1
-        """, db_name)
-        # Then drop the database
-        await sys_conn.execute(f'DROP DATABASE IF EXISTS {db_name}')
-    finally:
-        await sys_conn.close()
+def test_db_name():
+    return "test_pydantic_ai_database"
 
 @pytest.mark.asyncio
-async def test_cleanup_test_database():
-    database_name = TEST_DB_NAME
-    await cleanup_test_database(database_name)
+async def test_cleanup_test_database_drops_only_if_database_exists(
+        test_dsn: str,
+        test_db_name: str):
+    database_name = test_db_name
+    await cleanup_test_database(test_dsn, database_name)
 
-    postgres_connection = PostgreSQLConnection(TEST_DSN, database_name)
+    postgres_connection = PostgreSQLConnection(test_dsn, database_name)
     assert await postgres_connection.database_exists(database_name) is False, \
         f"Database {database_name} should not exist!"
 
 @pytest.mark.asyncio
-async def test_list_all_databases():
-    postgres_connection = PostgreSQLConnection(TEST_DSN, TEST_DB_NAME)
+async def test_list_all_databases(test_dsn: str):
+    postgres_connection = PostgreSQLConnection(test_dsn)
 
     databases = await postgres_connection.list_all_databases()
     for db in databases:
@@ -80,8 +58,8 @@ async def test_list_all_databases():
         "Connection should be None since the class member wasn't set"
 
 @pytest.mark.asyncio
-async def test_database_exists():
-    postgres_connection = PostgreSQLConnection(TEST_DSN, TEST_DB_NAME)
+async def test_database_exists(test_dsn: str):
+    postgres_connection = PostgreSQLConnection(test_dsn)
 
     database_list = await postgres_connection.list_all_databases()
     for db in database_list:
@@ -96,8 +74,8 @@ async def test_database_exists():
         "Connection should be None since the class member wasn't set"
 
 @pytest.mark.asyncio
-async def test_connect():
-    postgres_connection = PostgreSQLConnection(TEST_DSN, TEST_DB_NAME)
+async def test_connect(test_dsn: str):
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
 
     databases = await postgres_connection.list_all_databases()
     database_name = databases[-1]
@@ -113,15 +91,21 @@ async def test_connect():
         result = await conn.fetchval("SELECT 1")
         assert result == 1
 
+        assert postgres_connection._database_name is not None
+        assert postgres_connection._database_name == database_name
+
 @pytest.mark.asyncio
-async def test_connection_lifecycle(postgres_connection: PostgreSQLConnection):
+async def test_connection_lifecycle(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection):
     """Test the complete lifecycle of database connection."""
 
     # Create the database
-    await postgres_connection.create_database(TEST_DB_NAME)
+    await postgres_connection.create_database(test_db_name)
 
     # Verify database was created
-    assert await postgres_connection.database_exists(TEST_DB_NAME) is True, \
+    assert await postgres_connection.database_exists(test_db_name) is True, \
         f"Database {TEST_DB_NAME} should exist!"
 
     # Test connection to the new database
@@ -151,4 +135,223 @@ async def test_connection_lifecycle(postgres_connection: PostgreSQLConnection):
         assert result == "test_value"
 
     # Cleanup is handled by the fixture
+
+@pytest.mark.asyncio
+async def test_create_new_pool(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection):
+    await postgres_connection.create_database(test_db_name)
+    
+    pool = await postgres_connection.create_new_pool(test_db_name)
+    assert pool is not None
+    assert postgres_connection._pool is not None
+    assert postgres_connection._pool == pool
+    
+    async with postgres_connection.connect() as conn:
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
+
+@pytest.mark.asyncio
+async def test_connect_uses_pool_when_available(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    
+    # Connect should use pool
+    async with postgres_connection.connect() as conn:
+        assert conn is not None
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
+        
+        # Verify we're using pool (connection should be from pool)
+        assert postgres_connection._pool is not None
+
+@pytest.mark.asyncio
+async def test_connect_falls_back_to_individual_connection_when_no_pool(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    
+    # Connect should use individual connection
+    async with postgres_connection.connect() as conn:
+        assert conn is not None
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
+        
+        # Verify we're using individual connection
+        assert postgres_connection._pool is None
+
+@pytest.mark.asyncio
+async def test_close_pool(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    
+    assert postgres_connection._pool is not None
+    
+    # Close pool
+    await postgres_connection.close_pool()
+    assert postgres_connection._pool is None
+
+@pytest.mark.asyncio
+async def test_create_new_pool_closes_existing_pool(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    # Create database and first pool
+    await postgres_connection.create_database(test_db_name)
+    pool1 = await postgres_connection.create_new_pool(test_db_name)
+    
+    # Create second pool (should close first one)
+    pool2 = await postgres_connection.create_new_pool(test_db_name)
+    
+    assert pool1 != pool2
+    assert postgres_connection._pool == pool2
+
+# TODO: Check the following tests individually.
+
+@pytest.mark.asyncio
+async def test_pool_concurrent_connections(test_dsn: str, test_db_name: str):
+    """Test that pool can handle multiple concurrent connections."""
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
+    
+    # Create database and pool
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name, min_size=2, max_size=5)
+    
+    # Create test table
+    async with postgres_connection.connect() as conn:
+        await conn.execute("""
+            CREATE TABLE concurrent_test (
+                id SERIAL PRIMARY KEY,
+                value TEXT
+            )
+        """)
+    
+    # Test multiple concurrent connections
+    import asyncio
+    
+    async def insert_value(value: str):
+        async with postgres_connection.connect() as conn:
+            await conn.execute(
+                "INSERT INTO concurrent_test (value) VALUES ($1)",
+                value
+            )
+    
+    # Run multiple concurrent inserts
+    tasks = [insert_value(f"value_{i}") for i in range(10)]
+    await asyncio.gather(*tasks)
+    
+    # Verify all inserts worked
+    async with postgres_connection.connect() as conn:
+        count = await conn.fetchval("SELECT COUNT(*) FROM concurrent_test")
+        assert count == 10
+
+@pytest.mark.asyncio
+async def test_pool_connection_reuse(test_dsn: str, test_db_name: str):
+    """Test that pool reuses connections efficiently."""
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
+    
+    # Create database and pool
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name, min_size=1, max_size=3)
+    
+    # Create test table
+    async with postgres_connection.connect() as conn:
+        await conn.execute("""
+            CREATE TABLE reuse_test (
+                id SERIAL PRIMARY KEY,
+                value TEXT
+            )
+        """)
+    
+    # Perform multiple operations (should reuse connections from pool)
+    for i in range(5):
+        async with postgres_connection.connect() as conn:
+            await conn.execute(
+                "INSERT INTO reuse_test (value) VALUES ($1)",
+                f"reuse_test_{i}"
+            )
+    
+    # Verify all operations worked
+    async with postgres_connection.connect() as conn:
+        count = await conn.fetchval("SELECT COUNT(*) FROM reuse_test")
+        assert count == 5
+
+@pytest.mark.asyncio
+async def test_close_cleans_up_both_pool_and_connection(test_dsn: str, test_db_name: str):
+    """Test that close() method cleans up both pool and individual connection."""
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
+    
+    # Create database and pool
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    
+    # Also create an individual connection
+    async with postgres_connection.connect() as conn:
+        await conn.fetchval("SELECT 1")
+    
+    # Close everything
+    await postgres_connection.close()
+    
+    assert postgres_connection._pool is None
+    assert postgres_connection._connection is None
+
+@pytest.mark.asyncio
+async def test_pool_with_different_database_names(test_dsn: str, test_db_name: str):
+    """Test pool behavior when connecting to different databases."""
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
+    
+    # Create two databases
+    db1 = f"{test_db_name}_1"
+    db2 = f"{test_db_name}_2"
+    
+    await postgres_connection.create_database(db1)
+    await postgres_connection.create_database(db2)
+    
+    # Create pool for db1
+    await postgres_connection.create_new_pool(db1)
+    
+    # Connect to db1 (should use pool)
+    async with postgres_connection.connect(db1) as conn:
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
+    
+    # Connect to db2 (should use individual connection since no pool for db2)
+    async with postgres_connection.connect(db2) as conn:
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
+
+@pytest.mark.asyncio
+async def test_pool_parameters(test_dsn: str, test_db_name: str):
+    """Test creating pool with custom parameters."""
+    postgres_connection = PostgreSQLConnection(test_dsn, test_db_name)
+    
+    # Create database
+    await postgres_connection.create_database(test_db_name)
+    
+    # Create pool with custom parameters
+    pool = await postgres_connection.create_new_pool(
+        test_db_name, 
+        min_size=5, 
+        max_size=15
+    )
+    
+    assert pool is not None
+    assert postgres_connection._pool == pool
+    
+    # Test that pool works with custom parameters
+    async with postgres_connection.connect() as conn:
+        result = await conn.fetchval("SELECT 1")
+        assert result == 1
 

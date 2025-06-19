@@ -9,7 +9,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     # typically kebab case
     container_name: local-llm-full-postgres
     environment:
