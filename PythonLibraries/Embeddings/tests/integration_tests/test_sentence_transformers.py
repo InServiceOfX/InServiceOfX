@@ -4,6 +4,7 @@ from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
 import numpy as np
+import pydantic_core
 import pytest
 import torch
 
@@ -161,3 +162,30 @@ def test_encode_with_normalize_embeddings():
     assert similarities_2[1, 1].item() == pytest.approx(
         0.8681106567382812,
         rel=1e-4)
+
+def test_tolist():
+    query = "How do I configure logfire to work with FastAPI?"
+
+    model = SentenceTransformer(str(MODEL_DIR), device = "cuda:0",)
+
+    embeddings_1 = model.encode(query, normalize_embeddings = True)
+
+    assert isinstance(embeddings_1, np.ndarray)
+    assert embeddings_1.shape == (1024,)
+
+    embeddings_1_list = embeddings_1.tolist()
+    assert isinstance(embeddings_1_list, list)
+    assert len(embeddings_1_list) == 1024
+
+    to_json_result_1 = pydantic_core.to_json(embeddings_1_list)
+
+    assert isinstance(to_json_result_1, bytes)
+    assert to_json_result_1.startswith(b'[')
+    assert to_json_result_1.endswith(b']')
+
+    to_json_result_1_decode = to_json_result_1.decode()
+    assert isinstance(to_json_result_1_decode, str)
+    assert to_json_result_1_decode.startswith('[')
+    assert to_json_result_1_decode.endswith(']')
+
+    print(to_json_result_1_decode[:71])

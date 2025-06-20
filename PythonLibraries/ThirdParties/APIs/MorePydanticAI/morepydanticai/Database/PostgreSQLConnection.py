@@ -179,6 +179,10 @@ class PostgreSQLConnection:
     async def execute(self, query: str, *args):
         return await self._connection.execute(query, *args)
 
+    async def execute_with_pool(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            await conn.execute(query, *args)
+
     async def fetch_value(
             self,
             query: str,
@@ -244,11 +248,6 @@ class PostgreSQLConnection:
                 raise ValueError(
                     f"Database {database_name or self._database_name} does not exist")
             return await conn.fetch(query, *args)
-
-    async def create_table_from_schema(self, schema: str):
-        """Create a table from a schema string."""
-        async with self._pool.acquire() as conn:
-            await conn.execute(schema)
 
     async def list_tables(self, database_name: Optional[str] = None) \
         -> List[Dict[str, str]]:
