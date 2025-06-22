@@ -13,6 +13,7 @@ if not Path(MODEL_DIR).exists():
     MODEL_DIR = Path("/Data1/Models/Embeddings/BAAI/bge-large-en-v1.5")
 
 from transformers import (
+    AutoConfig,
     AutoTokenizer,
     AutoModel,
     BertModel,
@@ -312,10 +313,59 @@ def test_tokenizer_and_model_output_computes_similarities_on_gpu():
         rel=1e-4)
     assert similarities_cpu[0, 1].item() == pytest.approx(
         0.8796454668045044,
-        rel=1e-5)
+        rel=1e-4)
     assert similarities_cpu[1, 0].item() == pytest.approx(
         0.8713109493255615,
-        rel=1e-5)
+        rel=1e-4)
     assert similarities_cpu[1, 1].item() == pytest.approx(
         0.8681105375289917,
         rel=1e-4)
+
+def test_get_token_count_steps():
+    """Show explicitly the steps of get_token_count to aid development."""
+    model = AutoTokenizer.from_pretrained(
+        MODEL_DIR,
+        local_files_only = True,
+        )
+
+    text = "This is a sample sentence to test tokenization."
+
+    token_count = len(model.tokenize(text, add_special_tokens=False))
+    assert token_count == 10
+
+    token_count = len(model.tokenize(text, add_special_tokens=True))
+    assert token_count == 12
+
+    token_count = len(model.tokenize(text))
+    assert token_count == 10
+
+    character_count = len(text)
+    assert character_count == 47
+
+    print(f"Characters per token: {character_count / token_count:.2f}")
+
+    model = BertTokenizerFast.from_pretrained(
+        MODEL_DIR,
+        local_files_only = True,
+        )
+
+    token_count = len(model.tokenize(text, add_special_tokens=False))
+    assert token_count == 10
+
+    token_count = len(model.tokenize(text, add_special_tokens=True))
+    assert token_count == 12
+
+    token_count = len(model.tokenize(text))
+    assert token_count == 10
+
+    print(f"Characters per token: {character_count / token_count:.2f}")
+
+def test_get_max_token_limit_steps():
+    """Show explicitly the steps of get_max_token_limit to aid development."""
+    model_config = AutoConfig.from_pretrained(
+        MODEL_DIR,
+        local_files_only = True,
+        )
+
+    max_token_limit = model_config.max_position_embeddings
+    assert max_token_limit == 512

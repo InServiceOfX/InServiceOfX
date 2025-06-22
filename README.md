@@ -5,7 +5,7 @@ Monorepo (single or "mono" repository) for deep learning.
 
 ```
 uv venv
-uv .venv/bin/activate
+source .venv/bin/activate
 ```
 
 Then proceed to build one of the Docker images in `Scripts/DockerBuilds/Builds/` (Make a local copy and configure the necessary `*.txt` files, then run `python BuildDocker.py`)

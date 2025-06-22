@@ -160,5 +160,6 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 #  source $HOME/.local/bin/env && \
 #  uv add pydantic-ai
 
-
+# pip install's for tools.
+RUN pip install google-api-python-client youtube-transcript-api
 
