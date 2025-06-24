@@ -163,3 +163,5 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 # pip install's for tools.
 RUN pip install google-api-python-client youtube-transcript-api
 
+# pip install's for applications.
+RUN pip install streamlit

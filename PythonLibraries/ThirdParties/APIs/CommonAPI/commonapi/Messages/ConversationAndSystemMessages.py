@@ -7,12 +7,15 @@ from typing import Any, List, Dict
 
 # Since ConversationHistoryAndSystemMessagesManager is in the same parent
 # directory as SystemMessagesManager, we import it directly.
-from commonapi.Messages.SystemMessagesManager import SystemMessagesManager
+from commonapi.Messages.SystemMessagesManager import (
+    RecordedSystemMessage,
+    SystemMessagesManager)
 
 class ConversationAndSystemMessages:
     def __init__(self):
         self.conversation_history = ConversationHistory()
         self.system_messages_manager = SystemMessagesManager()
+        self.system_messages_manager.clear()
 
     def clear_conversation_history(self, is_keep_active_system_messages=True):
         self.conversation_history.clear()
@@ -46,6 +49,10 @@ class ConversationAndSystemMessages:
             SystemMessage(system_message_content))
 
         return add_message_result
+
+    def add_default_system_message(self):
+        self.add_system_message(
+            RecordedSystemMessage.create_default_message().content)
 
     def append_message(self, message: Message) -> None:
         self.conversation_history.append_message(message)

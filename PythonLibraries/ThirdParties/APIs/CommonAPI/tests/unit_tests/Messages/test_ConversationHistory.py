@@ -19,6 +19,24 @@ def test_ConversationHistory_append_message():
     conversation_history.append_message(message)
     assert conversation_history.messages == [message]
 
+def test_ConversationHistory_append_message_works_with_multiple_user_messages():
+    conversation_history = ConversationHistory()
+    message_1 = UserMessage(content="Hello, world!")
+    conversation_history.append_message(message_1)
+    message_2 = UserMessage(content="How are you?")
+    conversation_history.append_message(message_2)
+    assert conversation_history.messages == [message_1, message_2]
+
+def test_as_list_of_dicts_works():
+    conversation_history = ConversationHistory()
+    message_1 = UserMessage(content="Hello, world!")
+    conversation_history.append_message(message_1)
+    message_2 = UserMessage(content="How are you?")
+    conversation_history.append_message(message_2)
+    assert conversation_history.as_list_of_dicts() == [
+        {"role": "user", "content": "Hello, world!"},
+        {"role": "user", "content": "How are you?"}]
+
 def create_test_conversation():
     hash_values = []
 
@@ -67,8 +85,22 @@ def test_ConversationHistory_get_all_system_messages():
     assert ConversationHistory._hash_content(system_messages[2].content) == \
         hash_values[2]
 
+def test_estimate_conversation_content_length():
+    conversation_history, _ = create_test_conversation()
+    conversation_history_as_list_of_dicts = \
+        conversation_history.as_list_of_dicts()
+    assert len(conversation_history_as_list_of_dicts) == 7
+    assert conversation_history.estimate_conversation_content_length() == \
+        len(conversation_history_as_list_of_dicts[0]["content"]) + \
+        len(conversation_history_as_list_of_dicts[1]["content"]) + \
+        len(conversation_history_as_list_of_dicts[2]["content"]) + \
+        len(conversation_history_as_list_of_dicts[3]["content"]) + \
+        len(conversation_history_as_list_of_dicts[4]["content"]) + \
+        len(conversation_history_as_list_of_dicts[5]["content"]) + \
+        len(conversation_history_as_list_of_dicts[6]["content"])
+
 def test_ConversationHistory_clear():
-    conversation_history, hash_values = create_test_conversation()
+    conversation_history, _ = create_test_conversation()
     conversation_history.clear()
     assert conversation_history.messages == []
     assert conversation_history.content_hashes == []

@@ -5,9 +5,15 @@ from moregroq.Wrappers import GetAllActiveModels
 from moregroq.Wrappers.ChatCompletionConfiguration import ChatCompletionConfiguration
 
 class BaseGroqWrapper(ABC):
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, groq_client_configuration = None):
         self.configuration = ChatCompletionConfiguration()
         self.client = self._create_client(api_key)
+
+        if groq_client_configuration is not None:
+            client_configuration = groq_client_configuration.to_dict()
+            for key in client_configuration:
+                if hasattr(self.configuration, key):
+                    setattr(self.configuration, key, client_configuration[key])
 
     def clear_chat_completion_configuration(self):
         self.configuration = ChatCompletionConfiguration()

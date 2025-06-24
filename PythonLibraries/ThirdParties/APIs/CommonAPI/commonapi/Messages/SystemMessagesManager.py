@@ -33,6 +33,9 @@ class RecordedSystemMessage:
         """Check if two messages are equal based on their hash."""
         return self.hash == other.hash
 
+    def to_system_message_dict(self):
+        return {"role": "system", "content": self.content}
+
 class SystemMessagesManager:
     """Manages system messages, including file IO."""
     
@@ -42,6 +45,9 @@ class SystemMessagesManager:
         self._messages_dict: Dict[str, RecordedSystemMessage] = {
             default_message.hash: default_message
         }
+
+    def clear(self):
+        self._messages_dict.clear()
 
     def add_message(self, content: str, is_active: bool = False) \
         -> Optional[RecordedSystemMessage]:
@@ -91,6 +97,9 @@ class SystemMessagesManager:
     def messages(self) -> List[RecordedSystemMessage]:
         """Get all system messages."""
         return list(self._messages_dict.values())
+
+    def get_all_as_system_message_dicts(self):
+        return [message.to_system_message_dict() for message in self.messages]
 
     def get_active_messages(self) -> List[RecordedSystemMessage]:
         """Get all active system messages."""

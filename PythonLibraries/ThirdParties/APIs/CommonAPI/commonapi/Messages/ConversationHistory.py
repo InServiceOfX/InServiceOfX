@@ -10,7 +10,7 @@ from commonapi.Messages.Messages import (
 @dataclass
 class ConversationHistory:
     """Stores an ordered history of messages with optional content hashing"""
-    messages: List[Message] = None
+    messages: List[Any] = None
     content_hashes: List[str] = None
     hash_to_index_reverse_map: Dict[str, int] = None
 
@@ -152,6 +152,31 @@ class ConversationHistory:
             message.to_dict() if isinstance(message, Message) 
             else message if isinstance(message, dict) 
             else message for message in self.messages]
+
+    def estimate_conversation_content_length(self):
+        length = 0
+ 
+        for message in self.messages:
+            if isinstance(message, Message):
+                if isinstance(message.content, str):
+                    length += len(message.content)
+                elif isinstance(message.content, list):
+                    for item in message.content:
+                        if isinstance(item, str):
+                            length += len(item)
+            elif isinstance(message, dict):
+                if "content" in message:
+                    if isinstance(message["content"], str):
+                        length += len(message["content"])
+                    elif isinstance(message["content"], list):
+                        for item in message["content"]:
+                            if isinstance(item, str):
+                                length += len(item)
+            else:
+                if isinstance(message, str):
+                    length += len(message)
+        return length
+
 
     def clear(self) -> None:
         self.messages.clear()
