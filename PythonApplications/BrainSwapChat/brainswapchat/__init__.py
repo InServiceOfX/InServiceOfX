@@ -1,1 +1,2 @@
+from .ApplicationPaths import ApplicationPaths
 from .SetupInternalModules import SetupInternalModules

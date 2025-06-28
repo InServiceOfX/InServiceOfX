@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import json
+import warnings
 
 class JSONFile:
     """Handles file input/output operations for a JSON file."""
@@ -29,5 +30,6 @@ class JSONFile:
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             return True
-        except Exception:
+        except Exception as e:
+            warnings.warn(f"Error saving JSON file: {e}")
             return False

@@ -1,13 +1,16 @@
-from commonapi.Messages import RecordedSystemMessage, SystemMessagesManager
-from commonapi.Messages.RecordedMessages import RecordedMessage
 from corecode.FileIO import JSONFile
+from commonapi.Messages import (
+    RecordedSystemMessage,
+    SystemMessage,
+    SystemMessagesManager)
 from pathlib import Path
 from typing import List
 
-import json
-
 class SystemMessagesFileIO:
-    def __init__(self, file_path = None):
+    def __init__(self, file_path: str | Path | None = None):
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
         self.file_path = file_path
         self.messages = None
 
@@ -27,15 +30,15 @@ class SystemMessagesFileIO:
         except (KeyError, TypeError):
             return False
 
+    def is_file_path_valid(self) -> bool:
+        return self.file_path is not None and Path(self.file_path).exists()
+
     def save_messages(self, messages: List[RecordedSystemMessage]) -> bool:
-        if self.file_path is None or not Path(self.file_path).exists():
+        if not self.is_file_path_valid():
             return False
 
         data = [msg.__dict__ for msg in messages]
         return JSONFile.save_json(self.file_path, data)
-    
-    def is_file_path_valid(self) -> bool:
-        return self.file_path is not None and Path(self.file_path).exists()
 
     def put_messages_into_system_messages_manager(
         self,
@@ -46,17 +49,10 @@ class SystemMessagesFileIO:
             return True
         return False
 
-    def put_messages_into_permanent_conversation_history(
-        self,
-        permanent_conversation_history) -> bool:
+    def put_messages_into_conversation_history(self, conversation_history) -> bool:
         if self.messages != None and self.messages != []:
             for _, message in self.messages.items():
-                recorded_message = RecordedMessage(
-                    message.content,
-                    message.timestamp,
-                    message.hash,
-                    "system")
-                permanent_conversation_history.append_recorded_message(
-                    recorded_message)
+                recorded_message = SystemMessage(content=message.content)
+                conversation_history.append_message(recorded_message)
             return True
         return False

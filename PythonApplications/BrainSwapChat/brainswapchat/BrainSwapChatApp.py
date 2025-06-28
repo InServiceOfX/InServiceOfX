@@ -26,12 +26,13 @@ class BrainSwapChatApp:
             )
         )
 
-    def run(self):
+    def run(self, application_paths=None):
         self._render_header()
 
         self.sidebar_manager.render(
             st.session_state.conversation_and_system_messages,
-            self._configuration)
+            self._configuration,
+            application_paths)
         self.chat_interface.render(
             st.session_state.conversation_and_system_messages,
             self._groq_service)

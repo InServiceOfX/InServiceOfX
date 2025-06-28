@@ -13,17 +13,25 @@ BrainSwapChat_path = Path(__file__).resolve().parents[1]
 if str(BrainSwapChat_path) not in sys.path:
     sys.path.append(str(BrainSwapChat_path))
 
+from brainswapchat import ApplicationPaths
 from brainswapchat import SetupInternalModules
+# This has to happen before the other imports.
 SetupInternalModules()
 
 from brainswapchat.BrainSwapChatApp import BrainSwapChatApp
+from brainswapchat.SetupSystemMessages import setup_system_messages
 
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 
 from moregroq.Configuration import GroqClientConfiguration
 from moregroq.Wrappers import GroqAPIWrapper
 
+import streamlit as st
+
 def local_streamlit_app_main():
+    application_paths = ApplicationPaths.create_path_names(
+        is_development=True)
+
     groq_client_configuration_path = BrainSwapChat_path / "Configurations" / \
         "groq_client_configuration.yml"
 
@@ -43,7 +51,17 @@ def local_streamlit_app_main():
     brain_swap_chat_app = BrainSwapChatApp(
         groq_client_configuration,
         groq_api_wrapper)
-    brain_swap_chat_app.run()
+    
+    if "conversation_and_system_messages" not in st.session_state:
+        raise RuntimeError(
+            "Conversation and system messages not found in session state. "
+            "BrainSwapChatApp __init__() should have created it.")
+
+    setup_system_messages(
+        application_paths,
+        st.session_state.conversation_and_system_messages)
+
+    brain_swap_chat_app.run(application_paths)
 
 if __name__ == "__main__":
     local_streamlit_app_main()

@@ -1,17 +1,21 @@
 import streamlit as st
 from commonapi.Messages import ConversationAndSystemMessages
+from commonapi.FileIO import SystemMessagesFileIO
 
 class SidebarManager:
     
     def render(self,
             conversation_and_system_messages: ConversationAndSystemMessages,
-            configuration):
+            configuration,
+            application_paths=None):
         with st.sidebar:
             st.header("System Messages")
 
             self._render_active_system_messages(conversation_and_system_messages)
             st.divider()
             self._render_add_system_message(conversation_and_system_messages)
+            st.divider()
+            self._render_save_system_messages(conversation_and_system_messages, application_paths)
             st.divider()
             self._render_configuration_display(configuration)
     
@@ -97,6 +101,61 @@ class SidebarManager:
                 st.success("Conversation reset with active system messages!")
                 st.rerun()
 
+    def _render_save_system_messages(
+            self,
+            conversation_and_system_messages: ConversationAndSystemMessages,
+            application_paths):
+        st.subheader("Save System Messages")
+        
+        if application_paths is None:
+            st.warning(
+                "Application paths not available. Cannot save system messages.")
+            return
+
+        # Get all recorded system messages (both active and inactive)
+        all_messages = \
+            conversation_and_system_messages.system_messages_manager.messages
+
+        if not all_messages:
+            st.info("No system messages to save")
+            return
+
+        save_button_key = "save_system_messages_button"
+        save_status_flag = "system_messages_saved"
+
+        # Check if save was successful in previous run
+        if save_status_flag in st.session_state and \
+            st.session_state[save_status_flag]:
+            st.success("✅ System messages saved successfully!")
+            if st.button("Reset Save Status"):
+                st.session_state[save_status_flag] = False
+                st.rerun()
+        else:
+            if st.button(
+                "💾 Save System Messages",
+                type="primary",
+                key=save_button_key):
+                try:
+                    # Ensure the file path exists
+                    application_paths.create_missing_files(
+                        "system_messages_file_path")
+
+                    file_io = SystemMessagesFileIO(
+                        application_paths.system_messages_file_path)
+
+                    success = file_io.save_messages(all_messages)
+
+                    if success:
+                        st.session_state[save_status_flag] = True
+                        st.rerun()
+                    else:
+                        st.error(
+                            "Failed to save system messages. Check file "
+                            "permissions.")
+                        print("Save failed")
+
+                except Exception as e:
+                    st.error(f"Error saving system messages: {str(e)}")
 
     def _render_configuration_display(self, configuration):
         st.subheader("Configuration")
