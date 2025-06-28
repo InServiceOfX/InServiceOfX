@@ -20,6 +20,8 @@ from corecode.FileIO.is_directory_empty_or_missing import (
 
 from corecode.FileIO.is_zipfile import is_zipfile
 
+from corecode.FileIO.JSONFile import JSONFile
+
 from corecode.FileIO.VerifyDataSubdirectories import (
     VerifyDataSubdirectories,
 )

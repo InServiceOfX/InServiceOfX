@@ -37,8 +37,6 @@ class RecordedSystemMessage:
         return {"role": "system", "content": self.content}
 
 class SystemMessagesManager:
-    """Manages system messages, including file IO."""
-    
     def __init__(self):
         # Initialize with default message
         default_message = RecordedSystemMessage.create_default_message()
@@ -51,6 +49,8 @@ class SystemMessagesManager:
 
     def add_message(self, content: str, is_active: bool = False) \
         -> Optional[RecordedSystemMessage]:
+        """Avoids any duplicates."""
+
         message = RecordedSystemMessage.create(content, is_active)
         if message.hash not in self._messages_dict:
             self._messages_dict[message.hash] = message
@@ -59,6 +59,7 @@ class SystemMessagesManager:
 
     def add_previously_recorded_message(self, message: RecordedSystemMessage) \
         -> bool:
+        """Avoids any duplicates."""
         if message.hash not in self._messages_dict:
             self._messages_dict[message.hash] = message
             return True

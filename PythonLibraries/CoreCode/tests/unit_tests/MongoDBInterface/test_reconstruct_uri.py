@@ -1,4 +1,4 @@
-from CoreCode.MongoDBInterface.reconstruct_uri import reconstruct_minimal_uri
+from corecode.MongoDBInterface.reconstruct_uri import reconstruct_minimal_uri
 
 import pymongo, pytest
 

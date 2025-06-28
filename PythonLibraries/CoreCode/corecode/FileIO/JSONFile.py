@@ -4,11 +4,6 @@ import json
 
 class JSONFile:
     """Handles file input/output operations for a JSON file."""
-    
-    @staticmethod
-    def ensure_directory_exists(directory_path: Path) -> None:
-        """Ensure that a directory exists, creating it if necessary."""
-        directory_path.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def load_json(file_path: Path) -> Optional[Dict]:
