@@ -59,3 +59,19 @@ class GroqClientConfiguration(BaseModel):
         """Convert configuration to dictionary, excluding None values."""
         config_dict = self.model_dump()
         return {k: v for k, v in config_dict.items() if v is not None}
+
+    def update_chat_completion_configuration(
+        self,
+        chat_completion_configuration):
+
+        client_configuration_as_dict = self.to_dict()
+
+        for key in client_configuration_as_dict:
+            if hasattr(chat_completion_configuration, key) and \
+                client_configuration_as_dict[key] is not None:
+                setattr(
+                    chat_completion_configuration,
+                    key,
+                    client_configuration_as_dict[key])
+
+        return chat_completion_configuration

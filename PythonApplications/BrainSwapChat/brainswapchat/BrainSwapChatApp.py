@@ -1,17 +1,26 @@
 import streamlit as st
-from brainswapchat.UI import SidebarManager, ChatInterface
+from brainswapchat.UI import SidebarManager, ChatInterface, GroqModelSelector
 from commonapi.Messages import ConversationAndSystemMessages
 
 class BrainSwapChatApp:
-    def __init__(self, configuration, groq_service):
+    def __init__(self, groq_client_configuration, groq_service, model_selector):
         self.sidebar_manager = SidebarManager()
         self.chat_interface = ChatInterface()
-        self._configuration = configuration
-        self._groq_service = groq_service
+        self.groq_model_selector = GroqModelSelector()
+
         if "conversation_and_system_messages" not in st.session_state:
             st.session_state.conversation_and_system_messages = \
                 ConversationAndSystemMessages()
             st.session_state.conversation_and_system_messages.add_default_system_message()
+
+        if "groq_client_configuration" not in st.session_state:
+            st.session_state.groq_client_configuration = groq_client_configuration
+
+        if "groq_api_wrapper" not in st.session_state:
+            st.session_state.groq_api_wrapper = groq_service
+
+        if "model_selector" not in st.session_state:
+            st.session_state.model_selector = model_selector
 
     def _render_header(self):
         """Render application header."""
@@ -31,8 +40,14 @@ class BrainSwapChatApp:
 
         self.sidebar_manager.render(
             st.session_state.conversation_and_system_messages,
-            self._configuration,
+            st.session_state.groq_client_configuration,
             application_paths)
         self.chat_interface.render(
             st.session_state.conversation_and_system_messages,
-            self._groq_service)
+            st.session_state.groq_api_wrapper)
+
+        self.groq_model_selector.render_in_topbar(
+            st.session_state.groq_client_configuration,
+            st.session_state.groq_api_wrapper,
+            st.session_state.model_selector
+        )

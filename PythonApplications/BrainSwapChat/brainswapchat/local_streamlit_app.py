@@ -23,6 +23,7 @@ from brainswapchat.SetupSystemMessages import setup_system_messages
 
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 
+from moregroq.Applications import ModelSelector
 from moregroq.Configuration import GroqClientConfiguration
 from moregroq.Wrappers import GroqAPIWrapper
 
@@ -48,9 +49,15 @@ def local_streamlit_app_main():
         api_key=get_environment_variable("GROQ_API_KEY"),
         groq_client_configuration=groq_client_configuration)
 
+    model_selector = ModelSelector(
+        api_key=get_environment_variable("GROQ_API_KEY"))
+
+    model_selector.current_model = groq_client_configuration.model
+
     brain_swap_chat_app = BrainSwapChatApp(
         groq_client_configuration,
-        groq_api_wrapper)
+        groq_api_wrapper,
+        model_selector)
     
     if "conversation_and_system_messages" not in st.session_state:
         raise RuntimeError(

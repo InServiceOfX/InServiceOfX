@@ -10,10 +10,9 @@ class BaseGroqWrapper(ABC):
         self.client = self._create_client(api_key)
 
         if groq_client_configuration is not None:
-            client_configuration = groq_client_configuration.to_dict()
-            for key in client_configuration:
-                if hasattr(self.configuration, key):
-                    setattr(self.configuration, key, client_configuration[key])
+            self.configuration = \
+                groq_client_configuration.update_chat_completion_configuration(
+                    self.configuration)
 
     def clear_chat_completion_configuration(self):
         self.configuration = ChatCompletionConfiguration()
