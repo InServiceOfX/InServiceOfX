@@ -25,7 +25,7 @@ class BrainSwapChatApp:
     def _render_header(self):
         """Render application header."""
 
-        st.title("💬 Chatbot")
+        st.title("💬 BrainSwap Chat")
         st.write(
             (
                 "This is a simple chatbot that uses Groq's models to generate "
@@ -36,6 +36,12 @@ class BrainSwapChatApp:
         )
 
     def run(self, application_paths=None):
+        self.groq_model_selector.render_in_topbar(
+            st.session_state.groq_client_configuration,
+            st.session_state.groq_api_wrapper,
+            st.session_state.model_selector
+        )
+
         self._render_header()
 
         self.sidebar_manager.render(
@@ -45,9 +51,3 @@ class BrainSwapChatApp:
         self.chat_interface.render(
             st.session_state.conversation_and_system_messages,
             st.session_state.groq_api_wrapper)
-
-        self.groq_model_selector.render_in_topbar(
-            st.session_state.groq_client_configuration,
-            st.session_state.groq_api_wrapper,
-            st.session_state.model_selector
-        )

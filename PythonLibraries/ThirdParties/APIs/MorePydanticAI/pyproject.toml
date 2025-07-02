@@ -2,7 +2,7 @@
 name = "morepydanticai"
 version = "0.1.0"
 description = ""
-authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+authors = ["In Service of X LLC <inserviceofxy@proton.me>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

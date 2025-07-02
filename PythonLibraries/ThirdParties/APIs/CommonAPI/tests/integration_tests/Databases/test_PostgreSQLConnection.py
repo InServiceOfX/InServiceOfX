@@ -14,7 +14,7 @@ root@5a53362ce66a:/InServiceOfX/PythonLibraries/ThirdParties/APIs/MorePydanticAI
 """
 import pytest
 import pytest_asyncio
-from morepydanticai.Database import PostgreSQLConnection
+from commonapi.Databases import PostgreSQLConnection
 
 from TestSetup.PostgreSQLDatabaseSetup import (
     cleanup_test_database,

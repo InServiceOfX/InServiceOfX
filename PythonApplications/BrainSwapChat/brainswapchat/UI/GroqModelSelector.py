@@ -60,49 +60,82 @@ class GroqModelSelector:
             groq_api_wrapper,
             model_selector) -> bool:
         """Render model selector in topbar and handle model switching."""
-        # Create a container for the model selector next to the sidebar
-
+        
         print("render_in_topbar is called")
 
+        # Create a compact, flat design with custom CSS
+        st.markdown("""
+        <style>
+        .model-selector-flat {
+            background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 0;
+        }
+        .model-selector-flat .stSelectbox {
+            margin: 0;
+        }
+        .small-text {
+            font-size: 11px;
+            color: #6c757d;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # Create a single row layout
         with st.container():
-            # Adjust ratio as needed
-            col1, col2 = st.columns([1, 4])
+            st.markdown('<div class="model-selector-flat">', unsafe_allow_html=True)
+            
+            # Single row: Model dropdown and current info
+            col1, col2, col3 = st.columns([1, 3, 1])
             
             with col1:
-                # Empty space to align with sidebar
-                st.write("")
+                st.markdown("🤖 **Model:**", unsafe_allow_html=True)
             
             with col2:
-                # Render model selector and get selected model if changed
+                # Model dropdown
                 selected_model = GroqModelSelector._render_model_selector(
                     model_selector=model_selector)
+            
+            with col3:
+                # Current model info (compact)
+                if st.session_state.model_selector.current_model:
+                    current_model = st.session_state.model_selector.current_model
+                    context_window = model_selector.get_context_window_by_model_name(current_model)
+                    # Show first 8 characters of model name
+                    model_display = current_model[:32] + "..." if len(current_model) > 8 else current_model
+                    st.markdown(f"<div class='small-text'>{model_display}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='small-text'>Context: {context_window:,}</div>", unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # If model changed,
+        if selected_model:
+            # Use a more subtle notification
+            with st.container():
+                st.markdown(f"🔄 **Switching to {selected_model}**")
                 
-                # If model changed,
-                if selected_model:
-                    st.info(
-                        f"🔄 Switching to {selected_model}...")
-                    
-                    # Get the context window for the selected model
-                    context_window = \
-                        model_selector.get_context_window_by_model_name(
-                            selected_model)
+                context_window = \
+                    model_selector.get_context_window_by_model_name(
+                        selected_model)
 
-                    new_configuration = \
-                        GroqModelSelector._update_groq_client_configuration(
-                            current_configuration=groq_client_configuration,
-                            selected_model=selected_model,
-                            selected_model_max_tokens=context_window)
+                # TODO: Do more testing for when context window exceeded max
+                # tokens allowed for each model.
+                new_configuration = \
+                    GroqModelSelector._update_groq_client_configuration(
+                        current_configuration=groq_client_configuration,
+                        selected_model=selected_model,
+                        selected_model_max_tokens=None)
 
-                    new_configuration.update_chat_completion_configuration(
-                        groq_api_wrapper.configuration)
+                new_configuration.update_chat_completion_configuration(
+                    groq_api_wrapper.configuration)
 
-                    # Update the passed references
-                    groq_client_configuration = new_configuration
-                                        
-                    st.success(
-                        f"✅ Model switched to {selected_model} (max_tokens: {context_window})")
-                    st.rerun()
-                    return True
+                groq_client_configuration = new_configuration
+                                
+                st.success(f"✅ **{selected_model}** ready")
+                st.rerun()
+                return True
         
         return False
 

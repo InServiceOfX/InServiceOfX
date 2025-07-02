@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from morepydanticai.Database import PostgreSQLConnection
+from commonapi.Databases import PostgreSQLConnection
 
 import asyncpg
 import pytest_asyncio
@@ -11,10 +11,10 @@ class PostgreSQLDatabaseSetupData:
     # Because we're using docker-compose and if we're connecting from another
     # running Docker container, IP address may not be localhost; try the IP
     # address of host machine.
-    IP_ADDRESS = "192.168.86.230"
+    IP_ADDRESS = "192.168.86.91"
     # TODO: Have docker-compose.yml have user and password as environment variables.
     POSTGRES_USER = "inserviceofx"
-    POSTGRES_PASSWORD = "mypassword"
+    POSTGRES_PASSWORD = "inserviceofx"
 
     TEST_DSN = \
         f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{IP_ADDRESS}:{DATABASE_PORT}"
