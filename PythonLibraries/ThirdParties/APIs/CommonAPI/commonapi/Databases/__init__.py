@@ -1,1 +1,2 @@
+from .CommonSQLStatements import CommonSQLStatements
 from .PostgreSQLConnection import PostgreSQLConnection

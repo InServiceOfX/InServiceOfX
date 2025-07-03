@@ -1,23 +1,27 @@
 from dataclasses import dataclass
 from commonapi.Databases import PostgreSQLConnection
+from pathlib import Path
 
 import asyncpg
 import pytest_asyncio
+import yaml
 
 @dataclass
 class PostgreSQLDatabaseSetupData:
-    # port number is found in docker-compose.yml file for postgres service.
-    DATABASE_PORT = 5432
-    # Because we're using docker-compose and if we're connecting from another
-    # running Docker container, IP address may not be localhost; try the IP
-    # address of host machine.
-    IP_ADDRESS = "192.168.86.91"
-    # TODO: Have docker-compose.yml have user and password as environment variables.
-    POSTGRES_USER = "inserviceofx"
-    POSTGRES_PASSWORD = "inserviceofx"
+    def __init__(self):
+        configuration_file_path = Path(__file__).parent / \
+            "postgresql_test_configuration.yml"
 
-    TEST_DSN = \
-        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{IP_ADDRESS}:{DATABASE_PORT}"
+        with open(configuration_file_path, "r") as f:
+            configuration = yaml.safe_load(f)
+            self.database_port = configuration["database_port"]
+            self.ip_address = configuration["ip_address"]
+            self.postgres_user = configuration["postgres_user"]
+            self.postgres_password = configuration["postgres_password"]
+
+
+            self.test_dsn = \
+                f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.ip_address}:{self.database_port}"
 
 async def cleanup_test_database(dsn: str, db_name: str):
     """Clean up test database by dropping it and terminating all connections."""

@@ -11,10 +11,13 @@ InServiceOfX/Scripts/DockerBuilds/Builds/LLM/LocalLLMFull$ python ../../../Commo
 You can use pytest to run individual tests:
 root@5a53362ce66a:/InServiceOfX/PythonLibraries/ThirdParties/APIs/MorePydanticAI/tests# 
     pytest -s -v ./integration_tests/Database/test_PostgreSQLConnection.py::test_list_all_databases
+
+20250701: I've also tried running all the tests at once; it seems that pytest
+runs tests synchronously (i.e. sequentially one by one).
 """
+from commonapi.Databases import PostgreSQLConnection
 import pytest
 import pytest_asyncio
-from commonapi.Databases import PostgreSQLConnection
 
 from TestSetup.PostgreSQLDatabaseSetup import (
     cleanup_test_database,
@@ -22,11 +25,13 @@ from TestSetup.PostgreSQLDatabaseSetup import (
     postgres_connection
 )
 
+postgresql_database_setup_data = PostgreSQLDatabaseSetupData()
+
 @pytest_asyncio.fixture(scope="session")
 def test_dsn():
     """Provide the test database connection string."""
     # You can customize this based on environment or configuration
-    return PostgreSQLDatabaseSetupData.TEST_DSN
+    return postgresql_database_setup_data.test_dsn
 
 @pytest_asyncio.fixture(scope="function")
 def test_db_name():

@@ -1,0 +1,9 @@
+    # port number is found in docker-compose.yml file for postgres service.
+    database_port: 5432
+    # Because we're using docker-compose and if we're connecting from another
+    # running Docker container, IP address may not be localhost; try the IP
+    # address of host machine.
+    ip_address: "192.168.86.91"
+    # TODO: Have docker-compose.yml have user and password as environment variables.
+    postgres_user: "inserviceofx"
+    postgres_password: "inserviceofx"

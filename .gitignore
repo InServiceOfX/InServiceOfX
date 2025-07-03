@@ -128,6 +128,7 @@ PythonApplications/CLIChat/Deployment/build
 PythonApplications/CLIChat/Deployment/dist/
 PythonApplications/CLIChat/dist/
 PythonApplications/CLIChat/tests/TestData/chat_history.txt
+PythonLibraries/ThirdParties/APIs/CommonAPI/tests/TestSetup/postgresql_test_configuration.yml
 Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
