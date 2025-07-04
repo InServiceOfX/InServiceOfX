@@ -1,7 +1,5 @@
 from commonapi.Messages import (RecordedSystemMessage, SystemMessagesManager)
 
-from pathlib import Path
-
 def test_SystemMessagesManager_inits():
     system_messages_manager = SystemMessagesManager()
 
