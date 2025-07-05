@@ -3,7 +3,6 @@ from typing import Any, Optional
 from pathlib import Path
 
 try:
-    import datasets
     from datasets import load_dataset, load_from_disk
     from huggingface_hub import list_datasets
     DATASETS_AVAILABLE = True
@@ -54,7 +53,7 @@ class LoadAndSaveLocally:
             Path: The full path where the dataset should be saved/loaded
         """
         if dataset_name is None:
-            return self._save_path / "dataset"
+            return Path(self._save_path) / "dataset"
         
         # Split by "/" to handle organization/repo format
         parts = dataset_name.split("/")

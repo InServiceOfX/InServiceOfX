@@ -22,6 +22,8 @@ from corecode.FileIO.is_zipfile import is_zipfile
 
 from corecode.FileIO.JSONFile import JSONFile
 
+from corecode.FileIO.TextFile import TextFile
+
 from corecode.FileIO.VerifyDataSubdirectories import (
     VerifyDataSubdirectories,
 )

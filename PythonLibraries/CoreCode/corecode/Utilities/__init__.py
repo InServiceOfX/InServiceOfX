@@ -19,6 +19,11 @@ from corecode.Utilities.get_user_input import (
 	StringParameter,
 )
 
+from corecode.Utilities.git_clone_repo import (
+	_parse_repo_url_into_target_path,
+	git_clone_repo,
+)
+
 from corecode.Utilities.load_environment_file import (
 	get_environment_variable,
 	load_environment_file,

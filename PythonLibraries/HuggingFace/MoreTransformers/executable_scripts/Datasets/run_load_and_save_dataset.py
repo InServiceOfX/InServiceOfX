@@ -1,3 +1,10 @@
+"""
+USAGE:
+Usage examples:
+
+python run_load_and_save_dataset.py pisterlabs/promptset
+python run_load_and_save_dataset.py OpenAssistant/oasst1
+"""
 from pathlib import Path
 import argparse
 import sys
