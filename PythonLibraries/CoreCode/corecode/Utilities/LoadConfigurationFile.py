@@ -1,12 +1,13 @@
 from corecode.FileIO import get_default_path_to_config_file
-
 from pathlib import Path
 
 class LoadConfigurationFile:
 
-	key_parser_map = {
-		'BASE_DATA_PATH': lambda value: Path(value)
-	}	
+	# Define base patterns that should be parsed as paths
+	path_patterns = {
+		'BASE_DATA_PATH',  # Exact match
+		'BASE_DATA_PATH_'  # Prefix for numbered paths
+	}
 	
 	@staticmethod
 	def _parse_configuration_file(file_object, configuration):
@@ -28,21 +29,34 @@ class LoadConfigurationFile:
 				if value.startswith('"') and value.endswith('"'):
 					value = value[1:-1]
 
-				if key in LoadConfigurationFile.key_parser_map:
-					try:
-						value = LoadConfigurationFile.key_parser_map[key](value)
-					except Exception as err:
-						print(f"Error processing {key}: {err}")
-
-				configuration[key] = value
+				# Apply appropriate parser
+				parsed_value = LoadConfigurationFile._apply_parser(key, value)
+				configuration[key] = parsed_value
 
 		return configuration
 
 	@staticmethod
+	def _apply_parser(key, value):
+		"""
+		Apply the appropriate parser based on key patterns.
+		"""
+		# Check if key matches any path pattern
+		if (key in LoadConfigurationFile.path_patterns or 
+			key.startswith('BASE_DATA_PATH_')):
+			try:
+				return Path(value)
+			except Exception as err:
+				print(f"Error processing path {key}: {err}")
+				return value
+		
+		# For all other keys, return as-is
+		return value
+
+	@staticmethod
 	def load_configuration_file():
 		"""
-		@return configuration, Python dict with key name to pathlib.Path, e.g.
-		'BASE_DATA_PATH': PosixPath('/Data')
+		@return configuration, Python dict with key name to pathlib.Path for
+		paths, strings for other values.
 		"""
 		configuration = {}
 		with open(get_default_path_to_config_file(), 'r') as file:

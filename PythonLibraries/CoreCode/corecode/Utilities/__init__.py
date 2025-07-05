@@ -5,6 +5,7 @@ from corecode.Utilities.LoadConfigurationFile import (
 # This depends upon LoadConfigurationFile.
 from corecode.Utilities.DataSubdirectories import (
 	DataSubdirectories,
+	setup_datasets_path,
 )
 
 from corecode.Utilities.clear_torch_cache_and_collect_garbage import (

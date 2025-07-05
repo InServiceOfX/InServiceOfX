@@ -165,3 +165,6 @@ RUN pip install google-api-python-client youtube-transcript-api
 
 # pip install's for applications.
 RUN pip install streamlit
+
+# HuggingFace pip installs
+RUN pip install datasets

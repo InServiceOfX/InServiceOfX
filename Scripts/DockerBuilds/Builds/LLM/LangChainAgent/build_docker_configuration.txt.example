@@ -1,2 +1,0 @@
-DOCKER_IMAGE_NAME=langchain-agent-nvidia-python-24.06
-BASE_IMAGE=nvcr.io/nvidia/pytorch:24.06-py3
