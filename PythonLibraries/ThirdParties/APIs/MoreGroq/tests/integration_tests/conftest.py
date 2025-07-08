@@ -16,5 +16,12 @@ if (Path(__file__).resolve().parents[3] / "CommonAPI").exists():
 	sys.path.append(
 		str(Path(__file__).resolve().parents[3] / "CommonAPI"))
 
+# To obtain modules from MoreTransformers
+more_transformers_path = Path(__file__).resolve().parents[5] / \
+	"HuggingFace" / "MoreTransformers"
+
+if more_transformers_path.exists():
+	sys.path.append(str(more_transformers_path))
+
 # To obtain TestUtilities
 sys.path.append(str(Path(__file__).resolve().parent))

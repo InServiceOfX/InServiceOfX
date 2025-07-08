@@ -38,11 +38,7 @@ class RecordedSystemMessage:
 
 class SystemMessagesManager:
     def __init__(self):
-        # Initialize with default message
-        default_message = RecordedSystemMessage.create_default_message()
-        self._messages_dict: Dict[str, RecordedSystemMessage] = {
-            default_message.hash: default_message
-        }
+        self._messages_dict: Dict[str, RecordedSystemMessage] = {}
 
     def clear(self):
         self._messages_dict.clear()

@@ -3,12 +3,7 @@ from commonapi.Messages import (RecordedSystemMessage, SystemMessagesManager)
 def test_SystemMessagesManager_inits():
     system_messages_manager = SystemMessagesManager()
 
-    assert len(system_messages_manager.messages) == 1
-
-    assert system_messages_manager.messages[0].content == \
-        RecordedSystemMessage.create_default_message().content
-
-    assert system_messages_manager.messages[0].is_active == True
+    assert len(system_messages_manager.messages) == 0
 
 def create_example_content():
     content_1 = "You are a helpful, knowledgeable assistant."
@@ -29,6 +24,12 @@ def create_example_content():
 
 def test_SystemMessagesManager_add_message():
     system_messages_manager = SystemMessagesManager()
+
+    assert len(system_messages_manager.messages) == 0
+
+    system_messages_manager.add_message(
+        RecordedSystemMessage.create_default_message().content,
+        is_active=True)
 
     content, hashes = create_example_content()
     system_messages_manager.add_message(content[0])
@@ -58,9 +59,10 @@ def test_SystemMessagesManager_add_message():
 def test_clear_works():
     system_messages_manager = SystemMessagesManager()
 
-    assert len(system_messages_manager.messages) == 1
-    assert system_messages_manager.messages[0].content == \
-        RecordedSystemMessage.create_default_message().content
+    system_messages_manager.add_message(
+        RecordedSystemMessage.create_default_message().content,
+        is_active=True)
+
 
     messages = system_messages_manager.get_all_as_system_message_dicts()
     assert len(messages) == 1
@@ -92,6 +94,10 @@ def test_clear_works():
 def test_SystemMessagesManager_toggle_message():
     system_messages_manager = SystemMessagesManager()
 
+    system_messages_manager.add_message(
+        RecordedSystemMessage.create_default_message().content,
+        is_active=True)
+
     content, hashes = create_example_content()
     system_messages_manager.add_message(content[0])
     system_messages_manager.add_message(content[1])
@@ -114,7 +120,11 @@ def test_SystemMessagesManager_toggle_message():
 def test_SystemMessagesManager_toggle_messages_from_messages():
     system_messages_manager = SystemMessagesManager()
 
-    content, hashes = create_example_content()
+    system_messages_manager.add_message(
+        RecordedSystemMessage.create_default_message().content,
+        is_active=True)
+
+    content, _ = create_example_content()
     system_messages_manager.add_message(content[0])
     system_messages_manager.add_message(content[1])
     system_messages_manager.add_message(content[2])

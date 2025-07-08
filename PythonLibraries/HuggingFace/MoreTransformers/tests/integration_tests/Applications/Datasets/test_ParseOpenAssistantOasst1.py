@@ -85,6 +85,10 @@ def test_OpenAssistant_oasst1():
 
     assert set(validation_roles) == set(["prompter", "assistant"])
 
+@pytest.mark.skipif(
+    not path_for_OpenAssistant_oasst1().exists(),
+    reason="Dataset OpenAssistant/oasst1 not found"
+)
 def test_ParseOpenAssistantOasst1_parse_for_train():
     datasets_path = setup_datasets_path()
     load_and_save_locally = LoadAndSaveLocally(datasets_path)
@@ -94,6 +98,32 @@ def test_ParseOpenAssistantOasst1_parse_for_train():
     results = ParseOpenAssistantOasst1.parse_for_train(dataset)
     assert len(results) == 84437
 
+@pytest.mark.skipif(
+    not path_for_OpenAssistant_oasst1().exists(),
+    reason="Dataset OpenAssistant/oasst1 not found"
+)
+def test_ParseOpenAssistantOasst1_parse_for_train_and_more():
+    datasets_path = setup_datasets_path()
+    load_and_save_locally = LoadAndSaveLocally(datasets_path)
+    dataset_name = "OpenAssistant/oasst1"
+    dataset = load_and_save_locally.load_from_disk(dataset_name)
+    parsed_dataset = ParseOpenAssistantOasst1.parse_for_train(dataset)
+    parsed_dataset_english_only = []
+    for row in parsed_dataset:
+        if row["lang"] == "en":
+            parsed_dataset_english_only.append(row)
+    assert len(parsed_dataset_english_only) == 39283
+
+    # for index, row in enumerate(parsed_dataset):
+    #     if index % 2 == 0:
+    #         assert row["role"] == "prompter"
+    #     else:
+    #         assert row["role"] == "assistant"
+
+@pytest.mark.skipif(
+    not path_for_OpenAssistant_oasst1().exists(),
+    reason="Dataset OpenAssistant/oasst1 not found"
+)
 def test_ParseOpenAssistantOasst1_parse_for_train_prompter():
     datasets_path = setup_datasets_path()
     load_and_save_locally = LoadAndSaveLocally(datasets_path)
@@ -110,3 +140,24 @@ def test_ParseOpenAssistantOasst1_parse_for_train_prompter():
     #         results[i]["parent_id"],
     #         results[i]["text"],
     #     )
+
+@pytest.mark.skipif(
+    not path_for_OpenAssistant_oasst1().exists(),
+    reason="Dataset OpenAssistant/oasst1 not found"
+)
+def test_ParseOpenAssistantOasst1_parse_for_train_prompter_english():
+    datasets_path = setup_datasets_path()
+    load_and_save_locally = LoadAndSaveLocally(datasets_path)
+    dataset_name = "OpenAssistant/oasst1"
+    dataset = load_and_save_locally.load_from_disk(dataset_name)
+    assert dataset is not None
+    results = ParseOpenAssistantOasst1.parse_for_train_prompter_english(dataset)
+    assert len(results) == 15200
+
+    # Uncomment to print the results
+    for i in range(10):
+        print(
+            results[i]["message_id"],
+            results[i]["parent_id"],
+            results[i]["text"],
+        )

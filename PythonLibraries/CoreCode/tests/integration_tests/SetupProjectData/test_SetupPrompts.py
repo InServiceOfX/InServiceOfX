@@ -11,8 +11,7 @@ def path_for_example_dataset_0():
     reason="Repository jujumilk3/leaked-system-prompts not found locally"
 )
 def test_ParseJujumilk3LeakedSystemPrompts():
-    parse_jujumilk3_leaked_system_prompts = \
-        ParseJujumilk3LeakedSystemPrompts()
+    parse_jujumilk3_leaked_system_prompts = ParseJujumilk3LeakedSystemPrompts()
     system_prompt, file_stem_name, html_address = \
         parse_jujumilk3_leaked_system_prompts.get_anthropic_claude_3_7_sonnet_prompt()
     assert system_prompt is not None

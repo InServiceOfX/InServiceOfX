@@ -150,6 +150,19 @@ def test_chat_completion_configuration_inits_with_default_values():
         "temperature": 1.0,
     }
 
+    assert configuration.model == "llama-3.3-70b-versatile"
+    assert configuration.temperature == 1.0
+    assert configuration.max_completion_tokens is None
+    assert configuration.max_tokens is None
+    assert configuration.stream == False
+    assert configuration.stop is None
+    assert configuration.n == 1
+    assert configuration.response_format is None
+    assert configuration.response_model is None
+    assert configuration.tools is None
+    assert configuration.tool_choice is None
+    assert configuration.parallel_tool_calls is None
+
 def test_Tool_becomes_dict():
     tool = Tool(
         type="function",
