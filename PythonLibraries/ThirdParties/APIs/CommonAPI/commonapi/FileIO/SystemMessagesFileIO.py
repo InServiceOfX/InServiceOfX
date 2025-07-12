@@ -48,11 +48,3 @@ class SystemMessagesFileIO:
                 system_messages_manager.add_previously_recorded_message(message)
             return True
         return False
-
-    def put_messages_into_conversation_history(self, conversation_history) -> bool:
-        if self.messages != None and self.messages != []:
-            for _, message in self.messages.items():
-                recorded_message = SystemMessage(content=message.content)
-                conversation_history.append_message(recorded_message)
-            return True
-        return False

@@ -18,9 +18,6 @@ from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
     SystemMessagesManager)
 
-from commonapi.Messages.PermanentConversationHistory import (
-    PermanentConversationHistory)
-
 __all__ = [
     "ConversationHistoryAndSystemMessagesManager",
     "SystemMessage",

@@ -3,7 +3,6 @@ import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
 from clichatlocal.FileIO import SystemMessagesFileIO
-from clichatlocal.FileIO import ConversationHistoryFileIO
 from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
@@ -11,8 +10,6 @@ from clichatlocal.Terminal import (
 
 from moretransformers.Applications import LocalLlama3
 from moretransformers.Configurations import Configuration, GenerationConfiguration
-
-from commonapi.Messages import PermanentConversationHistory
 
 class CLIChatLocal:
     def __init__(
@@ -23,10 +20,6 @@ class CLIChatLocal:
     ):
         self.system_messages_file_io = SystemMessagesFileIO(
             system_messages_file_path)
-
-        self.conversation_history_file_io = ConversationHistoryFileIO(
-            conversations_file_path)
-        self.conversation_history_file_io.ensure_file_exists()
 
         self.cli_configuration = CLIConfiguration()
 
@@ -39,15 +32,10 @@ class CLIChatLocal:
             self.llama3_configuration,
             self.llama3_generation_configuration)
 
-        self.permanent_conversation_history = PermanentConversationHistory()
-
         load_messages_result = self.system_messages_file_io.load_messages()
         if load_messages_result:
             self.system_messages_file_io.put_messages_into_system_messages_manager(
                 self.llama3_engine.system_messages_manager)
-
-            self.system_messages_file_io.put_messages_into_permanent_conversation_history(
-                self.permanent_conversation_history)
         
         # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)
@@ -82,23 +70,17 @@ class CLIChatLocal:
                 
                 return continue_running
 
-            self.permanent_conversation_history.append_user_content(prompt)
-
             # Generate response
             self.terminal_ui.print_user_message(prompt)
             response = self.llama3_engine.generate_from_single_user_content(
                 prompt)
             self.terminal_ui.print_assistant_message(response)
 
-            self.permanent_conversation_history.append_assistant_content(response)
-
             return True
             
         except KeyboardInterrupt:
             # Handle Ctrl+C exit
             self.terminal_ui.print_info("Saving conversation history...")
-            self.conversation_history_file_io.save_messages(
-                self.permanent_conversation_history.recorded_messages)
             self.terminal_ui.print_info("Goodbye!")
             return False
         except Exception as e:

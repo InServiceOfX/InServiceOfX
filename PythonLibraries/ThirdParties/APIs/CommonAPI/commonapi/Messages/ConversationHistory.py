@@ -35,7 +35,7 @@ class ConversationHistory:
             print("type(message): ", type(message))
             print("message: ", message)
 
-    def _attempt_to_hash_message(self, message) -> None:
+    def _attempt_to_hash_message(self, message):
         try:
             if isinstance(message, dict) and \
                 "content" in message and \
@@ -44,12 +44,14 @@ class ConversationHistory:
                 self.content_hashes.append(self._hash_content(message["content"]))
                 self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
                     len(self.content_hashes) - 1
+                return self.content_hashes[-1]
             elif hasattr(message, "content") and \
                 message.content is not None and \
                 message.content != "":
                 self.content_hashes.append(self._hash_content(message.content))
                 self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
                     len(self.content_hashes) - 1
+                return self.content_hashes[-1]
             # We need to handle the case where the message is of type
             # groq.types.chat.chat_completion_message.ChatCompletionMessage
             # where the content can be None or a string. Consider also this specific
@@ -60,10 +62,12 @@ class ConversationHistory:
                     self.content_hashes.append(self._hash_content(message))
                     self.hash_to_index_reverse_map[self.content_hashes[-1]] = \
                         len(self.content_hashes) - 1
+                    return self.content_hashes[-1]
                 except Exception as err:
                     print(f"Error hashing message content: {err}")
                     print("type(message): ", type(message))
                     print("message: ", message)
+
         except Exception as err:
             print(f"Error trying to hash message content: {err}")
             print("type(message): ", type(message))
