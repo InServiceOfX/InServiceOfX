@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "morex"
+version = "0.1.0"
+description = ""
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tweepy = "^4.16.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

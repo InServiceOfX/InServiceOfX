@@ -121,6 +121,7 @@ Configurations/HuggingFace/MoreTransformers/generation_configuration.yml
 Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
+Configurations/ThirdParties/APIs/MoreX/morex.env
 PythonApplications/CLIChatLocal/Configurations/llama3_generation_configuration.yml
 PythonApplications/CLIChatLocal/Configurations/llama3_configuration.yml
 PythonApplications/CLIChat/Data/chat_history.txt

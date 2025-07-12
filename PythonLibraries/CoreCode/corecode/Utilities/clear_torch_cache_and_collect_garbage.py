@@ -4,8 +4,10 @@ try:
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
-    warnings.warn("torch is not installed. GPU cache clearing will be skipped.", 
-                  ImportWarning, stacklevel=2)
+    warnings.warn(
+        "torch is not installed. GPU cache clearing will be skipped.", 
+        ImportWarning,
+        stacklevel=2)
     TORCH_AVAILABLE = False
 
 def clear_torch_cache_and_collect_garbage(device: str = None):
