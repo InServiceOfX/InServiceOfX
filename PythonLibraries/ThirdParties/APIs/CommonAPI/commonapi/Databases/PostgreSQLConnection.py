@@ -452,7 +452,11 @@ class PostgreSQLConnection:
             print(f"Error listing extensions: {e}")
             return []
 
-    async def drop_extension(self, extension_name: str, database_name: Optional[str] = None, cascade: bool = False) -> bool:
+    async def drop_extension(
+            self,
+            extension_name: str,
+            database_name: Optional[str] = None,
+            cascade: bool = False) -> bool:
         """
         Drop a PostgreSQL extension from the specified database.
         
@@ -467,7 +471,8 @@ class PostgreSQLConnection:
         try:
             async with self.connect(database_name) as conn:
                 cascade_clause = " CASCADE" if cascade else ""
-                await conn.execute(f"DROP EXTENSION IF EXISTS {extension_name}{cascade_clause}")
+                await conn.execute(
+                    f"DROP EXTENSION IF EXISTS {extension_name}{cascade_clause}")
                 return True
         except Exception as e:
             print(f"Error dropping extension {extension_name}: {e}")

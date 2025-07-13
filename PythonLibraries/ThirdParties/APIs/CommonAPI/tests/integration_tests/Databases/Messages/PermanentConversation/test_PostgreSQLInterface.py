@@ -29,6 +29,8 @@ async def test_permanent_conversation_database_lifecycle(
     postgres_connection: PostgreSQLConnection):
 
     await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    await postgres_connection.create_extension("vector")
 
     assert await postgres_connection.database_exists(test_db_name) is True, \
         f"Database {test_db_name} should exist!"

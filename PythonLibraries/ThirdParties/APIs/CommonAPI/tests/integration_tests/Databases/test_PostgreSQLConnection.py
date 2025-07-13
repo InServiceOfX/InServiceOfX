@@ -35,6 +35,7 @@ def test_dsn():
 
 @pytest_asyncio.fixture(scope="function")
 def test_db_name():
+    # The name is arbitrary, can be anything you want.
     return "test_pydantic_ai_database"
 
 @pytest.mark.asyncio
@@ -360,3 +361,31 @@ async def test_pool_parameters(test_dsn: str, test_db_name: str):
         result = await conn.fetchval("SELECT 1")
         assert result == 1
 
+@pytest.mark.asyncio
+async def test_list_extension(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+
+    list_of_extensions = await postgres_connection.list_extensions()
+
+    for extension in list_of_extensions:
+        print(extension)
+
+@pytest.mark.asyncio
+async def test_create_extension(
+        test_dsn: str,
+        test_db_name: str,
+        postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+
+    create_result = await postgres_connection.create_extension("vector")
+
+    assert create_result == True
+
+    assert await postgres_connection.extension_exists("vector")
