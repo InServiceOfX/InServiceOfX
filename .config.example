@@ -10,3 +10,5 @@ BASE_DATA_PATH="/Data/"
 # Multiple numbered data paths - you can define as many as needed
 # Use any integer number for the suffix (0, 1, 2, 10, 100, etc.)
 BASE_DATA_PATH_1="/Data1/"
+
+PROMPTS_COLLECTION_PATH="/Data/Prompts/PromptsCollection"

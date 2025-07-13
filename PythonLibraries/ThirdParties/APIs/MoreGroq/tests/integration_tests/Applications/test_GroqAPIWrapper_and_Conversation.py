@@ -1,11 +1,13 @@
 from commonapi.Messages import (
     AssistantMessage,
     ConversationAndSystemMessages,
+    ParsePromptsCollection,
     UserMessage)
-from corecode.FileIO import JSONFile
+from corecode.FileIO import JSONFile, TextFile
 from corecode.SetupProjectData.SetupPrompts import \
     ParseJujumilk3LeakedSystemPrompts
 from corecode.Utilities import (
+    DataSubdirectories,
     get_environment_variable,
     load_environment_file,
     setup_datasets_path)
@@ -20,12 +22,17 @@ import pytest
 
 load_environment_file()
 
+data_subdirectories = DataSubdirectories()
+
 def path_for_system_prompts_0():
     return ParseJujumilk3LeakedSystemPrompts()._repo_path
 
 def path_for_example_dataset_0():
     datasets_path = setup_datasets_path()
     return datasets_path / "OpenAssistant" / "oasst1"
+
+def path_for_prompts_collection():
+    return data_subdirectories.PromptsCollection
 
 @pytest.fixture
 def train_prompts_and_system_prompt():
@@ -175,7 +182,6 @@ def test_GroqAPIWrapper_and_ConversationAndSystemMessages_works_on_a_few_prompts
         api_key=get_environment_variable("GROQ_API_KEY"))
     groq_api_wrapper.configuration = chat_completion_configuration
 
-
     conversation_and_system_messages = ConversationAndSystemMessages()
     conversation_and_system_messages.add_system_message(system_prompt)
 
@@ -253,4 +259,67 @@ def test_GroqAPIWrapper_and_ConversationAndSystemMessages_works_on_a_few_prompts
     # model_responses_path = Path.cwd() / "model_responses.json"
     # JSONFile.save_json(model_responses_path, model_responses)
 
+@pytest.mark.skipif(
+    not path_for_prompts_collection().exists(),
+    reason="Prompts collection not found locally")
+def test_on_alex_prompter_posts():
 
+    parse_prompts_collection = ParsePromptsCollection(
+        path_for_prompts_collection())
+    lines_of_files = parse_prompts_collection.load_manually_copied_X_posts()
+    posts = parse_prompts_collection.parse_manually_copied_X_posts(
+        lines_of_files)
+
+    chat_completion_configuration = ChatCompletionConfiguration()
+    chat_completion_configuration.model = \
+        "meta-llama/llama-4-scout-17b-16e-instruct"
+    groq_api_wrapper = GroqAPIWrapper(
+        api_key=get_environment_variable("GROQ_API_KEY"))
+    groq_api_wrapper.configuration = chat_completion_configuration
+
+    conversation_and_system_messages = ConversationAndSystemMessages()
+    assert conversation_and_system_messages.system_messages_manager.messages == []
+
+    user_prompt_and_model_responses = []
+    user_prompt_and_model_responses_path = \
+        Path.cwd() / "user_prompt_and_model_responses.txt"
+
+    try:
+        for post in posts:
+            conversation_and_system_messages.append_message(
+                UserMessage(content=post["prompt"]))
+            user_prompt_and_model_responses.append(
+                f"User prompt: {post['prompt']}\n")
+
+            conversation_as_input = \
+                conversation_and_system_messages.get_conversation_as_list_of_dicts()
+            response = groq_api_wrapper.create_chat_completion(
+                conversation_as_input)
+
+            if response and hasattr(response, "choices") and \
+                len(response.choices) > 0:
+                assistant_message_content = response.choices[0].message.content
+                conversation_and_system_messages.append_message(
+                    AssistantMessage(content=assistant_message_content))
+                # Uncomment to print the assistant message content
+                #print(assistant_message_content)
+                
+                user_prompt_and_model_responses.append(
+                    f"Model response: {assistant_message_content}\n")
+            else:
+                print(f"No response message received from API call: {response}")
+                conversation_and_system_messages.append_general_message(
+                    response)
+                print("response", response)
+        TextFile.save_lines(
+            user_prompt_and_model_responses_path,
+            user_prompt_and_model_responses)
+    except Exception as e:
+        print(f"Error: {e}")
+        if len(user_prompt_and_model_responses) > 0:
+            TextFile.save_lines(
+                user_prompt_and_model_responses_path,
+                user_prompt_and_model_responses)
+        else:
+            print("user_prompt_and_model_responses is empty")
+        raise

@@ -14,6 +14,8 @@ from commonapi.Messages.ConversationHistory import ConversationHistory
 from commonapi.Messages.ConversationAndSystemMessages import (
     ConversationAndSystemMessages)
 
+from commonapi.Messages.ParsePromptsCollection import ParsePromptsCollection
+
 from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
     SystemMessagesManager)

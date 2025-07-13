@@ -1,4 +1,4 @@
-from corecode.Utilities import LoadConfigurationFile
+from corecode.Configuration import LoadConfigurationFile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
@@ -16,6 +16,8 @@ class DataSubdirectories:
     Public: Path = field(init=False)
     PublicFinances: Path = field(init=False)
 
+    PromptsCollection: Path = field(init=False)
+
     """
     We do not define a __init__(..) function because then the fields would be
     positional arguments required when creating a class instance.
@@ -26,7 +28,9 @@ class DataSubdirectories:
         
         # Backward compatibility - set primary Data path
         self.Data = config['BASE_DATA_PATH']
-        
+        if isinstance(self.Data, str):
+            self.Data = Path(self.Data)
+
         # Collect all BASE_DATA_PATH_X keys
         self.DataPaths = []
         
@@ -56,7 +60,15 @@ class DataSubdirectories:
         self.ModelsLLM = self.Models / "LLM"
         self.Public = self.Data / "Public"
         self.PublicFinances = self.Public / "Finances"
-    
+
+        if config['PROMPTS_COLLECTION_PATH'] is not None:
+            self.PromptsCollection = Path(config['PROMPTS_COLLECTION_PATH'])
+        elif config['PROMPTS_COLLECTION_PATH'] is None:
+            self.PromptsCollection = self.Data / "Prompts" / "PromptsCollection"
+        else:
+            raise ValueError(
+                f"Invalid prompts collection path: {config['PROMPTS_COLLECTION_PATH']}")
+
     def get_data_path(self, index: int = 0) -> Path:
         """
         Get a specific data path by index.

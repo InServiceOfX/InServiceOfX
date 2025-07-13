@@ -1,8 +1,3 @@
-from corecode.Utilities.LoadConfigurationFile import (
-	LoadConfigurationFile,
-)
-
-# This depends upon LoadConfigurationFile.
 from corecode.Utilities.DataSubdirectories import (
 	DataSubdirectories,
 	setup_datasets_path,
