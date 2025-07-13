@@ -2,17 +2,6 @@ class SQLStatements:
     """Static class containing SQL statements for permanent conversation
     operations."""
 
-    # System Messages Table Schema
-    CREATE_SYSTEM_MESSAGES_TABLE = """
-    CREATE TABLE IF NOT EXISTS system_messages (
-        id SERIAL PRIMARY KEY,
-        content TEXT NOT NULL,
-        timestamp DOUBLE PRECISION NOT NULL,
-        hash VARCHAR(64) UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """
-
     CREATE_PERMANENT_CONVERSATION_TABLE = """
     CREATE TABLE IF NOT EXISTS permanent_conversation (
         id SERIAL PRIMARY KEY,

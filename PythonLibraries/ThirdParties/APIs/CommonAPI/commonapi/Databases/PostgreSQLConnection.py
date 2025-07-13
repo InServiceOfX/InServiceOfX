@@ -364,3 +364,111 @@ class PostgreSQLConnection:
         """, schema_name, table_name)
         
         return exists is not None
+
+    async def create_extension(
+            self,
+            extension_name: str,
+            database_name: Optional[str] = None) -> bool:
+        """
+        Create a PostgreSQL extension in the specified database.
+        
+        Args:
+            extension_name: Name of the extension to create (e.g., 'vector')
+            database_name: Optional database name to create extension in
+            
+        Returns:
+            bool: True if extension was created successfully or already exists
+        """
+        try:
+            async with self.connect(database_name) as conn:
+                await conn.execute(
+                    f"CREATE EXTENSION IF NOT EXISTS {extension_name}")
+                return True
+        except Exception as e:
+            print(f"Error creating extension {extension_name}: {e}")
+            return False
+
+    async def extension_exists(
+            self,
+            extension_name: str,
+            database_name: Optional[str] = None) -> bool:
+        """
+        Check if a PostgreSQL extension exists in the specified database.
+        
+        Args:
+            extension_name: Name of the extension to check
+            database_name: Optional database name to check
+            
+        Returns:
+            bool: True if extension exists
+        """
+        try:
+            async with self.connect(database_name) as conn:
+                exists = await conn.fetchval("""
+                    SELECT 1 FROM pg_extension WHERE extname = $1
+                """, extension_name)
+                return exists is not None
+        except Exception as e:
+            print(f"Error checking extension {extension_name}: {e}")
+            return False
+
+    async def list_extensions(
+            self,
+            database_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        List all extensions in the specified database.
+        
+        Args:
+            database_name: Optional database name to check
+            
+        Returns:
+            List of dictionaries containing extension information
+        """
+        try:
+            async with self.connect(database_name) as conn:
+                rows = await conn.fetch("""
+                    SELECT 
+                        extname,
+                        extversion,
+                        extrelocatable,
+                        extnamespace,
+                        extowner
+                    FROM pg_extension
+                    ORDER BY extname
+                """)
+                
+                extensions = []
+                for row in rows:
+                    extensions.append({
+                        'name': row['extname'],
+                        'version': row['extversion'],
+                        'relocatable': row['extrelocatable'],
+                        'namespace': row['extnamespace'],
+                        'owner': row['extowner']
+                    })
+                
+                return extensions
+        except Exception as e:
+            print(f"Error listing extensions: {e}")
+            return []
+
+    async def drop_extension(self, extension_name: str, database_name: Optional[str] = None, cascade: bool = False) -> bool:
+        """
+        Drop a PostgreSQL extension from the specified database.
+        
+        Args:
+            extension_name: Name of the extension to drop
+            database_name: Optional database name to drop from
+            cascade: Whether to use CASCADE option
+            
+        Returns:
+            bool: True if extension was dropped successfully
+        """
+        try:
+            async with self.connect(database_name) as conn:
+                cascade_clause = " CASCADE" if cascade else ""
+                await conn.execute(f"DROP EXTENSION IF EXISTS {extension_name}{cascade_clause}")
+                return True
+        except Exception as e:
+            print(f"Error dropping extension {extension_name}: {e}")
+            return False

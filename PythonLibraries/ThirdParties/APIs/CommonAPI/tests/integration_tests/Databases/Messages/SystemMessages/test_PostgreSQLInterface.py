@@ -139,15 +139,15 @@ async def test_database_to_system_messages_manager(
         "Table should be created"
 
     assert await system_messages_postgres_interface.insert_message(
-        content[0]) is not None, \
+        RecordedSystemMessage.create(content[0])) is not None, \
         "Message should be inserted"
 
     assert await system_messages_postgres_interface.insert_message(
-        content[1]) is not None, \
+        RecordedSystemMessage.create(content[1])) is not None, \
         "Message should be inserted"
 
     assert await system_messages_postgres_interface.insert_message(
-        content[2]) is not None, \
+        RecordedSystemMessage.create(content[2])) is not None, \
         "Message should be inserted"
 
     list_of_messages = \
