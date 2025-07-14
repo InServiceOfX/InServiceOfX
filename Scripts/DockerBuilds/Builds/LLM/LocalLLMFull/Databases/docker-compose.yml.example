@@ -4,6 +4,15 @@
 # docker network connect local_llm_full_network <nameofcontainer>
 # Stop
 # docker compose down
+#
+# To "get into" this docker,
+# 
+# docker exec -it local-llm-full-postgres psql -U inserviceofx -d local_llm_full_database
+#
+# where local-llm-full-postgres is the container_name as given in this
+# docker-compose.yml, psql is the command line client, -U is for user name, -d
+# is for the database name, from POSTGRES_DB in this docker-compose.yml
+#
 
 version: '3.8'
 

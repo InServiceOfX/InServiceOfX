@@ -181,7 +181,6 @@ class ConversationHistory:
                     length += len(message)
         return length
 
-
     def clear(self) -> None:
         self.messages.clear()
         self.content_hashes.clear()

@@ -15,48 +15,100 @@ class ConversationMessage:
     role: str
     embedding: Optional[list[float]] = None
 
+@dataclass
+class ConversationMessagePair:
+    """
+    Why a message pair for user message and assistant message?
+
+    https://devblogs.microsoft.com/surface-duo/android-openai-chatgpt-19/#:~:text=The%20code%20for%20steps%201,referenced%20in%20subsequent%20user%20queries
+
+    'The query and response are concatenated together so that the embedding
+    created will have the best chance of matching future user queries that might
+    be related.'
+    """
+    conversation_pair_id: int
+    content_0: str
+    content_1: str
+    datetime: float
+    hash: str
+    role_0: str
+    role_1: str
+    embedding: Optional[list[float]] = None
+
 class PermanentConversation:
-    messages: list[ConversationMessage] = None
-    content_hashes: list[str] = None
-    hash_to_index_reverse_map: dict[str, int] = None
+    messages: list[ConversationMessage] = []
+    message_pairs: list[ConversationMessagePair] = []
+    content_hashes: list[str] = []
+    hash_to_index_reverse_map: dict[str, int] = {}
 
     _counter = 0
+    _message_pair_counter = 0
 
-    def __post_init__(self):
-        self.messages = self.messages or []
-        self.content_hashes = self.content_hashes or []
-        self.hash_to_index_reverse_map = self.hash_to_index_reverse_map or {}
-
-    def append_message(
+    def add_message(
             self,
             message: Message,
-            hash: str,
             embedding: Optional[list[float]] = None):
         self.messages.append(ConversationMessage(
             conversation_id=self._counter,
             content=message.content,
             datetime=time.time(),
-            hash=hash,
+            hash=Message._hash_content(message.content),
             role=message.role,
             embedding=embedding))
         self._counter += 1
         self.content_hashes.append(hash)
         self.hash_to_index_reverse_map[hash] = len(self.content_hashes) - 1
 
-    def add_system_message(
+    def append_message_pair(
+            self,
+            message_0: Message,
+            message_1: Message,
+            embedding: Optional[list[float]] = None):
+        self.message_pairs.append(ConversationMessagePair(
+            conversation_pair_id=self._message_pair_counter,
+            content_0=message_0.content,
+            content_1=message_1.content,
+            datetime=time.time(),
+            hash=Message._hash_content(
+                message_0.content + message_1.content),
+            role_0=message_0.role,
+            role_1=message_1.role,
+            embedding=embedding))
+        self._message_pair_counter += 1
+
+    def add_message_as_content(
             self,
             content: str,
-            hash: str,
+            role: str,
             embedding: Optional[list[float]] = None):
         self.messages.append(ConversationMessage(
             conversation_id=self._counter,
             content=content,
             datetime=time.time(),
-            hash=hash,
-            role="system",
+            hash=Message._hash_content(content),
+            role=role,
             embedding=embedding))
+        self._counter += 1
         self.content_hashes.append(hash)
         self.hash_to_index_reverse_map[hash] = len(self.content_hashes) - 1
+
+    def add_message_pair_as_content(
+            self,
+            content_0: str,
+            content_1: str,
+            role_0: str,
+            role_1: str,
+            embedding: Optional[list[float]] = None):
+        self.message_pairs.append(ConversationMessagePair(
+            conversation_pair_id=self._message_pair_counter,
+            content_0=content_0,
+            content_1=content_1,
+            datetime=time.time(),
+            hash=Message._hash_content(content_0 + content_1),
+            role_0=role_0,
+            role_1=role_1,
+            embedding=embedding))
+        self._message_pair_counter += 1
 
     def get_message_reference_by_hash(self, hash: str) \
         -> Optional[ConversationMessage]:

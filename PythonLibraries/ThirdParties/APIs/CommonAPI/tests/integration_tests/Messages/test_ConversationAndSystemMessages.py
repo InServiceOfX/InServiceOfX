@@ -4,8 +4,6 @@ from commonapi.Messages import (
     ConversationAndSystemMessages,
     UserMessage)
 
-from corecode.FileIO import JSONFile
-
 def setup_conversation_and_system_messages():
     # https://prompts.chat/
     system_prompt = (
@@ -171,6 +169,7 @@ def test_clear_conversation_history_can_keep_active_system_messages():
     assert list_of_messages_dict[2]["content"] == more_user_message_0
     assert list_of_messages_dict[3]["content"] == more_assistant_message_0
 
+    # Clear conversation again.
     conversation_and_system_messages.clear_conversation_history()
     list_of_messages_dict = \
         conversation_and_system_messages.get_conversation_as_list_of_dicts()

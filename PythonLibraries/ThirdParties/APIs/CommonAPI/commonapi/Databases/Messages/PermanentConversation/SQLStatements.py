@@ -10,7 +10,8 @@ class SQLStatements:
         role TEXT NOT NULL,
         hash TEXT,
         content TEXT,
-        embedding VECTOR(1536)
+        -- bge-large-en-v1.5 returns a vector of 1024 floats
+        embedding vector(1024) NOT NULL
     );
     """
 

@@ -1,18 +1,21 @@
 from commonapi.Messages.Messages import (    
-    SystemMessage,
-    UserMessage,
     AssistantMessage,
+    create_assistant_message,
     create_system_message,
     create_tool_message,
     create_user_message,
-    create_assistant_message,
-    parse_dict_into_specific_message
+    parse_dict_into_specific_message,
+    SystemMessage,
+    UserMessage,
 )
 
 from commonapi.Messages.ConversationHistory import ConversationHistory
 
 from commonapi.Messages.ConversationAndSystemMessages import (
     ConversationAndSystemMessages)
+
+from commonapi.Messages.ConversationSystemAndPermanent \
+    import ConversationSystemAndPermanent
 
 from commonapi.Messages.ParsePromptsCollection import ParsePromptsCollection
 
@@ -21,17 +24,17 @@ from commonapi.Messages.SystemMessagesManager import (
     SystemMessagesManager)
 
 __all__ = [
-    "ConversationHistoryAndSystemMessagesManager",
-    "SystemMessage",
-    "UserMessage",
     "AssistantMessage",
-    "create_system_message",
-    "create_user_message",
-    "create_assistant_message",
-    "create_tool_message",
-    "parse_dict_into_specific_message",
     "ConversationHistory",
+    "ConversationAndSystemMessages",
+    "create_assistant_message",
+    "create_system_message",
+    "create_tool_message",
+    "create_user_message",
+    "ParsePromptsCollection",
+    "parse_dict_into_specific_message",
     "RecordedSystemMessage",
     "SystemMessagesManager",
-    "PermanentConversationHistory"
+    "SystemMessage",
+    "UserMessage",
 ]

@@ -1,5 +1,8 @@
 from commonapi.Databases import (CommonSQLStatements, PostgreSQLConnection)
 from commonapi.Databases.Messages.PermanentConversation import SQLStatements
+from commonapi.Messages.PermanentConversation import ConversationMessage
+
+from typing import List, Optional
 
 class PostgreSQLInterface:
     """Database interface for persisting permanent conversation messages."""
@@ -38,4 +41,47 @@ class PostgreSQLInterface:
         except Exception as e:
             print(f"Error checking if table exists: {e}")
             return False
+
+    async def insert_message(self, message: ConversationMessage) \
+        -> Optional[int]:
+        """
+        Insert a conversation message into the database.
+        Duplicates (based on hash) are ignored.
+        """
+        try:
+            async with self._postgres_connection.connect() as conn:
+                result = await conn.fetchval(
+                    SQLStatements.INSERT_PERMANENT_CONVERSATION_MESSAGE,
+                    message.conversation_id,
+                    message.datetime,
+                    message.role,
+                    message.hash,
+                    message.content,
+                    message.embedding
+                )
+                return result
+        except Exception as e:
+            print(f"Error inserting permanent conversation message: {e}")
+            return None
+
+    async def get_all_messages(self) -> List[ConversationMessage]:
+        try:
+            async with self._postgres_connection.connect() as conn:
+                rows = await conn.fetch(
+                    SQLStatements.SELECT_ALL_PERMANENT_CONVERSATION_MESSAGES)
+                messages = []
+                for row in rows:
+                    message = ConversationMessage(
+                        conversation_id=row['conversation_id'],
+                        content=row['content'],
+                        datetime=row['datetime'],
+                        hash=row['hash'],
+                        role=row['role'],
+                        embedding=row['embedding']
+                    )
+                    messages.append(message)
+                return messages
+        except Exception as e:
+            print(f"Error getting all permanent conversation messages: {e}")
+            return []
 
