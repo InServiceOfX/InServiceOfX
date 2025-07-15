@@ -36,13 +36,14 @@ class ConversationMessagePair:
     embedding: Optional[list[float]] = None
 
 class PermanentConversation:
-    messages: list[ConversationMessage] = []
-    message_pairs: list[ConversationMessagePair] = []
-    content_hashes: list[str] = []
-    hash_to_index_reverse_map: dict[str, int] = {}
+    def __init__(self):
+        self.messages: list[ConversationMessage] = []
+        self.message_pairs: list[ConversationMessagePair] = []
+        self.content_hashes: list[str] = []
+        self.hash_to_indices_reverse_map: dict[str, list[int]] = {}
 
-    _counter = 0
-    _message_pair_counter = 0
+        self._counter: int = 0
+        self._message_pair_counter: int = 0
 
     def add_message(
             self,
@@ -57,7 +58,12 @@ class PermanentConversation:
             embedding=embedding))
         self._counter += 1
         self.content_hashes.append(hash)
-        self.hash_to_index_reverse_map[hash] = len(self.content_hashes) - 1
+        if hash not in self.hash_to_indices_reverse_map:
+            self.hash_to_indices_reverse_map[hash] = [
+                len(self.content_hashes) - 1,]
+        else:
+            self.hash_to_indices_reverse_map[hash].append(
+                len(self.content_hashes) - 1)
 
     def append_message_pair(
             self,
@@ -90,7 +96,12 @@ class PermanentConversation:
             embedding=embedding))
         self._counter += 1
         self.content_hashes.append(hash)
-        self.hash_to_index_reverse_map[hash] = len(self.content_hashes) - 1
+        if hash not in self.hash_to_indices_reverse_map:
+            self.hash_to_indices_reverse_map[hash] = [
+                len(self.content_hashes) - 1,]
+        else:
+            self.hash_to_indices_reverse_map[hash].append(
+                len(self.content_hashes) - 1)
 
     def add_message_pair_as_content(
             self,

@@ -10,14 +10,6 @@ class ConfigurationData:
 
     numbered_data_paths: Dict[str, str] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, str]:
-        """Convert the configuration data to a dictionary."""
-        return {
-            "BASE_DATA_PATH": self.BASE_DATA_PATH,
-            "PROMPTS_COLLECTION_PATH": self.PROMPTS_COLLECTION_PATH,
-            **self.numbered_data_paths
-        }
-
     def to_dict(self) -> Dict[str, Any]:
         result = {}
         
@@ -37,8 +29,10 @@ class ConfigurationData:
         
         return result
 
-    def add_numbered_data_path(self, numbered_key: str, value: str) -> None:
+    def add_numbered_data_path(self, number: str, value: str) -> None:
         """Add a numbered data path (e.g., BASE_DATA_PATH_1,
         BASE_DATA_PATH_42)."""
-        self.numbered_data_paths[numbered_key] = \
+        # Create the full key name
+        full_key = f"BASE_DATA_PATH_{number}"
+        self.numbered_data_paths[full_key] = \
             value if value.strip() else None

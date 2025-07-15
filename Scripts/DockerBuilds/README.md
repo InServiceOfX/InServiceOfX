@@ -44,3 +44,10 @@ sudo systemctl restart docker
 Confirm change:
 docker info
 
+## Docker Compose (`docker-compose`) for PostgreSQL
+
+To "get into" a docker container, that's running (check with `docker ps`) PostgreSQL, for example, take a look at `Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml` for the PostgreSQL docker image, do
+
+```
+docker exec -it local-llm-full-postgres psql -U inserviceofx -d local_llm_full_database
+```

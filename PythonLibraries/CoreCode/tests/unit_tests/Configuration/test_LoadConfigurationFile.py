@@ -13,3 +13,4 @@ def test_load_configuration_file():
     assert config is not None
     assert config['BASE_DATA_PATH'] == '/Data/'
     assert config['PROMPTS_COLLECTION_PATH'] == '/Data/Prompts/PromptsCollection'
+    assert config['BASE_DATA_PATH_1'] == '/Data1/'

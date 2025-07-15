@@ -1,18 +1,29 @@
 from commonapi.Messages import ConversationSystemAndPermanent
+from commonapi.Messages.PermanentConversation import PermanentConversation
 from .MakeMessageEmbeddingsWithSentenceTransformer import \
     MakeMessageEmbeddingsWithSentenceTransformer
 
 def create_missing_embeddings(
-        csp: ConversationSystemAndPermanent,
+        conversation: ConversationSystemAndPermanent | PermanentConversation,
         embeddings_maker: MakeMessageEmbeddingsWithSentenceTransformer):
-    for message in csp.permanent_conversation.messages:
+
+    if isinstance(conversation, ConversationSystemAndPermanent):
+        messages = conversation.permanent_conversation.messages
+        message_pairs = conversation.permanent_conversation.message_pairs
+    elif isinstance(conversation, PermanentConversation):
+        messages = conversation.messages
+        message_pairs = conversation.message_pairs
+    else:
+        raise ValueError("Invalid conversation type")
+
+    for message in messages:
         if message.embedding is None:
             message.embedding = \
                 embeddings_maker.make_embedding_from_content(
                     content=message.content,
                     role=message.role)
 
-    for message_pair in csp.permanent_conversation.message_pairs:
+    for message_pair in message_pairs:
         if message_pair.embedding is None:
             message_pair.embedding = \
                 embeddings_maker.make_embedding_from_content_pair(

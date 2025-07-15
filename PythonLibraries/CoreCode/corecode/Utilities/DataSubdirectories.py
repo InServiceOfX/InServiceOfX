@@ -125,7 +125,7 @@ def setup_datasets_path():
 
     if not datasets_path.exists():
         for path in data_subdirectories.DataPaths:
-            datasets_path = path / "Datasets"
+            datasets_path = Path(path) / "Datasets"
             if datasets_path.exists():
                 break
         if not datasets_path.exists():
