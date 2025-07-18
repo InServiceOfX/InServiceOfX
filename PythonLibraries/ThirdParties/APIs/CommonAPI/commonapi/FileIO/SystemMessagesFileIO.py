@@ -1,7 +1,6 @@
 from corecode.FileIO import JSONFile
 from commonapi.Messages import (
     RecordedSystemMessage,
-    SystemMessage,
     SystemMessagesManager)
 from pathlib import Path
 from typing import List

@@ -1,6 +1,11 @@
 DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.12
 BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
 
+# For tag pytorch:25.02-py3,
+# >>> import torch
+# >>> print(torch.__version__)
+# 2.7.0a0+ecf3bae40a.nv25.02
+
 # For tag pytorch:24.12-py3,
 # 
 # Cuda compilation tools, release 12.6, V12.6.85

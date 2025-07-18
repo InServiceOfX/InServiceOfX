@@ -67,6 +67,10 @@ RUN python3 -m pip install --upgrade pip && \
   #
   #
 ## transformers (hugging face), required to run LLMs as models.
+  #>>> import transformers
+  #>>> print(transformers.__version__)
+  #4.54.0.dev0
+  # 2025-07-18
   git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
   git checkout main && \
@@ -161,7 +165,7 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 #  uv add pydantic-ai
 
 # pip install's for tools.
-RUN pip install google-api-python-client youtube-transcript-api
+RUN pip install google-api-python-client youtube-transcript-api tweepy
 
 # pip install's for applications.
 RUN pip install streamlit
