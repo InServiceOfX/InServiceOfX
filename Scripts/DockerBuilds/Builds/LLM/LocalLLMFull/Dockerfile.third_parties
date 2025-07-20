@@ -58,4 +58,5 @@ RUN pip install google-api-python-client youtube-transcript-api tweepy
 RUN pip install streamlit
 
 # HuggingFace pip installs
-RUN pip install datasets
+RUN pip install datasets && \
+  pip install "smolagents[audio,litellm,mcp,telemetry,toolkit,transformers,vision]"
