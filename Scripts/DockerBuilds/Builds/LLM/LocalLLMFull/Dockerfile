@@ -121,18 +121,7 @@ RUN pip install groq instructor && \
   # TODO: See if this has a protobuf dependency version that mismatches
   # other versions.
   #pip install logfire && \
-  pip install pydantic-ai && \
-  pip install pytest-asyncio && \
-  # PostgreSQL database
-  pip install psycopg2-binary && \
-  pip install asyncpg && \
-  pip install -U sentence-transformers
-
-# For commands pg_isready and psql, to help debug PostgreSQL issues.
-RUN apt-get update && apt-get install -y postgresql-client-common && \
-  apt-get install -y postgresql-client && \
-  # Useful with postgreSQL
-  apt-get install -y iproute2
+  pip install pytest-asyncio
 
 # deno is for MCP using pydantic-ai.
 # https://github.com/denoland/deno_docker

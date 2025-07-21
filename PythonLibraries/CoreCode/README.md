@@ -1,0 +1,3 @@
+# Unit tests
+
+With `pytest`, "run" (command `pytest`) the unit tests from the parent directory of this file (i.e. run from `InServiceOfX/CoreCode`). It seems that it needs to find the module `CoreCode` from its parent, also named `CoreCode`. Therefore, we define 'conftest.py' files such that for the tests, we can run some Python code to include directories we need in the `sys.path` before running the actual tests.
