@@ -1,13 +1,25 @@
-from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Optional, ClassVar, List, Union, Any, Dict
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Union, Dict, Any
 import yaml
 
-@dataclass
-class GenerationConfiguration:
+class GenerationConfiguration(BaseModel):
     """Configuration class for text generation settings.
 
-    See
+    Follow class GenerationMixin(ContinuousMixin) in
+    src/transformers/generation/utils.py
+
+    It says
+    'Most generation-controlling parameters are set in generation_config which,
+    if not passed, will be set to the mode's default generation configuration.
+    You can override any generation_config by passing the corresponding
+    parameters to generate(), e.g. .generate(inputs, num_beams=4,
+    do_sample=True)`
+
+    So see
+    src/transformers/generation/configuration_utils.py
+
+    In other words, see
     transformers/src/transformers/generation/utils.py
 
     In class GenerationMixin, def generate(..), this is called:
@@ -32,137 +44,130 @@ class GenerationConfiguration:
     in def generate(..) claims, which is that "You can override any
     `generation_config` by passing the corresponding parameters to generate()
 
-    Finally, see 
-
+    Finally, see class GenerationConfig(PushToHubMixin) in
     transformers/src/transformers/generation/configuration_utils.py
-
     For possible fields to override and use here.
     """
-    
-    # Class constants
-    DEFAULT_CONFIG_PATH: ClassVar[Path] = Path("generation_configuration.yml")
-    FIELDS_TO_EXCLUDE: ClassVar[List[str]] = ["configuration_path", "timeout"]
-    
-    # Instance fields with defaults for empty construction
-    configuration_path: Optional[Path] = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # This is needed by streamer.
-    timeout: float = 60.0
+    max_new_tokens: Optional[int] = Field(
+        default=None,
+        description=(
+            "The maximum number of tokens to generate, ignoring number of "
+            "tokens in the prompt."))
 
-    # Generation parameters
-    # This default value was 8192, but as of right now, class GenerationConfig
-    # in transformers/src/transformers/generation/configuration_utils.py
-    # has None for max_new_tokens parameter default value.
-    max_new_tokens: Optional[int] = None
-
-    do_sample: Optional[bool] = None
+    do_sample: Optional[bool] = Field(
+        default=False,
+        description=(
+            "Whether or not to use sampling; use greedy decoding otherwise."))
 
     # Parameters that control the cache
-    use_cache: Optional[bool] = None
+    use_cache: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Whether or not the model should use the past last key/values "
+            "attentions (if applicable to the model) to speed up decoding."))
 
     # Parameters for manipulation of the model output logits
-    temperature: Optional[float] = None
-    top_k: Optional[int] = None
-    top_p: Optional[float] = None
-    # class Generationconfig in def __init__() uses 1.0 as default value.
-    repetition_penalty: Optional[float] = None
 
-    # Special tokens that can be used at generation time
-    eos_token_id: Optional[List[int]] = None
-    pad_token_id: Optional[int] = None
+    temperature: Optional[float] = Field(
+        default=None,
+        description="The value used to module the next token probabilities.")
 
-    def __post_init__(self):
-        """Initialize after construction."""
-        # If configuration_path is provided, load from YAML
-        if self.configuration_path is not None:
-            self._load_from_yaml()
-        
-        # Validate types
-        self._validate_types()
+    top_k: Optional[int] = Field(
+        default=None,
+        description=(
+            "The number of highest probability vocabulary tokens to keep for "
+            "top-k-filtering. Defaults to 50 by huggingface's transformers."))
 
-    def fill_default_values(self) -> None:
-        """Fill default values for fields."""
-        self.max_new_tokens = self.max_new_tokens or 8192
-        self.do_sample = self.do_sample or False
-        self.use_cache = self.use_cache or True
-        self.temperature = self.temperature or 1.0
-        self.top_k = self.top_k or 50
-        self.top_p = self.top_p or 1.0
-        self.repetition_penalty = self.repetition_penalty or 1.1
-        self.eos_token_id = self.eos_token_id or [1280001, 128008, 128009]
-        self.pad_token_id = self.pad_token_id or None
+    top_p: Optional[float] = Field(
+        default=None,
+        description=(
+            "If set to float < 1, only smallest set of most probable tokens"
+            "with probabilities that add up to `top_p` or higher are kept for "
+            "generation. Defaults to 1.0 by huggingface's transformers."))
 
+    min_p: Optional[float] = Field(
+        default=None,
+        description=(
+            "Minimum token probability, which will be scaled by the "
+            "probability of the most likely token. It must be a value between "
+            "0 and 1. Typical values are in 0.01-0.2 range, comparably "
+            "selective as setting `top_p` in 0.99-0.8 range (use the opposite "
+            "of normal `top_p` values"))
 
-    @classmethod
-    def from_yaml(cls, configuration_path: Optional[Path] = None) \
-        -> 'GenerationConfiguration':
-        """Create a GenerationConfiguration instance from a YAML file."""
-        path = configuration_path or cls.DEFAULT_CONFIG_PATH
-        return cls(configuration_path=path)
+    repetition_penalty: Optional[float] = Field(
+        default=None,
+        description="1.0 means no penalty. See https://huggingface.co/papers/1909.05858)")
+
+    # Special tokens that can be used at generation time.
     
-    def _load_from_yaml(self) -> None:
-        """Load configuration from YAML file."""
-        path = self.configuration_path or self.DEFAULT_CONFIG_PATH
+    pad_token_id: Optional[int] = Field(
+        default=None,
+        description="The id of the *padding* token.")
+
+    eos_token_id: Optional[Union[int, list[int]]] = Field(
+        default=None,
+        description=(
+            "The id of the *end-of-sequence* token. Optionally, use a list to "
+             "set multiple end-of-sequence tokens."))
+    
+    @classmethod
+    def from_yaml(cls, config_path: Union[str, Path]) \
+        -> 'GenerationConfiguration':
+        """
+        Load configuration from YAML file.
+        
+        Args:
+            config_path: Path to the YAML configuration file
+            
+        Returns:
+            GenerationConfiguration instance
+            
+        Raises:
+            FileNotFoundError: If the YAML file doesn't exist
+            yaml.YAMLError: If the YAML file is malformed
+            ValidationError: If the YAML data doesn't match the model schema
+        """
+        path = Path(config_path)
+        
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {path}")
         
         try:
-            with open(str(path), 'r') as f:
+            with open(path, 'r') as f:
                 data = yaml.safe_load(f)
-                
-            # Update instance attributes from YAML data
-            for key, value in data.items():
-                if hasattr(self, key) and key not in self.FIELDS_TO_EXCLUDE:
-                    setattr(self, key, value)
-                    
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found: {path}")
-        except yaml.YAMLError:
-            raise ValueError(f"Invalid YAML in configuration file: {path}")
+            
+            if data is None:
+                raise ValueError(f"Configuration file {path} is empty")
+            
+            return cls(**data)
+            
+        except yaml.YAMLError as e:
+            raise yaml.YAMLError(f"Error parsing YAML file {path}: {str(e)}")
     
-    def _validate_types(self) -> None:
-        """Validate and convert types for configuration values."""
-        # Validate temperature is a float or None
-        if self.temperature is not None and not isinstance(
-            self.temperature,
-            float):
-            try:
-                self.temperature = float(self.temperature)
-            except ValueError:
-                raise ValueError(
-                    f"temperature must be a float or None, got {self.temperature}")
-
-        # Validate top_k is an integer or None
-        if self.top_k is not None and not isinstance(self.top_k, int):
-            try:
-                self.top_k = int(self.top_k)
-            except ValueError:
-                raise ValueError(
-                    f"top_k must be an integer or None, got {self.top_k}")
+    def to_kwargs(self) -> Dict[str, Any]:
+        """
+        Convert configuration to kwargs for generate().
+        Excludes None values.
         
-        # Validate top_p is a float or None
-        if self.top_p is not None and not isinstance(self.top_p, float):
-            try:
-                self.top_p = float(self.top_p)
-            except ValueError:
-                raise ValueError(
-                    f"top_p must be a float or None, got {self.top_p}")
+        Returns:
+            Dictionary of keyword arguments for generate()
+        """
+        config_dict = self.model_dump()
         
-        # Validate eos_token_id is a list or None
-        if self.eos_token_id is not None and not isinstance(self.eos_token_id, list):
-            raise ValueError(
-                f"eos_token_id must be a list or None, got {type(self.eos_token_id)}")
+        # Filter out None values
+        kwargs = {k: v for k, v in config_dict.items() if v is not None}
+        
+        return kwargs
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert configuration to dictionary, excluding specified fields and
-        None values."""
-        config_dict = {}
-        for k, v in asdict(self).items():
-            if k not in self.FIELDS_TO_EXCLUDE and v is not None:
-                config_dict[k] = v
-        return config_dict
+        """
+        Convert configuration to dictionary, excluding None values.
         
-    def save_to_yaml(self, path: Optional[Path] = None) -> None:
-        """Save configuration to YAML file."""
-        save_path = path or self.configuration_path or self.DEFAULT_CONFIG_PATH
-        
-        with open(str(save_path), 'w') as f:
-            yaml.dump(self.to_dict(), f, default_flow_style=False)
+        Returns:
+            Dictionary representation of the configuration
+        """
+        config_dict = self.model_dump()
+        return {k: v for k, v in config_dict.items() if v is not None}
+    

@@ -1,5 +1,3 @@
-configuration_path:
-timeout:
 max_new_tokens:
 do_sample:
 use_cache:
