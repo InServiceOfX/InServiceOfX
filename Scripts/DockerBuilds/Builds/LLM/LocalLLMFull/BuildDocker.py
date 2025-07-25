@@ -47,7 +47,10 @@ class BuildDocker(BuildDockerBase):
                 self.script_dir / "Dockerfile.mcp"),
             (
                 "Dockerfile.third_parties",
-                self.script_dir / "Dockerfile.third_parties")
+                self.script_dir / "Dockerfile.third_parties"),
+            (
+                "Dockerfile.langchain",
+                self.script_dir / "Dockerfile.langchain")
         ]
 
 def main():

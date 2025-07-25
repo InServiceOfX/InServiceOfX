@@ -162,3 +162,15 @@ RUN pip install streamlit
 # HuggingFace pip installs
 RUN pip install datasets && \
   pip install "smolagents[audio,litellm,mcp,telemetry,toolkit,transformers,vision]"
+
+# Possibly useful for parsing Jinja templates, in particular chat templates for
+# huggingface models.
+RUN pip install jinja2
+
+RUN pip install langchain langchain-community
+
+RUN pip install rank_bm25
+
+
+
+
