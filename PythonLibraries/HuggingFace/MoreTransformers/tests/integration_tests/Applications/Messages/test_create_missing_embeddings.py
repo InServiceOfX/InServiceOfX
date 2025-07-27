@@ -42,9 +42,9 @@ def setup_conversation_system_and_permanent():
 def test_create_missing_embeddings_works():
     csp, _ = setup_conversation_system_and_permanent()
 
-    for message in csp.permanent_conversation.messages:
+    for message in csp.pc.messages:
         assert message.embedding is None
-    for message_pair in csp.permanent_conversation.message_pairs:
+    for message_pair in csp.pc.message_pairs:
         assert message_pair.embedding is None
 
     embedding_model = SentenceTransformer(
@@ -58,9 +58,9 @@ def test_create_missing_embeddings_works():
     end_time = time.time()
     print(f"Time taken: {end_time - start_time} seconds")
 
-    for message in csp.permanent_conversation.messages:
+    for message in csp.pc.messages:
         assert message.embedding is not None
-    for message_pair in csp.permanent_conversation.message_pairs:
+    for message_pair in csp.pc.message_pairs:
         assert message_pair.embedding is not None
 
 from commonapi.Databases import PostgreSQLConnection
@@ -108,9 +108,9 @@ async def test_with_database_interface(
 
     await pcpi.create_tables()
 
-    for message in csp.permanent_conversation.messages:
+    for message in csp.pc.messages:
         await pcpi.insert_message(message)
-    for message_pair in csp.permanent_conversation.message_pairs:
+    for message_pair in csp.pc.message_pairs:
         await pcpi.insert_message_pair(message_pair)
 
     pc = PermanentConversation()

@@ -45,7 +45,5 @@ def test_structured_outputs_on_pydantic_BaseModel_as_response_format():
         print(response.choices[0].message)
 
     assert \
-        "You tried to pass a `BaseModel` class to `chat.completions.create()`; You must use `beta.chat.completions.parse()` instead" \
+        "You tried to pass a `BaseModel` class to `chat.completions.create()`; You must use `chat.completions.parse()` instead" \
             in str(type_error.value)
-
-

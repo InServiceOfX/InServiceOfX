@@ -2,6 +2,7 @@ from corecode.Configuration import LoadConfigurationFile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
+from warnings import warn
 
 @dataclass
 class DataSubdirectories:
@@ -64,7 +65,17 @@ class DataSubdirectories:
         if config['PROMPTS_COLLECTION_PATH'] is not None:
             self.PromptsCollection = Path(config['PROMPTS_COLLECTION_PATH'])
         elif config['PROMPTS_COLLECTION_PATH'] is None:
-            self.PromptsCollection = self.Data / "Prompts" / "PromptsCollection"
+            relative_prompts_collection_path = "Prompts/PromptsCollection"
+            for path in self.DataPaths:
+                if (path / relative_prompts_collection_path).exists():
+                    self.PromptsCollection = \
+                        path / relative_prompts_collection_path
+                    break
+            if self.PromptsCollection is None:
+                warn(
+                    f"Prompts collection path not found in {self.DataPaths}")
+                self.PromptsCollection = \
+                    self.Data / "Prompts" / "PromptsCollection"
         else:
             raise ValueError(
                 f"Invalid prompts collection path: {config['PROMPTS_COLLECTION_PATH']}")

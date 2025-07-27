@@ -2,6 +2,15 @@ from commonapi.Messages import ConversationSystemAndPermanent
 from commonapi.Messages.Messages import AssistantMessage, UserMessage
 from TestData.CreateExampleConversation import CreateExampleConversation
 
+def test_ConversationSystemAndPermanent_inits():
+    csp = ConversationSystemAndPermanent()
+
+    assert csp.casm.system_messages_manager._messages_dict == {}
+    assert csp.casm.conversation_history.messages == []
+    assert csp.get_conversation_as_list_of_dicts() == []
+    assert csp.get_permanent_conversation_messages() == []
+    assert csp.get_permanent_conversation_message_pairs() == []
+
 def test_ConversationSystemAndPermanent_works():
     conversation = CreateExampleConversation.EXAMPLE_CONVERSATION_0
 
@@ -27,11 +36,11 @@ def test_ConversationSystemAndPermanent_works():
         assert message["role"] == conversation[index]["role"]
         assert message["content"] == conversation[index]["content"]
 
-    assert len(conversation_system_and_permanent.permanent_conversation.messages) == \
+    assert len(conversation_system_and_permanent.pc.messages) == \
         len(conversation)
 
     for index, message_pair in enumerate(
-        conversation_system_and_permanent.permanent_conversation.message_pairs):
+        conversation_system_and_permanent.pc.message_pairs):
         i = 2 * index + 1
         assert message_pair.conversation_pair_id == index
         assert message_pair.content_0 == conversation[i]["content"]

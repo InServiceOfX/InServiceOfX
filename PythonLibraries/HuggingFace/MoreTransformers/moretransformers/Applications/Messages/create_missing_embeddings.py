@@ -8,8 +8,8 @@ def create_missing_embeddings(
         embeddings_maker: MakeMessageEmbeddingsWithSentenceTransformer):
 
     if isinstance(conversation, ConversationSystemAndPermanent):
-        messages = conversation.permanent_conversation.messages
-        message_pairs = conversation.permanent_conversation.message_pairs
+        messages = conversation.pc.messages
+        message_pairs = conversation.pc.message_pairs
     elif isinstance(conversation, PermanentConversation):
         messages = conversation.messages
         message_pairs = conversation.message_pairs

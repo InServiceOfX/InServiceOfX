@@ -1,5 +1,11 @@
-from corecode.Utilities import DataSubdirectories
-from typing import Dict
+from commonapi.Messages import (
+    ConversationSystemAndPermanent,
+    ParsePromptsCollection,
+    AssistantMessage,
+    UserMessage)
+
+from corecode.FileIO import JSONFile
+from corecode.Utilities import is_model_there, DataSubdirectories
 
 from transformers import (
     AutoModelForCausalLM,
@@ -8,22 +14,24 @@ from transformers import (
     Qwen3ForCausalLM,
     Qwen2Tokenizer)
 
+from pathlib import Path
+
 import pytest
 import torch
+
+from moretransformers.Configurations import (
+    CreateDefaultGenerationConfigurations,
+    FromPretrainedModelConfiguration,
+    FromPretrainedTokenizerConfiguration,
+)
 
 data_subdirectories = DataSubdirectories()
 
 relative_model_path = "Models/LLM/Menlo/Lucy-128k"
 
-is_model_downloaded = False
-model_path = None
-
-for path in data_subdirectories.DataPaths:
-    if (path / relative_model_path).exists():
-        is_model_downloaded = True
-        model_path = path / relative_model_path
-        print(f"Model {relative_model_path} found at {model_path}")
-        break
+is_model_downloaded, model_path = is_model_there(
+    relative_model_path,
+    data_subdirectories)
 
 model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
 
@@ -245,3 +253,66 @@ def test_generate_with_attention_mask():
     print(
         "Without special tokens: ",
         tokenizer.decode(output[0], skip_special_tokens=True))
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_use_configurations():
+    from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
+        pretrained_model_name_or_path=model_path)
+    tokenizer = Qwen2Tokenizer.from_pretrained(
+        **from_pretrained_tokenizer_configuration.to_dict())
+
+    from_pretrained_model_configuration = FromPretrainedModelConfiguration(
+        pretrained_model_name_or_path=model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        attn_implementation="flash_attention_2")
+    model = Qwen3ForCausalLM.from_pretrained(
+        **from_pretrained_model_configuration.to_dict())
+    assert model.config.max_position_embeddings == 131072
+    assert hasattr(model.config, "rope_scaling")
+
+    generation_configuration = \
+        CreateDefaultGenerationConfigurations.for_Menlo_Lucy_128k()
+
+    user_message_texts = []
+
+    if data_subdirectories.PromptsCollection.exists():
+        parse_prompts_collection = ParsePromptsCollection(
+            data_subdirectories.PromptsCollection)
+        lines_of_files = parse_prompts_collection.load_manually_copied_X_posts()
+        posts = parse_prompts_collection.parse_manually_copied_X_posts(
+            lines_of_files)
+        for post in posts:
+            user_message_texts.append(post["prompt"])
+    else:
+        print(
+            f"Prompts collection path not found in {data_subdirectories.PromptsCollection}")
+        user_message_texts.append("What is C. elegans?")
+
+    csap = ConversationSystemAndPermanent()
+
+    for i in range(len(user_message_texts)):
+        text = user_message_texts[i]
+        print(text)
+        csap.append_message(UserMessage(text))
+        tokenizer_outputs = tokenizer.apply_chat_template(
+            conversation=csap.get_conversation_as_list_of_dicts(),
+            add_generation_prompt=True,
+            return_tensors="pt",
+            tokenize=True,
+            return_dict=True).to(model.device)
+
+        output = model.generate(
+            input_ids=tokenizer_outputs["input_ids"],
+            attention_mask=tokenizer_outputs["attention_mask"],
+            **generation_configuration.to_dict())
+        response = tokenizer.decode(output[0], skip_special_tokens=True)
+        assert isinstance(response, str)
+        print(response)
+        csap.append_message(AssistantMessage(response))
+
+    JSONFile.save_json(
+        Path.cwd() / "test_use_configurations.json",
+        csap.get_conversation_as_list_of_dicts())
