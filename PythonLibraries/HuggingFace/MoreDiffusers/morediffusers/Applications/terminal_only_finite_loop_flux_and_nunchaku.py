@@ -26,8 +26,8 @@ from morediffusers.Applications import (
     )
 
 from morediffusers.Configurations import (
-    DiffusionPipelineConfiguration,
-    FluxGenerationConfiguration)
+    FluxGenerationConfiguration,
+    NunchakuConfiguration)
 
 from morediffusers.NunchakuWrappers import (
     text_encoder_2_inference,
@@ -42,25 +42,32 @@ from nunchaku import NunchakuFluxTransformer2dModel
 
 def terminal_only_finite_loop_flux_and_nunchaku():
 
-    configuration = DiffusionPipelineConfiguration(
-        DiffusionPipelineConfiguration.DEFAULT_CONFIG_PATH.parent / \
-            "flux_pipeline_configuration.yml")
+    configuration = NunchakuConfiguration.from_yaml(
+        NunchakuConfiguration.get_default_config_path())
 
-    generation_configuration = FluxGenerationConfiguration()
+    generation_configuration = FluxGenerationConfiguration.from_yaml(
+        FluxGenerationConfiguration.get_default_config_path())
 
     user_input = FluxPipelineUserInput(generation_configuration)
 
+    if generation_configuration.seed is None:
+        print("generation_configuration.seed is None")
+        generation_configuration.seed = 0
+    else:
+        print("generation_configuration.seed: ", generation_configuration.seed)
+
     generation_configuration.max_sequence_length = 512
 
-    path = Path(configuration.diffusion_model_path).parents[1] / \
-        "mit-han-lab" / "svdq-flux.1-t5"
+    path = configuration.nunchaku_t5_model_path
+
+    start_time = time.time()
 
     text_encoder_2 = text_encoder_2_inference.create_flux_text_encoder_2(
         path,
         configuration)
 
     pipeline = text_encoder_2_inference.create_flux_text_encoder_2_pipeline(
-        configuration.diffusion_model_path,
+        configuration.flux_model_path,
         configuration,
         text_encoder_2)
 
@@ -71,7 +78,16 @@ def terminal_only_finite_loop_flux_and_nunchaku():
             pipeline,
             generation_configuration,
             user_input.prompt,
-            user_input.prompt_2)
+            user_input.prompt_2,
+            device=configuration.cuda_device)
+
+    negative_prompt_embeds, negative_pooled_prompt_embeds, negative_text_ids = \
+        text_encoder_2_inference.encode_prompt(
+            pipeline,
+            generation_configuration,
+            user_input.negative_prompt,
+            user_input.negative_prompt_2,
+            device=configuration.cuda_device)
 
     del pipeline.text_encoder
     del pipeline.text_encoder_2
@@ -81,19 +97,18 @@ def terminal_only_finite_loop_flux_and_nunchaku():
 
     clear_torch_cache_and_collect_garbage()
 
-    path = Path(configuration.diffusion_model_path).parents[1] / \
-        "mit-han-lab" / "svdq-int4-flux.1-dev"
+    path = configuration.nunchaku_model_path
 
-    transformer = NunchakuFluxTransformer2dModel.from_pretrained(path)
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(str(path))
 
     pipeline = transformer_inference.create_flux_transformer_pipeline(
-        configuration.diffusion_model_path,
+        str(configuration.flux_model_path),
         configuration,
         transformer)
 
     change_pipe_to_cuda_or_not(configuration, pipeline)
 
-    end_time = time.time()
+    print("Time for encoding prompt: ", time.time() - start_time)
 
     for index in range(user_input.iterations):
 
@@ -102,7 +117,9 @@ def terminal_only_finite_loop_flux_and_nunchaku():
             prompt_embeds,
             pooled_prompt_embeds,
             configuration,
-            generation_configuration).images
+            generation_configuration,
+            negative_prompt_embeds,
+            negative_pooled_prompt_embeds).images
 
         print("len(images): ", len(images))
 
@@ -111,7 +128,7 @@ def terminal_only_finite_loop_flux_and_nunchaku():
             index,
             images[0],
             generation_configuration,
-            Path(configuration.diffusion_model_path).name)
+            Path(configuration.nunchaku_model_path).name)
 
         user_input.update_guidance_scale()
         generation_configuration.guidance_scale = \

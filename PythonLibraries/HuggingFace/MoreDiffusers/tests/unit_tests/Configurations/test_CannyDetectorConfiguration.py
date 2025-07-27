@@ -13,6 +13,3 @@ def test_CannyDetectorConfiguration_from_yaml():
     assert configuration.high_threshold == 100
     assert configuration.detect_resolution == 1024
     assert configuration.image_resolution == 1024
-
-
-

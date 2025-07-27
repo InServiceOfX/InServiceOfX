@@ -1,6 +1,5 @@
 from morediffusers.Configurations import LoRAsConfiguration
 from pathlib import Path
-import pytest
 
 test_data_directory = Path(__file__).resolve().parents[2] / "TestData"
 

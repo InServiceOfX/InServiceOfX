@@ -1,70 +1,103 @@
 from corecode.FileIO import get_project_directory_path
-from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Dict, Any, ClassVar, Set
 import yaml
 
-@dataclass
-class FluxGenerationConfiguration:
+class FluxGenerationConfiguration(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        validate_assignment=True
+    )
+
     # Class variables
-    FIELDS_TO_EXCLUDE = ["configuration_path", "temporary_save_path"]
-    DEFAULT_CONFIG_PATH = get_project_directory_path() / "Configurations" / \
-        "HuggingFace" / "MoreDiffusers" / "flux_generation_configuration.yml"
-    
-    # Instance fields
-    configuration_path: Optional[Path] = None
-    
+    FIELDS_TO_EXCLUDE: ClassVar[Set[str]] = {"temporary_save_path", "seed"}
+
     # Generation parameters
-    height: Optional[int] = None
-    width: Optional[int] = None
-    num_inference_steps: Optional[int] = None
-    num_images_per_prompt: Optional[int] = None
-    seed: Optional[int] = None
-    guidance_scale: Optional[float] = None
+    # See pipeline_flux.py, class FluxPipeline(..), def __call__(..),
+
+    # True classifier-free guidance (guidance_scale) is enabled when
+    # true_cfg_scale > 1 and negative_prompt is provided.
+    true_cfg_scale: Optional[float] = \
+        Field(None, description="True classifer-free guidance scale")
+    height: Optional[int] = Field(None, description="Image height")
+    width: Optional[int] = Field(None, description="Image width")
+    num_inference_steps: Optional[int] = \
+        Field(None, description="Number of inference steps")
+    num_images_per_prompt: Optional[int] = \
+        Field(None, description="Number of images per prompt")
+    seed: Optional[int] = Field(None, description="Random seed")
+    guidance_scale: Optional[float] = \
+        Field(None, description="Guidance scale for generation")
     # Default value is 512, which is the maximum that can be used without a
     # runtime error.
-    max_sequence_length: Optional[int] = None
-    temporary_save_path: Path = field(default_factory=Path.cwd)
+    max_sequence_length: Optional[int] = \
+        Field(None, description="Maximum sequence length")
+    temporary_save_path: Path = \
+        Field(default_factory=Path.cwd, description="Temporary save path")
 
-    def __post_init__(self):
-        self._load_from_yaml(self.configuration_path)
-
-    def _load_from_yaml(self, config_path: Optional[Path] = None) -> None:
-        path = Path(config_path or self.DEFAULT_CONFIG_PATH)
+    @classmethod
+    def from_yaml(cls, config_path: Optional[Path] = None) \
+        -> 'FluxGenerationConfiguration':
+        """Load configuration from YAML file.
+        
+        Args:
+            config_path: Path to the YAML configuration file.
+        """
+        path = Path(config_path or cls.get_default_config_path())
+        
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {path}")
         
         with path.open('r') as f:
             data = yaml.safe_load(f) or {}
         
         # Validate all fields except excluded ones exist in YAML
-        for field in fields(self):
-            if field.name not in self.FIELDS_TO_EXCLUDE or \
-                field.name == "temporary_save_path":
-                if field.name not in data:
+        for field_name in cls.model_fields.keys():
+            if field_name not in cls.FIELDS_TO_EXCLUDE:
+                if field_name not in data:
                     raise ValueError(
-                        f"{field.name} must be present in configuration file")
+                        f"{field_name} must be present in configuration file")
         
         # Load and convert numeric values
-        for field in fields(self):
-            if field.name not in self.FIELDS_TO_EXCLUDE or \
-                field.name == "temporary_save_path":
-                value = data.get(field.name)
+        processed_data = {}
+        for field_name in cls.model_fields.keys():
+            if field_name not in cls.FIELDS_TO_EXCLUDE:
+                value = data.get(field_name)
                 if value is not None:
-                    if field.name == "guidance_scale":
-                        setattr(self, field.name, float(value))
-                    elif field.name == "temporary_save_path":
-                        setattr(self, field.name, Path(value))
+                    if field_name == "guidance_scale":
+                        processed_data[field_name] = float(value)
                     else:
-                        setattr(self, field.name, int(value))
+                        processed_data[field_name] = int(value)
+                else:
+                    processed_data[field_name] = None
 
-    def get_generation_kwargs(self) -> dict:
+        processed_data["temporary_save_path"] = Path(
+            data.get("temporary_save_path", Path.cwd()))
+
+        if "seed" in data:
+            processed_data["seed"] = int(data["seed"])
+
+        return cls(**processed_data)
+
+    def get_generation_kwargs(self) -> Dict[str, Any]:
         """Get kwargs dictionary for pipeline __call__() method"""
         kwargs = {}
         
-        for field in fields(self):
-            if (field.name not in self.FIELDS_TO_EXCLUDE and \
-                field.name != "seed"):
-                value = getattr(self, field.name)
+        for field_name in self.model_fields.keys():
+            if field_name not in self.FIELDS_TO_EXCLUDE:
+                value = getattr(self, field_name)
                 if value is not None:
-                    kwargs[field.name] = value
+                    kwargs[field_name] = value
         
         return kwargs
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary."""
+        return self.model_dump()
+
+    @staticmethod
+    def get_default_config_path() -> Path:
+        return get_project_directory_path() / "Configurations" / \
+            "HuggingFace" / "MoreDiffusers" / \
+                "flux_generation_configuration.yml"

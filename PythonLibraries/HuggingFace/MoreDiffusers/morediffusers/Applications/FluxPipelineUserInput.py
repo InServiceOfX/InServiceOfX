@@ -13,6 +13,18 @@ class FluxPipelineUserInput:
     prompt: str = field(default_factory=lambda: get_user_input(str, "Prompt: "))
     prompt_2: Optional[str] = field(
         default_factory=lambda: get_user_input(str, "Prompt 2: ", ""))
+    negative_prompt: Optional[str] = field(
+        default_factory=lambda: get_user_input(str, "Negative Prompt: ", ""))
+    negative_prompt_2: Optional[str] = field(
+        default_factory=lambda: get_user_input(str, "Negative Prompt 2: ", ""))
+    true_cfg_scale: Optional[float] = field(
+        default_factory=lambda: get_user_input(
+            float,
+            "True Classifier-Free Guidance Scale (> 1.0 for negative prompt): ",
+            None
+        )
+    )
+
     num_inference_steps: Optional[int] = field(
         default_factory=lambda: get_user_input(
             int,
@@ -49,7 +61,10 @@ class FluxPipelineUserInput:
         # Convert empty strings to None for optional prompts
         if self.prompt_2 == "":
             self.prompt_2 = None
-            
+
+        if self.negative_prompt_2 == "":
+            self.negative_prompt_2 = None
+
         # Validate base_filename is not empty
         if not self.base_filename:
             raise ValueError("base_filename cannot be empty")
@@ -58,6 +73,10 @@ class FluxPipelineUserInput:
         if self.num_inference_steps is not None:
             self.generation_configuration.num_inference_steps = \
                 self.num_inference_steps
+
+        if self.true_cfg_scale is not None:
+            self.generation_configuration.true_cfg_scale = \
+                self.true_cfg_scale
 
         if self.guidance_scale is not None and self.guidance_scale >= 0:
             self.generation_configuration.guidance_scale = self.guidance_scale
@@ -78,6 +97,15 @@ class FluxPipelineUserInput:
         else:
             kwargs["guidance_scale"] = \
                 self.generation_configuration.guidance_scale
+
+        if self.negative_prompt is not None:
+            kwargs["negative_prompt"] = self.negative_prompt
+
+        if self.negative_prompt_2 is not None:
+            kwargs["negative_prompt_2"] = self.negative_prompt_2
+
+        if self.true_cfg_scale is not None:
+            kwargs["true_cfg_scale"] = self.true_cfg_scale
 
         return kwargs
 

@@ -55,7 +55,9 @@ def call_pipeline(
     prompt_embeds,
     pooled_prompt_embeds,
     configuration,
-    generation_configuration):
+    generation_configuration,
+    negative_prompt_embeds=None,
+    negative_pooled_prompt_embeds=None):
     """
     In pipeline_flux.py, class FluxPipeline(..), recall the function signature
     of def __call__(..),
@@ -78,10 +80,16 @@ def call_pipeline(
         ...
         ):
     """
+    kwargs = _get_pipeline_call_kwargs(configuration, generation_configuration)
+    if negative_prompt_embeds is not None:
+        kwargs["negative_prompt_embeds"] = negative_prompt_embeds
+    if negative_pooled_prompt_embeds is not None:
+        kwargs["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
+
     return pipeline(
         prompt_embeds=prompt_embeds,
         pooled_prompt_embeds=pooled_prompt_embeds,
-        **_get_pipeline_call_kwargs(configuration, generation_configuration))
+        **kwargs)
 
 def delete_variables_on_device(pipeline, transformer):
     del pipeline.transformer

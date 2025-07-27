@@ -10,7 +10,9 @@ from moretransformers.Configurations import (
     FromPretrainedModelConfiguration,
     FromPretrainedTokenizerConfiguration,
 )
-from moretransformers.Utilities import get_tokens_per_second_statistics
+from moretransformers.Utilities import (
+    get_tokens_per_second_statistics,
+    summarize_tokens_per_second_statistics)
 
 from pathlib import Path
 
@@ -73,8 +75,8 @@ def test_use_configurations():
 
     conversation_to_save = []
 
-    for i in range(len(user_message_texts[:2])):
-        text = user_message_texts[i + 1]
+    for i in range(len(user_message_texts)):
+        text = user_message_texts[i]
         print(text)
         csap.append_message(UserMessage(text))
         tokenizer_outputs = tokenizer.apply_chat_template(
@@ -110,9 +112,9 @@ def test_use_configurations():
             print(f"{key}: {value}")
         statistics.append(stats)
 
-        csap.clear_conversation_history(is_keep_active_system_messages=False)
+        conversation_to_save.extend(csap.get_conversation_as_list_of_dicts())
 
-        conversation_to_save.append(csap.get_conversation_as_list_of_dicts())
+        csap.clear_conversation_history(is_keep_active_system_messages=False)
 
     # Samity checks:
     # print(len(csap.get_conversation_as_list_of_dicts()))
@@ -121,6 +123,9 @@ def test_use_configurations():
     # assert len(csap.get_conversation_as_list_of_dicts()) == \
     #     2 * len(user_message_texts)
     # assert len(statistics) == len(user_message_texts)
+
+    summary = summarize_tokens_per_second_statistics(statistics)
+    statistics.append(summary)
 
     JSONFile.save_json(
         Path.cwd() / "test_use_configurations.json",

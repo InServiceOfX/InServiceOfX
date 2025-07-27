@@ -36,7 +36,16 @@ def encode_prompt(
     pipeline,
     generation_configuration,
     prompt,
-    prompt2=None):
+    prompt2=None,
+    device=None,
+    lora_scale=None):
+    """
+    Notice that in pipeline_flux.py, class FluxPipeline(..), def __call__(..),
+    tracing through the use of the variable "do_true_cfg", it is set here,
+    do_true_cfg = true_cfg_scale > 1 and has_neg_prompt
+    and you see that self.encode_prompt(...) is called on negative prompts. We
+    guess that encode_prompt(...) can also be used for negative prompts.
+    """
     kwargs = {}
     kwargs["max_sequence_length"] = generation_configuration.max_sequence_length
     kwargs["prompt"] = prompt
@@ -44,6 +53,11 @@ def encode_prompt(
     # is obtained:
     # TypeError: FluxPipeline.encode_prompt() missing 1 required positional argument: 'prompt_2'
     kwargs["prompt_2"] = prompt2
+    if device is not None:
+        kwargs["device"] = torch.device(device)
+    if lora_scale is not None:
+        kwargs["lora_scale"] = float(lora_scale)
+
     with torch.no_grad():
         return pipeline.encode_prompt(**kwargs)
 

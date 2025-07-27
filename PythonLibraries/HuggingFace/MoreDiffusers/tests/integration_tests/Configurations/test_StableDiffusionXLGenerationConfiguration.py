@@ -7,9 +7,9 @@ def test_StableDiffusionXLGenerationConfiguration_inits_with_default_path():
     configuration = StableDiffusionXLGenerationConfiguration()
     assert configuration.height == 1216
     assert configuration.width == 832
-    assert configuration.num_inference_steps == 40
+    assert configuration.num_inference_steps == 30
     assert configuration.num_images_per_prompt == None
-    assert configuration.seed == 873546738
-    assert configuration.guidance_scale == 7.0
+    assert configuration.seed == 458766893
+    assert configuration.guidance_scale == 5.5
     assert configuration.clip_skip == 2
     assert str(configuration.temporary_save_path) == "/Data/Private"

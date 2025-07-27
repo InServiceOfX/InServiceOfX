@@ -16,9 +16,7 @@ from morediffusers.Configurations.NunchakuFluxControlConfiguration \
     import NunchakuFluxControlConfiguration
 
 from morediffusers.Configurations.NunchakuLoRAsConfiguration import (
-    NunchakuLoRAsConfiguration,
-    NunchakuLoRAsConfigurationForMoreDiffusers
-    )
+    NunchakuLoRAsConfiguration)
 
 from morediffusers.Configurations.DiffusionPipelineConfiguration \
     import DiffusionPipelineConfiguration
@@ -28,6 +26,8 @@ from morediffusers.Configurations.StableDiffusionXLGenerationConfiguration \
 from morediffusers.Configurations.VideoConfiguration \
     import VideoConfiguration
 
+from .NunchakuConfiguration import NunchakuConfiguration
+
 __all__ = [
     "CannyDetectorConfiguration",
     "DiffusionPipelineConfiguration",
@@ -36,9 +36,9 @@ __all__ = [
     "IPAdapterConfiguration",
     "LoRAsConfiguration",
     "LoRAsConfigurationForMoreDiffusers",
+    "NunchakuConfiguration",
     "NunchakuFluxControlConfiguration",
     "NunchakuLoRAsConfiguration",
-    "NunchakuLoRAsConfigurationForMoreDiffusers",
     "StableDiffusionXLGenerationConfiguration",
     "VideoConfiguration",
 ]
