@@ -162,7 +162,6 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
-  cd / && \
   #
   #
 ## diffusers (hugging face)
