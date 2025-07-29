@@ -1,6 +1,4 @@
-RUN pip install langchain langchain-community
-
-RUN pip install rank_bm25
-
+RUN pip install langchain langchain-community && \
+    pip install rank_bm25
 
 

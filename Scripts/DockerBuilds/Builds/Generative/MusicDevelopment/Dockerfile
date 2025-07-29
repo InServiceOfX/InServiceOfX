@@ -102,7 +102,7 @@ RUN pip install --upgrade pip && \
 
 # https://huggingface.co/facebook/musicgen-medium
 # Audiocraft Usage
-RUN apt-get install -y ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg
 
 RUN git clone https://github.com/InServiceOfX/audiocraft.git /ThirdParty/audiocraft && \
   cd /ThirdParty/audiocraft && \
@@ -112,7 +112,7 @@ RUN git clone https://github.com/InServiceOfX/audiocraft.git /ThirdParty/audiocr
 
 RUN pip install pymusiclooper
 
-
+RUN pip install datasets
 
 
 

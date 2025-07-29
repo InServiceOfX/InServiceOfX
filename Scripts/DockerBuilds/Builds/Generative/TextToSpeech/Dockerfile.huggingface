@@ -1,16 +1,5 @@
-## HuggingFace
-
-RUN python3 -m pip install --upgrade pip && \
-  # Upgrading Jinja2 to 3.1 is needed to use apply_chat_template.
-  pip install --upgrade jinja2 && \
-  #
-  #
-## transformers (hugging face), required to run LLMs as models.
-  #>>> import transformers
-  #>>> print(transformers.__version__)
-  #4.54.0.dev0
-  # 2025-07-18
-  git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+# We seek here to install a working minimal of modules from HuggingFace.
+RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
   git checkout v4.54-release && \
   # Install editable install from source.
@@ -25,12 +14,6 @@ RUN python3 -m pip install --upgrade pip && \
   pip install -e . && \
   #
   #
-## candle (hugging face)
-  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
-  cd /ThirdParty/candle && \
-  git checkout main && \
-  #
-  #
   # See Huggingface's transformers/src/transformers/pipelines/__init__.py for
   # def pipeline(..) where if config is None and isinstance(model, str) and case
   # when if is_peft_available().
@@ -40,6 +23,9 @@ RUN python3 -m pip install --upgrade pip && \
   pip install -e . && \
   #
   #
-  cd /
+  pip install datasets
+
+
+
 
 

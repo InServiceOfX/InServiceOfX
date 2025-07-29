@@ -1,5 +1,5 @@
-RUN pip uninstall -y flash-attn && \
-    pip install flash-attn --no-binary flash-attn
+# RUN pip uninstall -y flash-attn && \
+#     pip install flash-attn --no-binary flash-attn
 
 RUN pip install pydantic-ai && \
     # PostgreSQL database

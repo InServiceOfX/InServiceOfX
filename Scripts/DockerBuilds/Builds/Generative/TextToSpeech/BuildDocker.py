@@ -33,24 +33,13 @@ class BuildDocker(BuildDockerBase):
                 self.parent_dir / "CommonFiles" / "Dockerfile.rust"),
             (
                 "Dockerfile.huggingface",
-                self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),
+                self.script_dir / "Dockerfile.huggingface"),
             (
-                "Dockerfile.more_pip_installs",
-                self.script_dir / "Dockerfile.more_pip_installs"),
-            ## TODO: See why there are version mismatches when including
-            # building with SGLang.
-            # (
-            #     "Dockerfile.sglang",
-            #     self.script_dir / "Dockerfile.sglang"),
+                "Dockerfile.pip_installs",
+                self.script_dir / "Dockerfile.pip_installs"),
             (
-                "Dockerfile.mcp",
-                self.script_dir / "Dockerfile.mcp"),
-            (
-                "Dockerfile.third_parties",
-                self.script_dir / "Dockerfile.third_parties"),
-            (
-                "Dockerfile.langchain",
-                self.script_dir / "Dockerfile.langchain")
+                "Dockerfile.apt_installs",
+                self.script_dir / "Dockerfile.apt_installs"),
         ]
 
 def main():

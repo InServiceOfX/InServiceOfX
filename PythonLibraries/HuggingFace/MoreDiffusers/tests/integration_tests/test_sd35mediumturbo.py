@@ -5,7 +5,7 @@ from corecode.Utilities import (
 from pathlib import Path
 
 from diffusers import StableDiffusion3Pipeline
-from transformers import T5EncoderModel, BitsAndBytesConfig, T5TokenizerFast
+from transformers import T5EncoderModel, BitsAndBytesConfig
 import pytest
 import torch
 

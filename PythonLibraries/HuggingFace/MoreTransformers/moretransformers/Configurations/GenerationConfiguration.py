@@ -145,22 +145,7 @@ class GenerationConfiguration(BaseModel):
             
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Error parsing YAML file {path}: {str(e)}")
-    
-    def to_kwargs(self) -> Dict[str, Any]:
-        """
-        Convert configuration to kwargs for generate().
-        Excludes None values.
-        
-        Returns:
-            Dictionary of keyword arguments for generate()
-        """
-        config_dict = self.model_dump()
-        
-        # Filter out None values
-        kwargs = {k: v for k, v in config_dict.items() if v is not None}
-        
-        return kwargs
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert configuration to dictionary, excluding None values.

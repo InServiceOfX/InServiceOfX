@@ -73,7 +73,7 @@ RUN python3 -m pip install --upgrade pip && \
   # 2025-07-18
   git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout main && \
+  git checkout v4.54-release && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -105,6 +105,20 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
+# RUN pip uninstall -y flash-attn && \
+#     pip install flash-attn --no-binary flash-attn
+
+RUN pip install pydantic-ai && \
+    # PostgreSQL database
+    pip install psycopg2-binary && \
+    pip install asyncpg && \
+    pip install -U sentence-transformers
+
+# For commands pg_isready and psql, to help debug PostgreSQL issues.
+RUN apt-get update && apt-get install -y postgresql-client-common && \
+  apt-get install -y postgresql-client && \
+  # Useful with postgreSQL
+  apt-get install -y iproute2
 RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty/python-sdk && \
     cd /ThirdParty/python-sdk && \
     pip install -e ".[cli]"
@@ -156,21 +170,24 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
 # pip install's for tools.
 RUN pip install google-api-python-client youtube-transcript-api tweepy
 
-# pip install's for applications.
-RUN pip install streamlit
-
 # HuggingFace pip installs
 RUN pip install datasets && \
   pip install "smolagents[audio,litellm,mcp,telemetry,toolkit,transformers,vision]"
 
-# Possibly useful for parsing Jinja templates, in particular chat templates for
-# huggingface models.
-RUN pip install jinja2
+# pip install's for applications.
+RUN pip install streamlit && \
+# For Dia https://huggingface.co/nari-labs/Dia-1.6B
+# Following https://github.com/nari-labs/dia#run-with-this-repo
+  git clone https://github.com/nari-labs/dia.git /ThirdParty/nari-labs/dia && \
+  cd /ThirdParty/nari-labs/dia && \
+  pip install torchcodec && \
+  apt-get install -y ffmpeg && \
+  pip install -e . --no-deps
 
-RUN pip install langchain langchain-community
 
-RUN pip install rank_bm25
 
+RUN pip install langchain langchain-community && \
+    pip install rank_bm25
 
 
 
