@@ -2,6 +2,7 @@ from corecode.Utilities import (
     DataSubdirectories,
     )
 from moretransformers.Configurations import GenerationConfiguration
+from moretransformers.Conversions import convert_mp3_to_AudioInput
 from pathlib import Path
 from transformers import (
     AutoProcessor,
@@ -30,7 +31,7 @@ for path in data_sub_dirs.DataPaths:
 
 model_not_downloaded_message = f"Model not downloaded: {relative_model_path}"
 
-text = [
+text_0 = [
     (
         "[S1] Dia is an open weights text to dialogue model. [S2] You get full "
         "control over scripts and voices. [S1] Wow. Amazing. (laughs) [S2] Try "
@@ -50,7 +51,7 @@ def test_AutoProcessor_works():
 
     # See processing_dia.py, class DiaFeatureExtractor(SequenceFeatureExtractor)
     # def __call__(..) for call options.
-    inputs = processor(text, padding=True, return_tensors="pt").to("cuda:0")
+    inputs = processor(text_0, padding=True, return_tensors="pt").to("cuda:0")
 
     model = DiaForConditionalGeneration.from_pretrained(model_path).to("cuda:0")
 
@@ -353,8 +354,7 @@ def test_generation_with_text_and_audio_voice_cloning_example():
         "[S1] I know. It's going to save me a lot of money, I hope. [S2] I "
         "sure hope so for you.")]
 
-    processor = DiaProcessor.from_pretrained(
-        model_path,)
+    processor = DiaProcessor.from_pretrained(model_path,)
     inputs = processor(
         text=text,
         audio=audio,
@@ -389,5 +389,321 @@ def test_generation_with_text_and_audio_voice_cloning_example():
         top_p=kwargs["top_p"],
         top_k=kwargs["top_k"]
         )
-    outputs = processor.batch_decode(outputs, prompt_len=prompt_len)
+    outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
     processor.save_audio(outputs, "example_with_audio.wav")
+
+@pytest.mark.skipif(
+        not is_model_downloaded,
+        reason=model_not_downloaded_message)
+def test_simple_example():
+    """
+    See https://github.com/nari-labs/dia/blob/main/example/simple.py
+    """
+    processor = DiaProcessor.from_pretrained(model_path)
+    inputs = processor(
+        text=text_0,
+        padding=True,
+        return_tensors="pt"
+        ).to("cuda:0")
+
+    # input_ids, attention_mask, decoder_input_ids
+    #print(inputs.keys())
+
+    model = DiaForConditionalGeneration.from_pretrained(
+        model_path,
+        local_files_only=True).to("cuda:0")
+
+    generation_config = GenerationConfiguration(
+        max_new_tokens=3072,
+        temperature=1.8,
+        top_p=0.90,
+        # In simple.py it says cfg_filter_top_k=50.
+        top_k=50,
+        )
+
+    # For DiaForConditionalGeneration, must set each input individually;
+    # otherwise, we obtain this error when we unpack.
+    # The following generation flags are not valid and may be ignored: ['temperature', 'top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    outputs = processor.batch_decode(outputs)
+    processor.save_audio(outputs, "simple.mp3")
+
+text_to_generate = (
+    "[S1] Hello, how are you? [S2] I'm good, thank you. [S1] What's your name? "
+    "[S2] My name is Dia. [S1] Nice to meet you. [S2] Nice to meet you too."
+    )
+
+@pytest.mark.skipif(
+        not is_model_downloaded,
+        reason=model_not_downloaded_message)
+def test_voice_clone_example():
+    """
+    See https://github.com/nari-labs/dia/blob/main/example/voice_clone.py
+
+    You will need the audio file created by running the test_simple_example test
+    above; you need to run this test in the same directory as the "simple.mp3"
+    file for the script to work as-is.
+    """
+    simple_mp3_path = Path.cwd() / "simple.mp3"
+    assert simple_mp3_path.exists()
+    audio, sample_rate = convert_mp3_to_AudioInput(simple_mp3_path)
+    assert audio is not None
+    # sample_rate isNone
+    #print("sample_rate: ", sample_rate)
+
+    text = [text_0[0] + text_to_generate,]
+
+    processor = DiaProcessor.from_pretrained(model_path)
+    inputs = processor(
+        text=text,
+        audio=audio,
+        padding=True,
+        return_tensors="pt"
+        ).to("cuda:0")
+
+    prompt_len = \
+        processor.get_audio_prompt_len(inputs["decoder_attention_mask"])
+
+    model = DiaForConditionalGeneration.from_pretrained(
+        model_path,
+        local_files_only=True).to("cuda:0")
+
+    generation_config = GenerationConfiguration(
+        max_new_tokens=3072,
+        temperature=1.8,
+        top_p=0.90,
+        # In simple.py it says cfg_filter_top_k=50.
+        top_k=50,
+        )
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
+    processor.save_audio(outputs, "voice_clone.mp3")
+
+@pytest.mark.skipif(
+        not is_model_downloaded,
+        reason=model_not_downloaded_message)
+def test_voice_clone_example_without_original_text():
+    """
+    See https://github.com/nari-labs/dia/blob/main/example/voice_clone.py
+
+    You will need the audio file created by running the test_simple_example test
+    above; you need to run this test in the same directory as the "simple.mp3"
+    file for the script to work as-is.
+    """
+    simple_mp3_path = Path.cwd() / "simple.mp3"
+    assert simple_mp3_path.exists()
+    audio, _ = convert_mp3_to_AudioInput(simple_mp3_path)
+
+    text = [text_to_generate,]
+
+    processor = DiaProcessor.from_pretrained(model_path)
+    inputs = processor(
+        text=text,
+        audio=audio,
+        padding=True,
+        return_tensors="pt"
+        ).to("cuda:0")
+
+    prompt_len = \
+        processor.get_audio_prompt_len(inputs["decoder_attention_mask"])
+
+    model = DiaForConditionalGeneration.from_pretrained(
+        model_path,
+        local_files_only=True).to("cuda:0")
+
+    generation_config = GenerationConfiguration(
+        max_new_tokens=3072,
+        temperature=1.8,
+        top_p=0.90,
+        # In simple.py it says cfg_filter_top_k=50.
+        top_k=50,
+        )
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
+    # .mp3 is highly abbreviated in length, it's just the "Hi, nice to meet you"
+    processor.save_audio(outputs, "voice_clone_no_original_text.mp3")
+
+text_2 = (
+    "[S1] As of this morning, U.S. futures are flat-to-slightly up – S&P "
+    "+0.05%, Nasdaq +0.11%. [S2] The market’s rally to new highs paused "
+    "yesterday after some earnings misses, but investor optimism remains "
+    "strong, especially with Big Tech earnings on deck. The CBOE "
+    "Volatility Index (VIX) sits around 15–16, near year-to-date lows"
+)
+
+@pytest.mark.skipif(
+        not is_model_downloaded,
+        reason=model_not_downloaded_message)
+def test_voice_clone_example_as_batch():
+    """
+    See https://github.com/nari-labs/dia/blob/main/example/voice_clone.py
+
+    You will need the audio file created by running the test_simple_example test
+    above; you need to run this test in the same directory as the "simple.mp3"
+    file for the script to work as-is.
+    """
+    simple_mp3_path = Path.cwd() / "simple.mp3"
+    assert simple_mp3_path.exists()
+    audio, _ = convert_mp3_to_AudioInput(simple_mp3_path)
+
+    text = [
+        text_0[0] + text_to_generate,
+        text_0[0] + text_1[0],
+        text_0[0] + text_2]
+
+    processor = DiaProcessor.from_pretrained(model_path)
+    inputs = processor(
+        text=text,
+        audio=[audio, audio, audio],
+        padding=True,
+        return_tensors="pt"
+        ).to("cuda:0")
+
+    prompt_len = \
+        processor.get_audio_prompt_len(inputs["decoder_attention_mask"])
+
+    model = DiaForConditionalGeneration.from_pretrained(
+        model_path,
+        local_files_only=True).to("cuda:0")
+
+    generation_config = GenerationConfiguration(
+        max_new_tokens=3072,
+        temperature=1.8,
+        top_p=0.90,
+        # In simple.py it says cfg_filter_top_k=50.
+        top_k=50,
+        )
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    # <class 'torch.Tensor'>
+    #print(type(outputs))
+
+    outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
+    print(type(outputs))
+    saving_paths = []
+    for i in range(len(text)):
+        saving_paths.append(f"voice_clone_batch_{i}.mp3")
+
+    processor.save_audio(outputs, saving_paths)
+
+text_3 = (
+"[S1] Today I'm here with five and Riley Reed. [S2] Oh. Oh. Oh, hold on. What "
+"type of video is this? [S1] One of these guys is going to try to win you "
+"over. Have you ever been on a speed date? [S3] No, I haven't. [S1] Really? "
+"[S3] No. [S1] Wow. [S2] I think I saw [S1] Yeah, that was a glory hole.")
+
+text_4 = (
+    "[S1] You in the dishwasher. (beep) Riley Reed. [S2] I wish that ass was "
+    "Braille so I could read that ass in my hands. [S3] I think you might be a "
+    "virgin. [S1] Cool. Cool. Bringing the guys. [S2] Gentlemen, we've brought "
+    "you to the freak off for one reason.")
+
+@pytest.mark.skipif(
+        not is_model_downloaded,
+        reason=model_not_downloaded_message)
+def test_sampling_rate_can_be_set():
+    """
+    See in transformers, modeling_dia.py, class DiaProcessor, def __call__(..)
+    and DiaProcessorKwargs
+    """
+    processor = DiaProcessor.from_pretrained(model_path)
+    inputs = processor(
+        text=text_3,
+        padding=True,
+        return_tensors="pt",
+        # 44100 is the default sampling rate for DiaProcessor
+        sampling_rate=44100
+        ).to("cuda:0")
+
+    # input_ids, attention_mask, decoder_input_ids
+    #print(inputs.keys())
+
+    model = DiaForConditionalGeneration.from_pretrained(
+        model_path,
+        local_files_only=True).to("cuda:0")
+
+    generation_config = GenerationConfiguration(
+        max_new_tokens=3072,
+        temperature=1.8,
+        top_p=0.90,
+        # In simple.py it says cfg_filter_top_k=50.
+        top_k=50,
+        )
+
+    # For DiaForConditionalGeneration, must set each input individually;
+    # otherwise, we obtain this error when we unpack.
+    # The following generation flags are not valid and may be ignored: ['temperature', 'top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    outputs = processor.batch_decode(outputs)
+    processor.save_audio(outputs, "sampling_rate_can_be_set.mp3")
+
+    del inputs, outputs
+    print("sampling_rate_can_be_set.mp3")
+    sampling_rate_can_be_set_mp3_path = Path.cwd() / "sampling_rate_can_be_set.mp3"
+    audio, _ = convert_mp3_to_AudioInput(sampling_rate_can_be_set_mp3_path)
+
+    text = [text_3 + text_4]
+
+    inputs = processor(
+        text=text,
+        audio=audio,
+        padding=True,
+        return_tensors="pt"
+        ).to("cuda:0")
+
+    prompt_len = \
+        processor.get_audio_prompt_len(inputs["decoder_attention_mask"])
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=generation_config.max_new_tokens,
+        guidance_scale=3.0,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        top_k=generation_config.top_k
+    )
+
+    outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
+    processor.save_audio(outputs, "voice_clone_sampling_rate_can_be_set.mp3")

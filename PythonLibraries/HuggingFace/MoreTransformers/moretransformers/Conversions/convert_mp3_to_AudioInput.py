@@ -1,5 +1,6 @@
 from warnings import warn
 import numpy as np
+import torch
 
 try:
     import soundfile as sf
