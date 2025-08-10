@@ -1,5 +1,4 @@
 from brainswapchat import ApplicationPaths
-from commonapi.Messages import SystemMessagesManager
 from commonapi.FileIO import SystemMessagesFileIO
 
 def setup_system_messages(

@@ -1,7 +1,8 @@
 from corecode.FileIO import JSONFile
 from commonapi.Messages import (
     RecordedSystemMessage,
-    SystemMessagesManager)
+    SystemMessagesManager,
+    SystemMessage)
 from pathlib import Path
 from typing import List
 
@@ -47,3 +48,28 @@ class SystemMessagesFileIO:
                 system_messages_manager.add_previously_recorded_message(message)
             return True
         return False
+
+    def put_messages_into_conversation_history(
+            self,
+            conversation_history,
+            only_active: bool = True) -> bool:
+        if not self.messages:
+            return False
+
+        appended = False
+        for msg in self.messages.values():
+            if only_active and not msg.is_active:
+                continue
+            # avoid duplicates by content-hash (ConversationHistory hashes by
+            # content)
+            try:
+                if not conversation_history.is_message_in_conversation_history_by_hash(
+                    msg.hash):
+                    conversation_history.append_message(
+                        SystemMessage(msg.content))
+                    appended = True
+            except AttributeError:
+                # Fallback if helper not present
+                conversation_history.append_message(SystemMessage(msg.content))
+                appended = True
+        return appended

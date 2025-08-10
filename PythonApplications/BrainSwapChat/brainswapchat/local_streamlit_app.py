@@ -1,7 +1,7 @@
 """
 USAGE:
 
-in PythonApplications/BrainSwapCaht/
+in PythonApplications/BrainSwapChat/
 streamlit run brainswapchat/local_streamlit_app.py
 """
 

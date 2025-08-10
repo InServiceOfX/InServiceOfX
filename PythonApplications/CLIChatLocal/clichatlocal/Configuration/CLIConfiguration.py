@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, ClassVar, Dict, Any
+from typing import Optional, Dict, Any
 from pathlib import Path
 import yaml
 

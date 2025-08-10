@@ -24,7 +24,9 @@ def main_CLIChatLocal():
         help='Use development configuration')
     args = parser.parse_args()
 
-    application_paths = ApplicationPaths.create(is_development=args.dev)
+    application_paths = ApplicationPaths.create(
+        is_development=args.dev,
+        is_current_path=args.currentpath)
 
     if not str(application_paths.inhouse_library_paths["moresglang"]) \
         in sys.path:

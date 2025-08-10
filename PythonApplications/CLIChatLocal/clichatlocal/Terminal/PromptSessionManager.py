@@ -1,5 +1,4 @@
 import re
-from typing import Optional, Dict, List, Any, Callable
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter, FuzzyCompleter

@@ -566,7 +566,7 @@ def test_voice_clone_example_as_batch():
 
     You will need the audio file created by running the test_simple_example test
     above; you need to run this test in the same directory as the "simple.mp3"
-    file for the script to work as-is.
+    file for the test to work as-is.
     """
     simple_mp3_path = Path.cwd() / "simple.mp3"
     assert simple_mp3_path.exists()
@@ -614,6 +614,7 @@ def test_voice_clone_example_as_batch():
 
     outputs = processor.batch_decode(outputs, audio_prompt_len=prompt_len)
     print(type(outputs))
+    assert len(outputs) == len(text)
     saving_paths = []
     for i in range(len(text)):
         saving_paths.append(f"voice_clone_batch_{i}.mp3")
