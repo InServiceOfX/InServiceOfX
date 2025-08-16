@@ -1,5 +1,7 @@
 class ReadBuildConfiguration:
-
+    """
+    Base class to read and parse a build configurationfile.
+    """
     def __init__(self, required_keys):
         """
         Args:

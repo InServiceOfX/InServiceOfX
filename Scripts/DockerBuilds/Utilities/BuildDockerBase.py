@@ -4,6 +4,9 @@ import sys
 from typing import List, Tuple, Type
 
 class BuildDockerBase:
+    """
+    Base class that provide common functionality of building the Docker image.
+    """
     def __init__(
             self, 
             description: str,
@@ -32,7 +35,7 @@ class BuildDockerBase:
             help='Show help message and exit')
         return parser
 
-    def print_help(self):
+    def _print_help(self):
         print(f"\n{self.description}")
         print("\nOptions:")
         print("  --no-cache    Build without using Docker cache")
@@ -49,7 +52,7 @@ class BuildDockerBase:
         from CommonUtilities import concatenate_dockerfiles
 
         if args.help:
-            self.print_help()
+            self._print_help()
             sys.exit(0)
 
         # Get build configuration
