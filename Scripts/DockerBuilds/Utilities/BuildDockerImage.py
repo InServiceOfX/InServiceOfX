@@ -9,7 +9,7 @@ class BuildDockerImage:
 
             Note that build_arguments_keys does NOT have to include BASE_IMAGE
             (for what base image to "base" this Docker image upon) and
-            DOCKER_IMAGE_NAME (the name of the Docker image) because the are
+            DOCKER_IMAGE_NAME (the name of the Docker image) because they are
             assumed to exist and are hardcoded to be accessed in the
             build_docker_image(..) function.
         """

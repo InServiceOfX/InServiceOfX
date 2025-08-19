@@ -11,9 +11,9 @@
 
 ## CUTLASS
 
-RUN git clone https://github.com/InServiceOfX/cutlass.git /ThirdParty/cutlass && \
+RUN git clone https://github.com/NVIDIA/cutlass.git /ThirdParty/cutlass && \
   cd /ThirdParty/cutlass && \
-  git checkout master && \
+  git checkout main && \
   cd /
 
 

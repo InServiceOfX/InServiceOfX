@@ -29,7 +29,11 @@ MESSAGE("CMAKE_CUDA_ARCHITECTURES before SET: " ${CMAKE_CUDA_ARCHITECTURES})
 # acceleration for features like wgmma and setmaxnreg. This is required for
 # NVIDIA CUTLASS
 #
-SET(CMAKE_CUDA_ARCHITECTURES 52 60 61 62 75 86 90 90a)
+# CUDA 13 shows
+# nvcc fatal   : Unsupported gpu architecture 'compute_52'
+# nvcc fatal   : Unsupported gpu architecture 'compute_60'
+#SET(CMAKE_CUDA_ARCHITECTURES 52 60 61 62 75 86 90 90a)
+SET(CMAKE_CUDA_ARCHITECTURES 86)
 
 MESSAGE("CMAKE_CUDA_ARCHITECTURES after SET: " ${CMAKE_CUDA_ARCHITECTURES})
 
@@ -169,7 +173,9 @@ ENDIF()
 
 FetchContent_MakeAvailable(googletest)
 
+ADD_SUBDIRECTORY(Configuration)
 ADD_SUBDIRECTORY(cuBLASWrappers)
+ADD_SUBDIRECTORY(IntegrationTests)
 ADD_SUBDIRECTORY(NVIDIAToolsExtension)
 ADD_SUBDIRECTORY(StreamManagement)
 ADD_SUBDIRECTORY(UnitTests)

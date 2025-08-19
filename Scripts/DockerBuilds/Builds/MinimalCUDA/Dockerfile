@@ -3,26 +3,66 @@
 # SetupPyTorchGPUDocker.sh) or doing something like, in command line,
 # cat Dockerfile.header Dockerfile.base ..
 
-# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags
-FROM nvcr.io/nvidia/cuda:12.6.0-cudnn-devel-ubuntu24.04
+
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
+ARG ARCH
+ARG PTX
+
 RUN apt-get update && \
-  apt-get install --upgrade -y cmake ccache curl libssl-dev && \
+  apt-get install --upgrade -y ccache curl libssl-dev && \
   apt install -y git git-lfs && \
-  git lfs install && \
-  #
-  #
-  # Install Rust. Compare CUDA against Rust.
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  #
+  git lfs install
+
+
+
+
+# See https://apt.kitware.com/
+
+# Update package lists and
+# Install required packages for key management
+RUN apt-get update && apt-get install -y wget gpg
+
+# Add Kitware repository key.
+# If kitware-archive-keyring package hasn't been installed previously, manually
+# obtain a copy of signing key:
+RUN test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+    gpg --dearmor - | \
+    tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+
+# Add Kitware repository to sources list and update.
+# For Ubuntu Jammy Jellyfish (22.04):
+RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | \
+    tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update
+
+# Remove manually obtained key to make room for package
+RUN test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+    rm -f /usr/share/keyrings/kitware-archive-keyring.gpg
+
+# Install kitware-archive-keyring package to ensure keyring stays up to date as
+# kitware rotates keys, and
+# Install cmake
+RUN apt-get install -y kitware-archive-keyring && \
+    apt-get install -y cmake
+
+# Clean up to reduce image size
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
   echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+
+
 
 ### Further code/repositories from NVIDIA
 
@@ -37,9 +77,10 @@ RUN apt-get update && \
 
 ## CUTLASS
 
-RUN git clone https://github.com/InServiceOfX/cutlass.git /ThirdParty/cutlass && \
+RUN git clone https://github.com/NVIDIA/cutlass.git /ThirdParty/cutlass && \
   cd /ThirdParty/cutlass && \
-  git checkout master && \
+  git checkout main && \
   cd /
+
 
 

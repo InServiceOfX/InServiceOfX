@@ -1,21 +1,18 @@
-# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags
-FROM nvcr.io/nvidia/cuda:12.6.0-cudnn-devel-ubuntu24.04
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
 WORKDIR ${THIRD_PARTY}
 
+ARG ARCH
+ARG PTX
+
 RUN apt-get update && \
-  apt-get install --upgrade -y cmake ccache curl libssl-dev && \
+  apt-get install --upgrade -y ccache curl libssl-dev && \
   apt install -y git git-lfs && \
-  git lfs install && \
-  #
-  #
-  # Install Rust. Compare CUDA against Rust.
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  #
-  # https://rust-lang.github.io/rustup/installation/index.html
-  # export PATH once, doing both Rust and poetry binaries.
-  echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
+  git lfs install
+
+
 

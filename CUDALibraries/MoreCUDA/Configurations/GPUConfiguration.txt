@@ -1,0 +1,5 @@
+# Change this for your local setup.
+# Tip: Consider running nvidia-smi and see the GPUs available. And then look at
+# which GPUs have sufficient compute capability and consider its index from
+# there.
+device_id: 0
