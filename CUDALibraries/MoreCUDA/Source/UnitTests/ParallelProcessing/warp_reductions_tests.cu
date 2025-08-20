@@ -1,20 +1,32 @@
+#include "Configuration/GPUConfiguration.h"
 #include "ParallelProcessing/warp_reductions.h"
 #include "DataStructures/Array.h"
 #include "gtest/gtest.h"
+#include "Utilities/DeviceManagement/GetAndSetGPUDevices.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <vector>
 
+using Configuration::GPUConfiguration;
 using DataStructures::Array;
 using ParallelProcessing::warp_reduce_max;
 using ParallelProcessing::warp_reduce_max_shift_up;
 using ParallelProcessing::warp_reduce_sum;
+using ParallelProcessing::warp_reduce_sum_with_shuffle_down;
+using Utilities::DeviceManagement::GetAndSetGPUDevices;
 using std::vector;
 
 namespace GoogleUnitTests
 {
 namespace ParallelProcessing
 {
+
+std::filesystem::path get_device_configuration_path()
+{
+  return std::filesystem::path(__FILE__).parent_path() /
+    "../../../Configurations/GPUConfiguration.txt";
+}
 
 auto find_max_value_and_position(const std::vector<float>& vec)
 {
@@ -79,6 +91,23 @@ __global__ void test_warp_reduce_sum_kernel(
 
   FPType thread_value {input[tid]};
   FPType warp_sum {warp_reduce_sum(thread_value)};
+
+  if (tid < size)
+  {
+    output[tid] = warp_sum;
+  }
+}
+
+template <typename FPType>
+__global__ void test_warp_reduce_sum_with_shuffle_down_kernel(
+  FPType* output,
+  const FPType* input,
+  const int size)
+{
+  const int tid {static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x)};
+
+  FPType thread_value {input[tid]};
+  FPType warp_sum {warp_reduce_sum_with_shuffle_down(thread_value)};
 
   if (tid < size)
   {
@@ -426,6 +455,7 @@ TEST(WarpReduceSumTests, SumsAcrossWarp)
   vector<float> input(warp_size);
   for (int i {0}; i < warp_size; ++i)
   {
+    // This is 1, 2, 3, ... 32.
     input[i] = static_cast<float>(i + 1.0f);
   }
   
@@ -442,11 +472,49 @@ TEST(WarpReduceSumTests, SumsAcrossWarp)
   vector<float> output(warp_size);
   d_output.copy_device_output_to_host(output);
   
+  // Use the sum formula for the first n natural numbers, S = n(n + 1) / 2.
   for (int i {0}; i < warp_size; ++i)
   {
     EXPECT_FLOAT_EQ(output.at(i), (warp_size + 1) * warp_size / 2);
   }
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+TEST(WarpReduceSumWithShuffleDownTests, SumsAcrossWarpWithShuffleDown)
+{
+  GPUConfiguration gpu_configuration {};
+  ASSERT_TRUE(std::filesystem::exists(get_device_configuration_path()));
+  gpu_configuration.parse_configuration_file(get_device_configuration_path());
+  GetAndSetGPUDevices gasgd {};
+  ASSERT_TRUE(
+    gasgd.set_device(gpu_configuration.get_configuration_struct().device_id));
+
+  constexpr int warp_size {32};
+  vector<float> input(warp_size);
+  for (int i {0}; i < warp_size; ++i)
+  {
+    input[i] = static_cast<float>(i + 1.0f);
+  }
+
+  Array<float> d_input(input.size());
+  Array<float> d_output(input.size());
+  
+  d_input.copy_host_input_to_device(input);
+
+  test_warp_reduce_sum_with_shuffle_down_kernel<<<1, warp_size>>>(
+    d_output.elements_,
+    d_input.elements_,
+    warp_size);
+  
+  vector<float> output(warp_size);
+  d_output.copy_device_output_to_host(output);
+  
+  // Use the sum formula for the first n natural numbers, S = n(n + 1) / 2.
+  for (int i {0}; i < warp_size; ++i)
+  {
+    EXPECT_FLOAT_EQ(output.at(i), (warp_size + 1) * warp_size / 2 + 16.0f * i);
+  }
+}
 } // namespace ParallelProcessing
 } // namespace GoogleUnitTests

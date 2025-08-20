@@ -34,6 +34,7 @@ TARGET_INCLUDE_DIRECTORIES(Check
 
 TARGET_LINK_LIBRARIES(Check
   cuBLASWrappers
+  Configuration
   NVIDIAToolsExtension
   StreamManagement
   Utilities

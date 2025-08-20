@@ -1,6 +1,8 @@
 #ifndef PARALLEL_PROCESSING_WARP_REDUCTIONS_H
 #define PARALLEL_PROCESSING_WARP_REDUCTIONS_H
 
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include "Numerics/MathFunctions.h"
 
@@ -104,6 +106,28 @@ template <> __device__ inline __half warp_reduce_sum<__half>(__half value)
     val += __half2float(__shfl_xor_sync(0xFFFFFFFF, value, offset));
   }
   return __float2half(val);  // Convert back to half
+}
+
+//------------------------------------------------------------------------------
+/// See
+/// https://github.com/andrewkchan/yalm/blob/main/src/infer.cpp
+/// for warp_reduce_sum implementation for float, using __shfl_down_sync.
+/// __shfl_down_sync(unsigned mask, T var, unsigned int delta, int width = warpSize)
+/// shfl is for shuffle, as these intrinsics perform a shuffle (a rearrangement/
+/// exchange) of register data among threads in a warp.
+/// https://docs.nvidia.com/cuda/cuda-c-programming-guide/#warp-shuffle-description
+/// __shfl_down_sync() Copy from a lane with higher ID relative to caller.
+/// __shfl_down_sync() calculates a source lane ID by adding delta to the
+/// caller's lane ID. The value of var held by resulting lane ID is returned:
+/// this has the effect of shifting var down the warp by delta lanes.
+//------------------------------------------------------------------------------
+template <typename T> __device__ T warp_reduce_sum_with_shuffle_down(T val)
+{
+  for (int offset {warpSize / 2}; offset > 0; offset /= 2)
+  {
+    val += __shfl_down_sync(0xFFFFFFFF, val, offset);
+  }
+  return val;
 }
 
 } // namespace ParallelProcessing
