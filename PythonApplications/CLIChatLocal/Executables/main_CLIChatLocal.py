@@ -9,10 +9,13 @@ is stored.
 from pathlib import Path
 import argparse
 import sys
+from warnings import warn
 
 application_path = Path(__file__).resolve().parents[1]
 
-if not str(application_path) in sys.path:
+if not application_path.exists():
+    warn(f"Application path {application_path} does not exist")
+elif not str(application_path) in sys.path:
     sys.path.append(str(application_path))
 
 from clichatlocal import ApplicationPaths
@@ -22,38 +25,40 @@ def main_CLIChatLocal():
     parser.add_argument(
         '--dev', action='store_true',
         help='Use development configuration')
+    parser.add_argument(
+        '--currentpath', action='store_true',
+        help=(
+            "Use current working directory for where configuration files are "
+            "saved; overrides --dev"))
+    parser.add_argument(
+        '--configpath',
+        type=str,
+        nargs=1,
+        metavar='PATH',
+        help=(
+            "Specify custom base configuration path (takes first argument if "
+            "multiple provided)"))
+
     args = parser.parse_args()
+
+    # Extract the configpath value
+    configpath = args.configpath[0] if args.configpath else None
 
     application_paths = ApplicationPaths.create(
         is_development=args.dev,
-        is_current_path=args.currentpath)
+        is_current_path=args.currentpath,
+        configpath=configpath)
 
-    if not str(application_paths.inhouse_library_paths["moresglang"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.inhouse_library_paths["moresglang"]))
-
-    if not str(application_paths.inhouse_library_paths["CommonAPI"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.inhouse_library_paths["CommonAPI"]))
-
-    if not str(application_paths.inhouse_library_paths["MoreTransformers"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.inhouse_library_paths["MoreTransformers"]))
-
-    if not str(application_paths.inhouse_library_paths["CoreCode"]) \
-        in sys.path:
-        sys.path.append(
-            str(application_paths.inhouse_library_paths["CoreCode"]))
+    application_paths.add_libraries_to_path()
 
     from clichatlocal.CLIChatLocal import CLIChatLocal
 
     cli_chat_local = CLIChatLocal(
-        application_paths.configuration_file_paths,
+        application_paths.configuration_file_paths["model_list"],
+        application_paths.configuration_file_paths["cli_configuration"],
         application_paths.system_messages_file_path,
         application_paths.conversations_file_path)
+
     cli_chat_local.run()
 
 if __name__ == "__main__":

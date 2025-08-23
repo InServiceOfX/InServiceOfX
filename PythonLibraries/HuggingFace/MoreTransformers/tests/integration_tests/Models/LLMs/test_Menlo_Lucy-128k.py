@@ -257,6 +257,11 @@ def test_generate_with_attention_mask():
 @pytest.mark.skipif(
         not is_model_downloaded, reason=model_is_not_downloaded_message)
 def test_use_configurations():
+    """
+    We've noticed above that we are repeating the generation configuration
+    values. So we use a default generation configuration. Then we save off the
+    conversation in JSON format.
+    """
     from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
         pretrained_model_name_or_path=model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(

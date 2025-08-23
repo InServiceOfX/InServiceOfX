@@ -7,7 +7,7 @@ the test name of the tests you want to run, e.g.
 pytest -s ./integration_tests/Wrappers/Models/LLMs/test_Qwen_Qwen3-0.6B.py -k "test_generate_with_attention"
 """
 from corecode.Utilities import DataSubdirectories
-
+from pathlib import Path
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -26,7 +26,7 @@ is_model_downloaded = False
 model_path = None
 
 for path in data_subdirectories.DataPaths:
-    if (path / relative_model_path).exists():
+    if (Path(path)/ relative_model_path).exists():
         is_model_downloaded = True
         model_path = path / relative_model_path
         print(f"Model {relative_model_path} found at {model_path}")

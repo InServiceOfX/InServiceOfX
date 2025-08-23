@@ -79,7 +79,10 @@ template <> __device__ inline float warp_reduce_sum<float>(float value)
 {
   for (int offset {16}; offset > 0; offset /= 2)
   {
-    value += __half2float(__shfl_xor_sync(0xFFFFFFFF, value, offset));
+    // For the given thread, __xhfl_xor_sync() fetches the value from another
+    // thread, whose thread ID or lane ID is its own thread ID XOR'ed with the
+    // offset.
+    value += __shfl_xor_sync(0xFFFFFFFF, value, offset);
   }
   return value;
 }

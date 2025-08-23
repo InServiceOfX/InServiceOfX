@@ -3,6 +3,8 @@
 
 from pathlib import Path
 from dataclasses import dataclass
+from warnings import warn
+import sys
 
 @dataclass
 class ApplicationPaths:
@@ -15,55 +17,67 @@ class ApplicationPaths:
     conversations_file_path: Path
 
     @classmethod
-    def create(cls, is_development: bool = False) -> 'ApplicationPaths':
+    def create(
+            cls,
+            is_development: bool = False,
+            is_current_path: bool = False,
+            configpath: str = None) -> 'ApplicationPaths':
         app_path = Path(__file__).resolve().parents[1]
         project_path = app_path.parents[1]
         
         inhouse_library_paths = {
-            "moresglang": \
-                project_path / "PythonLibraries" / "ThirdParties" / "MoreSGLang",
             "CommonAPI": \
                 project_path / "PythonLibraries" / "ThirdParties" / "APIs" / \
                     "CommonAPI",
+            "CoreCode": \
+                project_path / "PythonLibraries" / "CoreCode",
+            "MoreSGLang": \
+                project_path / "PythonLibraries" / "ThirdParties" / "APIs" / \
+                    "MoreSGLang",
             "MoreTransformers": \
                 project_path / "PythonLibraries" / "HuggingFace" / \
                     "MoreTransformers",
-            "CoreCode": \
-                project_path / "PythonLibraries" / "CoreCode"
         }
 
-        if is_development:
+        def create_paths_from_base_path(base_path: Path | str):
+            if isinstance(base_path, str):
+                base_path = Path(base_path)
+
             configuration_file_paths = {
-                "llama3_configuration": \
-                    app_path / "Configurations" / "llama3_configuration.yml",
-                "llama3_generation_configuration": \
-                    app_path / "Configurations" / \
-                        "llama3_generation_configuration.yml",
+                "model_list": \
+                    base_path / "Configurations" / "model_list.yml",
+                "model_configuration": \
+                    base_path / "Configurations" / "model_configuration.yml",
+                "generation_configuration": \
+                    base_path / "Configurations" / \
+                        "generation_configuration.yml",
                 "cli_configuration": \
-                    app_path / "Configurations" / "cli_configuration.yml"
+                    base_path / "Configurations" / "cli_configuration.yml"
             }
 
             system_messages_file_path = \
-                app_path / "Configurations" / "system_messages.json"
+                base_path / "Configurations" / "system_messages.json"
             conversations_file_path = \
-                app_path / "Configurations" / "conversations.json"
+                base_path / "Configurations" / "conversations.json"
 
+            return (
+                configuration_file_paths,
+                system_messages_file_path,
+                conversations_file_path)
+
+        if configpath is not None:
+            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+                create_paths_from_base_path(configpath)
+        elif is_current_path:
+            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+                create_paths_from_base_path(Path.cwd())
+        elif is_development:
+            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+                create_paths_from_base_path(app_path)
         else:
             config_dir = Path.home() / ".config" / "clichatlocal"
-            configuration_file_paths = {
-                "llama3_configuration": \
-                    config_dir / "Configurations" / "llama3_configuration.yml",
-                "llama3_generation_configuration": \
-                    config_dir / "Configurations" / \
-                        "llama3_generation_configuration.yml",
-                "cli_configuration": \
-                    config_dir / "Configurations" / "cli_configuration.yml"
-            }
-
-            system_messages_file_path = \
-                config_dir / "system_messages.json"
-            conversations_file_path = \
-                config_dir / "conversations.json"
+            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+                create_paths_from_base_path(config_dir)
 
         return cls(
             application_path=app_path,
@@ -73,3 +87,48 @@ class ApplicationPaths:
             system_messages_file_path=system_messages_file_path,
             conversations_file_path=conversations_file_path
         )
+
+    def add_libraries_to_path(self):
+        path = self.inhouse_library_paths["CommonAPI"]
+
+        if path.exists():
+            if not str(path) in sys.path:
+                sys.path.append(str(path))
+                print(f"Added {path} to sys.path")
+            else:
+                print(f"{path} already in sys.path")
+        else:
+            warn(f"{path} does not exist")
+
+        path = self.inhouse_library_paths["CoreCode"]
+
+        if path.exists():
+            if not str(path) in sys.path:
+                sys.path.append(str(path))
+                print(f"Added {path} to sys.path")
+            else:
+                print(f"{path} already in sys.path")
+        else:
+            warn(f"{path} does not exist")
+
+        path = self.inhouse_library_paths["MoreSGLang"]
+
+        if path.exists():
+            if not str(path) in sys.path:
+                sys.path.append(str(path))
+                print(f"Added {path} to sys.path")
+            else:
+                print(f"{path} already in sys.path")
+        else:
+            warn(f"{path} does not exist")
+
+        path = self.inhouse_library_paths["MoreTransformers"]
+
+        if path.exists():
+            if not str(path) in sys.path:
+                sys.path.append(str(path))
+                print(f"Added {path} to sys.path")
+            else:
+                print(f"{path} already in sys.path")
+        else:
+            warn(f"{path} does not exist")

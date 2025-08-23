@@ -4,6 +4,7 @@ from typing import Optional, ClassVar, Union
 import torch
 import yaml
 
+# TODO: Consider removing this in favor of other Pydantic style classes.
 @dataclass
 class Configuration:
     """Configuration class for model settings."""

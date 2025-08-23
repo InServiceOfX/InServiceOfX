@@ -2,7 +2,7 @@ from pathlib import Path
 import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
-from clichatlocal.FileIO import SystemMessagesFileIO
+from clichatlocal.Configuration import ModelList
 from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
@@ -14,28 +14,21 @@ from moretransformers.Configurations import Configuration, GenerationConfigurati
 class CLIChatLocal:
     def __init__(
         self,
+        model_list_file_path: Path | str,
         configuration_file_paths,
-        system_messages_file_path: Path,
-        conversations_file_path: Path
+        system_messages_file_path: Path | str,
+        conversations_file_path: Path | str
     ):
-        self.system_messages_file_io = SystemMessagesFileIO(
-            system_messages_file_path)
+        self._model_list = ModelList.from_yaml(model_list_file_path)
+        first_model_name = next(iter(self._model_list.models))
+        first_model_path = self._model_list.models[first_model_name]
+        
+        print(f"First model: {first_model_name}")
+        print(f"First model path: {first_model_path}")
+        
+
 
         self.cli_configuration = CLIConfiguration()
-
-        self.llama3_configuration = Configuration.from_yaml(
-            configuration_file_paths["llama3_configuration"])
-        self.llama3_generation_configuration = \
-            GenerationConfiguration.from_yaml(
-                configuration_file_paths["llama3_generation_configuration"])
-        self.llama3_engine = LocalLlama3(
-            self.llama3_configuration,
-            self.llama3_generation_configuration)
-
-        load_messages_result = self.system_messages_file_io.load_messages()
-        if load_messages_result:
-            self.system_messages_file_io.put_messages_into_system_messages_manager(
-                self.llama3_engine.system_messages_manager)
         
         # Initialize components
         self.terminal_ui = TerminalUI(self.cli_configuration)
@@ -44,13 +37,13 @@ class CLIChatLocal:
         self.command_handler = CommandHandler(self)
         
         # Create prompt session
-        self.prompt_session_manager = PromptSessionManager(
+        self._psm = PromptSessionManager(
             self.cli_configuration)
     
     async def run_iterative(self):
         """Single iteration of chat interaction"""
         try:
-            prompt = await self.prompt_session_manager.session.prompt_async(
+            prompt = await self._psm.session.prompt_async(
                 "Chat prompt (or type .help for options): "
             )
             
@@ -65,8 +58,8 @@ class CLIChatLocal:
                 # If command wasn't handled, treat as regular user input
                 if not command_handled:
                     self.terminal_ui.print_user_message(prompt)
-                    response = self.llama3_engine.generate_from_single_user_content(prompt)
-                    self.terminal_ui.print_assistant_message(response)
+                    # response = self.llama3_engine.generate_from_single_user_content(prompt)
+                    # self.terminal_ui.print_assistant_message(response)
                 
                 return continue_running
 

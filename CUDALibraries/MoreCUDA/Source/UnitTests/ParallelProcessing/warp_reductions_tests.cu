@@ -477,6 +477,32 @@ TEST(WarpReduceSumTests, SumsAcrossWarp)
   {
     EXPECT_FLOAT_EQ(output.at(i), (warp_size + 1) * warp_size / 2);
   }
+
+  for (int i {0}; i < warp_size; ++i)
+  {
+    // This is 0, 1, 2, 0, ... 0.
+    if (i < 3)
+    {
+      input[i] = static_cast<float>(i);
+    }
+    else
+    {
+      input[i] = 0.0f;
+    }
+  }
+
+  d_input.copy_host_input_to_device(input);
+  test_warp_reduce_sum_kernel<<<1, warp_size>>>(
+    d_output.elements_,
+    d_input.elements_,
+    warp_size);
+
+  d_output.copy_device_output_to_host(output);
+
+  for (int i {0}; i < warp_size; ++i)
+  {
+    EXPECT_FLOAT_EQ(output.at(i), (2 + 1) * 2 / 2);
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -515,6 +541,33 @@ TEST(WarpReduceSumWithShuffleDownTests, SumsAcrossWarpWithShuffleDown)
   {
     EXPECT_FLOAT_EQ(output.at(i), (warp_size + 1) * warp_size / 2 + 16.0f * i);
   }
+
+  for (int i {0}; i < warp_size; ++i)
+  {
+    // This is 0, 1, 2, 0, ... 0.
+    if (i < 3)
+    {
+      input[i] = static_cast<float>(i);
+    }
+    else
+    {
+      input[i] = 0.0f;
+    }
+  }
+
+  d_input.copy_host_input_to_device(input);
+  test_warp_reduce_sum_with_shuffle_down_kernel<<<1, warp_size>>>(
+    d_output.elements_,
+    d_input.elements_,
+    warp_size);
+
+  d_output.copy_device_output_to_host(output);
+
+  for (int i {0}; i < warp_size; ++i)
+  {
+    std::cout << "i: " << i << ", output[i]: " << output[i] << std::endl;
+  }
 }
+
 } // namespace ParallelProcessing
 } // namespace GoogleUnitTests
