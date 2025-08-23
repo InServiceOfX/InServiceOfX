@@ -64,7 +64,10 @@ class ModelAndTokenizer:
         else:
             self._generation_configuration = \
                 generation_configuration
-    
+
+        self._model = None
+        self._tokenizer = None
+
     def load_model(self, **kwargs):
         model_kwargs = self._fpmc.to_dict()
         model_kwargs.update(kwargs)
@@ -81,24 +84,37 @@ class ModelAndTokenizer:
             conversation,
             add_generation_prompt: Optional[bool] = None,
             tokenize: Optional[bool] = None,
+            return_tensors: Optional[str] = None,
+            to_device: Optional[bool] = None,
             **kwargs):
         """
         Args:
             add_generation_prompt: Typically True
             tokenize: Can be either False, resuting in a str, or True, resulting
             in a Dict-like object, with keys "input_ids" and "attention_mask".
+            return_tensors: If None, defaults to 'pt'.
         """
-        key_word_arguments = self._generation_configuration.to_dict()
+        key_word_arguments = {}
         key_word_arguments.update(kwargs)
         key_word_arguments["conversation"] = conversation
         if add_generation_prompt is not None:
             key_word_arguments["add_generation_prompt"] = add_generation_prompt
         if tokenize is not None:
             key_word_arguments["tokenize"] = tokenize
+        if return_tensors is not None:
+            key_word_arguments["return_tensors"] = return_tensors
+        else:
+            key_word_arguments["return_tensors"] = 'pt'
+
+        if to_device == False:
+            return self._tokenizer.apply_chat_template(**key_word_arguments)
 
         if self._model is not None and self._model.device is not None:
             return self._tokenizer.apply_chat_template(
                 **key_word_arguments).to(self._model.device)
+        elif self._fpmc.device_map is not None:
+            return self._tokenizer.apply_chat_template(
+                **key_word_arguments).to(self._fpmc.device_map)
         else:
             return self._tokenizer.apply_chat_template(**key_word_arguments)
 
@@ -119,12 +135,27 @@ class ModelAndTokenizer:
                 return_tensors=return_tensors,
                 padding=padding,
                 **kwargs).to(self._model.device)
+        elif self._fpmc.device_map is not None:
+            return self._tokenizer(
+                prompt_str,
+                return_tensors=return_tensors,
+                padding=padding,
+                **kwargs).to(self._fpmc.device_map)
         else:
             return self._tokenizer(
                 prompt_str,
                 return_tensors=return_tensors,
                 padding=padding,
                 **kwargs)
+
+    def move_encoded_to_device(self, encoded):
+        if self._model is not None and self._model.device is not None:
+            return {k: v.to(self._model.device) for k, v in encoded.items()}
+        elif self._fpmc.device_map is not None:
+            return {k: v.to(self._fpmc.device_map) for k, v in encoded.items()}
+        else:
+            return None
+
 
     def generate(self, input_ids, attention_mask=None, **kwargs):
         key_word_arguments = self._generation_configuration.to_dict()
@@ -134,3 +165,56 @@ class ModelAndTokenizer:
             key_word_arguments["attention_mask"] = attention_mask
 
         return self._model.generate(**key_word_arguments)
+
+    def decode_with_tokenizer(self, input, skip_special_tokens=None):
+        if skip_special_tokens is None:
+            skip_special_tokens = True
+
+        return self._tokenizer.decode(
+            input,
+            skip_special_tokens=skip_special_tokens)
+
+    def apply_chat_template_and_generate(
+            self,
+            conversation,
+            with_attention_mask: Optional[bool] = None,
+            skip_special_tokens: Optional[bool] = None,
+            add_generation_prompt: Optional[bool] = None,
+            return_tensors: Optional[str] = None
+            ):
+        if with_attention_mask is None:
+            with_attention_mask = False
+
+        if skip_special_tokens is None:
+            skip_special_tokens = True
+
+        if add_generation_prompt is None:
+            add_generation_prompt = True
+
+        if with_attention_mask:
+            tokenizer_outputs = self.apply_chat_template(
+                conversation,
+                add_generation_prompt,
+                tokenize=True,
+                return_dict=True)
+    
+            output = self.generate(
+                tokenizer_outputs["input_ids"],
+                attention_mask=tokenizer_outputs["attention_mask"])
+
+        else:
+            tokenizer_outputs = self.apply_chat_template(
+                conversation,
+                add_generation_prompt,
+                tokenize=True,
+                return_tensors=return_tensors)
+
+            output = self.generate(tokenizer_outputs)
+
+        response = self.decode_with_tokenizer(
+            output,
+            skip_special_tokens=skip_special_tokens)
+
+        return response
+
+

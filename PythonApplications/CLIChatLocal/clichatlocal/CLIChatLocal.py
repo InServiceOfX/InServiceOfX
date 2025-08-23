@@ -12,21 +12,13 @@ from moretransformers.Applications import LocalLlama3
 from moretransformers.Configurations import Configuration, GenerationConfiguration
 
 class CLIChatLocal:
-    def __init__(
-        self,
-        model_list_file_path: Path | str,
-        configuration_file_paths,
-        system_messages_file_path: Path | str,
-        conversations_file_path: Path | str
-    ):
+    def __init__(self, application_paths):
         self._model_list = ModelList.from_yaml(model_list_file_path)
         first_model_name = next(iter(self._model_list.models))
         first_model_path = self._model_list.models[first_model_name]
         
         print(f"First model: {first_model_name}")
         print(f"First model path: {first_model_path}")
-        
-
 
         self.cli_configuration = CLIConfiguration()
         

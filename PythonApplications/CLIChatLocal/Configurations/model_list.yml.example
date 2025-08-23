@@ -1,0 +1,3 @@
+models:
+  qwen3-0.6b: /Data/Models/LLM/Qwen/Qwen3-0.6B
+  gemma-3-270m-it: /Data/Models/LLM/google/gemma-3-270m-it
