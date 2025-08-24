@@ -1,0 +1,5 @@
+do_sample: true
+temperature: 0.3
+min_p: 0.15
+repetition_penalty: 1.05
+max_new_tokens: 32768
