@@ -123,12 +123,14 @@ Configurations/ThirdParties/MoreInsightFace/configuration.yml
 Configurations/ThirdParties/MoreInstantID/configuration.yml
 Configurations/ThirdParties/MoreInstantID/loras_configuration.yml
 Configurations/ThirdParties/APIs/MoreX/morex.env
-PythonApplications/CLIChatLocal/Configurations/model_list.yml
 PythonApplications/CLIChat/Data/chat_history.txt
 PythonApplications/CLIChat/Deployment/build
 PythonApplications/CLIChat/Deployment/dist/
 PythonApplications/CLIChat/dist/
 PythonApplications/CLIChat/tests/TestData/chat_history.txt
+PythonApplications/CLIChatLocal/Configurations/from_pretrained_model.yml
+PythonApplications/CLIChatLocal/Configurations/generation_configuration.yml
+PythonApplications/CLIChatLocal/Configurations/model_list.yml
 PythonLibraries/ThirdParties/APIs/CommonAPI/tests/TestSetup/postgresql_test_configuration.yml
 Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
