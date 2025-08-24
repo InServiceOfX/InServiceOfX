@@ -1,6 +1,6 @@
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import Union, Optional, Dict, Any, Literal
+from typing import Union, Optional, Dict, Any
 
 class FromPretrainedTokenizerConfiguration(BaseModel):
     """
@@ -14,8 +14,8 @@ class FromPretrainedTokenizerConfiguration(BaseModel):
     Optional fields: All other parameters with sensible defaults
     """
 
-    pretrained_model_name_or_path: Union[str, Path] = Field(
-        ...,
+    pretrained_model_name_or_path: Optional[Union[str, Path]] = Field(
+        default=None,
         description=(
             "Typically this is a path of a directory containing vocabulary "
             "files required by the tokenizer."))

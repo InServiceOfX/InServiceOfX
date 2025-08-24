@@ -46,9 +46,11 @@ class ApplicationPaths:
             configuration_file_paths = {
                 "model_list": \
                     base_path / "Configurations" / "model_list.yml",
-                "model_configuration": \
-                    base_path / "Configurations" / "model_configuration.yml",
-                "generation_configuration": \
+                "from_pretrained_model": \
+                    base_path / "Configurations" / "from_pretrained_model.yml",
+                "from_pretrained_tokenizer": \
+                    base_path / "Configurations" / "from_pretrained_tokenizer.yml",
+                "generation": \
                     base_path / "Configurations" / \
                         "generation_configuration.yml",
                 "cli_configuration": \

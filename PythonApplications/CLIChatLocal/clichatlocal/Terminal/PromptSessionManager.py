@@ -41,7 +41,7 @@ class PromptSessionManager:
         self._setup_key_bindings()
         
         # Create the prompt session
-        self.session = self._create_session()
+        self._session = self._create_session()
     
     def _setup_key_bindings(self):
         """Setup key bindings for the prompt session."""
@@ -81,7 +81,7 @@ class PromptSessionManager:
     
         def get_bottom_toolbar():
             """Returns bottom toolbar text"""
-            multiline_status = "ON" if getattr(self.session.app, "multiline", False) else "OFF"
+            multiline_status = "ON" if getattr(self._session.app, "multiline", False) else "OFF"
             return HTML(
                 f'<b>CLIChatLocal</b> | '
                 f'<style fg="{self.cli_configuration.info_color}">Multiline: {multiline_status}</style> '
@@ -113,8 +113,8 @@ class PromptSessionManager:
     
     async def prompt_async(self, prompt_text: str = ">>> ") -> str:
         """Get input from the user asynchronously."""
-        return await self.session.prompt_async(prompt_text)
+        return await self._session.prompt_async(prompt_text)
     
     def prompt(self, prompt_text: str = ">>> ") -> str:
         """Get input from the user synchronously."""
-        return self.session.prompt(prompt_text)
+        return self._session.prompt(prompt_text)

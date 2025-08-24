@@ -171,7 +171,7 @@ class ModelAndTokenizer:
             skip_special_tokens = True
 
         return self._tokenizer.decode(
-            input,
+            input[0],
             skip_special_tokens=skip_special_tokens)
 
     def apply_chat_template_and_generate(
@@ -197,7 +197,7 @@ class ModelAndTokenizer:
                 add_generation_prompt,
                 tokenize=True,
                 return_dict=True)
-    
+
             output = self.generate(
                 tokenizer_outputs["input_ids"],
                 attention_mask=tokenizer_outputs["attention_mask"])

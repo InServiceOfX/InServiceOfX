@@ -20,8 +20,8 @@ class FromPretrainedModelConfiguration(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Required field
-    pretrained_model_name_or_path: Union[str, Path] = Field(
-        ...,
+    pretrained_model_name_or_path: Optional[Union[str, Path]] = Field(
+        default=None,
         description="Path to the pretrained model (required)"
     )
 
