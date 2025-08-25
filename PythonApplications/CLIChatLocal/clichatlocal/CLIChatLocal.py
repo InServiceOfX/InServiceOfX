@@ -3,6 +3,7 @@ import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
 from clichatlocal.Core import ModelAndConversationManager
+from clichatlocal.Messages import SystemMessagesDialogHandler
 from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
@@ -26,7 +27,10 @@ class CLIChatLocal:
         self._command_handler = CommandHandler(self)
         
         # Create prompt session
-        self._psm = PromptSessionManager(self.cli_configuration)
+        self._psm = PromptSessionManager(self, self.cli_configuration)
+
+        self._system_messages_dialog_handler = \
+            SystemMessagesDialogHandler(self, self.cli_configuration)
 
     def run_iterative(self):
         try:

@@ -218,3 +218,45 @@ def test_ModelAndTokenizer_apply_chat_template_and_generate_works():
         with_attention_mask=False)
     assert isinstance(response, str)
     print(response)
+
+relative_model_path = "Models/LLM/tencent/Hunyuan-0.5B-Instruct"
+
+is_model_downloaded, model_path = is_model_there(
+    relative_model_path,
+    data_subdirectories)
+
+model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_ModelAndTokenizer_works_with_Hunyuan_0_5B_Instruct():
+    mat = ModelAndTokenizer(model_path)
+
+    mat._fpmc.device_map = "cuda:0"
+    mat._fpmc.torch_dtype = torch.bfloat16
+
+    # https://huggingface.co/tencent/Hunyuan-0.5B-Instruct
+    mat._generation_configuration.max_new_tokens = 65536
+    mat._generation_configuration.do_sample = True
+    mat._generation_configuration.temperature = 0.7
+    mat._generation_configuration.top_k = 20
+    mat._generation_configuration.top_p = 0.8
+    mat._generation_configuration.repetition_penalty = 1.05
+
+    mat.load_tokenizer()
+    mat.load_model()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    response = mat.apply_chat_template_and_generate(
+        conversation,
+        with_attention_mask=True)
+    assert isinstance(response, str)
+    print(response)
+
+    response = mat.apply_chat_template_and_generate(
+        conversation,
+        with_attention_mask=False)
+    assert isinstance(response, str)
+    print(response)

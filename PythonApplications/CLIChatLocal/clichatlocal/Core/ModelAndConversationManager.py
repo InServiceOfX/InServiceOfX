@@ -1,4 +1,5 @@
 from clichatlocal.Configuration import ModelList
+from commonapi.FileIO import SystemMessagesFileIO
 from commonapi.Messages import (
     AssistantMessage,
     ConversationSystemAndPermanent,
@@ -11,14 +12,36 @@ from moretransformers.Configurations import (
 
 class ModelAndConversationManager:
     def __init__(self, app):
+        self._csp = ConversationSystemAndPermanent()
+
         self._application_paths = app._application_paths
+
+        self._system_messages_file_io = None
+        self._load_system_messages()
 
         self._model_list = ModelList.from_yaml(
             self._application_paths.configuration_file_paths["model_list"])
 
+        # Explicitly run load_configurations_and_model() to load the model and
+        # tokenizer (i.e. self._mat)
         self._mat = None
 
-        self._csp = ConversationSystemAndPermanent()
+    def _load_system_messages(self):
+        self._application_paths.create_missing_system_messages_file()
+        self._system_messages_file_io = SystemMessagesFileIO(
+            self._application_paths.system_messages_file_path)
+
+        if not self._system_messages_file_io.is_file_path_valid():
+            raise RuntimeError(
+                f"System messages file path {self._application_paths.system_messages_file_path} is not valid")
+
+        self._system_messages_file_io.load_messages()
+
+        self._system_messages_file_io.put_messages_into_system_messages_manager(
+            self._csp.casm.system_messages_manager)
+
+        self._system_messages_file_io.put_messages_into_conversation_history(
+            self._csp.casm.conversation_history)
 
     def _get_first_model_path(self):
         first_model_name = next(iter(self._model_list.models))
@@ -115,3 +138,7 @@ class ModelAndConversationManager:
         self._csp.append_message(assistant_message)
 
         return response
+
+    def clear_conversation_history(self, is_keep_active_system_messages=True):
+        self._csp.clear_conversation_history(
+            is_keep_active_system_messages=is_keep_active_system_messages)

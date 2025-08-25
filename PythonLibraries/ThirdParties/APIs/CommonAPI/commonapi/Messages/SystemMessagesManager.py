@@ -38,6 +38,7 @@ class RecordedSystemMessage:
 
 class SystemMessagesManager:
     def __init__(self):
+        # Key is hash of content.
         self._messages_dict: Dict[str, RecordedSystemMessage] = {}
 
     def clear(self):

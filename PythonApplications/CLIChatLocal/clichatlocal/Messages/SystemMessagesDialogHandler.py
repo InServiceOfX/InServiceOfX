@@ -12,12 +12,12 @@ from prompt_toolkit.shortcuts import (
 class SystemMessagesDialogHandler:
     """Handles UI interactions for system messages."""
     
-    def __init__(self, configuration):
-        """Initialize with a SystemMessagesManager and configuration."""
+    def __init__(self, app, configuration):
+        self._app = app
         self.configuration = configuration
     
-    def show_active_system_messages(self, system_messages_manager):
-        active_messages = system_messages_manager.get_active_messages()
+    def show_active_system_messages(self):
+        active_messages = self._app._macm._csp.casm.get_active_system_messages()
         if not active_messages:
             print_formatted_text(
                 HTML(
@@ -39,7 +39,7 @@ class SystemMessagesDialogHandler:
                     f"{msg.content}"
                     f"</{self.configuration.system_color}>"))
     
-    def add_system_message_dialog(self, prompt_style, llm_engine) -> bool:
+    def add_system_message_dialog(self, prompt_style) -> bool:
         """
         Dialog for adding a new system message.
         Returns True if a message was added, False otherwise.
@@ -63,7 +63,8 @@ class SystemMessagesDialogHandler:
         print("-" * 40)
 
         if confirm("Add this system message and make it active?"):
-            new_message = llm_engine.add_system_message(message_content)
+            new_message = self._app._macm._csp.add_system_message(
+                message_content)
             if new_message:
                 print_formatted_text(
                     HTML(
@@ -80,13 +81,17 @@ class SystemMessagesDialogHandler:
         
         return False
     
-    def configure_system_messages_dialog(self, llm_engine, dialog_style) \
-        -> Optional[str]:
+    def configure_system_messages_dialog(self, dialog_style):
         """
         Dialog for configuring which system messages are active.
         Returns action to take with conversation or None if canceled.
+
+        Programming note: For async, add async to message declaration
+        immediately above, i.e.
+        async def configure_system_messages_dialog_async(..)
+        and change .run() to .run_async().
         """
-        messages = llm_engine.system_messages_manager.messages
+        messages = self._app._macm._csp.casm.get_all_system_messages()
         if not messages:
             print_formatted_text(
                 HTML(
@@ -96,15 +101,14 @@ class SystemMessagesDialogHandler:
             return None
         
         # Create values for checkbox dialog
-        values = [
-            (
-                msg.hash, msg.content[:60] + "..." if len(msg.content) > 60 \
-                    else msg.content)
+        values = [(
+            msg.hash,
+            msg.content[:60] + "..." if len(msg.content) > 60 else msg.content)
             for msg in messages]
-        
+
         default_values = [
             msg.hash 
-            for msg in llm_engine.system_messages_manager.get_active_messages()]
+            for msg in self._app._macm._csp.casm.get_active_system_messages()]
 
         selected_hashes = checkboxlist_dialog(
             title="System Messages",
@@ -122,7 +126,7 @@ class SystemMessagesDialogHandler:
         for msg in messages:
             should_be_active = msg.hash in selected_hashes
             if msg.is_active != should_be_active:
-                llm_engine.system_messages_manager.toggle_message(msg.hash)
+                self._app._macm._csp.casm.toggle_system_message(msg.hash)
                 changes_made = True
         
         if changes_made:
@@ -148,75 +152,15 @@ class SystemMessagesDialogHandler:
             ).run()
         
         return None
-    
-    async def configure_system_messages_dialog_async(self, llm_engine, dialog_style) -> Optional[str]:
-        """
-        Async dialog for configuring which system messages are active.
-        Returns action to take with conversation or None if canceled.
-        """
-        messages = llm_engine.system_messages_manager.messages
-        if not messages:
-            print_formatted_text(
-                HTML(
-                    f"<{self.configuration.error_color}>"
-                    "No system messages available"
-                    f"</{self.configuration.error_color}>"))
-            return None
-        
-        # Create values for checkbox dialog
-        values = [
-            (
-                msg.hash, msg.content[:60] + "..." if len(msg.content) > 60 \
-                    else msg.content)
-            for msg in messages]
-        
-        default_values = [
-            msg.hash 
-            for msg in llm_engine.system_messages_manager.get_active_messages()]
 
-        selected_hashes = await checkboxlist_dialog(
-            title="System Messages",
-            text="Select active system messages:",
-            values=values,
-            default_values=default_values,
-            style=dialog_style
-        ).run_async()
-        
-        if selected_hashes is None:
-            return None
-            
-        # Update active states
-        changes_made = False
-        for msg in messages:
-            should_be_active = msg.hash in selected_hashes
-            if msg.is_active != should_be_active:
-                llm_engine.system_messages_manager.toggle_message(msg.hash)
-                changes_made = True
-        
-        if changes_made:
-            
-            # Show options for conversation management
-            return await radiolist_dialog(
-                title="System Messages Updated",
-                text="What would you like to do with the conversation?",
-                values=[
-                    (
-                        "reset",
-                        "Reset conversation (keep only active system messages)"
-                    ),
-                    (
-                        "append",
-                        (
-                            "Append active system messages to current "
-                            "conversation, while removing any non-active "
-                            "system messages.")
-                    ),
-                    ("nothing", "Do nothing")],
-                style=dialog_style
-            ).run_async()
-        
-        return None
-    
+    def handle_configure_system_messages_dialog_choice(self, choice: str):
+        if choice == "reset":
+            self._app._macm._csp.clear_conversation_history()
+        elif choice == "append":
+            self._app._macm._csp.casm.add_only_active_system_messages_to_conversation_history()
+        elif choice == "nothing":
+            pass
+
     async def delete_system_message_dialog(self) -> bool:
         """
         Dialog for deleting system messages.

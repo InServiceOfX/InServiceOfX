@@ -81,3 +81,14 @@ class ConversationAndSystemMessages:
                 active_system_message.hash):
                 self.conversation_history.append_message(
                     SystemMessage(active_system_message.content))
+
+    # More system messages specific methods
+
+    def get_all_system_messages(self):
+        return self.system_messages_manager.messages
+
+    def toggle_system_message(self, hash_value: str) -> bool:
+        return self.system_messages_manager.toggle_message(hash_value)
+
+    def get_active_system_messages(self):
+        return self.system_messages_manager.get_active_messages()

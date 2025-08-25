@@ -134,3 +134,28 @@ class ApplicationPaths:
                 print(f"{path} already in sys.path")
         else:
             warn(f"{path} does not exist")
+
+    @staticmethod
+    def _create_missing_file(path: Path) -> bool:
+        """
+        Create file for specified path if it doesn't exist.
+
+        Args:
+            path: Path to create file for
+
+        Returns:
+            True if file was created, False if it already existed.
+        """
+        if path.exists():
+            return False
+        else:
+            # Create parent directories if they don't exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Create the file if it doesn't exist.
+            path.touch()
+            return True
+
+    def create_missing_system_messages_file(self) -> bool:
+        return self._create_missing_file(self.system_messages_file_path)
+

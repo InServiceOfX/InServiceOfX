@@ -13,27 +13,15 @@ from prompt_toolkit.layout.processors import HighlightMatchingBracketProcessor
 class PromptSessionManager:
     """Manages the prompt session with advanced features."""
     
-    def __init__(self, cli_configuration):
+    def __init__(self, app, cli_configuration):
+        self._app = app
         self.cli_configuration = cli_configuration
         self.kb = KeyBindings()
         
-        # Define available commands with descriptions
-        self.commands = {
-            ".help": "Show available commands",
-            ".exit": "Exit the application",
-            ".clear": "Clear conversation history",
-            ".system": "Set or view system message",
-            ".save": "Save current conversation",
-            ".load": "Load a saved conversation",
-            ".temp": "Set temperature (0.0-2.0)",
-            ".tokens": "Set max tokens for generation",
-            ".history": "View conversation history"
-        }
-        
         # Create completer with command descriptions
-        self.completer = FuzzyCompleter(WordCompleter(
-            words=list(self.commands.keys()),
-            meta_dict=self.commands,
+        self._completer = FuzzyCompleter(WordCompleter(
+            words=list(self._app._command_handler.commands.keys()),
+            meta_dict=self._app._command_handler._command_descriptions,
             pattern=re.compile(r'^\.')
         ))
         
@@ -90,7 +78,7 @@ class PromptSessionManager:
         
         # Create and return the session with all available options
         return PromptSession(
-            completer=self.completer,
+            completer=self._completer,
             bottom_toolbar=get_bottom_toolbar,
             key_bindings=self.kb,
             style=style,

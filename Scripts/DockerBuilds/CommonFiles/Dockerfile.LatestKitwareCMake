@@ -1,0 +1,33 @@
+# See https://apt.kitware.com/
+
+# Update package lists and
+# Install required packages for key management
+RUN apt-get update && apt-get install -y wget gpg
+
+# Add Kitware repository key.
+# If kitware-archive-keyring package hasn't been installed previously, manually
+# obtain a copy of signing key:
+RUN test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+    gpg --dearmor - | \
+    tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+
+# Add Kitware repository to sources list and update.
+# For Ubuntu Jammy Jellyfish (22.04):
+RUN echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | \
+    tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update
+
+# Remove manually obtained key to make room for package
+RUN test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+    rm -f /usr/share/keyrings/kitware-archive-keyring.gpg
+
+# Install kitware-archive-keyring package to ensure keyring stays up to date as
+# kitware rotates keys, and
+# Install cmake
+RUN apt-get install -y kitware-archive-keyring && \
+    apt-get install -y cmake
+
+# Clean up to reduce image size
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*

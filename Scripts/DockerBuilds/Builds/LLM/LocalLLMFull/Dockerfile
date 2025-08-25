@@ -27,7 +27,7 @@ FROM ${BASE_IMAGE}
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
-WORKDIR ${THIRD_PARTY}
+WORKDIR /
 
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
@@ -73,6 +73,8 @@ RUN python3 -m pip install --upgrade pip && \
   # 2025-07-18
   git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
+  # 2025-08-23
+  #git checkout v4.55.4 && \
   git checkout v4.54-release && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
