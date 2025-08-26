@@ -75,60 +75,90 @@ class TextSplitterByTokens:
         if total_tokens <= self.max_tokens:
             return [text]
         
-        # Split text into chunks
+        # character-based estimation with verification
         chunks = []
         current_pos = 0
         
         while current_pos < len(text):
-            # Find the end position for this chunk
-            end_pos = self._find_chunk_end(text, current_pos)
+            # Estimate chunk size based on character count
+            # Assume average of 4 characters per token for most text
+            estimated_chars = self.max_tokens * 4
+            
+            # Calculate end position
+            end_pos = min(current_pos + estimated_chars, len(text))
             
             # Extract the chunk
             chunk = text[current_pos:end_pos]
-            if chunk:  # Only add non-empty chunks
+            
+            # Verify token count and adjust if necessary
+            try:
+                token_count = get_token_count(
+                    self.model_tokenizer, 
+                    chunk, 
+                    self.add_special_tokens
+                )
+                
+                # If chunk is too long, reduce it
+                while token_count > self.max_tokens and len(chunk) > 50:
+                    # Reduce by 10% and try again
+                    reduction = max(1, int(len(chunk) * 0.1))
+                    chunk = chunk[:-reduction]
+                    end_pos = current_pos + len(chunk)
+                    
+                    if len(chunk) == 0:
+                        break
+                    
+                    token_count = get_token_count(
+                        self.model_tokenizer, 
+                        chunk, 
+                        self.add_special_tokens
+                    )
+                
+                # If chunk is too short, try to expand it
+                if token_count < self.max_tokens * 0.5 and end_pos < len(text):
+                    # Try to expand by adding more text
+                    expansion = min(
+                        len(text) - end_pos, 
+                        (self.max_tokens - token_count) * 4
+                    )
+
+                    if expansion > 0:
+                        expanded_chunk = text[current_pos:end_pos + expansion]
+                        try:
+                            expanded_token_count = get_token_count(
+                                self.model_tokenizer, 
+                                expanded_chunk, 
+                                self.add_special_tokens
+                            )
+                            
+                            if expanded_token_count <= self.max_tokens:
+                                chunk = expanded_chunk
+                                end_pos = current_pos + len(chunk)
+                                token_count = expanded_token_count
+                        except Exception:
+                            # Keep original chunk if expansion fails
+                            pass
+                
+            except Exception as e:
+                # If tokenization fails, be very conservative
+                print(f"Tokenization error, using conservative chunking: {e}")
+                # Force chunk to be much smaller
+                safe_size = min(len(text) - current_pos, 100)
+                chunk = text[current_pos:current_pos + safe_size]
+                end_pos = current_pos + safe_size
+            
+            # Add the chunk if it's not empty
+            if chunk and chunk.strip():
                 chunks.append(chunk)
             
-            # Move to next position (no overlap)
+            # Move to next position
             current_pos = end_pos
             
-            # Stop if we've reached the end
+            # Safety check to prevent infinite loops
             if current_pos >= len(text):
                 break
+            if len(chunk) == 0:
+                # If we couldn't create a chunk, force progress
+                current_pos += 1
         
         return chunks
-    
-    def _find_chunk_end(self, text: str, start_pos: int) -> int:
-        """
-        Find the end position for a chunk starting at start_pos.
-        
-        Args:
-            text: The full text
-            start_pos: Starting position for this chunk
-            
-        Returns:
-            End position for the chunk
-        """
-        # Start with a reasonable chunk size estimate
-        # Rough estimate: assume average of 4 characters per token
-        chunk_size = min(len(text) - start_pos, self.max_tokens * 4)
-        end_pos = start_pos + chunk_size
-        
-        # Binary search to find the optimal end position
-        left, right = start_pos, min(end_pos, len(text))
-        
-        while left < right:
-            mid = (left + right + 1) // 2
-            chunk_text = text[start_pos:mid]
-            
-            token_count = get_token_count(
-                self.model_tokenizer, 
-                chunk_text, 
-                self.add_special_tokens
-            )
-            
-            if token_count <= self.max_tokens:
-                left = mid
-            else:
-                right = mid - 1
-        
-        return left
