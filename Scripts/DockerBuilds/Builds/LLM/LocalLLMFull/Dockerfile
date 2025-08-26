@@ -121,6 +121,9 @@ RUN apt-get update && apt-get install -y postgresql-client-common && \
   apt-get install -y postgresql-client && \
   # Useful with postgreSQL
   apt-get install -y iproute2
+
+# PDF parsing, extraction, document handling, document processing.
+RUN pip install pymupdf
 RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty/python-sdk && \
     cd /ThirdParty/python-sdk && \
     pip install -e ".[cli]"
