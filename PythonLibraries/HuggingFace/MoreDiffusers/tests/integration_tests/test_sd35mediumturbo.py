@@ -1,6 +1,4 @@
-from corecode.Utilities import (
-    DataSubdirectories,
-    )
+from corecode.Utilities import DataSubdirectories, is_model_downloaded
 
 from pathlib import Path
 
@@ -14,15 +12,9 @@ data_sub_dirs = DataSubdirectories()
 relative_model_path = \
     "Models/Diffusion/tensorart/stable-diffusion-3.5-medium-turbo"
 
-is_model_downloaded = False
-model_path = None
-
-for path in data_sub_dirs.DataPaths:
-    path = Path(path)
-    if (path / relative_model_path).exists():
-        is_model_downloaded = True
-        model_path = path / relative_model_path
-        break
+is_model_downloaded, model_path = is_model_there(
+    relative_model_path,
+    data_subdirectories)
 
 model_not_downloaded_message = f"Model not downloaded: {relative_model_path}"
 

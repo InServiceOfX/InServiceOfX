@@ -1,4 +1,3 @@
-from pathlib import Path
 import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
@@ -8,8 +7,6 @@ from clichatlocal.Terminal import (
     TerminalUI,
     PromptSessionManager,
     CommandHandler)
-
-from moretransformers.Configurations import Configuration, GenerationConfiguration
 
 class CLIChatLocal:
     def __init__(self, application_paths):

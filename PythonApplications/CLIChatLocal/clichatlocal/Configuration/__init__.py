@@ -1,2 +1,1 @@
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
-from clichatlocal.Configuration.ModelList import ModelList

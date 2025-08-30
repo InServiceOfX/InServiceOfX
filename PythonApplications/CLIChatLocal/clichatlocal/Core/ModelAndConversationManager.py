@@ -1,9 +1,9 @@
-from clichatlocal.Configuration import ModelList
 from commonapi.FileIO import SystemMessagesFileIO
 from commonapi.Messages import (
     AssistantMessage,
     ConversationSystemAndPermanent,
     UserMessage)
+from corecode.Configuration import ModelList
 from moretransformers.Applications import ModelAndTokenizer
 from moretransformers.Configurations import (
     FromPretrainedModelConfiguration,

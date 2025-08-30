@@ -1,0 +1,6 @@
+models:
+  gemma-3-1b-it: /Data/Models/LLM/google/gemma-3-1b-it
+  gemma-3-270m-it: /Data/Models/LLM/google/gemma-3-270m-it
+  lfm2-1.2b: /Data/Models/LLM/LiquidAI/LFM2-1.2B
+  lucy-128k: /Data/Models/LLM/Menlo/Lucy-128k
+  qwen3-0.6b: /Data/Models/LLM/Qwen/Qwen3-0.6B

@@ -1,0 +1,5 @@
+lora_scale: 0.5
+lora_1:
+  directory_path: /Data1/Models/Diffusion/LoRAs/pgc
+  filename: qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors
+  lora_strength: 1.5

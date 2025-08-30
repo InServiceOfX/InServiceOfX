@@ -104,5 +104,4 @@ class PromptSessionManager:
         return await self._session.prompt_async(prompt_text)
     
     def prompt(self, prompt_text: str = ">>> ") -> str:
-        """Get input from the user synchronously."""
         return self._session.prompt(prompt_text)

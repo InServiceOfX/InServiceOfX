@@ -48,7 +48,7 @@ def test_ModelAndTokenizer_loads_model():
     assert isinstance(mat._model, Qwen3ForCausalLM)
 
 @pytest.mark.skipif(
-        not is_model_downloaded, reason=model_is_not_downloaded_message)
+        not , reason=model_is_not_downloaded_message)
 def test_ModelAndTokenizer_apply_chat_template_works():
     mat = ModelAndTokenizer(
         model_path,

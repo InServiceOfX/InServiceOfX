@@ -26,12 +26,16 @@ from morediffusers.Configurations.StableDiffusionXLGenerationConfiguration \
 from morediffusers.Configurations.VideoConfiguration \
     import VideoConfiguration
 
+from .BatchProcessingConfiguration import BatchProcessingConfiguration
+from .PipelineInputs import PipelineInputs
 from .NunchakuConfiguration import NunchakuConfiguration
 
 __all__ = [
+    "BatchProcessingConfiguration",
     "CannyDetectorConfiguration",
     "DiffusionPipelineConfiguration",
     "FluxGenerationConfiguration",
+    "PipelineInputs",
     "GenerateVideoConfiguration",
     "IPAdapterConfiguration",
     "LoRAsConfiguration",

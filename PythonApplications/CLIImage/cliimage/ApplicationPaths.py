@@ -13,8 +13,6 @@ class ApplicationPaths:
     project_path: Path
     inhouse_library_paths: dict[str, Path]
     configuration_file_paths: dict[str, Path]
-    system_messages_file_path: Path
-    conversations_file_path: Path
 
     @classmethod
     def create(
@@ -26,14 +24,11 @@ class ApplicationPaths:
         project_path = app_path.parents[1]
         
         inhouse_library_paths = {
-            "CommonAPI": \
-                project_path / "PythonLibraries" / "ThirdParties" / "APIs" / \
-                    "CommonAPI",
             "CoreCode": \
                 project_path / "PythonLibraries" / "CoreCode",
-            "MoreSGLang": \
-                project_path / "PythonLibraries" / "ThirdParties" / "APIs" / \
-                    "MoreSGLang",
+            "MoreDiffusers": \
+                project_path / "PythonLibraries" / "HuggingFace" / \
+                    "MoreDiffusers",
             "MoreTransformers": \
                 project_path / "PythonLibraries" / "HuggingFace" / \
                     "MoreTransformers",
@@ -46,39 +41,37 @@ class ApplicationPaths:
             configuration_file_paths = {
                 "model_list": \
                     base_path / "Configurations" / "model_list.yml",
-                "from_pretrained_model": \
-                    base_path / "Configurations" / "from_pretrained_model.yml",
-                "from_pretrained_tokenizer": \
-                    base_path / "Configurations" / "from_pretrained_tokenizer.yml",
-                "generation": \
+                "nunchaku_configuration": \
+                    base_path / "Configurations" / "nunchaku_configuration.yml",
+                "flux_generation_configuration": \
                     base_path / "Configurations" / \
-                        "generation_configuration.yml",
+                        "flux_generation_configuration.yml",
+                "nunchaku_loras_configuration": \
+                    base_path / "Configurations" / \
+                        "nunchaku_loras_configuration.yml",
+                "pipeline_inputs": \
+                    base_path / "Configurations" / "pipeline_inputs.yml",
+                "batch_processing_configuration": \
+                    base_path / "Configurations" / \
+                        "batch_processing_configuration.yml",
                 "cli_configuration": \
                     base_path / "Configurations" / "cli_configuration.yml"
             }
 
-            system_messages_file_path = \
-                base_path / "Configurations" / "system_messages.json"
-            conversations_file_path = \
-                base_path / "Configurations" / "conversations.json"
-
-            return (
-                configuration_file_paths,
-                system_messages_file_path,
-                conversations_file_path)
+            return configuration_file_paths
 
         if configpath is not None:
-            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+            configuration_file_paths = \
                 create_paths_from_base_path(configpath)
         elif is_current_path:
-            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+            configuration_file_paths = \
                 create_paths_from_base_path(Path.cwd())
         elif is_development:
-            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+            configuration_file_paths = \
                 create_paths_from_base_path(app_path)
         else:
-            config_dir = Path.home() / ".config" / "clichatlocal"
-            configuration_file_paths, system_messages_file_path, conversations_file_path = \
+            config_dir = Path.home() / ".config" / "cliimage"
+            configuration_file_paths = \
                 create_paths_from_base_path(config_dir)
 
         return cls(
@@ -86,8 +79,6 @@ class ApplicationPaths:
             project_path=project_path,
             inhouse_library_paths=inhouse_library_paths,
             configuration_file_paths=configuration_file_paths,
-            system_messages_file_path=system_messages_file_path,
-            conversations_file_path=conversations_file_path
         )
 
     def add_libraries_to_path(self):
@@ -101,15 +92,11 @@ class ApplicationPaths:
             else:
                 warn(f"{path} does not exist")
 
-        path = self.inhouse_library_paths["CommonAPI"]
-
-        add_path_to_sys_path(path)
-
         path = self.inhouse_library_paths["CoreCode"]
 
         add_path_to_sys_path(path)
 
-        path = self.inhouse_library_paths["MoreSGLang"]
+        path = self.inhouse_library_paths["MoreDiffusers"]
 
         add_path_to_sys_path(path)
 
@@ -137,7 +124,3 @@ class ApplicationPaths:
             # Create the file if it doesn't exist.
             path.touch()
             return True
-
-    def create_missing_system_messages_file(self) -> bool:
-        return self._create_missing_file(self.system_messages_file_path)
-

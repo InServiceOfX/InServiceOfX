@@ -24,3 +24,5 @@ from morediffusers.Applications.print_pipeline_diagnostics import (
 from morediffusers.Applications.print_loras_diagnostics import (
 	print_loras_diagnostics,
 )
+
+from .FluxNunchakuAndLoRAs import FluxNunchakuAndLoRAs

@@ -92,6 +92,10 @@ def call_pipeline(
         **kwargs)
 
 def delete_variables_on_device(pipeline, transformer):
+    """
+    TODO: This function was found not to delete the variables since maybe it's
+    because the input variables serve as references.
+    """
     del pipeline.transformer
     del pipeline
     del transformer
