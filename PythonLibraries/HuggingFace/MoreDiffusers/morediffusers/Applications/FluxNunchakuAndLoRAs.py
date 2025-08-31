@@ -1,5 +1,6 @@
 from corecode.Utilities import clear_torch_cache_and_collect_garbage
 from nunchaku import NunchakuFluxTransformer2dModel
+from typing import Optional
 
 from morediffusers.Configurations import (
     FluxGenerationConfiguration,
@@ -32,11 +33,22 @@ class FluxNunchakuAndLoRAs:
         self._text_encoder_2_enabled = False
         self._transformer_enabled = False
 
-        self._prompt_embeds = None
-        self._pooled_prompt_embeds = None
-        self._negative_prompt_embeds = None
-        self._negative_pooled_prompt_embeds = None
-        self._corresponding_prompts = None
+        self._prompt_embeds = []
+        self._pooled_prompt_embeds = []
+        self._negative_prompt_embeds = []
+        self._negative_pooled_prompt_embeds = []
+        self._corresponding_prompts = []
+
+    def refresh_configurations(
+            self,
+            nunchaku_configuration: NunchakuConfiguration,
+            flux_generation_configuration: FluxGenerationConfiguration,
+            pipeline_inputs: PipelineInputs,
+            loras_configuration: NunchakuLoRAsConfiguration):
+        self._configuration = nunchaku_configuration
+        self._generation_configuration = flux_generation_configuration
+        self._pipeline_inputs = pipeline_inputs
+        self._loras_configuration = loras_configuration
 
     def is_text_encoder_2_enabled(self):
         return self._text_encoder_2_enabled
@@ -134,6 +146,7 @@ class FluxNunchakuAndLoRAs:
             del pooled_prompt_embed
 
         for negative_prompt_embed in self._negative_prompt_embeds:
+            del negative_prompt_embed
 
         for negative_pooled_prompt_embed in self._negative_pooled_prompt_embeds:
             del negative_pooled_prompt_embed
@@ -146,17 +159,27 @@ class FluxNunchakuAndLoRAs:
         self._corresponding_prompts = None
 
     def delete_text_encoder_2_and_pipeline(self):
-        del self._pipeline.text_encoder
-        del self._pipeline.text_encoder_2
-        del self._pipeline.tokenizer
-        del self._pipeline.tokenizer_2
+        if hasattr(self._pipeline, "text_encoder"):
+            del self._pipeline.text_encoder
+        if hasattr(self._pipeline, "text_encoder_2"):
+            del self._pipeline.text_encoder_2
+        if hasattr(self._pipeline, "tokenizer"):
+            del self._pipeline.tokenizer
+        if hasattr(self._pipeline, "tokenizer_2"):
+            del self._pipeline.tokenizer_2
         del self._text_encoder_2
 
         clear_torch_cache_and_collect_garbage()
 
+        self._text_encoder_2_enabled = False
+
     def create_transformer_and_pipeline(self):
         if self._transformer_enabled:
             return
+
+        if self._text_encoder_2_enabled:
+            self.delete_text_encoder_2_and_pipeline()
+            self._text_encoder_2_enabled = False
 
         path = self._configuration.nunchaku_model_path
 
@@ -213,3 +236,22 @@ class FluxNunchakuAndLoRAs:
                 self._generation_configuration,
                 negative_prompt_embeds,
                 negative_pooled_prompt_embeds).images
+
+    def call_pipeline_with_prompt_embed(self, index):
+        if (not self._prompt_embeds) or \
+            (not self._pooled_prompt_embeds) or \
+            (not self._negative_prompt_embeds) or \
+            (not self._negative_pooled_prompt_embeds):
+            return None
+
+        if (index < 0 or index >= len(self._prompt_embeds)) or \
+            (index < 0 or index >= len(self._pooled_prompt_embeds)) or \
+            (index < 0 or index >= len(self._negative_prompt_embeds)) or \
+            (index < 0 or index >= len(self._negative_pooled_prompt_embeds)):
+            return None
+
+        return self.call_pipeline(
+            self._prompt_embeds[index],
+            self._pooled_prompt_embeds[index],
+            self._negative_prompt_embeds[index],
+            self._negative_pooled_prompt_embeds[index])

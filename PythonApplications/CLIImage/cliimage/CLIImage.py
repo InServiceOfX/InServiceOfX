@@ -1,19 +1,18 @@
 from cliimage.Core import ProcessConfigurations
 from cliimage.Terminal import CommandHandler
 from cliimage.Terminal import PromptSessionsManager
+from cliimage.Terminal import TerminalUI
 
 from morediffusers.Applications import FluxNunchakuAndLoRAs
-
-# Move these functions to Terminal UI.
-from prompt_toolkit import print_formatted_text
-from prompt_toolkit.formatted_text import HTML
 
 class CLIImage:
     def __init__(self, application_paths):
         self._application_paths = application_paths
+        self._terminal_ui = TerminalUI()
 
         self._process_configurations = ProcessConfigurations(
-            application_paths)
+            application_paths,
+            self._terminal_ui)
 
         self._process_configurations.process_configurations()
 
@@ -21,7 +20,7 @@ class CLIImage:
             self._process_configurations.configurations[
                 "nunchaku_configuration"],
             self._process_configurations.configurations[
-                "generation_configuration"],
+                "flux_generation_configuration"],
             self._process_configurations.configurations["pipeline_inputs"],
             self._process_configurations.configurations[
                 "nunchaku_loras_configuration"])
@@ -44,25 +43,23 @@ class CLIImage:
                     self._command_handler.handle_command(prompt)
 
                 if not command_handled:
-                    print(f"Processing prompt: {prompt}")
+                    self._terminal_ui.print_processing(prompt)
 
                 return continue_running
 
             # Generate response
-            print(f"Processing prompt: {prompt}")
+            self._terminal_ui.print_processing(prompt)
             return True
 
         except KeyboardInterrupt:
-            print_formatted_text(HTML("\n<ansigreen>Goodbye!</ansigreen>"))
+            self._terminal_ui.print_goodbye()
             return False
         except Exception as e:
-            print_formatted_text(HTML(f"\n<ansired>Error: {str(e)}</ansired>\n"))
+            self._terminal_ui.print_error(str(e))
             return True
 
     def run(self):
-        print("Running CLIImage")
+        self._terminal_ui.print_header("CLIImage - Image Generation Tool")
         continue_running = True
         while continue_running:
             continue_running = self.run_iterative()
-
-        print_formatted_text(HTML("\n<ansigreen>Goodbye!</ansigreen>"))

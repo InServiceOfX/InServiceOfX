@@ -118,6 +118,10 @@ def test_FluxNunchakuAndLoRAs_call_pipeline_works():
 
     flux_nunchaku_and_loras.create_transformer_and_pipeline()
 
-    images = flux_nunchaku_and_loras.call_pipeline()
+    images = flux_nunchaku_and_loras.call_pipeline(
+        prompt_embeds,
+        pooled_prompt_embeds,
+        negative_prompt_embeds,
+        negative_pooled_prompt_embeds)
 
     assert images is not None

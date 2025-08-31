@@ -1,3 +1,4 @@
+from corecode.Utilities.Strings import format_float_for_string
 from pathlib import Path
 from pydantic import BaseModel, Field
 from warnings import warn
@@ -41,3 +42,44 @@ class BatchProcessingConfiguration(BaseModel):
 
         with file_path.open("w") as f:
             yaml.dump(data, f, default_flow_style=False)
+
+    def _create_image_filename(
+            self,
+            index: int,
+            model_name: str,
+            flux_generation_configuration) -> str:
+
+        filename = ""
+
+        if flux_generation_configuration.guidance_scale is None:
+            filename = (
+                f"{self.base_filename}{model_name}-"
+                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}"
+            )
+
+        else:
+            filename = (
+                f"{self.base_filename}{model_name}-"
+                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}Guidance{format_float_for_string(flux_generation_configuration.guidance_scale)}"
+            )
+
+        return filename
+
+    def create_and_save_image(
+            self,
+            index: int,
+            image,
+            flux_generation_configuration,
+            model_name: str) -> None:
+
+        filename = self._create_image_filename(
+            index,
+            model_name,
+            flux_generation_configuration)
+
+        image_format = image.format if image.format else "PNG"
+
+        file_path = Path(flux_generation_configuration.temporary_save_path) / \
+            f"{filename}.{image_format.lower()}"
+
+        image.save(file_path)
