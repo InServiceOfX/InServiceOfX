@@ -73,6 +73,12 @@ def test_FluxNunchakuAndLoRAs_creates_prompt_embeds():
     assert negative_pooled_prompt_embeds is not None
     assert negative_text_ids is not None
 
+    assert len(flux_nunchaku_and_loras._prompt_embeds) == 1
+    assert len(flux_nunchaku_and_loras._pooled_prompt_embeds) == 1
+    assert len(flux_nunchaku_and_loras._negative_prompt_embeds) == 1
+    assert len(flux_nunchaku_and_loras._negative_pooled_prompt_embeds) == 1
+    assert len(flux_nunchaku_and_loras._corresponding_prompts) == 1
+
 @pytest.mark.skipif(
     not is_model_downloaded or \
         not is_nunchaku_model_downloaded or \

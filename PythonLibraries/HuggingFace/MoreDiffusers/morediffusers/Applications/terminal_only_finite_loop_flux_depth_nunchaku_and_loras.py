@@ -240,7 +240,6 @@ def terminal_only_finite_loop_flux_depth_nunchaku_and_loras():
             pooled_prompt_embeds=pooled_prompt_embeds,
             ).images[0]
 
-
         create_image_filename_and_save(
             user_input,
             index,

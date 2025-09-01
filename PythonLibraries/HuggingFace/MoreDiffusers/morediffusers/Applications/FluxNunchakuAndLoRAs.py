@@ -159,6 +159,9 @@ class FluxNunchakuAndLoRAs:
         self._corresponding_prompts = None
 
     def delete_text_encoder_2_and_pipeline(self):
+        if not self._text_encoder_2_enabled:
+            return
+
         if hasattr(self._pipeline, "text_encoder"):
             del self._pipeline.text_encoder
         if hasattr(self._pipeline, "text_encoder_2"):

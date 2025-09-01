@@ -20,6 +20,11 @@ class PipelineInputs(BaseModel):
         default="",
         description="The second negative prompt to use for the image generation.")
 
+    input_image_file_path: Optional[str | Path] = Field(
+        default=None,
+        description=(
+            "The input image file path to use for the image generation."))
+
     @classmethod
     def from_yaml(cls, file_path: str | Path) -> "PipelineInputs":
         """
@@ -51,4 +56,12 @@ class PipelineInputs(BaseModel):
     
         with file_path.open("w") as f:
             yaml.dump(data, f, default_flow_style=False)
-        
+
+    def is_input_image_valid(self) -> bool:
+        if self.input_image is None:
+            return False
+
+        if not Path(self.input_image).exists():
+            return False
+
+        return True

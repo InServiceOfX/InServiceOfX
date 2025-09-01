@@ -1,1 +1,2 @@
+from .GenerateImages import GenerateImages
 from .ProcessConfigurations import ProcessConfigurations

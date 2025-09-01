@@ -10,3 +10,4 @@ def test_PipelineInputs_from_yaml_empty():
     assert pipeline_inputs.prompt_2 == ""
     assert pipeline_inputs.negative_prompt == ""
     assert pipeline_inputs.negative_prompt_2 == ""
+    assert pipeline_inputs.input_image_file_path is None

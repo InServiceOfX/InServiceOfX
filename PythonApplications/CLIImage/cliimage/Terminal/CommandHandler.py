@@ -6,6 +6,7 @@ class CommandHandler:
             ".exit": "Exit the application",
             ".help": "Show help message",
             ".batch_process_on_single_prompt": "Batch process on single prompt",
+            ".generate_image": "Generate single image",
             ".refresh_configurations": "Refresh configurations",
             "._create_prompt_embeds": "Create prompt embeds",
             "._delete_prompt_embeds": "Delete prompt embeds", 
@@ -20,6 +21,7 @@ class CommandHandler:
             ".help": self.handle_help,
             ".batch_process_on_single_prompt": \
                 self.handle_batch_process_on_single_prompt,
+            ".generate_image": self.handle_generate_image,
             ".refresh_configurations": self.handle_refresh_configurations,
             "._create_prompt_embeds": self._handle__create_prompt_embeds,
             "._delete_prompt_embeds": self._handle__delete_prompt_embeds,
@@ -138,26 +140,7 @@ class CommandHandler:
         self._app._terminal_ui.print_info(
             "Batch processing on single prompt...")
     
-        batch_processing_configuration = \
-            self._app._process_configurations.get_batch_processing_configuration()
-
-        for index in range(batch_processing_configuration.number_of_images):
-            images = \
-                self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(
-                    0)
-            if images is not None:
-                batch_processing_configuration.create_and_save_image(
-                        index,
-                        images[0],
-                        self._app._flux_nunchaku_and_loras._generation_configuration,
-                        self._app._process_configurations.get_model_name())
-
-    
-            self._app._flux_nunchaku_and_loras._generation_configuration.guidance_scale += \
-                self._app._process_configurations.get_batch_processing_configuration().guidance_scale_step
-
-        self._app._terminal_ui.print_success(
-            "Batch processing completed successfully!")
+        self._app._generate_images.process_batch()
 
         self.handle_refresh_configurations()
 
@@ -179,4 +162,9 @@ class CommandHandler:
 
         self._app._terminal_ui.print_success(
             "Configurations refreshed successfully!")
+        return True
+
+    def handle_generate_image(self) -> bool:
+        self._app._terminal_ui.print_info("Generating single image...")
+        self._app._generate_images.generate_image()
         return True
