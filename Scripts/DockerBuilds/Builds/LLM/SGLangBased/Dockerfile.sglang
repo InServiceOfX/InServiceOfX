@@ -4,19 +4,12 @@
 # https://docs.flashinfer.ai/installation.html
 
 # Originally, the documentation said to install by cloning this specific version:
-# git clone -b v0.4.2 https://github.com/sgl-project/sglang.git /ThirdParty/sglang
-RUN git clone https://github.com/InServiceOfX/sglang.git /ThirdParty/sglang && \
+# git clone -b v0.5.2rc0 https://github.com/sgl-project/sglang.git
+RUN git clone https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
     cd /ThirdParty/sglang && \
-    git checkout main && \
+    git checkout v0.5.2rc0 && \
     pip install --upgrade pip && \
-    pip install sgl-kernel --force-reinstall --no-deps && \
-    # Try for CUDA 12.6 and torch 2.6
-    #pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu126/torch2.6/flashinfer/ && \
-    pip install -e "python[all]" --find-links https://flashinfer.ai/whl/cu124/torch2.4/flashinfer/ && \
-    # If this isn't done, this is obtained:
-    # WARNING 01-29 14:48:12 cuda.py:23] You are using a deprecated `pynvml` package. Please install `nvidia-ml-py` instead, and make sure to uninstall `pynvml`.
-    pip uninstall -y pynvml && \
-    pip install nvidia-ml-py
+    pip install -e "python[all]"
 
 
 

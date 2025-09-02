@@ -15,6 +15,11 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   git sparse-checkout add PythonLibraries/ThirdParties/APIs/MoreSGLang && \
   git checkout master && \
   cd /
+
+RUN pip install pydantic
+
+RUN apt-get update && apt-get install -y libnuma-dev
+
 #
 #
 #

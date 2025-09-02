@@ -1,13 +1,15 @@
-DOCKER_IMAGE_NAME=sglang-based-nvidia-pytorch-24.12
-BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
+#DOCKER_IMAGE_NAME=sglang-based-pytorch:25.08-py3
+# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags
+#BASE_IMAGE=nvcr.io/nvidia/pytorch:25.08-py3
 
-# For tag pytorch:24.12-py3,
-# 
-# Cuda compilation tools, release 12.6, V12.6.85
-# Build cuda_12.6.r12.6/compiler.35059454_0
-# >>> print(torch.__version__)
-#2.6.0a0+df5bbc09d1.nv24.12
+# Build conflicts with sglang v0.5.2rc0
+#DOCKER_IMAGE_NAME=sglang-based-pytorch:25.04-py3
+#BASE_IMAGE=nvcr.io/nvidia/pytorch:25.04-py3
 
-# For an older GPU like NVIDIA GeForce 1050 Ti, consider using this base image:
-# DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.06
-# BASE_IMAGE=nvcr.io/nvidia/pytorch:24.06-py3
+DOCKER_IMAGE_NAME=sglang-based-pytorch:25.02-py3
+BASE_IMAGE=nvcr.io/nvidia/pytorch:25.02-py3
+
+# This works
+#DOCKER_IMAGE_NAME=sglang-based-pytorch:24.12-py3
+#BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
+

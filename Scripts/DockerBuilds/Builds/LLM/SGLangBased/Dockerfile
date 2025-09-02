@@ -27,27 +27,31 @@ FROM ${BASE_IMAGE}
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
-WORKDIR ${THIRD_PARTY}
+ENV PATH="/opt/venv/bin:/root/.cargo/bin:$PATH"
+WORKDIR /
 
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
   #
-  #
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
-  #
-  #
-  # Install Poetry
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  curl -sSL https://install.python-poetry.org | python3 - && \
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  # Step 3, you have to add poetry to your PATH, which on UNIX is in
-  # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+  pip install --upgrade python-dotenv
+
+
+# ## Update apt, pip, and do pip installs.
+# RUN apt-get update && \
+#   apt-get install --upgrade -y ccache python3 python3-pip python3-venv curl \
+#     git && rm -rf /var/lib/apt/lists/*
+
+# RUN python3 -m venv /opt/venv
+
+# RUN /opt/venv/bin/pip install --upgrade pip
+
+
+
 
 
 
@@ -58,6 +62,31 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
 
 
+
+# See
+# https://docs.sglang.ai/start/install.html#method-2-from-source
+# TODO: Consider installing FlashInfer from source for AOT mode for production.
+# https://docs.flashinfer.ai/installation.html
+
+# Originally, the documentation said to install by cloning this specific version:
+# git clone -b v0.5.2rc0 https://github.com/sgl-project/sglang.git
+RUN git clone https://github.com/sgl-project/sglang.git /ThirdParty/sglang && \
+    cd /ThirdParty/sglang && \
+    git checkout v0.5.2rc0 && \
+    pip install --upgrade pip && \
+    pip install -e "python[all]"
+
+
+
+
+## HuggingFace
+
+RUN python3 -m pip install --upgrade pip && \
+  # Upgrading Jinja2 to 3.1 is needed to use apply_chat_template.
+  pip install --upgrade jinja2 && \
+  #
+  #
+  pip install tokenizers
 
 ### Further third party code/repositories
 
@@ -76,12 +105,21 @@ RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /Th
   git sparse-checkout add PythonLibraries/ThirdParties/APIs/MoreSGLang && \
   git checkout master && \
   cd /
+
+RUN pip install pydantic
+
+RUN apt-get update && apt-get install -y libnuma-dev
+
 #
 #
 #
 
 
 
+
+
+
+RUN pip install --upgrade pytest python-dotenv
 
 
 

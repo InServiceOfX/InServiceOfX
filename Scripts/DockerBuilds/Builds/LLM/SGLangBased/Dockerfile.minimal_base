@@ -21,6 +21,7 @@ FROM ${BASE_IMAGE}
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
+ENV PATH="/opt/venv/bin:/root/.cargo/bin:$PATH"
 WORKDIR /
 
 ## Update apt, pip, and do pip installs.
@@ -28,21 +29,22 @@ RUN apt-get update && \
   apt-get install --upgrade -y ccache && \
   python -m pip install --upgrade pip && \
   #
-  #
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
-  #
-  #
-  # TODO: Consider removing poetry since a Docker image wouldn't necessarily
-  # need a poetry environment.
-  # Install Poetry
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  curl -sSL https://install.python-poetry.org | python3 - && \
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  # Step 3, you have to add poetry to your PATH, which on UNIX is in
-  # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+  pip install --upgrade python-dotenv
+
+
+# ## Update apt, pip, and do pip installs.
+# RUN apt-get update && \
+#   apt-get install --upgrade -y ccache python3 python3-pip python3-venv curl \
+#     git && rm -rf /var/lib/apt/lists/*
+
+# RUN python3 -m venv /opt/venv
+
+# RUN /opt/venv/bin/pip install --upgrade pip
+
+
+
 
 

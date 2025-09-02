@@ -1,5 +1,5 @@
 from pathlib import Path
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Union
 from warnings import warn
 import yaml
@@ -12,7 +12,7 @@ class ModelList(BaseModel):
         description="Dictionary mapping model names to their file paths"
     )
     
-    @validator('models', pre=True)
+    @field_validator('models', mode='before')
     def convert_strings_to_paths(cls, v):
         """Convert string paths to Path objects and validate they exist"""
         if isinstance(v, dict):
@@ -29,7 +29,7 @@ class ModelList(BaseModel):
             return converted
         return v
     
-    @validator('models')
+    @field_validator('models', mode='after')
     def validate_paths_exist(cls, v):
         """Validate that all model paths exist"""
         for model_name, path in v.items():

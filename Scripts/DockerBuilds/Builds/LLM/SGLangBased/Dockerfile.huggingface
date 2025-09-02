@@ -1,0 +1,8 @@
+## HuggingFace
+
+RUN python3 -m pip install --upgrade pip && \
+  # Upgrading Jinja2 to 3.1 is needed to use apply_chat_template.
+  pip install --upgrade jinja2 && \
+  #
+  #
+  pip install tokenizers

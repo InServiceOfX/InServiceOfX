@@ -1,9 +1,0 @@
-RUN python3 -m pip install --upgrade pip && \
-  pip install --upgrade ipywidgets && \
-  pip install --upgrade numpy && \
-  # For async API calls to AsyncGroq
-  pip install --upgrade pytest-asyncio
-
-
-
-

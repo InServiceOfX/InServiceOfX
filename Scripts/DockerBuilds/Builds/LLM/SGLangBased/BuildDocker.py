@@ -27,16 +27,22 @@ class BuildDocker(BuildDockerBase):
                 self.parent_dir / "CommonFiles" / "Dockerfile.header"),
             (
                 "Dockerfile.minimal_base",
-                self.parent_dir / "CommonFiles" / "Dockerfile.minimal_base"),
+                self.script_dir / "Dockerfile.minimal_base"),
             (
                 "Dockerfile.rust",
                 self.parent_dir / "CommonFiles" / "Dockerfile.rust"),
-            # (
-            #     "Dockerfile.sglang",
-            #     self.script_dir / "Dockerfile.sglang"),
+            (
+                "Dockerfile.sglang",
+                self.script_dir / "Dockerfile.sglang"),
+            (
+                "Dockerfile.huggingface",
+                self.script_dir / "Dockerfile.huggingface"),
             (
                 "Dockerfile.third_parties",
-                self.script_dir / "Dockerfile.third_parties")
+                self.script_dir / "Dockerfile.third_parties"),
+            (
+                "Dockerfile.more_pip_installs",
+                self.script_dir / "Dockerfile.more_pip_installs")
         ]
 
 def main():
