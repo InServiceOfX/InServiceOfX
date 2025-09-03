@@ -31,6 +31,9 @@ class BuildDocker(BuildDockerBase):
                 "Dockerfile.essential_pip_installs",
                 self.script_dir / "Dockerfile.essential_pip_installs"),
             (
+                "Dockerfile.copy_opencv_script",
+                self.script_dir / "Dockerfile.copy_opencv_script"),
+            (
                 "Dockerfile.opencv_with_cuda",
                 self.parent_dir / "CommonFiles" / "Dockerfile.opencv_with_cuda"),
             (

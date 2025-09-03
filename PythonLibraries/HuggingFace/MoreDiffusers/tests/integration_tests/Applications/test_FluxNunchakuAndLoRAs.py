@@ -23,12 +23,11 @@ is_nunchaku_model_downloaded, nunchaku_model_path = is_model_there(
     relative_nunchaku_mode_path,
     data_subdirectories)
 
-relative_nunchaku_t5_model_path = "Models/Diffusion/mit-han-lab/svdq-flux.1-t5"
+relative_nunchaku_t5_model_path = "Models/Diffusion/nunchaku-tech/nunchaku-t5"
 
 is_nunchaku_t5_model_downloaded, nunchaku_t5_model_path = is_model_there(
     relative_nunchaku_t5_model_path,
     data_subdirectories)
-
 
 @pytest.mark.skipif(
     not is_model_downloaded or \
@@ -36,10 +35,14 @@ is_nunchaku_t5_model_downloaded, nunchaku_t5_model_path = is_model_there(
         not is_nunchaku_t5_model_downloaded,
     reason="Models not downloaded")
 def test_FluxNunchakuAndLoRAs_creates_prompt_embeds():
+
+    nunchaku_t5_model_file_path = nunchaku_t5_model_path / \
+        "awq-int4-flux.1-t5xxl.safetensors"
+
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
         nunchaku_model_path=nunchaku_model_path,
-        nunchaku_t5_model_path=nunchaku_t5_model_path,
+        nunchaku_t5_model_path=nunchaku_t5_model_file_path,
     )
     configuration.cuda_device = "cuda:0"
     configuration.torch_dtype = "bfloat16"
@@ -85,10 +88,13 @@ def test_FluxNunchakuAndLoRAs_creates_prompt_embeds():
         not is_nunchaku_t5_model_downloaded,
     reason="Models not downloaded")
 def test_FluxNunchakuAndLoRAs_call_pipeline_works():
+    nunchaku_t5_model_file_path = nunchaku_t5_model_path / \
+        "awq-int4-flux.1-t5xxl.safetensors"
+
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
-        nunchaku_model_path=nunchaku_model_path,
-        nunchaku_t5_model_path=nunchaku_t5_model_path,
+        nunchaku_model_path=nunchaku_model_path_1,
+        nunchaku_t5_model_path=nunchaku_t5_model_file_path,
     )
     configuration.cuda_device = "cuda:0"
     configuration.torch_dtype = "bfloat16"
@@ -131,3 +137,96 @@ def test_FluxNunchakuAndLoRAs_call_pipeline_works():
         negative_pooled_prompt_embeds)
 
     assert images is not None
+
+relative_nunchaku_model_path = "Models/Diffusion/mit-han-lab/svdq-int4-flux.1-dev"
+
+is_nunchaku_model_downloaded_1, nunchaku_model_path_1 = is_model_there(
+    relative_nunchaku_model_path,
+    data_subdirectories)
+
+@pytest.mark.skipif(
+    not is_model_downloaded or \
+        not is_nunchaku_model_downloaded_1 or \
+        not is_nunchaku_t5_model_downloaded,
+    reason="Models not downloaded")
+def test_create_transformer_from_repo_with_config_JSON():
+    configuration = NunchakuConfiguration(
+        flux_model_path=model_path,
+        nunchaku_model_path=nunchaku_model_path_1,
+        nunchaku_t5_model_path=nunchaku_t5_model_path,
+    )
+
+    configuration.cuda_device = "cuda:0"
+    configuration.torch_dtype = "bfloat16"
+
+    generation_configuration = FluxGenerationConfiguration()
+    pipeline_inputs = PipelineInputs()
+    loras_configuration = NunchakuLoRAsConfiguration()
+
+    flux_nunchaku_and_loras = FluxNunchakuAndLoRAs(
+        configuration,
+        generation_configuration,
+        pipeline_inputs,
+        loras_configuration)
+
+    flux_nunchaku_and_loras.create_transformer_and_pipeline()
+
+    assert flux_nunchaku_and_loras._transformer is not None
+    assert flux_nunchaku_and_loras._pipeline is not None
+
+    assert flux_nunchaku_and_loras._transformer_enabled
+    assert not flux_nunchaku_and_loras._text_encoder_2_enabled
+
+    flux_nunchaku_and_loras.delete_transformer_and_pipeline()
+
+    assert not hasattr(flux_nunchaku_and_loras, "_transformer")
+    assert not hasattr(flux_nunchaku_and_loras, "_pipeline")
+
+relative_nunchaku_mode_path = "Models/Diffusion/nunchaku-tech/nunchaku-flux.1-dev"
+
+is_nunchaku_model_downloaded, nunchaku_model_path = is_model_there(
+    relative_nunchaku_mode_path,
+    data_subdirectories)
+
+@pytest.mark.skipif(
+    not is_model_downloaded or \
+        not is_nunchaku_model_downloaded or \
+        not is_nunchaku_t5_model_downloaded,
+    reason="Models not downloaded")
+def test_create_transformer_from_single_nunchaku_safetensors_file():
+    nunchaku_file_path = nunchaku_model_path / "svdq-int4_r32-flux.1-dev.safetensors"
+    print("nunchaku_file_path: ", nunchaku_file_path)
+
+    assert nunchaku_file_path.exists()
+
+    configuration = NunchakuConfiguration(
+        flux_model_path=model_path,
+        nunchaku_model_path=nunchaku_file_path,
+        nunchaku_t5_model_path=nunchaku_t5_model_path,
+    )
+
+    configuration.cuda_device = "cuda:0"
+    configuration.torch_dtype = "bfloat16"
+
+    generation_configuration = FluxGenerationConfiguration()
+    pipeline_inputs = PipelineInputs()
+    loras_configuration = NunchakuLoRAsConfiguration()
+
+    flux_nunchaku_and_loras = FluxNunchakuAndLoRAs(
+        configuration,
+        generation_configuration,
+        pipeline_inputs,
+        loras_configuration)
+
+    flux_nunchaku_and_loras.create_transformer_and_pipeline()
+
+    assert flux_nunchaku_and_loras._transformer is not None
+    assert flux_nunchaku_and_loras._pipeline is not None
+
+    assert flux_nunchaku_and_loras._transformer_enabled
+    assert not flux_nunchaku_and_loras._text_encoder_2_enabled
+
+    flux_nunchaku_and_loras.delete_transformer_and_pipeline()
+
+    assert not hasattr(flux_nunchaku_and_loras, "_transformer")
+    assert not hasattr(flux_nunchaku_and_loras, "_pipeline")

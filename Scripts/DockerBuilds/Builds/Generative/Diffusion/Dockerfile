@@ -27,7 +27,7 @@ FROM ${BASE_IMAGE}
 # Set the working directory in the container
 # https://docs.docker.com/engine/reference/builder/
 ENV THIRD_PARTY=/ThirdParty
-WORKDIR ${THIRD_PARTY}
+WORKDIR /
 
 ## Update apt, pip, and do pip installs.
 RUN apt-get update && \
@@ -41,6 +41,8 @@ RUN apt-get update && \
   pip install --upgrade python-dotenv && \
   #
   #
+  # TODO: Consider removing poetry since a Docker image wouldn't necessarily
+  # need a poetry environment.
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
@@ -117,7 +119,22 @@ RUN pip install --upgrade pip && \
 
 
 
-COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+RUN mkdir -p ${THIRD_PARTY}
+COPY ../../../BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+RUN ls -la ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    test -f ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    echo "✅ BuildOpenCVWithCUDA.sh copied successfully" || \
+    (echo "❌ BuildOpenCVWithCUDA.sh copy failed" && ls -la ${THIRD_PARTY}/ && exit 1)
+
+
+
+
+# For your implementation of a specific build, specific Dockerfile, remember to
+# write your own Dockerfile.* to copy BuildOpenCVWithCUDA.sh from your relative
+# path.
+#COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
 
 # As of July 30, 2024, for OpenCV, there's 4.10.0.
 # https://github.com/opencv/opencv/wiki/ChangeLog#version4100
@@ -140,7 +157,7 @@ RUN pip uninstall -y opencv && \
   wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
   unzip opencv_contrib && \
   cd /opencv-${OPENCV_VERSION} && \
-  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
+  /bin/bash /ThirdParty/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
   # This was done in one of the layers of the "original", NVIDIA PyTorch
   # Container for OpenCV
   cd /opencv-${OPENCV_VERSION}/modules/python/package && \
@@ -269,8 +286,11 @@ ARG ARCH
 ARG COMPUTE_CAPABILITY
 ARG PTX
 # Look for your version here:
-# https://huggingface.co/mit-han-lab/nunchaku/tree/main
-RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchaku-0.2.0+torch2.6-cp310-cp310-linux_x86_64.whl
+# https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
+# torch                      2.8.0
+# root@baa0fec3e185:/# python --version
+# Python 3.12.3
+RUN pip install https://github.com/nunchaku-tech/nunchaku/releases/download/v0.3.2/nunchaku-0.3.2+torch2.8-cp312-cp312-linux_x86_64.whl
     # TODO: Try to get build from source to work
     # git clone https://github.com/mit-han-lab/nunchaku /ThirdParty/nunchaku && \
     # cd /ThirdParty/nunchaku && \

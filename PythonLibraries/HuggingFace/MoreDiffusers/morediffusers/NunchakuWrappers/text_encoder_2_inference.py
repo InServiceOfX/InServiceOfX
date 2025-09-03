@@ -1,9 +1,15 @@
 from nunchaku import NunchakuT5EncoderModel
 
-def create_flux_text_encoder_2(directory_path, configuration):
+def create_flux_text_encoder_2(model_path, configuration):
+    parameters = {}
+    if configuration.torch_dtype is not None:
+        parameters["torch_dtype"] = configuration.torch_dtype
+    if configuration.cuda_device is not None:
+        parameters["device"] = configuration.cuda_device
+
     text_encoder_2 = NunchakuT5EncoderModel.from_pretrained(
-        directory_path,
-        torch_dtype=configuration.torch_dtype)
+        model_path,
+        **parameters)
     return text_encoder_2
 
 from diffusers import FluxPipeline, FluxControlPipeline

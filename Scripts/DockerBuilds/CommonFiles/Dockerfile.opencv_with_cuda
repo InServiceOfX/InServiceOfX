@@ -1,4 +1,7 @@
-COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+# For your implementation of a specific build, specific Dockerfile, remember to
+# write your own Dockerfile.* to copy BuildOpenCVWithCUDA.sh from your relative
+# path.
+#COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
 
 # As of July 30, 2024, for OpenCV, there's 4.10.0.
 # https://github.com/opencv/opencv/wiki/ChangeLog#version4100
@@ -21,7 +24,7 @@ RUN pip uninstall -y opencv && \
   wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
   unzip opencv_contrib && \
   cd /opencv-${OPENCV_VERSION} && \
-  /bin/bash ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
+  /bin/bash /ThirdParty/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
   # This was done in one of the layers of the "original", NVIDIA PyTorch
   # Container for OpenCV
   cd /opencv-${OPENCV_VERSION}/modules/python/package && \

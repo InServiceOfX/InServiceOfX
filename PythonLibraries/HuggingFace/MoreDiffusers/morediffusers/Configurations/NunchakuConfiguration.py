@@ -85,7 +85,8 @@ class NunchakuConfiguration(BaseModel):
             raise ValueError(f"Path validation failed:\n" + "\n".join(errors))
 
     @classmethod
-    def from_yaml(cls, config_path: Path, validate_paths: bool = False) -> 'NunchakuConfiguration':
+    def from_yaml(cls, config_path: Path, validate_paths: bool = False) -> \
+        'NunchakuConfiguration':
         """Load configuration from YAML file.
         
         Args:

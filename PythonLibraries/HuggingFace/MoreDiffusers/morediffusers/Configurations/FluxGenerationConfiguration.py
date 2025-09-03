@@ -27,6 +27,9 @@ class FluxGenerationConfiguration(BaseModel):
     num_images_per_prompt: Optional[int] = \
         Field(None, description="Number of images per prompt")
     seed: Optional[int] = Field(None, description="Random seed")
+    # pipeline_flux.py, class FluxPipeline(..), docstring: Higher 'guidance
+    # scale' encourages model to generate images more aligned with 'prompt' at
+    # expense of lower image quality.
     guidance_scale: Optional[float] = \
         Field(None, description="Guidance scale for generation")
     # Default value is 512, which is the maximum that can be used without a

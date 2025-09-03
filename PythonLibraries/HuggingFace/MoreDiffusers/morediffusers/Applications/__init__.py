@@ -26,3 +26,4 @@ from morediffusers.Applications.print_loras_diagnostics import (
 )
 
 from .FluxNunchakuAndLoRAs import FluxNunchakuAndLoRAs
+from .FluxDepthNunchakuAndLoRAs import FluxDepthNunchakuAndLoRAs

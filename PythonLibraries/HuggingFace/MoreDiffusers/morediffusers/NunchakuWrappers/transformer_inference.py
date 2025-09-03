@@ -48,6 +48,10 @@ def _get_pipeline_call_kwargs(configuration, generation_configuration):
         configuration,
         generation_configuration)
 
+    if hasattr(generation_configuration, "true_cfg_scale") and \
+        generation_configuration.true_cfg_scale is not None:
+        kwargs["true_cfg_scale"] = generation_configuration.true_cfg_scale
+
     return kwargs
 
 def call_pipeline(

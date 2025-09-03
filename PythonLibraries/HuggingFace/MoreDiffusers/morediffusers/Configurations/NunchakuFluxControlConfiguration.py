@@ -1,9 +1,9 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from corecode.FileIO import get_project_directory_path
 from pathlib import Path
-from typing import Optional, ClassVar, Dict, Any
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Optional, ClassVar, Any, Dict
 import torch
 import yaml
-from corecode.FileIO import get_project_directory_path
 
 class NunchakuFluxControlConfiguration(BaseModel):
     # Add model_config at class level
@@ -38,14 +38,38 @@ class NunchakuFluxControlConfiguration(BaseModel):
     @field_validator('torch_dtype', mode='before')
     @classmethod
     def validate_torch_dtype(cls, v: Any) -> Optional[torch.dtype]:
+        if v is None:
+            return None
+    
+        if isinstance(v, torch.dtype):
+            return v
+    
         if isinstance(v, str):
-            if v == "torch.float16":
-                return torch.float16
-            elif v == "torch.bfloat16":
-                return torch.bfloat16
+            # Remove 'torch.' prefix if present
+            dtype_str = v.replace('torch.', '')
+            
+            dtype_mapping = {
+                'float16': torch.float16,
+                'bfloat16': torch.bfloat16,
+                'float32': torch.float32,
+                'float64': torch.float64,
+                'int4': torch.int4,
+                'int8': torch.int8,
+                'int16': torch.int16,
+                'int32': torch.int32,
+                'int64': torch.int64,
+                'uint8': torch.uint8,
+                'bool': torch.bool,
+            }
+            
+            if dtype_str in dtype_mapping:
+                return dtype_mapping[dtype_str]
             else:
-                raise ValueError(f"Unsupported torch_dtype: {v}")
-        return v
+                raise ValueError(
+                    f"Unsupported torch_dtype: {v}. Supported types: {list(dtype_mapping.keys())}")
+        
+        raise ValueError(
+            f"Invalid torch_dtype: {v}. Must be string or torch.dtype")
 
     @classmethod
     def from_yaml(cls, config_path: Optional[Path] = None) -> \
@@ -68,17 +92,9 @@ class NunchakuFluxControlConfiguration(BaseModel):
             raise ValueError(
                 f"Missing required fields in configuration: {missing_fields}")
         
-        # Convert torch_dtype string to actual torch.dtype if present
-        if 'torch_dtype' in data and isinstance(data['torch_dtype'], str):
-            if data['torch_dtype'] == "torch.float16":
-                data['torch_dtype'] = torch.float16
-            elif data['torch_dtype'] == "torch.bfloat16":
-                data['torch_dtype'] = torch.bfloat16
-            else:
-                raise ValueError(
-                    f"Unsupported torch_dtype: {data['torch_dtype']}")
-        
-        return cls(**data)
+        config = cls(**data)
+
+        return config
 
     def get_cuda_device_index(self) -> Optional[int]:
         """Extract device index from cuda_device string.
@@ -93,3 +109,14 @@ class NunchakuFluxControlConfiguration(BaseModel):
             return int(self.cuda_device.split(":")[1])
         except (IndexError, ValueError):
             return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary, handling torch.dtype
+        conversion."""
+        data = self.model_dump()
+        
+        # Convert torch.dtype back to string for serialization
+        if data.get('torch_dtype') is not None:
+            data['torch_dtype'] = str(data['torch_dtype'])
+        
+        return data

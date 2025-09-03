@@ -2,8 +2,11 @@ ARG ARCH
 ARG COMPUTE_CAPABILITY
 ARG PTX
 # Look for your version here:
-# https://huggingface.co/mit-han-lab/nunchaku/tree/main
-RUN pip install https://huggingface.co/mit-han-lab/nunchaku/resolve/main/nunchaku-0.2.0+torch2.6-cp310-cp310-linux_x86_64.whl
+# https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
+# torch                      2.8.0
+# root@baa0fec3e185:/# python --version
+# Python 3.12.3
+RUN pip install https://github.com/nunchaku-tech/nunchaku/releases/download/v0.3.2/nunchaku-0.3.2+torch2.8-cp312-cp312-linux_x86_64.whl
     # TODO: Try to get build from source to work
     # git clone https://github.com/mit-han-lab/nunchaku /ThirdParty/nunchaku && \
     # cd /ThirdParty/nunchaku && \

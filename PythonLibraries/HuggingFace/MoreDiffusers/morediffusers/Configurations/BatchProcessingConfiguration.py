@@ -1,7 +1,11 @@
 from corecode.Utilities.Strings import format_float_for_string
 from pathlib import Path
 from pydantic import BaseModel, Field
+from typing import Tuple
 from warnings import warn
+import hashlib
+import json
+import time
 import yaml
 
 class BatchProcessingConfiguration(BaseModel):
@@ -43,27 +47,75 @@ class BatchProcessingConfiguration(BaseModel):
         with file_path.open("w") as f:
             yaml.dump(data, f, default_flow_style=False)
 
+    def _create_configuration_hash(
+            self,
+            model_name: str,
+            flux_generation_configuration) -> Tuple[str, str]:
+        """
+        Create a unique hash based on model name, flux generation parameters,
+        and current timestamp.
+
+        Returns:
+            Tuple of (full_hash, truncated_hash) where truncated_hash is
+            suitable for filenames
+        """
+        # Get current timestamp for uniqueness
+        current_timestamp = time.time()
+        
+        # Create a dictionary of parameters to hash
+        config_dict = {
+            "model_name": model_name,
+            "true_cfg_scale": flux_generation_configuration.true_cfg_scale,
+            "height": flux_generation_configuration.height,
+            "width": flux_generation_configuration.width,
+            "num_inference_steps": \
+                flux_generation_configuration.num_inference_steps,
+            "seed": flux_generation_configuration.seed,
+            "guidance_scale": flux_generation_configuration.guidance_scale,
+            "timestamp": current_timestamp,
+        }
+        
+        # Convert to JSON string for consistent hashing
+        config_json = json.dumps(config_dict, sort_keys=True, default=str)
+        
+        # Generate SHA-256 hash
+        hash_object = hashlib.sha256(config_json.encode('utf-8'))
+        full_hash = hash_object.hexdigest()
+        
+        # Truncate to 12 characters - good balance between uniqueness and
+        # filename length 12 characters gives us 48 bits of entropy (12 * 4 bits
+        # per hex char) This provides ~2.8 trillion unique combinations, which
+        # should be sufficient
+        truncated_hash = full_hash[:12]
+
+        return full_hash, truncated_hash
+
     def _create_image_filename(
             self,
             index: int,
             model_name: str,
             flux_generation_configuration) -> str:
 
+        # Generate configuration hash (both full and truncated)
+        full_hash, config_hash = self._create_configuration_hash(model_name, flux_generation_configuration)
+
         filename = ""
 
         if flux_generation_configuration.guidance_scale is None:
             filename = (
                 f"{self.base_filename}{model_name}-"
-                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}"
+                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}-"
+                f"{config_hash}"
             )
 
         else:
             filename = (
                 f"{self.base_filename}{model_name}-"
-                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}Guidance{format_float_for_string(flux_generation_configuration.guidance_scale)}"
+                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}Guidance{format_float_for_string(flux_generation_configuration.guidance_scale)}-"
+                f"{config_hash}"
             )
 
-        return filename
+        return filename, full_hash
 
     def create_and_save_image(
             self,
@@ -72,7 +124,7 @@ class BatchProcessingConfiguration(BaseModel):
             flux_generation_configuration,
             model_name: str) -> None:
 
-        filename = self._create_image_filename(
+        filename, full_hash = self._create_image_filename(
             index,
             model_name,
             flux_generation_configuration)
@@ -83,3 +135,5 @@ class BatchProcessingConfiguration(BaseModel):
             f"{filename}.{image_format.lower()}"
 
         image.save(file_path)
+
+        return full_hash

@@ -2,3 +2,4 @@ prompt: beautiful
 prompt_2:
 negative_prompt: ugly
 negative_prompt_2:
+input_image_file_path:

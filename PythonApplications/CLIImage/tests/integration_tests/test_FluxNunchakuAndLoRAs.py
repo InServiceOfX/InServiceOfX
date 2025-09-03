@@ -1,10 +1,9 @@
-from pathlib import Path
-
 from cliimage.ApplicationPaths import ApplicationPaths
 from cliimage.Core import ProcessConfigurations
 from cliimage.Terminal import TerminalUI
 
 from morediffusers.Applications import FluxNunchakuAndLoRAs
+from pathlib import Path
 
 application_path = Path(__file__).resolve().parents[2]
 

@@ -3,7 +3,10 @@ from cliimage.Terminal import CommandHandler
 from cliimage.Terminal import PromptSessionsManager
 from cliimage.Terminal import TerminalUI
 
-from morediffusers.Applications import FluxNunchakuAndLoRAs
+from morediffusers.Applications import (
+    FluxDepthNunchakuAndLoRAs,
+    FluxNunchakuAndLoRAs,
+    )
 
 class CLIImage:
     def __init__(self, application_paths):
@@ -24,6 +27,19 @@ class CLIImage:
             self._process_configurations.configurations["pipeline_inputs"],
             self._process_configurations.configurations[
                 "nunchaku_loras_configuration"])
+
+        if self._process_configurations.configurations[
+            "nunchaku_flux_control_configuration"] is not None:
+            self._flux_depth_nunchaku_and_loras = FluxDepthNunchakuAndLoRAs(
+                self._process_configurations.configurations[
+                    "nunchaku_flux_control_configuration"],
+                self._process_configurations.configurations[
+                    "flux_generation_configuration"],
+                self._process_configurations.configurations["pipeline_inputs"],
+                self._process_configurations.configurations[
+                    "nunchaku_loras_configuration"])
+        else:
+            self._flux_depth_nunchaku_and_loras = None
 
         self._command_handler = CommandHandler(self)
 

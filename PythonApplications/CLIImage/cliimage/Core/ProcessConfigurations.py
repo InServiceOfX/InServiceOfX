@@ -3,6 +3,7 @@ from morediffusers.Configurations import (
     BatchProcessingConfiguration,
     FluxGenerationConfiguration,
     NunchakuConfiguration,
+    NunchakuFluxControlConfiguration,
     NunchakuLoRAsConfiguration,
     PipelineInputs)
 
@@ -40,6 +41,19 @@ class ProcessConfigurations:
                 f"Nunchaku configuration not found at {path}")
             self.configurations["nunchaku_configuration"] = \
                 NunchakuConfiguration()
+
+        path = self._application_paths.configuration_file_paths[
+            "nunchaku_flux_control_configuration"]
+
+        if path.exists():
+            self.configurations["nunchaku_flux_control_configuration"] = \
+                NunchakuFluxControlConfiguration.from_yaml(path)
+            self._terminal_ui.print_info(
+                f"Nunchaku flux control configuration loaded from {path}")
+        else:
+            self._terminal_ui.print_error(
+                f"Nunchaku flux control configuration not found at {path}")
+            self.configurations["nunchaku_flux_control_configuration"] = None
 
         path = self._application_paths.configuration_file_paths[
             "flux_generation_configuration"]

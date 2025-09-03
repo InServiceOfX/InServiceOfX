@@ -6,7 +6,11 @@ class CommandHandler:
             ".exit": "Exit the application",
             ".help": "Show help message",
             ".batch_process_on_single_prompt": "Batch process on single prompt",
+            ".batch_process_on_single_image_with_depth_control": \
+                "Batch process on single image with depth control",
             ".generate_image": "Generate single image",
+            ".generate_depth_image": \
+                "Generate single image using depth control",
             ".refresh_configurations": "Refresh configurations",
             "._create_prompt_embeds": "Create prompt embeds",
             "._delete_prompt_embeds": "Delete prompt embeds", 
@@ -14,6 +18,7 @@ class CommandHandler:
             "._create_pipeline": "Create the generation pipeline",
             "._delete_pipeline": "Delete the generation pipeline",
             "._call_pipeline": "Execute the pipeline with current embeds",
+            "._update_with_loras": "Update the transformer with LoRAs",
         }
 
         self.commands = {
@@ -21,7 +26,10 @@ class CommandHandler:
             ".help": self.handle_help,
             ".batch_process_on_single_prompt": \
                 self.handle_batch_process_on_single_prompt,
+            ".batch_process_on_single_image_with_depth_control": \
+                self.handle_batch_process_on_single_image_with_depth_control,
             ".generate_image": self.handle_generate_image,
+            ".generate_depth_image": self.handle_generate_depth_image,
             ".refresh_configurations": self.handle_refresh_configurations,
             "._create_prompt_embeds": self._handle__create_prompt_embeds,
             "._delete_prompt_embeds": self._handle__delete_prompt_embeds,
@@ -29,6 +37,7 @@ class CommandHandler:
             "._create_pipeline": self._handle__create_pipeline,
             "._delete_pipeline": self._handle__delete_pipeline,
             "._call_pipeline": self._handle__call_pipeline,
+            "._update_with_loras": self._handle__update_with_loras,
         }
 
         assert self._command_descriptions.keys() == self.commands.keys()
@@ -146,6 +155,16 @@ class CommandHandler:
 
         return True
 
+    def handle_batch_process_on_single_image_with_depth_control(self) -> bool:
+        self._app._terminal_ui.print_info(
+            "Batch processing on single image with depth control...")
+
+        self._app._generate_images.process_batch_depth_images()
+
+        self.handle_refresh_configurations()
+
+        return True
+
     def handle_refresh_configurations(self) -> bool:
         self._app._terminal_ui.print_info("Refreshing configurations...")
 
@@ -167,4 +186,16 @@ class CommandHandler:
     def handle_generate_image(self) -> bool:
         self._app._terminal_ui.print_info("Generating single image...")
         self._app._generate_images.generate_image()
+        return True
+
+    def handle_generate_depth_image(self) -> bool:
+        self._app._terminal_ui.print_info(
+            "Generating single image using depth control...")
+        self._app._generate_images.generate_depth_image()
+        return True
+
+    def _handle__update_with_loras(self) -> bool:
+        self._app._terminal_ui.print_info("Updating with LoRAs...")
+        self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
+        self._app._terminal_ui.print_success("LoRAs updated successfully!")
         return True

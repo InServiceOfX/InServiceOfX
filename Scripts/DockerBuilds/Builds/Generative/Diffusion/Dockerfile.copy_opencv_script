@@ -1,0 +1,11 @@
+
+RUN mkdir -p ${THIRD_PARTY}
+COPY ../../../BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+RUN ls -la ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    test -f ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    echo "✅ BuildOpenCVWithCUDA.sh copied successfully" || \
+    (echo "❌ BuildOpenCVWithCUDA.sh copy failed" && ls -la ${THIRD_PARTY}/ && exit 1)
+
+
+

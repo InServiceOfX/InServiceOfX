@@ -43,6 +43,9 @@ class ApplicationPaths:
                     base_path / "Configurations" / "model_list.yml",
                 "nunchaku_configuration": \
                     base_path / "Configurations" / "nunchaku_configuration.yml",
+                "nunchaku_flux_control_configuration": \
+                    base_path / "Configurations" / \
+                        "nunchaku_flux_control_configuration.yml",
                 "flux_generation_configuration": \
                     base_path / "Configurations" / \
                         "flux_generation_configuration.yml",

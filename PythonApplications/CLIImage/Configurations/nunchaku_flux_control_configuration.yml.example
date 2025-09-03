@@ -1,6 +1,6 @@
 flux_model_path : /Data1/Models/Diffusion/black-forest-labs/FLUX.1-dev
-#nunchaku_t5_model_path : /Data1/Models/Diffusion/mit-han-lab/svdq-flux.1-t5
+depth_model_path : /Data1/Models/Generation/LiheYoung/depth-anything-large-hf
 nunchaku_t5_model_path : /Data1/Models/Diffusion/nunchaku-tech/nunchaku-t5/awq-int4-flux.1-t5xxl.safetensors
-nunchaku_model_path : /Data/Models/Diffusion/jib-mix-svdq
+nunchaku_flux_model_path : /Data1/Models/Diffusion/nunchaku-tech/nunchaku-flux.1-depth-dev/svdq-int4_r32-flux.1-depth-dev.safetensors
 torch_dtype: torch.bfloat16
 cuda_device: cuda:0
