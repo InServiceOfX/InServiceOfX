@@ -11,25 +11,30 @@ from morediffusers.Configurations import (
 
 from morediffusers.NunchakuWrappers import (
     text_encoder_2_inference,
-    transformer_inference,
     )
 
 from morediffusers.Wrappers.pipelines import (
     change_pipe_to_cuda_or_not,
 )
 
-class FluxNunchakuAndLoRAs:
+from morediffusers.Wrappers import create_seed_generator
+
+from diffusers import FluxKontextPipeline
+from diffusers.utils import load_image
+
+class FluxKontextNunchakuAndLoRAs:
     def __init__(
             self,
             configuration: NunchakuConfiguration,
             generation_configuration: FluxGenerationConfiguration,
             pipeline_inputs: PipelineInputs,
             loras_configuration: NunchakuLoRAsConfiguration):
-
         self._configuration = configuration
         self._generation_configuration = generation_configuration
         self._pipeline_inputs = pipeline_inputs
         self._loras_configuration = loras_configuration
+
+        self._control_images = []
 
         self._text_encoder_2_enabled = False
         self._transformer_enabled = False
@@ -51,40 +56,12 @@ class FluxNunchakuAndLoRAs:
         self._pipeline_inputs = pipeline_inputs
         self._loras_configuration = loras_configuration
 
-    def is_text_encoder_2_enabled(self):
-        return self._text_encoder_2_enabled
-
-    def is_transformer_enabled(self):
-        return self._transformer_enabled
-
-    def _create_text_encoder_2_and_pipeline(self):
-        if self._text_encoder_2_enabled:
-            return
-
-        path = self._configuration.nunchaku_t5_model_path
-
-        self._text_encoder_2 = \
-            text_encoder_2_inference.create_flux_text_encoder_2(
-                path,
-                self._configuration)
-
-        self._pipeline = \
-            text_encoder_2_inference.create_flux_text_encoder_2_pipeline(
-                self._configuration.flux_model_path,
-                self._configuration,
-                self._text_encoder_2)
-
-        change_pipe_to_cuda_or_not(self._configuration, self._pipeline)
-
-        self._text_encoder_2_enabled = True
-
     @staticmethod
     def _create_corresponding_prompts(
         prompt: str,
         prompt_2: Optional[str],
         negative_prompt: Optional[str],
         negative_prompt_2: Optional[str]):
-
         prompts = {}
 
         prompts["prompt"] = prompt
@@ -97,33 +74,73 @@ class FluxNunchakuAndLoRAs:
 
         return prompts
 
-    def create_prompt_embeds(self):
+    def _create_text_encoder_2_and_pipeline(self):
+        if self._text_encoder_2_enabled:
+            return
 
+        if self._transformer_enabled:
+            self._delete_transformer_and_pipeline()
+
+        path = self._configuration.nunchaku_t5_model_path
+
+        self._text_encoder_2 = \
+            text_encoder_2_inference.create_flux_text_encoder_2(
+                path,
+                self._configuration)
+
+        self._pipeline = \
+            text_encoder_2_inference.create_flux_control_text_encoder_2_pipeline(
+                self._configuration.flux_model_path,
+                self._configuration,
+                self._text_encoder_2)
+
+        change_pipe_to_cuda_or_not(self._configuration, self._pipeline)
+
+        self._text_encoder_2_enabled = True
+
+    def _delete_text_encoder_2_and_pipeline(self):
+        if not self._text_encoder_2_enabled:
+            return
+
+        if hasattr(self._pipeline, "text_encoder"):
+            del self._pipeline.text_encoder
+        if hasattr(self._pipeline, "text_encoder_2"):
+            del self._pipeline.text_encoder_2
+        if hasattr(self._pipeline, "tokenizer"):
+            del self._pipeline.tokenizer
+        if hasattr(self._pipeline, "tokenizer_2"):
+            del self._pipeline.tokenizer_2
+        del self._text_encoder_2
+
+        clear_torch_cache_and_collect_garbage()
+
+        self._text_encoder_2_enabled = False
+
+    def create_prompt_embeds(self):
         self._create_text_encoder_2_and_pipeline()
 
         prompt_embeds, pooled_prompt_embeds, text_ids = \
-            text_encoder_2_inference.encode_prompt(
-                pipeline=self._pipeline,
-                generation_configuration=self._generation_configuration,
+            text_encoder_2_inference.flux_control_encode_prompt(
+                self._pipeline,
+                self._configuration,
+                self._generation_configuration,
                 prompt=self._pipeline_inputs.prompt,
                 prompt2=self._pipeline_inputs.prompt_2,
-                device=self._configuration.cuda_device,
                 lora_scale=self._loras_configuration.lora_scale)
 
         negative_prompt_embeds, negative_pooled_prompt_embeds, negative_text_ids = \
-            text_encoder_2_inference.encode_prompt(
-                pipeline=self._pipeline,
-                generation_configuration=self._generation_configuration,
+            text_encoder_2_inference.flux_control_encode_prompt(
+                self._pipeline,
+                self._configuration,
+                self._generation_configuration,
                 prompt=self._pipeline_inputs.negative_prompt,
                 prompt2=self._pipeline_inputs.negative_prompt_2,
-                device=self._configuration.cuda_device,
                 lora_scale=self._loras_configuration.lora_scale)
 
         self._prompt_embeds.append(prompt_embeds)
         self._pooled_prompt_embeds.append(pooled_prompt_embeds)
         self._negative_prompt_embeds.append(negative_prompt_embeds)
-        self._negative_pooled_prompt_embeds.append(
-            negative_pooled_prompt_embeds)
+        self._negative_pooled_prompt_embeds.append(negative_pooled_prompt_embeds)
 
         self._corresponding_prompts.append(self._create_corresponding_prompts(
             self._pipeline_inputs.prompt,
@@ -157,46 +174,56 @@ class FluxNunchakuAndLoRAs:
         del self._negative_prompt_embeds
         del self._negative_pooled_prompt_embeds
         del self._corresponding_prompts
+
         self._prompt_embeds = []
         self._pooled_prompt_embeds = []
         self._negative_prompt_embeds = []
         self._negative_pooled_prompt_embeds = []
         self._corresponding_prompts = []
 
-    def delete_text_encoder_2_and_pipeline(self):
-        if not self._text_encoder_2_enabled:
-            return
+    def load_control_image(self):
 
-        if hasattr(self._pipeline, "text_encoder"):
-            del self._pipeline.text_encoder
-        if hasattr(self._pipeline, "text_encoder_2"):
-            del self._pipeline.text_encoder_2
-        if hasattr(self._pipeline, "tokenizer"):
-            del self._pipeline.tokenizer
-        if hasattr(self._pipeline, "tokenizer_2"):
-            del self._pipeline.tokenizer_2
-        del self._text_encoder_2
+        control_image = load_image(str(self._pipeline_inputs.input_image_file_path))
+        control_image = control_image.convert("RGB")
 
-        clear_torch_cache_and_collect_garbage()
+        self._control_images.append(control_image)
 
-        self._text_encoder_2_enabled = False
+    def delete_control_images(self):
+        for control_image in self._control_images:
+            del control_image
+
+        del self._control_images
+        self._control_images = []
 
     def create_transformer_and_pipeline(self):
         if self._transformer_enabled:
             return
 
         if self._text_encoder_2_enabled:
-            self.delete_text_encoder_2_and_pipeline()
+            self._delete_text_encoder_2_and_pipeline()
 
         path = self._configuration.nunchaku_model_path
 
         self._transformer = \
             NunchakuFluxTransformer2dModel.from_pretrained(str(path))
 
-        self._pipeline = transformer_inference.create_flux_transformer_pipeline(
+        # See class FluxKontextPipeline in pipeline_flux_kontext.py, and
+        # notice what it inherits from:
+        # class FluxKontextPipeline(
+        #     DiffusionPipeline,
+        #     FluxLoraLoaderMixin,
+        #     FromSingleFileMixin,
+        #     TextualInversionLoaderMixin,
+        #     FluxIPAdapterMixin,
+        # ):
+        self._pipeline = FluxKontextPipeline.from_pretrained(
             str(self._configuration.flux_model_path),
-            self._configuration,
-            self._transformer)
+            text_encoder=None,
+            text_encoder_2=None,
+            tokenizer=None,
+            tokenizer_2=None,
+            transformer=self._transformer,
+            torch_dtype=self._configuration.torch_dtype)
 
         change_pipe_to_cuda_or_not(self._configuration, self._pipeline)
 
@@ -208,9 +235,7 @@ class FluxNunchakuAndLoRAs:
                 del self._pipeline.transformer
             del self._pipeline
             del self._transformer
-
             clear_torch_cache_and_collect_garbage()
-
             self._transformer_enabled = False
 
     def update_transformer_with_loras(self):
@@ -231,42 +256,48 @@ class FluxNunchakuAndLoRAs:
                 composed_loras = compose_lora(loras_to_compose)
                 self._transformer.update_lora_params(composed_loras)
 
-    def call_pipeline(
-        self,
-        prompt_embeds,
-        pooled_prompt_embeds,
-        negative_prompt_embeds,
-        negative_pooled_prompt_embeds):
-        if self._transformer_enabled:
-            return transformer_inference.call_pipeline(
-                self._pipeline,
-                prompt_embeds,
-                pooled_prompt_embeds,
-                self._configuration,
-                self._generation_configuration,
-                negative_prompt_embeds,
-                negative_pooled_prompt_embeds).images
-
-    def call_pipeline_with_prompt_embed(self, index):
+    def call_pipeline(self, prompt_embed_index, control_image_index):
         if (not self._prompt_embeds) or \
             (not self._pooled_prompt_embeds) or \
             (not self._negative_prompt_embeds) or \
-            (not self._negative_pooled_prompt_embeds):
+            (not self._negative_pooled_prompt_embeds) or \
+            (not self._control_images):
             return None
 
-        if (index < 0 or index >= len(self._prompt_embeds)) or \
-            (index < 0 or index >= len(self._pooled_prompt_embeds)) or \
-            (index < 0 or index >= len(self._negative_prompt_embeds)) or \
-            (index < 0 or index >= len(self._negative_pooled_prompt_embeds)):
+        if (prompt_embed_index < 0 or \
+            prompt_embed_index >= len(self._prompt_embeds)) or \
+            (prompt_embed_index < 0 or \
+                prompt_embed_index >= len(self._pooled_prompt_embeds)) or \
+            (control_image_index < 0 or \
+                control_image_index >= len(self._control_images)):
             return None
 
-        return self.call_pipeline(
-            self._prompt_embeds[index],
-            self._pooled_prompt_embeds[index],
-            self._negative_prompt_embeds[index],
-            self._negative_pooled_prompt_embeds[index])
+        true_cfg_scale = self._generation_configuration.true_cfg_scale
+        if true_cfg_scale is None:
+            true_cfg_scale = 1.0
+
+        # See class FluxKontextPipeline in pipeline_flux_kontext.py, and
+        # def __call__(..).
+        return self._pipeline(
+            image=self._control_images[control_image_index],
+            prompt_embeds=self._prompt_embeds[prompt_embed_index],
+            pooled_prompt_embeds=self._pooled_prompt_embeds[prompt_embed_index],
+            negative_prompt_embeds=self._negative_prompt_embeds[
+                prompt_embed_index],
+            negative_pooled_prompt_embeds=self._negative_pooled_prompt_embeds[
+                prompt_embed_index],
+            true_cfg_scale=true_cfg_scale,
+            height=self._generation_configuration.height,
+            width=self._generation_configuration.width,
+            num_inference_steps=\
+                self._generation_configuration.num_inference_steps,
+            guidance_scale=self._generation_configuration.guidance_scale,
+            generator=create_seed_generator(
+                self._configuration,
+                self._generation_configuration)).images
 
     def restart(self):
+        self._delete_text_encoder_2_and_pipeline()
         self.delete_prompt_embeds()
-        self.delete_text_encoder_2_and_pipeline()
+        self.delete_control_images()
         self.delete_transformer_and_pipeline()

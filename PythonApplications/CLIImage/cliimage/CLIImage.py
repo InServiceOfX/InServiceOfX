@@ -5,7 +5,8 @@ from cliimage.Terminal import TerminalUI
 
 from morediffusers.Applications import (
     FluxDepthNunchakuAndLoRAs,
-    FluxNunchakuAndLoRAs,
+    FluxKontextNunchakuAndLoRAs,
+    FluxNunchakuAndLoRAs
     )
 
 class CLIImage:
@@ -20,6 +21,15 @@ class CLIImage:
         self._generate_images = GenerateImages(self)
 
         self._flux_nunchaku_and_loras = FluxNunchakuAndLoRAs(
+            self._process_configurations.configurations[
+                "nunchaku_configuration"],
+            self._process_configurations.configurations[
+                "flux_generation_configuration"],
+            self._process_configurations.configurations["pipeline_inputs"],
+            self._process_configurations.configurations[
+                "nunchaku_loras_configuration"])
+
+        self._flux_kontext_nunchaku_and_loras = FluxKontextNunchakuAndLoRAs(
             self._process_configurations.configurations[
                 "nunchaku_configuration"],
             self._process_configurations.configurations[

@@ -8,15 +8,14 @@ class CommandHandler:
             ".batch_process_on_single_prompt": "Batch process on single prompt",
             ".batch_process_on_single_image_with_depth_control": \
                 "Batch process on single image with depth control",
+            ".batch_process_on_single_image_with_kontext": \
+                "Batch process on single image with kontext control",
             ".generate_image": "Generate single image",
             ".generate_depth_image": \
                 "Generate single image using depth control",
+            ".generate_kontext_image": "Generate single image using kontext",
             ".refresh_configurations": "Refresh configurations",
-            "._create_prompt_embeds": "Create prompt embeds",
-            "._delete_prompt_embeds": "Delete prompt embeds", 
-            "._delete_text_encoder_2": "Delete text encoder 2",
-            "._create_pipeline": "Create the generation pipeline",
-            "._delete_pipeline": "Delete the generation pipeline",
+            ".restart_all": "Restart all",
             "._call_pipeline": "Execute the pipeline with current embeds",
             "._update_with_loras": "Update the transformer with LoRAs",
         }
@@ -28,14 +27,13 @@ class CommandHandler:
                 self.handle_batch_process_on_single_prompt,
             ".batch_process_on_single_image_with_depth_control": \
                 self.handle_batch_process_on_single_image_with_depth_control,
+            ".batch_process_on_single_image_with_kontext": \
+                self.handle_batch_process_on_single_image_with_kontext,
             ".generate_image": self.handle_generate_image,
             ".generate_depth_image": self.handle_generate_depth_image,
+            ".generate_kontext_image": self.handle_generate_kontext_image,
             ".refresh_configurations": self.handle_refresh_configurations,
-            "._create_prompt_embeds": self._handle__create_prompt_embeds,
-            "._delete_prompt_embeds": self._handle__delete_prompt_embeds,
-            "._delete_text_encoder_2": self._handle__delete_text_encoder_2,
-            "._create_pipeline": self._handle__create_pipeline,
-            "._delete_pipeline": self._handle__delete_pipeline,
+            ".restart_all": self.handle_restart_all,
             "._call_pipeline": self._handle__call_pipeline,
             "._update_with_loras": self._handle__update_with_loras,
         }
@@ -65,43 +63,6 @@ class CommandHandler:
             return self.commands[command](), True
         else:
             return True, False
-
-    def _handle__create_prompt_embeds(self) -> bool:
-        self._app._terminal_ui.print_info("Creating prompt embeds...")
-        
-        if self._app._flux_nunchaku_and_loras.is_transformer_enabled():
-            self._app._flux_nunchaku_and_loras.delete_transformer_and_pipeline()
-
-        self._app._flux_nunchaku_and_loras.create_prompt_embeds()
-        self._app._terminal_ui.print_success("Prompt embeds created successfully!")
-
-        return True
-
-    def _handle__delete_prompt_embeds(self) -> bool:
-        self._app._terminal_ui.print_info("Deleting prompt embeds...")
-        self._app._flux_nunchaku_and_loras.delete_prompt_embeds()
-        self._app._terminal_ui.print_success("Prompt embeds deleted successfully!")
-        return True
-
-    def _handle__delete_text_encoder_2(self) -> bool:
-        self._app._terminal_ui.print_info("Deleting text encoder 2...")
-        self._app._flux_nunchaku_and_loras.delete_text_encoder_2_and_pipeline()
-        self._app._terminal_ui.print_success(
-            "Text encoder 2 deleted successfully!")
-        return True
-
-    def _handle__create_pipeline(self) -> bool:
-        self._app._terminal_ui.print_info("Creating pipeline...")
-        self._app._flux_nunchaku_and_loras.create_transformer_and_pipeline()
-        self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
-        self._app._terminal_ui.print_success("Pipeline created successfully!")
-        return True
-
-    def _handle__delete_pipeline(self) -> bool:
-        self._app._terminal_ui.print_info("Deleting pipeline...")
-        self._app._flux_nunchaku_and_loras.delete_transformer_and_pipeline()
-        self._app._terminal_ui.print_success("Pipeline deleted successfully!")
-        return True
 
     def _handle__call_pipeline(self) -> bool:
         self._app._terminal_ui.print_info("Calling pipeline...")
@@ -165,6 +126,16 @@ class CommandHandler:
 
         return True
 
+    def handle_batch_process_on_single_image_with_kontext(self) -> bool:
+        self._app._terminal_ui.print_info(
+            "Batch processing on single image with kontext control...")
+
+        self._app._generate_images.process_batch_kontext_images()
+
+        self.handle_refresh_configurations()
+
+        return True
+
     def handle_refresh_configurations(self) -> bool:
         self._app._terminal_ui.print_info("Refreshing configurations...")
 
@@ -178,6 +149,26 @@ class CommandHandler:
             self._app._process_configurations.configurations["pipeline_inputs"],
             self._app._process_configurations.configurations[
                 "nunchaku_loras_configuration"])
+
+        if self._app._flux_kontext_nunchaku_and_loras is not None:
+            self._app._flux_kontext_nunchaku_and_loras.refresh_configurations(
+                self._app._process_configurations.configurations[
+                    "nunchaku_configuration"],
+                self._app._process_configurations.configurations[
+                    "flux_generation_configuration"],
+                self._app._process_configurations.configurations["pipeline_inputs"],
+                self._app._process_configurations.configurations[
+                    "nunchaku_loras_configuration"])
+
+        if self._app._flux_depth_nunchaku_and_loras is not None:
+            self._app._flux_depth_nunchaku_and_loras.refresh_configurations(
+                self._app._process_configurations.configurations[
+                    "nunchaku_flux_control_configuration"],
+                self._app._process_configurations.configurations[
+                    "flux_generation_configuration"],
+                self._app._process_configurations.configurations["pipeline_inputs"],
+                self._app._process_configurations.configurations[
+                    "nunchaku_loras_configuration"])
 
         self._app._terminal_ui.print_success(
             "Configurations refreshed successfully!")
@@ -194,8 +185,29 @@ class CommandHandler:
         self._app._generate_images.generate_depth_image()
         return True
 
+    def handle_generate_kontext_image(self) -> bool:
+        self._app._terminal_ui.print_info(
+            "Generating single image using kontext...")
+        self._app._generate_images.generate_kontext_image()
+        return True
+
     def _handle__update_with_loras(self) -> bool:
         self._app._terminal_ui.print_info("Updating with LoRAs...")
         self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
         self._app._terminal_ui.print_success("LoRAs updated successfully!")
+        return True
+
+    def handle_restart_all(self) -> bool:
+        self._app._terminal_ui.print_info("Restarting all...")
+
+        if self._app._flux_nunchaku_and_loras is not None:
+            self._app._flux_nunchaku_and_loras.restart()
+
+        if self._app._flux_kontext_nunchaku_and_loras is not None:
+            self._app._flux_kontext_nunchaku_and_loras.restart()
+
+        if self._app._flux_depth_nunchaku_and_loras is not None:
+            self._app._flux_depth_nunchaku_and_loras.restart()
+
+        self._app._terminal_ui.print_success("All restarted successfully!")
         return True

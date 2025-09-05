@@ -265,3 +265,11 @@ class FluxDepthNunchakuAndLoRAs:
             generator=create_seed_generator(
                 self._configuration,
                 self._generation_configuration)).images
+
+    def restart(self):
+        self.delete_prompt_embeds()
+        self._delete_text_encoder_2_and_pipeline()
+        self._delete_processor()
+        self.delete_transformer_and_pipeline()
+        self.delete_control_images()
+        self.delete_transformer_and_pipeline()
