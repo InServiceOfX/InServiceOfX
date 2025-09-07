@@ -41,7 +41,7 @@ def test_FluxNunchakuAndLoRAs_creates_prompt_embeds():
 
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
-        nunchaku_model_path=nunchaku_model_path,
+        nunchaku_model_paths=nunchaku_model_path,
         nunchaku_t5_model_path=nunchaku_t5_model_file_path,
     )
     configuration.cuda_device = "cuda:0"
@@ -93,7 +93,7 @@ def test_FluxNunchakuAndLoRAs_call_pipeline_works():
 
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
-        nunchaku_model_path=nunchaku_model_path_1,
+        nunchaku_model_paths=nunchaku_model_path_1,
         nunchaku_t5_model_path=nunchaku_t5_model_file_path,
     )
     configuration.cuda_device = "cuda:0"
@@ -152,7 +152,7 @@ is_nunchaku_model_downloaded_1, nunchaku_model_path_1 = is_model_there(
 def test_create_transformer_from_repo_with_config_JSON():
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
-        nunchaku_model_path=nunchaku_model_path_1,
+        nunchaku_model_paths=nunchaku_model_path_1,
         nunchaku_t5_model_path=nunchaku_t5_model_path,
     )
 
@@ -201,7 +201,7 @@ def test_create_transformer_from_single_nunchaku_safetensors_file():
 
     configuration = NunchakuConfiguration(
         flux_model_path=model_path,
-        nunchaku_model_path=nunchaku_file_path,
+        nunchaku_model_paths=nunchaku_file_path,
         nunchaku_t5_model_path=nunchaku_t5_model_path,
     )
 

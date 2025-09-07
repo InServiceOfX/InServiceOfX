@@ -8,6 +8,8 @@ from morediffusers.Configurations import (
     PipelineInputs)
 
 from pathlib import Path
+from typing import Optional
+from warnings import warn
 
 class ProcessConfigurations:
     def __init__(self, application_paths, terminal_ui):
@@ -117,8 +119,19 @@ class ProcessConfigurations:
     def get_flux_generation_configuration(self):
         return self.configurations["flux_generation_configuration"]
 
+    def get_model_name(self, nunchaku_model_index: Optional[int] = None):
+        if nunchaku_model_index is None:
+            nunchaku_model_index = 0
+        elif nunchaku_model_index < 0:
+            warn("Nunchaku model index is less than 0, setting to 0")
+            nunchaku_model_index = 0
+        elif nunchaku_model_index >= len(self.configurations[
+            "nunchaku_configuration"].nunchaku_model_paths):
+            warn(
+                "Nunchaku model index is greater than the number of nunchaku model paths, setting to 0")
+            nunchaku_model_index = 0
 
-    def get_model_name(self):
         return Path(
             self.configurations[
-                "nunchaku_configuration"].nunchaku_model_path).name
+                "nunchaku_configuration"].nunchaku_model_paths[
+                    nunchaku_model_index]).name

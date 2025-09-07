@@ -2,6 +2,7 @@ from pathlib import Path
 
 from cliimage.ApplicationPaths import ApplicationPaths
 from cliimage.Core import ProcessConfigurations
+from cliimage.Terminal import TerminalUI
 
 import torch
 
@@ -12,7 +13,11 @@ def test_ProcessConfigurations():
     application_paths = ApplicationPaths.create(
         configpath=application_path)
 
-    process_configurations = ProcessConfigurations(application_paths)
+    terminal_ui = TerminalUI()
+
+    process_configurations = ProcessConfigurations(
+        application_paths,
+        terminal_ui)
 
     process_configurations.process_configurations()
 
@@ -31,7 +36,7 @@ def test_ProcessConfigurations():
     batch_processing_configuration = process_configurations.configurations[
         "batch_processing_configuration"]
 
-    assert batch_processing_configuration.number_of_images == 1
+    assert batch_processing_configuration.number_of_images == 20
 
     nunchaku_configuration = process_configurations.configurations[
         "nunchaku_configuration"]
@@ -51,4 +56,4 @@ def test_ProcessConfigurations():
 
     assert len(nunchaku_loras_configuration.loras) == 1
     lora_name = next(iter(nunchaku_loras_configuration.loras))
-    assert nunchaku_loras_configuration.loras[lora_name].lora_strength == 0.25
+    assert nunchaku_loras_configuration.loras[lora_name].lora_strength == 0.8

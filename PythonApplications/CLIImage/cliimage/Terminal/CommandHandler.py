@@ -10,13 +10,14 @@ class CommandHandler:
                 "Batch process on single image with depth control",
             ".batch_process_on_single_image_with_kontext": \
                 "Batch process on single image with kontext control",
+            ".batch_process_over_all_nunchaku_models": \
+                "Batch process over all nunchaku models",
             ".generate_image": "Generate single image",
             ".generate_depth_image": \
                 "Generate single image using depth control",
             ".generate_kontext_image": "Generate single image using kontext",
             ".refresh_configurations": "Refresh configurations",
             ".restart_all": "Restart all",
-            "._call_pipeline": "Execute the pipeline with current embeds",
             "._update_with_loras": "Update the transformer with LoRAs",
         }
 
@@ -29,12 +30,13 @@ class CommandHandler:
                 self.handle_batch_process_on_single_image_with_depth_control,
             ".batch_process_on_single_image_with_kontext": \
                 self.handle_batch_process_on_single_image_with_kontext,
+            ".batch_process_over_all_nunchaku_models": \
+                self.handle_batch_process_over_all_nunchaku_models,
             ".generate_image": self.handle_generate_image,
             ".generate_depth_image": self.handle_generate_depth_image,
             ".generate_kontext_image": self.handle_generate_kontext_image,
             ".refresh_configurations": self.handle_refresh_configurations,
             ".restart_all": self.handle_restart_all,
-            "._call_pipeline": self._handle__call_pipeline,
             "._update_with_loras": self._handle__update_with_loras,
         }
 
@@ -63,33 +65,6 @@ class CommandHandler:
             return self.commands[command](), True
         else:
             return True, False
-
-    def _handle__call_pipeline(self) -> bool:
-        self._app._terminal_ui.print_info("Calling pipeline...")
-
-        try:
-            images = self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(0)
-
-            batch_processing_configuration = \
-                self._app._process_configurations.get_batch_processing_configuration()
-
-            if images is not None:
-                batch_processing_configuration.create_and_save_image(
-                    0,
-                    images[0],
-                    self._app._flux_nunchaku_and_loras._generation_configuration,
-                    self._app._process_configurations.get_model_name())
-
-                self._app._terminal_ui.print_success(
-                    "Pipeline executed successfully!")
-            else:
-                self._app._terminal_ui.print_error("Pipeline execution failed!")
-
-            return True
-
-        except Exception as e:
-            self._app._terminal_ui.print_error(f"Pipeline execution failed: {e}")
-            return False
 
     def handle_exit(self) -> bool:
         self._app._terminal_ui.print_goodbye()
@@ -131,6 +106,16 @@ class CommandHandler:
             "Batch processing on single image with kontext control...")
 
         self._app._generate_images.process_batch_kontext_images()
+
+        self.handle_refresh_configurations()
+
+        return True
+
+    def handle_batch_process_over_all_nunchaku_models(self) -> bool:
+        self._app._terminal_ui.print_info(
+            "Batch processing over all nunchaku models...")
+
+        self._app._generate_images.process_batch_over_all_nunchaku_models()
 
         self.handle_refresh_configurations()
 

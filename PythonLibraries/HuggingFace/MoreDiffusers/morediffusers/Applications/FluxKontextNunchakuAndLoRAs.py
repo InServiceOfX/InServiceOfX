@@ -195,14 +195,22 @@ class FluxKontextNunchakuAndLoRAs:
         del self._control_images
         self._control_images = []
 
-    def create_transformer_and_pipeline(self):
+    def create_transformer_and_pipeline(
+            self,
+            nunchaku_model_index: Optional[int] = None):
+        if nunchaku_model_index is None or \
+            nunchaku_model_index < 0 or \
+                nunchaku_model_index >= len(
+                    self._configuration.nunchaku_model_paths):
+            nunchaku_model_index = 0
+
         if self._transformer_enabled:
             return
 
         if self._text_encoder_2_enabled:
             self._delete_text_encoder_2_and_pipeline()
 
-        path = self._configuration.nunchaku_model_path
+        path = self._configuration.nunchaku_model_path[nunchaku_model_index]
 
         self._transformer = \
             NunchakuFluxTransformer2dModel.from_pretrained(str(path))

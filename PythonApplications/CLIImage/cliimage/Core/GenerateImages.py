@@ -14,6 +14,7 @@ class GenerateImages:
 
         self._app._flux_nunchaku_and_loras.delete_text_encoder_2_and_pipeline()
         self._app._flux_nunchaku_and_loras.create_transformer_and_pipeline()
+
         self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
 
         images = \
@@ -198,5 +199,68 @@ class GenerateImages:
 
         self._app._terminal_ui.print_success(
             "Batch processing for kontext images completed successfully!")
+
+        return True
+
+    def process_batch_over_all_nunchaku_models(self, prompt_index: int = 0):
+        if len(self._app._flux_nunchaku_and_loras._prompt_embeds) == 0:
+            self._app._flux_nunchaku_and_loras.create_prompt_embeds()
+
+        if prompt_index >= len(self._app._flux_nunchaku_and_loras._prompt_embeds):
+            self._app._terminal_ui.print_error(
+                "Prompt index is greater than the number of prompt embeds")
+            return False
+
+        self._app._flux_nunchaku_and_loras.delete_text_encoder_2_and_pipeline()
+
+        nunchaku_model_paths = \
+            self._app._process_configurations.configurations[
+                "nunchaku_configuration"].nunchaku_model_paths
+
+        batch_processing_configuration = \
+            self._app._process_configurations.get_batch_processing_configuration()
+
+        for nunchaku_model_index, nunchaku_model_path in enumerate(
+            nunchaku_model_paths):
+            self._app._flux_nunchaku_and_loras.create_transformer_and_pipeline(
+                nunchaku_model_index)
+
+            self._app._flux_nunchaku_and_loras.refresh_configurations(
+                self._app._process_configurations.configurations[
+                    "nunchaku_configuration"],
+                self._app._process_configurations.configurations[
+                    "flux_generation_configuration"],
+                self._app._process_configurations.configurations[
+                    "pipeline_inputs"],
+                self._app._process_configurations.configurations[
+                    "nunchaku_loras_configuration"])
+
+            self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
+
+            for index in range(batch_processing_configuration.number_of_images):
+                images = \
+                    self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(
+                        prompt_index)
+                if images is not None:
+                    batch_processing_configuration.create_and_save_image(
+                        index,
+                        images[0],
+                        self._app._flux_nunchaku_and_loras._generation_configuration,
+                        self._app._process_configurations.get_model_name(
+                            nunchaku_model_index))
+                else:
+                    self._app._terminal_ui.print_error(
+                        "Pipeline execution failed! Images is None")
+
+                self._app._flux_nunchaku_and_loras._generation_configuration.guidance_scale += \
+                    batch_processing_configuration.guidance_scale_step
+
+            self._app._terminal_ui.print_info(
+                f"Completed batch processing for nunchaku model {nunchaku_model_path}")
+
+            self._app._flux_nunchaku_and_loras.delete_transformer_and_pipeline()
+
+        self._app._terminal_ui.print_success(
+            "Batch processing over all nunchaku models completed successfully!")
 
         return True

@@ -99,21 +99,17 @@ class BatchProcessingConfiguration(BaseModel):
         # Generate configuration hash (both full and truncated)
         full_hash, config_hash = self._create_configuration_hash(model_name, flux_generation_configuration)
 
-        filename = ""
+        filename = (
+            f"{self.base_filename}{model_name}-Steps"
+            f"{flux_generation_configuration.num_inference_steps}Iter{index}-")
+        if flux_generation_configuration.guidance_scale is not None:
+            filename += \
+                f"Guidance{format_float_for_string(flux_generation_configuration.guidance_scale)}"
+        if flux_generation_configuration.true_cfg_scale is not None:
+            filename += \
+                f"cfg{format_float_for_string(flux_generation_configuration.true_cfg_scale)}"
 
-        if flux_generation_configuration.guidance_scale is None:
-            filename = (
-                f"{self.base_filename}{model_name}-"
-                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}-"
-                f"{config_hash}"
-            )
-
-        else:
-            filename = (
-                f"{self.base_filename}{model_name}-"
-                f"Steps{flux_generation_configuration.num_inference_steps}Iter{index}Guidance{format_float_for_string(flux_generation_configuration.guidance_scale)}-"
-                f"{config_hash}"
-            )
+        filename += f"Iter{index}-{config_hash}"
 
         return filename, full_hash
 

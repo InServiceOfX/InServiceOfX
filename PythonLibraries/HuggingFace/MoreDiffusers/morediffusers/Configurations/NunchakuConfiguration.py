@@ -1,7 +1,7 @@
 from corecode.FileIO import get_project_directory_path
 from pathlib import Path
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 import torch
 import yaml
 
@@ -16,12 +16,30 @@ class NunchakuConfiguration(BaseModel):
         Field(..., description="Path to flux model")
     nunchaku_t5_model_path: Optional[Path] = \
         Field(None, description="Path to nunchaku T5 model")
-    nunchaku_model_path: Path = \
-        Field(..., description="Path to nunchaku model")
+    
+    # Support both single path and list of paths
+    nunchaku_model_paths: Union[Path, List[Path]] = \
+        Field(..., description="Path(s) to nunchaku model(s)")
+    
     torch_dtype: Optional[torch.dtype] = \
         Field(None, description="Torch data type for model loading")
     cuda_device: Optional[str] = \
         Field("cuda", description="CUDA device specification")
+
+    # Validator to normalize nunchaku_model_paths
+    @field_validator('nunchaku_model_paths', mode='before')
+    @classmethod
+    def normalize_nunchaku_paths(cls, v: Any) -> List[Path]:
+        """Convert single path to list for consistent handling."""
+        if v is None:
+            raise ValueError("nunchaku_model_paths cannot be None")
+        
+        if isinstance(v, (str, Path)):
+            return [Path(v)]
+        elif isinstance(v, list):
+            return [Path(p) for p in v]
+        else:
+            raise ValueError(f"Invalid nunchaku_model_paths: {v}")
 
     # Validators
     @field_validator('torch_dtype', mode='before')
@@ -71,9 +89,11 @@ class NunchakuConfiguration(BaseModel):
             errors.append(
                 f"flux_model_path doesn't exist: {self.flux_model_path}")
         
-        if not self.nunchaku_model_path.exists():
-            errors.append(
-                f"nunchaku_model_path doesn't exist: {self.nunchaku_model_path}")
+        # Check all nunchaku model paths
+        for i, path in enumerate(self.nunchaku_model_paths):
+            if not path.exists():
+                errors.append(
+                    f"nunchaku_model_paths[{i}] doesn't exist: {path}")
         
         # Check optional paths (only if they're not None)
         if self.nunchaku_t5_model_path is not None and \
@@ -142,6 +162,11 @@ class NunchakuConfiguration(BaseModel):
         # Convert torch.dtype back to string for serialization
         if data.get('torch_dtype') is not None:
             data['torch_dtype'] = str(data['torch_dtype'])
+        
+        # Convert Path objects to strings for YAML serialization
+        if 'nunchaku_model_paths' in data:
+            data['nunchaku_model_paths'] = \
+                [str(p) for p in data['nunchaku_model_paths']]
         
         return data
 

@@ -97,7 +97,7 @@ def terminal_only_finite_loop_flux_and_nunchaku():
 
     clear_torch_cache_and_collect_garbage()
 
-    path = configuration.nunchaku_model_path
+    path = configuration.nunchaku_model_paths[0]
 
     transformer = NunchakuFluxTransformer2dModel.from_pretrained(str(path))
 
@@ -128,7 +128,7 @@ def terminal_only_finite_loop_flux_and_nunchaku():
             index,
             images[0],
             generation_configuration,
-            Path(configuration.nunchaku_model_path).name)
+            Path(configuration.nunchaku_model_paths[0]).name)
 
         user_input.update_guidance_scale()
         generation_configuration.guidance_scale = \

@@ -34,10 +34,10 @@ def test_NunchakuFluxControlConfiguration_loads_from_yaml():
         "/Data1/Models/Generation/LiheYoung/depth-anything-large-hf")
 
     assert configuration.nunchaku_t5_model_path == Path(
-        "/Data1/Models/Diffusion/mit-han-lab/svdq-flux.1-t5")
+        "/Data1/Models/Diffusion/nunchaku-tech/svdq-flux.1-t5")
 
     assert configuration.nunchaku_flux_model_path == Path(  
-        "/Data1/Models/Diffusion/mit-han-lab/svdq-int4-flux.1-depth-dev")
+        "/Data1/Models/Diffusion/nunchaku-tech/nunchaku-flux.1-depth-dev")
 
     assert configuration.torch_dtype == torch.bfloat16
 

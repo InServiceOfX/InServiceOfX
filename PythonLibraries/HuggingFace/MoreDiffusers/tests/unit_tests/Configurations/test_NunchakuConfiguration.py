@@ -18,10 +18,10 @@ def test_NunchakuConfiguration_loads_from_yaml():
         "/Data1/Models/Diffusion/black-forest-labs/FLUX.1-dev")
 
     assert configuration.nunchaku_t5_model_path == Path(
-        "/Data1/Models/Diffusion/mit-han-lab/svdq-flux.1-t5")
+        "/Data1/Models/Diffusion/nunchaku-tech/svdq-flux.1-t5")
 
-    assert configuration.nunchaku_model_path == Path(
-        "/Data/Models/Diffusion/jib-mix-svdq")
+    assert configuration.nunchaku_model_paths == [Path(
+        "/Data/Models/Diffusion/jib-mix-svdq"),]
 
     assert configuration.torch_dtype == torch.bfloat16
 
