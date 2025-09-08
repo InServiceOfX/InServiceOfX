@@ -9,7 +9,7 @@ try:
 except ImportError:
     GIT_AVAILABLE = False
     warnings.warn(
-        "git is not installed. Please install it with `pip install git`")
+        "git is not installed. Please install it with `pip install git` if you need it.")
 
 def _parse_repo_url_into_target_path(
         repo_url: str,

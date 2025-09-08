@@ -245,3 +245,139 @@ def test_generate_with_attention_mask():
     print(
         "Without special tokens: ",
         tokenizer.decode(output[0], skip_special_tokens=True))
+
+from moretransformers.Applications import ModelAndTokenizer
+from moretransformers.Configurations import (
+    CreateDefaultGenerationConfigurations,
+    FromPretrainedModelConfiguration,
+    FromPretrainedTokenizerConfiguration,)
+
+from typing import Dict
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_apply_chat_template_for_tokenize_False():
+    """
+    https://huggingface.co/Qwen/Qwen3-0.6B#best-practices
+    """
+    from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
+        pretrained_model_name_or_path=model_path)
+    from_pretrained_model_configuration = FromPretrainedModelConfiguration(
+        pretrained_model_name_or_path=model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        attn_implementation="flash_attention_2")
+
+    generation_configuration = \
+        CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+
+    mat = ModelAndTokenizer(
+        model_path,
+        from_pretrained_model_configuration=from_pretrained_model_configuration,
+        from_pretrained_tokenizer_configuration= \
+            from_pretrained_tokenizer_configuration,
+        generation_configuration=generation_configuration)
+
+    mat.load_tokenizer()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    text = mat.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        tokenize=False,
+        to_device=False,
+        enable_thinking=True)
+
+    assert isinstance(text, str)
+
+    model_inputs = mat.encode_by_calling_tokenizer(text, return_tensors="pt")
+
+    # <class 'transformers.tokenization_utils_base.BatchEncoding'>
+    print(type(model_inputs))
+    # input_ids, attention_mask,
+    print(model_inputs.keys())
+
+    generated_ids = mat.generate(**model_inputs)
+
+    print(type(generated_ids))
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_follow_Qwen_code_snippet_for_thinking():
+    """
+    https://huggingface.co/Qwen/Qwen3-0.6B#best-practices
+    """
+    from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
+        pretrained_model_name_or_path=model_path)
+    from_pretrained_model_configuration = FromPretrainedModelConfiguration(
+        pretrained_model_name_or_path=model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        attn_implementation="flash_attention_2")
+
+    generation_configuration = \
+        CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+
+    mat = ModelAndTokenizer(
+        model_path,
+        from_pretrained_model_configuration=from_pretrained_model_configuration,
+        from_pretrained_tokenizer_configuration= \
+            from_pretrained_tokenizer_configuration,
+        generation_configuration=generation_configuration)
+
+    mat.load_model()
+    mat.load_tokenizer()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    text = mat.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        tokenize=False,
+        to_device=False,
+        enable_thinking=True)
+
+    assert isinstance(text, str)
+
+    model_inputs = mat.encode_by_calling_tokenizer(text, return_tensors="pt")
+
+    # <class 'transformers.tokenization_utils_base.BatchEncoding'>
+    #print(type(model_inputs))
+    # input_ids, attention_mask,
+    #print(model_inputs.keys())
+
+    generated_ids = mat.generate(**model_inputs)
+    # <class 'torch.Tensor'>
+    #print(type(generated_ids))
+
+    output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+    #print(type(output_ids))
+
+    index = len(output_ids) - output_ids[::-1].index(151668)
+    # <class 'int'>
+    #print(type(index))
+    assert isinstance(index, int)
+
+    thinking_content = mat._tokenizer.decode(
+        output_ids[:index],
+        skip_special_tokens=True)
+
+    # <class 'str'>
+    #print(type(thinking_content))
+    assert isinstance(thinking_content, str)
+
+    content = mat._tokenizer.decode(
+        output_ids[index:],
+        skip_special_tokens=True)
+
+    # <class 'str'>
+    #print(type(content))
+    assert isinstance(content, str)
+
+    #print("thinking_content: ", thinking_content)
+    #print("content: ", content)

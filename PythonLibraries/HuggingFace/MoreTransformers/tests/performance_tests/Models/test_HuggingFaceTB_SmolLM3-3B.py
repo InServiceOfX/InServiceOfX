@@ -6,9 +6,9 @@ the test name of the tests you want to run, e.g.
 
 pytest -s ./integration_tests/Wrappers/Models/LLMs/test_HuggingFaceTB_SmolLM3-3B.py -k "test_AutoModelFor"
 """
-
+from corecode.Statistics import get_tokens_per_second_statistics
 from corecode.Utilities import DataSubdirectories, is_model_there
-from moretransformers.Utilities import get_tokens_per_second_statistics
+
 from transformers import (
     PreTrainedTokenizerFast,
     SmolLM3ForCausalLM)

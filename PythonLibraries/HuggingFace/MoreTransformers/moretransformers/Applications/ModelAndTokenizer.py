@@ -90,7 +90,7 @@ class ModelAndTokenizer:
         """
         Args:
             add_generation_prompt: Typically True
-            tokenize: Can be either False, resuting in a str, or True, resulting
+            tokenize: Can be either False, resulting in a str, or True, resulting
             in a Dict-like object, with keys "input_ids" and "attention_mask".
             return_tensors: If None, defaults to 'pt'.
         """
@@ -124,6 +124,12 @@ class ModelAndTokenizer:
             return_tensors: Optional[str] = None,
             padding: Optional[bool] = None,
             **kwargs):
+        """
+        From running integration tests, such as in test_Qwen_Qwen3-0_6B.py, this
+        returns <class 'transformers.tokenization_utils_base.BatchEncoding'>,
+        which has keys or attributes input_ids, attention_mask, device.
+        """
+
         if return_tensors is None:
             return_tensors='pt'
         if padding is None:
@@ -155,7 +161,6 @@ class ModelAndTokenizer:
             return {k: v.to(self._fpmc.device_map) for k, v in encoded.items()}
         else:
             return None
-
 
     def generate(self, input_ids, attention_mask=None, **kwargs):
         key_word_arguments = self._generation_configuration.to_dict()

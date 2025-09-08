@@ -6,8 +6,8 @@ the test name of the tests you want to run, e.g.
 
 pytest -s ./integration_tests/Wrappers/Models/LLMs/test_Qwen_Qwen3-0.6B.py -k "test_generate_with_attention"
 """
+from corecode.Statistics import get_tokens_per_second_statistics
 from corecode.Utilities import DataSubdirectories, is_model_there
-from moretransformers.Utilities import get_tokens_per_second_statistics
 
 from transformers import (
     Qwen3ForCausalLM,

@@ -27,3 +27,29 @@ class CreateDefaultGenerationConfigurations:
         # max_position_embeddings found to be 131072.
         generation_configuration.max_new_tokens = 131072
         return generation_configuration
+
+    def for_Qwen3_thinking() -> GenerationConfiguration:
+        """
+        https://huggingface.co/Qwen/Qwen3-0.6B#best-practices
+        https://huggingface.co/Qwen/Qwen3-1.7B#best-practices
+        """
+        generation_configuration = GenerationConfiguration()
+        generation_configuration.temperature = 0.6
+        generation_configuration.top_p = 0.95
+        generation_configuration.top_k = 20
+        generation_configuration.min_p = 0.0
+        generation_configuration.max_new_tokens = 32768
+        return generation_configuration
+
+    def for_Qwen3_not_thinking() -> GenerationConfiguration:
+        """
+        https://huggingface.co/Qwen/Qwen3-0.6B#best-practices
+        https://huggingface.co/Qwen/Qwen3-1.7B#best-practices
+        """
+        generation_configuration = GenerationConfiguration()
+        generation_configuration.temperature = 0.7
+        generation_configuration.top_p = 0.8
+        generation_configuration.top_k = 20
+        generation_configuration.min_p = 0.0
+        generation_configuration.max_new_tokens = 32768
+        return generation_configuration

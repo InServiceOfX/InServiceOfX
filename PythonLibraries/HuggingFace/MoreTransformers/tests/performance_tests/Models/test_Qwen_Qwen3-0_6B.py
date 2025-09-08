@@ -3,27 +3,25 @@ from commonapi.Messages import (
     ParsePromptsCollection,
     AssistantMessage,
     UserMessage)
+
 from corecode.FileIO import JSONFile
 from corecode.Statistics import (
     get_tokens_per_second_statistics,
-    summarize_tokens_per_second_statistics)
+    PerformanceMetrics,
+    summarize_tokens_per_second_statistics,
+    )
 from corecode.Utilities import DataSubdirectories, is_model_there
+from moretransformers.Applications import ModelAndTokenizer
 from moretransformers.Configurations import (
     CreateDefaultGenerationConfigurations,
     FromPretrainedModelConfiguration,
     FromPretrainedTokenizerConfiguration,)
 
-from pathlib import Path
-
-from transformers import (
-    Qwen3ForCausalLM,
-    Qwen2Tokenizer)
-
 import pytest, time, torch
 
 data_subdirectories = DataSubdirectories()
 
-relative_model_path = "Models/LLM/Menlo/Lucy-128k"
+relative_model_path = "Models/LLM/Qwen/Qwen3-0.6B"
 
 is_model_downloaded, model_path = is_model_there(
     relative_model_path,
@@ -36,8 +34,6 @@ model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
 def test_use_configurations():
     from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
         pretrained_model_name_or_path=model_path)
-    tokenizer = Qwen2Tokenizer.from_pretrained(
-        **from_pretrained_tokenizer_configuration.to_dict())
 
     from_pretrained_model_configuration = FromPretrainedModelConfiguration(
         pretrained_model_name_or_path=model_path,
@@ -45,15 +41,26 @@ def test_use_configurations():
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
         attn_implementation="flash_attention_2")
-    model = Qwen3ForCausalLM.from_pretrained(
-        **from_pretrained_model_configuration.to_dict())
-    assert model.config.max_position_embeddings == 131072
-    assert hasattr(model.config, "rope_scaling")
 
     generation_configuration = \
-        CreateDefaultGenerationConfigurations.for_Menlo_Lucy_128k()
+        CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+
+    model_and_tokenizer = ModelAndTokenizer(
+        model_path=model_path,
+        from_pretrained_model_configuration=from_pretrained_model_configuration,
+        from_pretrained_tokenizer_configuration=from_pretrained_tokenizer_configuration,
+        generation_configuration=generation_configuration)
+
+    model_and_tokenizer.load_model()
+    model_and_tokenizer.load_tokenizer()
+
+    assert model_and_tokenizer._model.config.max_position_embeddings == \
+        131072
+    assert hasattr(model_and_tokenizer._model.config, "rope_scaling")
 
     user_message_texts = []
+
+    # Setup conversation data.
 
     if data_subdirectories.PromptsCollection.exists():
         parse_prompts_collection = ParsePromptsCollection(
@@ -87,55 +94,3 @@ def test_use_configurations():
         input_token_count = tokenizer_outputs["input_ids"].shape[1]
 
         start_time = time.time()
-
-        output = model.generate(
-            input_ids=tokenizer_outputs["input_ids"],
-            attention_mask=tokenizer_outputs["attention_mask"],
-            **generation_configuration.to_dict())
-        end_time = time.time()
-
-        output_token_count = output.shape[1]
-
-        response = tokenizer.decode(output[0], skip_special_tokens=True)
-        assert isinstance(response, str)
-        print(response)
-        csap.append_message(AssistantMessage(response))
-
-        stats = get_tokens_per_second_statistics(
-            input_token_count,
-            output_token_count,
-            start_time,
-            end_time)
-
-        for key, value in stats.items():
-            print(f"{key}: {value}")
-        statistics.append(stats)
-
-        conversation_to_save.extend(csap.get_conversation_as_list_of_dicts())
-
-        csap.clear_conversation_history(is_keep_active_system_messages=False)
-
-    # Samity checks:
-    # print(len(csap.get_conversation_as_list_of_dicts()))
-    # print(len(statistics))
-    # print(len(user_message_texts))
-    # assert len(csap.get_conversation_as_list_of_dicts()) == \
-    #     2 * len(user_message_texts)
-    # assert len(statistics) == len(user_message_texts)
-
-    summary = summarize_tokens_per_second_statistics(statistics)
-    statistics.append(summary)
-
-    JSONFile.save_json(
-        Path.cwd() / "test_use_configurations.json",
-        conversation_to_save)
-
-    print(
-        f"Saved conversation to {Path.cwd().resolve() / 'test_use_configurations.json'}")
-
-    JSONFile.save_json(
-        Path.cwd() / "test_use_configurations_statistics.json",
-        statistics)
-
-    print(
-        f"Saved statistics to {Path.cwd().resolve() / 'test_use_configurations_statistics.json'}")
