@@ -73,7 +73,7 @@ class GenerateImages:
             0,
             images[0],
             self._app._flux_depth_nunchaku_and_loras._generation_configuration,
-            self._app._process_configurations.get_model_name())
+            self._app._process_configurations.get_control_model_name())
 
         self._app._terminal_ui.print_success(
             "Image with depth control generated successfully!")
@@ -224,6 +224,12 @@ class GenerateImages:
             nunchaku_model_paths):
             self._app._flux_nunchaku_and_loras.create_transformer_and_pipeline(
                 nunchaku_model_index)
+
+            self._app._process_configurations.process_configurations()
+
+            print("Guidance scale before refresh: ",
+                self._app._process_configurations.configurations[
+                "flux_generation_configuration"].guidance_scale)
 
             self._app._flux_nunchaku_and_loras.refresh_configurations(
                 self._app._process_configurations.configurations[

@@ -135,3 +135,8 @@ class ProcessConfigurations:
             self.configurations[
                 "nunchaku_configuration"].nunchaku_model_paths[
                     nunchaku_model_index]).name
+
+    def get_control_model_name(self):
+        return Path(
+            self.configurations[
+                "nunchaku_flux_control_configuration"].nunchaku_flux_model_path).name

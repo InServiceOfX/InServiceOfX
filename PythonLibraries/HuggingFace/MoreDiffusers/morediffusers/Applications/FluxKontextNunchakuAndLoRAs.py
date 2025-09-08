@@ -210,7 +210,7 @@ class FluxKontextNunchakuAndLoRAs:
         if self._text_encoder_2_enabled:
             self._delete_text_encoder_2_and_pipeline()
 
-        path = self._configuration.nunchaku_model_path[nunchaku_model_index]
+        path = self._configuration.nunchaku_model_paths[nunchaku_model_index]
 
         self._transformer = \
             NunchakuFluxTransformer2dModel.from_pretrained(str(path))
