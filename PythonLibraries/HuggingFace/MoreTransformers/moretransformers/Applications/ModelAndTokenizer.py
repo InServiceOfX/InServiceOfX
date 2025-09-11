@@ -222,4 +222,35 @@ class ModelAndTokenizer:
 
         return response
 
+    def _parse_generate_output_into_thinking_and_content(
+            self,
+            model_inputs,
+            generated_ids):
+        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+        index = len(output_ids) - output_ids[::-1].index(151668)
 
+        thinking_content = self._tokenizer.decode(
+            output_ids[:index],
+            skip_special_tokens=True)
+
+        content = self._tokenizer.decode(
+            output_ids[index:],
+            skip_special_tokens=True)
+
+        return (thinking_content, content)
+
+    def generate_with_thinking_enabled(self, conversation):
+        tokenizer_outputs = self.apply_chat_template(
+            conversation,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            enable_thinking=True)
+
+        generated_ids = self.generate(
+            tokenizer_outputs["input_ids"],
+            attention_mask=tokenizer_outputs["attention_mask"])
+        
+        return self._parse_generate_output_into_thinking_and_content(
+            tokenizer_outputs,
+            generated_ids)

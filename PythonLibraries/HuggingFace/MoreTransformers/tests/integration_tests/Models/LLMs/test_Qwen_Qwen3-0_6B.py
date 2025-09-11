@@ -308,6 +308,9 @@ def test_apply_chat_template_for_tokenize_False():
         not is_model_downloaded, reason=model_is_not_downloaded_message)
 def test_follow_Qwen_code_snippet_for_thinking():
     """
+    https://huggingface.co/Qwen/Qwen3-0.6B#quickstart
+    for code snippet, to exercise.
+    For suggested sammpling parameters.
     https://huggingface.co/Qwen/Qwen3-0.6B#best-practices
     """
     from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
@@ -379,5 +382,117 @@ def test_follow_Qwen_code_snippet_for_thinking():
     #print(type(content))
     assert isinstance(content, str)
 
-    #print("thinking_content: ", thinking_content)
-    #print("content: ", content)
+    # print("thinking_content: ", thinking_content)
+    # print("content: ", content)
+
+def create_configurations_and_model_for_test():
+    from_pretrained_tokenizer_configuration = \
+        FromPretrainedTokenizerConfiguration(
+            pretrained_model_name_or_path=model_path)
+    from_pretrained_model_configuration = FromPretrainedModelConfiguration(
+        pretrained_model_name_or_path=model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        attn_implementation="flash_attention_2")
+
+    generation_configuration = \
+        CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+
+    mat = ModelAndTokenizer(
+        model_path,
+        from_pretrained_model_configuration=from_pretrained_model_configuration,
+        from_pretrained_tokenizer_configuration= \
+            from_pretrained_tokenizer_configuration,
+        generation_configuration=generation_configuration)
+
+    return (
+        mat,
+        from_pretrained_tokenizer_configuration,
+        from_pretrained_model_configuration,
+        generation_configuration)
+
+def parse_generate_output_into_thinking_and_content(
+        mat,
+        model_inputs,
+        generated_ids):
+    output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+    index = len(output_ids) - output_ids[::-1].index(151668)
+
+    thinking_content = mat._tokenizer.decode(
+        output_ids[:index],
+        skip_special_tokens=True)
+
+    content = mat._tokenizer.decode(
+        output_ids[index:],
+        skip_special_tokens=True)
+
+    return (thinking_content, content)
+
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_enable_thinking_false_explicit_steps():
+    mat, _, _, _ = create_configurations_and_model_for_test()
+
+    mat.load_model()
+    mat.load_tokenizer()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    text = mat.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        tokenize=False,
+        to_device=False,
+        enable_thinking=False)
+
+    assert isinstance(text, str)
+
+    model_inputs = mat.encode_by_calling_tokenizer(text, return_tensors="pt")
+
+    generated_ids = mat.generate(**model_inputs)
+
+    with pytest.raises(ValueError, match="151668 is not in list"):
+        thinking_content, content = parse_generate_output_into_thinking_and_content(
+            mat,
+            model_inputs,
+            generated_ids)
+
+    response = mat.decode_with_tokenizer(
+        generated_ids,
+        skip_special_tokens=True)
+
+    print("response: ", response)
+
+def test_with_enable_thinking_and_tokenize():
+    mat, _, _, _ = create_configurations_and_model_for_test()
+
+    mat.load_model()
+    mat.load_tokenizer()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    tokenizer_outputs = mat.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        enable_thinking=True)
+
+    generated_ids = mat.generate(
+        tokenizer_outputs["input_ids"],
+        attention_mask=tokenizer_outputs["attention_mask"])
+
+    # <class 'torch.Tensor'>
+    #print(type(generated_ids))
+
+    thinking_content, content = parse_generate_output_into_thinking_and_content(
+        mat,
+        tokenizer_outputs,
+        generated_ids)
+
+    print("thinking_content: ", thinking_content)
+    print("content: ", content)
