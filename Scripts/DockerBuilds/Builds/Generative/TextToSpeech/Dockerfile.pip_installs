@@ -1,4 +1,10 @@
-RUN pip install torchaudio torchcodec
+RUN pip install torchaudio torchcodec torchvision
+
+RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoice && \
+  cd /ThirdParty/VibeVoice && \
+  git checkout master && \
+  cd /
+
 
 
 

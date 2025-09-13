@@ -1,6 +1,4 @@
-from corecode.Utilities import (
-    DataSubdirectories,
-    )
+from corecode.Utilities import DataSubdirectories, is_model_there
 from moretransformers.Configurations import GenerationConfiguration
 from moretransformers.Conversions import convert_mp3_to_AudioInput
 from pathlib import Path
@@ -14,20 +12,14 @@ import io
 import pytest
 import torchaudio
 
-data_sub_dirs = DataSubdirectories()
+data_subdirectories = DataSubdirectories()
 
 relative_model_path = \
     "Models/Generative/TextToSpeech/nari-labs/Dia-1.6B-0626"
 
-is_model_downloaded = False
-model_path = None
-
-for path in data_sub_dirs.DataPaths:
-    path = Path(path)
-    if (path / relative_model_path).exists():
-        is_model_downloaded = True
-        model_path = path / relative_model_path
-        break
+is_model_downloaded, model_path = is_model_there(
+    relative_model_path,
+    data_subdirectories)
 
 model_not_downloaded_message = f"Model not downloaded: {relative_model_path}"
 

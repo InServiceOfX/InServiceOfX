@@ -41,6 +41,8 @@ RUN apt-get update && \
   pip install --upgrade python-dotenv && \
   #
   #
+  # TODO: Consider removing poetry since a Docker image wouldn't necessarily
+  # need a poetry environment.
   # Install Poetry
   # https://python-poetry.org/docs/#installing-with-the-official-installer
   curl -sSL https://install.python-poetry.org | python3 - && \
@@ -60,9 +62,11 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 
 # We seek here to install a working minimal of modules from HuggingFace.
-RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout v4.54-release && \
+  # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
+  # VibeVoice implementation.
+  git checkout w0.0.1-vibevoice && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -84,14 +88,33 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   pip install -e . && \
   #
   #
-  pip install datasets
+  pip install datasets && \
+  #
+  #
+## Diffusers is needed by VibeVoice:
+  # transformers/models/vibevoice/schedule/dpm_solver.py:23
+  git clone https://github.com/huggingface/diffusers.git /ThirdParty/diffusers && \
+  cd /ThirdParty/diffusers && \
+  git checkout main && \
+  pip install -e . && \
+  cd / && \
+  cd /
+  #
+  #
 
 
 
 
 
 
-RUN pip install torchaudio torchcodec
+
+RUN pip install torchaudio torchcodec torchvision
+
+RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoice && \
+  cd /ThirdParty/VibeVoice && \
+  git checkout master && \
+  cd /
+
 
 
 
