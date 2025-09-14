@@ -77,7 +77,7 @@ class BatchProcessingConfiguration(BaseModel):
         
         # Convert to JSON string for consistent hashing
         config_json = json.dumps(config_dict, sort_keys=True, default=str)
-        
+
         # Generate SHA-256 hash
         hash_object = hashlib.sha256(config_json.encode('utf-8'))
         full_hash = hash_object.hexdigest()

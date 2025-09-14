@@ -66,7 +66,7 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   cd /ThirdParty/transformers && \
   # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
   # VibeVoice implementation.
-  git checkout w0.0.1-vibevoice && \
+  git checkout w0.0.2-vibevoice && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \

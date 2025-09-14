@@ -15,6 +15,7 @@ from transformers.models.vibevoice.modeling_vibevoice_inference import (
     VibeVoiceForConditionalGenerationInference,
 )
 
+from pathlib import Path
 from typing import List
 import torch
 
@@ -38,7 +39,7 @@ class VibeVoiceModelAndProcessor:
         text_file_paths = self.vv_configuration.text_file_paths
         text_strings = []
         for text_file_path in text_file_paths:
-            text_strings.append(TextFile(text_file_path).read_text())
+            text_strings.append(TextFile.load_text(text_file_path))
         return text_strings
 
     def load_processor(self):
@@ -89,7 +90,18 @@ class VibeVoiceModelAndProcessor:
 
         return self._output
 
-    def process_output(self, output = None):
+    def process_and_save_output(self, output = None):
+        if output is None:
+            output = self._output
+
         generated_speech = output.speech_outputs[0]
         processor_sampling_rate = self._processor.audio_processor.sampling_rate
-    
+        save_filename, full_hash = self.vv_configuration.create_save_filename()
+        save_path = Path(self.vv_configuration.directory_path_to_save) / \
+            save_filename
+        self._processor.save_audio(
+            generated_speech,
+            str(save_path),
+            sampling_rate=processor_sampling_rate,
+        )
+        return save_path, full_hash

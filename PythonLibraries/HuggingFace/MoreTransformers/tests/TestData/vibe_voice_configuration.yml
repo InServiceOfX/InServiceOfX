@@ -1,0 +1,9 @@
+audio_file_paths:
+  - /ThirdParty/VibeVoice/demo/voices/en-Frank_man.wav
+  - /ThirdParty/VibeVoice/demo/voices/en-Mary_woman_bgm.wav
+text_file_paths:
+  - /InServiceOfX/PythonLibraries/HuggingFace/MoreTransformers/tests/TestData/VibeVoiceExampleDialogueAP.txt
+cfg_scale: 1.3
+max_new_tokens:
+directory_path_to_save: /Data/
+base_saved_filename: TestVibeVoiceOutput

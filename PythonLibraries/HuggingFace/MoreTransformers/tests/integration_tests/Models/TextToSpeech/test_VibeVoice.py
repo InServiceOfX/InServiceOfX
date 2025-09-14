@@ -1,8 +1,6 @@
 from corecode.Utilities import DataSubdirectories, is_model_there
 
-from moretransformers.Configurations import (
-    FromPretrainedModelConfiguration,
-)
+from moretransformers.Configurations import FromPretrainedModelConfiguration
 from transformers.models.vibevoice.vibevoice_processor import (
     VibeVoiceProcessor,
 )
