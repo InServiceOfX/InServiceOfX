@@ -106,3 +106,71 @@ class SQLStatements:
     GET_MAX_CONVERSATION_PAIR_ID = """
     SELECT COALESCE(MAX(conversation_pair_id), -1) FROM permanent_conversation_message_pairs;
     """
+
+    # Similarity search for messages
+    SELECT_SIMILAR_MESSAGES_BY_EMBEDDING = """
+    SELECT 
+        conversation_id,
+        content,
+        datetime,
+        hash,
+        role,
+        embedding <=> $1 as distance
+    FROM permanent_conversation_messages
+    WHERE embedding IS NOT NULL
+    ORDER BY embedding <=> $1
+    LIMIT $2;
+    """
+
+    # Similarity search for message pairs
+    SELECT_SIMILAR_MESSAGE_PAIRS_BY_EMBEDDING = """
+    SELECT 
+        conversation_pair_id,
+        content_0,
+        content_1,
+        datetime,
+        hash,
+        role_0,
+        role_1,
+        embedding <=> $1 as distance
+    FROM permanent_conversation_message_pairs
+    WHERE embedding IS NOT NULL
+    ORDER BY embedding <=> $1
+    LIMIT $2;
+    """
+
+    # Hybrid search combining both tables
+    SELECT_SIMILAR_CONVERSATION_CONTENT = """
+    WITH message_search AS (
+        SELECT 
+            conversation_id as id,
+            content,
+            datetime,
+            hash,
+            role,
+            'message' as type,
+            embedding <=> $1 as distance
+        FROM permanent_conversation_messages
+        WHERE embedding IS NOT NULL
+    ),
+    pair_search AS (
+        SELECT 
+            conversation_pair_id as id,
+            content_0 || ' ' || content_1 as content,
+            datetime,
+            hash,
+            role_0 || '-' || role_1 as role,
+            'pair' as type,
+            embedding <=> $1 as distance
+        FROM permanent_conversation_message_pairs
+        WHERE embedding IS NOT NULL
+    ),
+    combined_search AS (
+        SELECT * FROM message_search
+        UNION ALL
+        SELECT * FROM pair_search
+    )
+    SELECT * FROM combined_search
+    ORDER BY distance
+    LIMIT $2;
+    """

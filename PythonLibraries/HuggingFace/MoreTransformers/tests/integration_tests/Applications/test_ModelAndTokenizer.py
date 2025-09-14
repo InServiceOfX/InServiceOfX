@@ -48,7 +48,7 @@ def test_ModelAndTokenizer_loads_model():
     assert isinstance(mat._model, Qwen3ForCausalLM)
 
 @pytest.mark.skipif(
-        not , reason=model_is_not_downloaded_message)
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
 def test_ModelAndTokenizer_apply_chat_template_works():
     mat = ModelAndTokenizer(
         model_path,
@@ -110,15 +110,6 @@ def test_ModelAndTokenizer_generate_works():
 
     assert len(output) == 1
 
-    print(
-        "With special tokens: ",
-        mat.decode_with_tokenizer(output[0], skip_special_tokens=False))
-    print(
-        "Without special tokens: ",
-        mat.decode_with_tokenizer(output[0], skip_special_tokens=True))
-
-    print("\n With attention mask: \n")
-
     prompt_str = mat.apply_chat_template(
         conversation,
         add_generation_prompt=True,
@@ -177,20 +168,64 @@ def test_ModelAndTokenizer_generate_works_with_direct_attention_mask():
 
     response = mat.decode_with_tokenizer(output[0], skip_special_tokens=True)
     assert isinstance(response, str)
-    print(response)
+    print("\n -------- response --------\n", response)
 
-relative_model_path = "Models/LLM/google/gemma-3-270m-it"
+def test_ModelAndTokenizer_generate_with_enable_thinking():
+    mat = ModelAndTokenizer(
+        model_path,)
 
-is_model_downloaded, model_path = is_model_there(
-    relative_model_path,
+    mat._fpmc.device_map = "cuda:0"
+    mat._fpmc.torch_dtype = torch.bfloat16
+    mat._fpmc.trust_remote_code = True
+
+    mat._generation_configuration.max_new_tokens = 65536
+    mat._generation_configuration.do_sample = True
+    mat._generation_configuration.temperature = 0.9
+    mat._generation_configuration.min_p = 0.15
+    mat._generation_configuration.repetition_penalty = 1.05
+
+    mat._fptc.local_files_only = True
+    mat._fptc.trust_remote_code = True
+
+    mat.load_tokenizer()
+    mat.load_model()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    tokenizer_outputs = mat.apply_chat_template(
+        conversation,
+        add_generation_prompt=True,
+        return_tensors="pt",
+        tokenize=False,
+        to_device=False,
+        enable_thinking=True)
+
+    model_inputs = mat.encode_by_calling_tokenizer(tokenizer_outputs)
+    model_inputs = mat.move_encoded_to_device(model_inputs)
+
+    output = mat.generate(
+        input_ids=model_inputs["input_ids"],
+        attention_mask=model_inputs["attention_mask"],
+    )
+
+    response = mat.decode_with_tokenizer(output, skip_special_tokens=True)
+    assert isinstance(response, str)
+    print("\n -------- response --------\n", response)
+
+relative_model_path_1 = "Models/LLM/google/gemma-3-270m-it"
+
+is_model_downloaded_1, model_path_1 = is_model_there(
+    relative_model_path_1,
     data_subdirectories)
 
-model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
+model_is_not_downloaded_message_1 = \
+    f"Model {relative_model_path_1} not downloaded"
 
 @pytest.mark.skipif(
-        not is_model_downloaded, reason=model_is_not_downloaded_message)
+        not is_model_downloaded_1, reason=model_is_not_downloaded_message_1)
 def test_ModelAndTokenizer_apply_chat_template_and_generate_works():
-    mat = ModelAndTokenizer(model_path)
+    mat = ModelAndTokenizer(model_path_1)
 
     mat._fpmc.device_map = "cuda:0"
     mat._fpmc.torch_dtype = torch.bfloat16
@@ -219,18 +254,19 @@ def test_ModelAndTokenizer_apply_chat_template_and_generate_works():
     assert isinstance(response, str)
     print(response)
 
-relative_model_path = "Models/LLM/tencent/Hunyuan-0.5B-Instruct"
+relative_model_path_2 = "Models/LLM/tencent/Hunyuan-0.5B-Instruct"
 
-is_model_downloaded, model_path = is_model_there(
-    relative_model_path,
+is_model_downloaded_2, model_path_2 = is_model_there(
+    relative_model_path_2,
     data_subdirectories)
 
-model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
+model_is_not_downloaded_message_2 = \
+    f"Model {relative_model_path_2} not downloaded"
 
 @pytest.mark.skipif(
-        not is_model_downloaded, reason=model_is_not_downloaded_message)
+        not is_model_downloaded_2, reason=model_is_not_downloaded_message_2)
 def test_ModelAndTokenizer_works_with_Hunyuan_0_5B_Instruct():
-    mat = ModelAndTokenizer(model_path)
+    mat = ModelAndTokenizer(model_path_2)
 
     mat._fpmc.device_map = "cuda:0"
     mat._fpmc.torch_dtype = torch.bfloat16

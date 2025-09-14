@@ -466,6 +466,8 @@ def test_enable_thinking_false_explicit_steps():
 
     print("response: ", response)
 
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
 def test_with_enable_thinking_and_tokenize():
     mat, _, _, _ = create_configurations_and_model_for_test()
 
