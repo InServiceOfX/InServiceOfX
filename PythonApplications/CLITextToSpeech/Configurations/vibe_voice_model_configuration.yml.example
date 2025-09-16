@@ -1,0 +1,4 @@
+pretrained_model_name_or_path: /Data/Models/Generative/TextToSpeech/microsoft/VibeVoice-1.5B
+torch_dtype: torch.bfloat16
+device_map: "cuda:0"
+attn_implementation:

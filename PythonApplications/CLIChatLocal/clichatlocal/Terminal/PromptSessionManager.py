@@ -33,7 +33,7 @@ class PromptSessionManager:
     
     def _setup_key_bindings(self):
         """Setup key bindings for the prompt session."""
-# Add clear screen (Ctrl+L)
+        # Add clear screen (Ctrl+L)
         @self.kb.add('c-l')
         def _(event):
             """Clear the screen"""

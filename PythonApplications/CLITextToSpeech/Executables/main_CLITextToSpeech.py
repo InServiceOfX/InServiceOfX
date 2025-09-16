@@ -51,10 +51,11 @@ def main_CLITextToSpeech():
         is_current_path=args.currentpath,
         configpath=configpath)
 
+    application_paths.add_libraries_to_path()
+
     from clitexttospeech.CLITextToSpeech import CLITextToSpeech
 
-    cli_text_to_speech = CLITextToSpeech(
-        application_paths.configuration_file_paths["cli_configuration"])
+    cli_text_to_speech = CLITextToSpeech(application_paths)
     cli_text_to_speech.run()
 
 if __name__ == "__main__":

@@ -137,6 +137,8 @@ PythonApplications/CLIImage/Configurations/nunchaku_configuration.yml
 PythonApplications/CLIImage/Configurations/nunchaku_flux_control_configuration.yml
 PythonApplications/CLIImage/Configurations/nunchaku_loras_configuration.yml
 PythonApplications/CLIImage/Configurations/pipeline_inputs.yml
+PythonApplications/CLITextToSpeech/Configurations/vibe_voice_configuration.yml
+PythonApplications/CLITextToSpeech/Configurations/vibe_voice_model_configuration.yml
 PythonLibraries/ThirdParties/APIs/CommonAPI/tests/TestSetup/postgresql_test_configuration.yml
 Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt

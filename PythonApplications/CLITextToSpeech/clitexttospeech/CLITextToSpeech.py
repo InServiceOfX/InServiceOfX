@@ -1,20 +1,32 @@
-from pathlib import Path
-from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit import print_formatted_text
+from clitexttospeech.Core import GenerateWithVibeVoice, ProcessConfigurations
+from clitexttospeech.Terminal import CommandHandler
+from clitexttospeech.Terminal import PromptSessionsManager
+from clitexttospeech.Terminal import TerminalUI
 
-from clitexttospeech.Configuration import CLIConfiguration
-from clitexttospeech.Terminal.CommandHandler import CommandHandler
-from clitexttospeech.Terminal.PromptSessionsManager import PromptSessionsManager
+from moretransformers.Applications.TextToSpeech \
+    import VibeVoiceModelAndProcessor
+
+from pathlib import Path
 
 class CLITextToSpeech:
-    def __init__(self, configuration_file_path: Path):
-        self.configuration_file_path = configuration_file_path
-        self._cli_configuration = CLIConfiguration.from_yaml(configuration_file_path)
-        
-        # Setup command handler
+    def __init__(self, application_paths):
+        self._application_paths = application_paths
+        self._terminal_ui = TerminalUI()
+
+        self._process_configurations = ProcessConfigurations(self)
+        self._process_configurations.process_configurations()
+
+        self._generate_with_vibe_voice = GenerateWithVibeVoice(self)
+
         self._command_handler = CommandHandler(self)
         
         self._psm = PromptSessionsManager(self)
+
+        self._vvmp = VibeVoiceModelAndProcessor(
+            self._process_configurations.configurations[
+                "vibe_voice_model_configuration"],
+            self._process_configurations.configurations[
+                "vibe_voice_configuration"])
 
     def run_iterative(self):
         try:
@@ -31,28 +43,24 @@ class CLITextToSpeech:
 
                 # If command wasn't handled, treat as regular user input
                 if not command_handled:
-                    print(f"Processing text: {prompt}")
-                
+                    self._terminal_ui.print_processing(prompt)
+
                 return continue_running
             
             # Treat as text input for generation
-            print(f"Processing text: {prompt}")
+            self._terminal_ui.print_processing(prompt)
             return True
             
         except KeyboardInterrupt:
-            print_formatted_text(HTML("\n<ansigreen>Goodbye!</ansigreen>"))
+            self._terminal_ui.print_goodbye()
             return False
         except Exception as e:
-            print_formatted_text(
-                HTML(f"\n<ansired>Error: {str(e)}</ansired>\n"))
+            self._terminal_ui.print_error(str(e))
             return True
     
     def run(self):
         """Main run loop"""
-        print("Welcome to CLITextToSpeech! Press Ctrl+C to exit.\n")
-
+        self._terminal_ui.print_header("CLITextToSpeech - Text-to-Speech Tool")
         continue_running = True
         while continue_running:
             continue_running = self.run_iterative()
-
-        print("\nThank you for using CLITextToSpeech!")

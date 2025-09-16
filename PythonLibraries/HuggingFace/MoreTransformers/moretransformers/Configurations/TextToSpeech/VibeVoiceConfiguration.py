@@ -1,3 +1,4 @@
+from corecode.Utilities.Strings import format_float_for_string
 from pydantic import BaseModel, Field, field_validator
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -101,5 +102,11 @@ class VibeVoiceConfiguration(BaseModel):
 
     def create_save_filename(self) -> str:
         full_hash, truncated_hash = self._create_configuration_hash()
-        filename = f"{self.base_saved_filename}-{truncated_hash}.wav"
+
+        if self.cfg_scale is None:
+            filename = \
+                f"{self.base_saved_filename}-{truncated_hash}.wav"
+        else:
+            filename = \
+                f"{self.base_saved_filename}-{format_float_for_string(self.cfg_scale)}-{truncated_hash}.wav"
         return filename, full_hash

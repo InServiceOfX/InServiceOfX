@@ -35,6 +35,30 @@ class VibeVoiceModelAndProcessor:
 
         self._inputs = None
 
+        self._processor = None
+        self._model = None
+
+    def refresh_configurations(
+            self,
+            from_pretrained_model_configuration: \
+                FromPretrainedModelConfiguration,
+            vibe_voice_configuration: VibeVoiceConfiguration,
+    ):
+        previous_pretrained_model_name_or_path = \
+            self.fpm_configuration.pretrained_model_name_or_path
+
+        self.fpm_configuration = from_pretrained_model_configuration
+        self.vv_configuration = vibe_voice_configuration
+        if previous_pretrained_model_name_or_path != \
+                self.fpm_configuration.pretrained_model_name_or_path:
+            if self.is_processor_loaded():
+                del self._processor
+            if self.is_model_loaded():
+                del self._model
+
+            self._processor = None
+            self._model = None
+
     def _text_files_to_strings(self):
         text_file_paths = self.vv_configuration.text_file_paths
         text_strings = []
@@ -46,6 +70,9 @@ class VibeVoiceModelAndProcessor:
         self._processor = VibeVoiceProcessor.from_pretrained(
             pretrained_model_name_or_path=\
                 self.fpm_configuration.pretrained_model_name_or_path)
+
+    def is_processor_loaded(self):
+        return self._processor is not None
 
     def process_inputs(self, texts: List[str] = None):
         if texts is None:
@@ -71,6 +98,9 @@ class VibeVoiceModelAndProcessor:
             self._inputs = {k: v for k, v in self._inputs.items()}
 
         return self._inputs
+
+    def is_model_loaded(self):
+        return self._model is not None
 
     def load_model(self):
         self._model = \
