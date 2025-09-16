@@ -104,11 +104,22 @@ def test_ModelAndTokenizer_generate_works():
     input_ids = mat.apply_chat_template(
         conversation,
         add_generation_prompt=True,
-        tokenize=True)
+        tokenize=True,
+        return_dict=True)
 
-    output = mat.generate(input_ids)
+    output = mat.generate(
+        input_ids=input_ids["input_ids"],
+        attention_mask=input_ids["attention_mask"])
 
+    # <class 'torch.Tensor'>
+    # print(type(output))
     assert len(output) == 1
+
+    response_no_special_tokens = mat.decode_with_tokenizer(
+        output, skip_special_tokens=True)
+    print(
+        "-------- response_no_special_tokens --------\n",
+        response_no_special_tokens)
 
     prompt_str = mat.apply_chat_template(
         conversation,
@@ -122,15 +133,15 @@ def test_ModelAndTokenizer_generate_works():
     encoded = mat.move_encoded_to_device(encoded)
 
     output = mat.generate(
-        encoded["input_ids"],
+        input_ids=encoded["input_ids"],
         attention_mask=encoded["attention_mask"])
 
     print(
         "With special tokens: ",
-        mat.decode_with_tokenizer(output[0], skip_special_tokens=False))
+        mat.decode_with_tokenizer(output, skip_special_tokens=False))
     print(
         "Without special tokens: ",
-        mat.decode_with_tokenizer(output[0], skip_special_tokens=True))
+        mat.decode_with_tokenizer(output, skip_special_tokens=True))
 
 def test_ModelAndTokenizer_generate_works_with_direct_attention_mask():
     """
@@ -166,7 +177,7 @@ def test_ModelAndTokenizer_generate_works_with_direct_attention_mask():
         tokenizer_outputs["input_ids"],
         attention_mask=tokenizer_outputs["attention_mask"])
 
-    response = mat.decode_with_tokenizer(output[0], skip_special_tokens=True)
+    response = mat.decode_with_tokenizer(output, skip_special_tokens=True)
     assert isinstance(response, str)
     print("\n -------- response --------\n", response)
 

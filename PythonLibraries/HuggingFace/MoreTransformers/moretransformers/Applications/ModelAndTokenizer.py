@@ -93,6 +93,10 @@ class ModelAndTokenizer:
             tokenize: Can be either False, resulting in a str, or True, resulting
             in a Dict-like object, with keys "input_ids" and "attention_mask".
             return_tensors: If None, defaults to 'pt'.
+
+            kwargs:
+            - return_dict: If True, returns a dict-like object, with keys
+            "input_ids" and "attention_mask".
         """
         key_word_arguments = {}
         key_word_arguments.update(kwargs)

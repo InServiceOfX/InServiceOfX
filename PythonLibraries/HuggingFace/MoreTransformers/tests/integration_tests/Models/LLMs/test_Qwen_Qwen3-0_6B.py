@@ -87,6 +87,9 @@ def test_generate_works():
     https://huggingface.co/LiquidAI/LFM2-1.2B
 
     There was no particular reason to use these examples.
+
+    On NVIDIA RTX 3070 Notebook, this test gets this warning:
+    The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
     """
     tokenizer = Qwen2Tokenizer.from_pretrained(
         model_path,
@@ -138,6 +141,9 @@ def test_generate_with_greater_new_tokens():
     https://huggingface.co/LiquidAI/LFM2-1.2B    
 
     There was no particular reason to use these examples.
+
+    On NVIDIA RTX 3070 Notebook, this test gets this warning:
+    The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
     """
     tokenizer = Qwen2Tokenizer.from_pretrained(
         model_path,
@@ -280,6 +286,7 @@ def test_apply_chat_template_for_tokenize_False():
         generation_configuration=generation_configuration)
 
     mat.load_tokenizer()
+    mat.load_model()
 
     prompt = "What is C. elegans?"
     conversation = [{"role": "user", "content": prompt}]
@@ -293,16 +300,26 @@ def test_apply_chat_template_for_tokenize_False():
 
     assert isinstance(text, str)
 
-    model_inputs = mat.encode_by_calling_tokenizer(text, return_tensors="pt")
+    model_inputs = mat.encode_by_calling_tokenizer(text)
+    model_inputs = mat.move_encoded_to_device(model_inputs)
 
     # <class 'transformers.tokenization_utils_base.BatchEncoding'>
-    print(type(model_inputs))
+    #print(type(model_inputs))
     # input_ids, attention_mask,
-    print(model_inputs.keys())
+    #print(model_inputs.keys())
 
-    generated_ids = mat.generate(**model_inputs)
+    generated_ids = mat.generate(
+        input_ids=model_inputs["input_ids"],
+        attention_mask=model_inputs["attention_mask"])
 
     print(type(generated_ids))
+
+    assert len(generated_ids) == 1
+
+    print(
+        "Without special tokens: ",
+        mat._tokenizer.decode(generated_ids, skip_special_tokens=True))
+
 
 @pytest.mark.skipif(
         not is_model_downloaded, reason=model_is_not_downloaded_message)
@@ -354,6 +371,7 @@ def test_follow_Qwen_code_snippet_for_thinking():
     # input_ids, attention_mask,
     #print(model_inputs.keys())
 
+    # TODO: The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'min_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
     generated_ids = mat.generate(**model_inputs)
     # <class 'torch.Tensor'>
     #print(type(generated_ids))
@@ -382,8 +400,8 @@ def test_follow_Qwen_code_snippet_for_thinking():
     #print(type(content))
     assert isinstance(content, str)
 
-    # print("thinking_content: ", thinking_content)
-    # print("content: ", content)
+    print("thinking_content: ", thinking_content)
+    print("content: ", content)
 
 def create_configurations_and_model_for_test():
     from_pretrained_tokenizer_configuration = \
