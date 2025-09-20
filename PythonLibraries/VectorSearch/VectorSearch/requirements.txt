@@ -1,6 +1,0 @@
-# Do pip install -r requirements.txt to install the following. I recommend to
-# do this in a virtual environment.
-###### Requirements without Version Specifiers ######
-
-pymongo
-requests

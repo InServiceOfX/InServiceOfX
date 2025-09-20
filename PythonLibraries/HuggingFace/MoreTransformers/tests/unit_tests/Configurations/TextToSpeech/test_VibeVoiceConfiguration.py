@@ -2,9 +2,16 @@ from moretransformers.Configurations.TextToSpeech import VibeVoiceConfiguration
 
 from pathlib import Path
 
+import pytest
+
 test_data_path = Path(__file__).parents[3] / "TestData"
 test_file_path = test_data_path / "vibe_voice_configuration.yml"
 
+vibe_voice_path = Path("/ThirdParty/VibeVoice")
+
+@pytest.mark.skipif(
+    not vibe_voice_path.exists(),
+    reason=f"VibeVoice path does not exist: {vibe_voice_path}")
 def test_VibeVoiceConfiguration_from_yaml():
     configuration = VibeVoiceConfiguration.from_yaml(test_file_path)
     assert configuration is not None

@@ -58,8 +58,19 @@ Type "help" for help.
 
 local_llm_full_database=# 
 ```
+`local-llm-full-postgres` is the name of the container, which would be specified in a `docker-compose.yml` file, in the field `container_name`. The PostgreSQL database name is also specified there, in the "field" `POSTGRES_DB`. In this case, the name is `local_llm_full_database`.
+
 
 ```
 # list all databases
 \l
 ```
+
+*DO NOT DELETE* the database `postgre` if you see it in the list of databases; it's required for PostgreSQL to function properly. Likewise for template0, template1 databases.
+
+### Deleting databases manually
+
+```
+DROP DATABASE test_pydantic_ai_database_1;
+```
+where I used the example of `test_pydantic_ai_database_1` (maybe spuriously created in a `pytest` integration test).

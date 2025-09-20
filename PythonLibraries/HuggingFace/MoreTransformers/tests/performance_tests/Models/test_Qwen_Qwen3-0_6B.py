@@ -42,6 +42,9 @@ def create_configurations_for_test():
         attn_implementation="flash_attention_2")
     generation_configuration = \
         CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+    generation_configuration.max_new_tokens = 65536
+    generation_configuration.do_sample = True
+
     return (
         from_pretrained_tokenizer_configuration,
         from_pretrained_model_configuration,
@@ -116,9 +119,10 @@ def test_enable_thinking_true():
 
         output_token_count = generated_ids.shape[1]
 
-        thinking_content, content = mat._parse_generate_output_into_thinking_and_content(
-            tokenizer_outputs,
-            generated_ids)
+        thinking_content, content = \
+            mat._parse_generate_output_into_thinking_and_content(
+                tokenizer_outputs,
+                generated_ids)
 
         print(f"Thinking content: {thinking_content}")
         print(f"Content: {content}")

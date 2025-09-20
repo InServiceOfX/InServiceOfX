@@ -2,8 +2,6 @@ from commonapi.Messages.Messages import Message
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from .ConversationHistory import ConversationHistory
-
 import time
 
 @dataclass

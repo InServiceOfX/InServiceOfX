@@ -1,1 +1,2 @@
 from .ModelAndConversationManager import ModelAndConversationManager
+from .ProcessConfigurations import ProcessConfigurations

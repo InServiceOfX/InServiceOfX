@@ -5,13 +5,11 @@ from commonapi.Messages import (
     UserMessage)
 from corecode.Configuration import ModelList
 from moretransformers.Applications import ModelAndTokenizer
-from moretransformers.Configurations import (
-    FromPretrainedModelConfiguration,
-    FromPretrainedTokenizerConfiguration,
-    GenerationConfiguration)
 
 class ModelAndConversationManager:
     def __init__(self, app):
+        self._app = app
+
         self._csp = ConversationSystemAndPermanent()
 
         self._application_paths = app._application_paths
@@ -56,43 +54,23 @@ class ModelAndConversationManager:
         return first_model_name, first_model_path
 
     def _load_model_configurations(self):
-        from_pretrained_model_path = \
-            self._application_paths.configuration_file_paths[
-                "from_pretrained_model"]
-
-        if from_pretrained_model_path.exists():
-            from_pretrained_model_configuration = \
-                FromPretrainedModelConfiguration.from_yaml(
-                    from_pretrained_model_path)
+        if self._app._process_configurations.configurations is not None:
+            return (
+                self._app._process_configurations.configurations[
+                    "from_pretrained_model_configuration"],
+                self._app._process_configurations.configurations[
+                    "from_pretrained_tokenizer_configuration"],
+                self._app._process_configurations.configurations[
+                    "generation_configuration"])
         else:
-            from_pretrained_model_configuration = \
-                FromPretrainedModelConfiguration()
-
-        from_pretrained_tokenizer_path = \
-            self._application_paths.configuration_file_paths[
-                "from_pretrained_tokenizer"]
-
-        if from_pretrained_tokenizer_path.exists():
-            from_pretrained_tokenizer_configuration = \
-                FromPretrainedTokenizerConfiguration.from_yaml(
-                    from_pretrained_tokenizer_path)
-        else:
-            from_pretrained_tokenizer_configuration = \
-                FromPretrainedTokenizerConfiguration()
-
-        generation_configuration_path = \
-            self._application_paths.configuration_file_paths["generation"]
-
-        if generation_configuration_path.exists():
-            generation_configuration = \
-                GenerationConfiguration.from_yaml(generation_configuration_path)
-        else:
-            generation_configuration = GenerationConfiguration()
-
-        return (
-            from_pretrained_model_configuration,
-            from_pretrained_tokenizer_configuration,
-            generation_configuration)
+            self._app._process_configurations.process_configurations()
+            return (
+                self._app._process_configurations.configurations[
+                    "from_pretrained_model_configuration"],
+                self._app._process_configurations.configurations[
+                    "from_pretrained_tokenizer_configuration"],
+                self._app._process_configurations.configurations[
+                    "generation_configuration"])
 
     def _load_model_and_tokenizer(
             self,
@@ -103,8 +81,10 @@ class ModelAndConversationManager:
 
         self._mat = ModelAndTokenizer(
             model_path=model_path,
-            from_pretrained_model_configuration=from_pretrained_model_configuration,
-            from_pretrained_tokenizer_configuration=from_pretrained_tokenizer_configuration,
+            from_pretrained_model_configuration=\
+                from_pretrained_model_configuration,
+            from_pretrained_tokenizer_configuration=\
+                from_pretrained_tokenizer_configuration,
             generation_configuration=generation_configuration)
 
         self._mat._fptc.pretrained_model_name_or_path = model_path

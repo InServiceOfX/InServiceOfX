@@ -25,7 +25,8 @@ else:
 	)
     raise Exception(error_message)
 
-tools_path = Path(__file__).resolve().parents[2] / "ThirdParties" / "Tools"
+tools_path = Path(__file__).resolve().parents[2] / "Tools"
+
 if tools_path.exists():
     if str(tools_path) not in sys.path:
         sys.path.append(str(tools_path))

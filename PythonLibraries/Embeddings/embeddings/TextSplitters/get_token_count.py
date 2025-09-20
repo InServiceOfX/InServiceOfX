@@ -1,9 +1,6 @@
-from typing import Optional
-
 from pathlib import Path
-
 from transformers import AutoTokenizer
-
+from typing import Optional
 
 def get_token_count(
         model_tokenizer,

@@ -194,6 +194,9 @@ def test_generate_with_attention_mask():
     https://huggingface.co/LiquidAI/LFM2-1.2B    
 
     There was no particular reason to use these examples.
+
+    This test demonstrated proper usage of transformers module with Qwen 3 in
+    that no warnings or errors occurred.
     """
     tokenizer = Qwen2Tokenizer.from_pretrained(
         model_path,
@@ -252,6 +255,56 @@ def test_generate_with_attention_mask():
         "Without special tokens: ",
         tokenizer.decode(output[0], skip_special_tokens=True))
 
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_generate_with_attention_mask_and_tokenize_True():
+    """
+    """
+    tokenizer = Qwen2Tokenizer.from_pretrained(
+        model_path,
+        local_files_only=True,
+        trust_remote_code=True)
+
+    model = Qwen3ForCausalLM.from_pretrained(
+        model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        # E       RuntimeError: FlashAttention only supports Ampere GPUs or newer.
+        #attn_implementation="flash_attention_2"
+        )
+
+    prompt = "What is C. elegans?"
+    tokenizer_outputs = tokenizer.apply_chat_template(
+        [{"role": "user", "content": prompt}],
+        add_generation_prompt=True,
+        # TODO: tokenize=False clearly returns a str so is return_tensors
+        # needed?
+        return_tensors="pt",
+        tokenize=True,
+        return_dict=True).to(model.device)
+
+    output = model.generate(
+        input_ids=tokenizer_outputs["input_ids"],
+        attention_mask=tokenizer_outputs["attention_mask"],
+        do_sample=True,
+        # temperature, min_p, repetition_penalty suggested by
+        # https://huggingface.co/LiquidAI/LFM2-1.2B
+        temperature=0.9,
+        min_p=0.15,
+        repetition_penalty=1.05,
+        max_new_tokens=65536
+        )
+
+    assert len(output) == 1
+
+    print(
+        "With special tokens: ",
+        tokenizer.decode(output[0], skip_special_tokens=False))
+    print(
+        "Without special tokens: ",
+        tokenizer.decode(output[0], skip_special_tokens=True))
+
 from moretransformers.Applications import ModelAndTokenizer
 from moretransformers.Configurations import (
     CreateDefaultGenerationConfigurations,
@@ -277,6 +330,9 @@ def test_apply_chat_template_for_tokenize_False():
 
     generation_configuration = \
         CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+    # Note: If you *don't* set do_sample = True, you'll get this warning:
+    # The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'min_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    generation_configuration.do_sample = True
 
     mat = ModelAndTokenizer(
         model_path,
@@ -318,7 +374,7 @@ def test_apply_chat_template_for_tokenize_False():
 
     print(
         "Without special tokens: ",
-        mat._tokenizer.decode(generated_ids, skip_special_tokens=True))
+        mat._tokenizer.decode(generated_ids[0], skip_special_tokens=True))
 
 
 @pytest.mark.skipif(
@@ -341,6 +397,9 @@ def test_follow_Qwen_code_snippet_for_thinking():
 
     generation_configuration = \
         CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+    # Note: If you *don't* set do_sample = True, you'll get this warning:
+    # The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'min_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    generation_configuration.do_sample = True
 
     mat = ModelAndTokenizer(
         model_path,
@@ -416,6 +475,9 @@ def create_configurations_and_model_for_test():
 
     generation_configuration = \
         CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+    # Note: If you *don't* set do_sample = True, you'll get this warning:
+    # The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'min_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+    generation_configuration.do_sample = True
 
     mat = ModelAndTokenizer(
         model_path,

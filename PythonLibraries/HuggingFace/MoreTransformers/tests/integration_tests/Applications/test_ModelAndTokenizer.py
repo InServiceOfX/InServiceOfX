@@ -1,5 +1,9 @@
 from corecode.Utilities import DataSubdirectories, is_model_there
 from moretransformers.Applications import ModelAndTokenizer
+from moretransformers.Configurations import (
+    CreateDefaultGenerationConfigurations,
+    FromPretrainedModelConfiguration,
+    FromPretrainedTokenizerConfiguration,)
 from transformers import (
     Qwen3ForCausalLM,
     Qwen2Tokenizer)
@@ -224,6 +228,41 @@ def test_ModelAndTokenizer_generate_with_enable_thinking():
     assert isinstance(response, str)
     print("\n -------- response --------\n", response)
 
+def test_generate_with_enable_thinking_works_with_Qwen3_0_6B():
+    from_pretrained_tokenizer_configuration = FromPretrainedTokenizerConfiguration(
+        pretrained_model_name_or_path=model_path,
+    )
+    from_pretrained_model_configuration = FromPretrainedModelConfiguration(
+        pretrained_model_name_or_path=model_path,
+        device_map="cuda:0",
+        torch_dtype=torch.bfloat16)
+
+    generation_configuration = CreateDefaultGenerationConfigurations.for_Qwen3_thinking()
+    generation_configuration.max_new_tokens = 65536
+    generation_configuration.do_sample = True
+
+    mat = ModelAndTokenizer(
+        model_path,
+        from_pretrained_model_configuration=from_pretrained_model_configuration,
+        from_pretrained_tokenizer_configuration=\
+            from_pretrained_tokenizer_configuration,
+        generation_configuration=generation_configuration)
+
+    mat.load_tokenizer()
+    mat.load_model()
+
+    prompt = "What is C. elegans?"
+    conversation = [{"role": "user", "content": prompt}]
+
+    thinking_response, content_response = \
+        mat.generate_with_thinking_enabled(conversation)
+
+    assert isinstance(thinking_response, str)
+    assert isinstance(content_response, str)
+
+    print("\n -------- thinking_response --------\n", thinking_response)
+    print("\n -------- content_response --------\n", content_response)
+
 relative_model_path_1 = "Models/LLM/google/gemma-3-270m-it"
 
 is_model_downloaded_1, model_path_1 = is_model_there(
@@ -235,7 +274,7 @@ model_is_not_downloaded_message_1 = \
 
 @pytest.mark.skipif(
         not is_model_downloaded_1, reason=model_is_not_downloaded_message_1)
-def test_ModelAndTokenizer_apply_chat_template_and_generate_works():
+def test_ModelAndTokenizer_generate_works_with_gemma_3_270m_it():
     mat = ModelAndTokenizer(model_path_1)
 
     mat._fpmc.device_map = "cuda:0"

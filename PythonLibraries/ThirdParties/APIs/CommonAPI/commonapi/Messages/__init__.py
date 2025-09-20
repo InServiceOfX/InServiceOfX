@@ -38,3 +38,7 @@ __all__ = [
     "SystemMessage",
     "UserMessage",
 ]
+
+# Note: import the PermanentConversation module as
+# from commonapi.Messages.PermanentConversation import PermanentConversation
+# and for other modules in that file / package as well like that.

@@ -192,7 +192,7 @@ class ModelAndTokenizer:
             return_tensors: Optional[str] = None
             ):
         if with_attention_mask is None:
-            with_attention_mask = False
+            with_attention_mask = True
 
         if skip_special_tokens is None:
             skip_special_tokens = True

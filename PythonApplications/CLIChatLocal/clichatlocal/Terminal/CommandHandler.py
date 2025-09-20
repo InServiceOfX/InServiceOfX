@@ -81,7 +81,7 @@ class CommandHandler:
 
     def handle_exit(self) -> bool:
 
-        self._app.terminal_ui.print_info("Exiting...Goodbye!")
+        self._app._terminal_ui.print_info("Exiting...Goodbye!")
         return False
     
     def handle_help(self) -> bool:
@@ -107,7 +107,7 @@ Available commands:
     
     async def handle_clear(self) -> bool:
         """Clear the screen."""
-        self._app.terminal_ui.clear_screen()
+        self._app._terminal_ui.clear_screen()
         return True
 
     async def handle_clear_conversation_history(self) -> bool:
@@ -117,13 +117,13 @@ Available commands:
     def handle_show_active_system_messages(self) -> bool:
         self._app._system_messages_dialog_handler.show_active_system_messages()
 
-        self._app.terminal_ui.print_info(
+        self._app._terminal_ui.print_info(
             "Active system messages shown.")
         return True
 
     def handle_add_system_message(self) -> bool:
         self._app._system_messages_dialog_handler.add_system_message_dialog(
-            self._app.terminal_ui.create_prompt_style())
+            self._app._terminal_ui.create_prompt_style())
         return True
 
     # async def handle_add_system_message_async(self) -> bool:
@@ -133,17 +133,17 @@ Available commands:
     #     result = await loop.run_in_executor(
     #         None,
     #         lambda: self.system_dialog_handler.add_system_message_dialog(
-    #             self.app.terminal_ui.create_prompt_style(),
+    #             self.app._terminal_ui.create_prompt_style(),
     #             self.app.llama3_engine)
     #     )
 
     #     if result:
-    #         self.app.terminal_ui.print_info(
+    #         self.app._terminal_ui.print_info(
     #             "System message added and activated.")
     #         self.app.permanent_conversation_history.append_active_system_messages(
     #             self.app.llama3_engine.system_messages_manager.get_active_messages())
     #     else:
-    #         self.app.terminal_ui.print_error(
+    #         self.app._terminal_ui.print_error(
     #             "System message not added.")
 
     #     return True
@@ -151,7 +151,7 @@ Available commands:
     def handle_configure_system_messages(self) -> bool:
         action = \
             self._app._system_messages_dialog_handler.configure_system_messages_dialog(
-                self._app.terminal_ui.create_prompt_style())
+                self._app._terminal_ui.create_prompt_style())
 
         if action is not None:
             self._app._system_messages_dialog_handler.handle_configure_system_messages_dialog_choice(

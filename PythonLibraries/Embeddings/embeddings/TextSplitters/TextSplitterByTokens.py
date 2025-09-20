@@ -49,7 +49,14 @@ class TextSplitterByTokens:
                     max_tokens = 512
         
         self.max_tokens = max_tokens
-    
+
+    def get_token_count(self, text: str) -> int:
+        return get_token_count(
+            self.model_tokenizer, 
+            text, 
+            self.add_special_tokens
+        )
+
     def split_text(self, text: str) -> List[str]:
         """
         Split text into chunks based on token count.
