@@ -29,7 +29,6 @@ def test_PermanentConversation_works():
         assert message.content == conversation[index]["content"]
         assert message.hash == Message._hash_content(message.content)
         assert message.role == conversation[index]["role"]
-        assert message.embedding is None
 
     assert len(permanent_conversation.content_hashes) == len(conversation)
 
@@ -65,7 +64,6 @@ def test_duplicate_messages_can_be_added():
         assert permanent_conversation.messages[i].hash == \
             Message._hash_content(conversation[j]["content"])
         assert permanent_conversation.messages[i].conversation_id == i
-        assert permanent_conversation.messages[i].embedding is None
 
 def test_PermanentConversation_can_load_example_conversation():
     conversation = load_test_conversation()
@@ -89,7 +87,6 @@ def test_PermanentConversation_can_load_example_conversation():
                     content_1=message["content"],
                     role_0=last_message["role"],
                     role_1=message["role"],
-                    embedding=None
                     )
                 last_message = None
                 is_next_message_assistant = False
@@ -101,7 +98,6 @@ def test_PermanentConversation_can_load_example_conversation():
         assert message.role == conversation[index]["role"]
         assert message.hash == Message._hash_content(message.content)
         assert message.conversation_id == index
-        assert message.embedding is None
 
     message_pair = []
     example_message_pairs = []
@@ -127,5 +123,4 @@ def test_PermanentConversation_can_load_example_conversation():
         assert message_pair.hash == Message._hash_content(
             message_pair.content_0 + message_pair.content_1)
         assert message_pair.conversation_pair_id == index
-        assert message_pair.embedding is None
 

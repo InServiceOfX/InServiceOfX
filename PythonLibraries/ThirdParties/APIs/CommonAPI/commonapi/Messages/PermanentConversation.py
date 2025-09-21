@@ -11,7 +11,6 @@ class ConversationMessage:
     datetime: float
     hash: str
     role: str
-    embedding: Optional[list[float]] = None
 
 @dataclass
 class ConversationMessagePair:
@@ -31,7 +30,6 @@ class ConversationMessagePair:
     hash: str
     role_0: str
     role_1: str
-    embedding: Optional[list[float]] = None
 
 class PermanentConversation:
     def __init__(self):
@@ -43,17 +41,13 @@ class PermanentConversation:
         self._counter: int = 0
         self._message_pair_counter: int = 0
 
-    def add_message(
-            self,
-            message: Message,
-            embedding: Optional[list[float]] = None):
+    def add_message(self, message: Message):
         self.messages.append(ConversationMessage(
             conversation_id=self._counter,
             content=message.content,
             datetime=time.time(),
             hash=Message._hash_content(message.content),
-            role=message.role,
-            embedding=embedding))
+            role=message.role,))
         self._counter += 1
         self.content_hashes.append(hash)
         if hash not in self.hash_to_indices_reverse_map:
@@ -63,11 +57,7 @@ class PermanentConversation:
             self.hash_to_indices_reverse_map[hash].append(
                 len(self.content_hashes) - 1)
 
-    def append_message_pair(
-            self,
-            message_0: Message,
-            message_1: Message,
-            embedding: Optional[list[float]] = None):
+    def append_message_pair(self, message_0: Message, message_1: Message):
         self.message_pairs.append(ConversationMessagePair(
             conversation_pair_id=self._message_pair_counter,
             content_0=message_0.content,
@@ -76,22 +66,16 @@ class PermanentConversation:
             hash=Message._hash_content(
                 message_0.content + message_1.content),
             role_0=message_0.role,
-            role_1=message_1.role,
-            embedding=embedding))
+            role_1=message_1.role,))
         self._message_pair_counter += 1
 
-    def add_message_as_content(
-            self,
-            content: str,
-            role: str,
-            embedding: Optional[list[float]] = None):
+    def add_message_as_content(self, content: str, role: str):
         self.messages.append(ConversationMessage(
             conversation_id=self._counter,
             content=content,
             datetime=time.time(),
             hash=Message._hash_content(content),
-            role=role,
-            embedding=embedding))
+            role=role,))
         self._counter += 1
         self.content_hashes.append(hash)
         if hash not in self.hash_to_indices_reverse_map:
@@ -106,8 +90,7 @@ class PermanentConversation:
             content_0: str,
             content_1: str,
             role_0: str,
-            role_1: str,
-            embedding: Optional[list[float]] = None):
+            role_1: str):
         self.message_pairs.append(ConversationMessagePair(
             conversation_pair_id=self._message_pair_counter,
             content_0=content_0,
@@ -115,8 +98,7 @@ class PermanentConversation:
             datetime=time.time(),
             hash=Message._hash_content(content_0 + content_1),
             role_0=role_0,
-            role_1=role_1,
-            embedding=embedding))
+            role_1=role_1,))
         self._message_pair_counter += 1
 
     def get_message_reference_by_hash(self, hash: str) \

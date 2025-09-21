@@ -22,6 +22,12 @@ test_data_path = python_libraries_path / "ThirdParties" / "APIs" / \
     "CommonAPI" / "tests" / "TestData"
 test_conversation_path = test_data_path / "test_enable_thinking_true.json"
 
+import sys
+if str(test_data_path) not in sys.path:
+    sys.path.append(str(test_data_path))
+
+from CreateExampleConversation import CreateExampleConversation
+
 def load_test_conversation():
     with open(test_conversation_path, "r") as f:
         return json.load(f)
@@ -62,6 +68,21 @@ def test_get_token_count_with_model_path():
 
     token_count = get_token_count(model_path, text, add_special_tokens=None)
     assert token_count == 10
+
+@pytest.mark.skipif(
+    not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_get_token_count_of_conversation():
+
+    conversation = CreateExampleConversation.EXAMPLE_CONVERSATION_0
+    assert len(conversation) == 7
+
+    assert get_token_count(model_path, conversation[0]["content"]) == 906
+    assert get_token_count(model_path, conversation[1]["content"]) == 39
+    assert get_token_count(model_path, conversation[2]["content"]) == 259
+    assert get_token_count(model_path, conversation[3]["content"]) == 6
+    assert get_token_count(model_path, conversation[4]["content"]) == 195
+    assert get_token_count(model_path, conversation[5]["content"]) == 14
+    assert get_token_count(model_path, conversation[6]["content"]) == 262
 
 @pytest.mark.skipif(
     not is_model_downloaded, reason=model_is_not_downloaded_message)

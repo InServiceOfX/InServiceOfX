@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Optional, List, Dict
 import asyncpg
+import json
 
 class PostgreSQLConnection:
     # For PostgreSQL, the system database is called "postgres"
@@ -22,6 +23,10 @@ class PostgreSQLConnection:
         # the database connection for a short period time while handling a
         # request, use of a connection pool is recommended.
         self._pool: asyncpg.Pool | None = None
+
+    @staticmethod
+    def convert_list_to_string(input_list) -> str:
+        return json.dumps(input_list)
 
     @property
     def system_dsn(self) -> str:

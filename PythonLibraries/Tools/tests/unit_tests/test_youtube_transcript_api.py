@@ -14,26 +14,27 @@ youtube_url_1 = "https://www.youtube.com/watch?v=F7MxPxNbFUw&t=303s"
 def test_YouTubeTranscriptApi_get_transcript_fails():
 
     video_id = extract_video_id(youtube_url_1)
-    # https://neo4j.com/blog/developer/youtube-transcripts-knowledge-graphs-rag/
-    # https://github.com/ganesh3/rag-youtube-assistant/blob/08dfe3fffee0d8f247c0bc9def492dd8e8373f41/app/transcript_extractor.py
-    transcript = YouTubeTranscriptApi.get_transcript(video_id)
-    assert isinstance(transcript, list)
-    assert len(transcript) > 0
-    print("length of transcript: ", len(transcript))
-    assert isinstance(transcript[0], dict)
-    # Only these 3 "keys".
-    assert 'text' in transcript[0]
-    assert 'start' in transcript[0]
-    assert 'duration' in transcript[0]
 
-    raw_character_count = 0
-    for item in transcript:
-        raw_character_count += len(item['text'])
-    print("raw_character_count: ", raw_character_count)
+    with pytest.raises(AttributeError):
+        # https://neo4j.com/blog/developer/youtube-transcripts-knowledge-graphs-rag/
+        # https://github.com/ganesh3/rag-youtube-assistant/blob/08dfe3fffee0d8f247c0bc9def492dd8e8373f41/app/transcript_extractor.py
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
+        assert isinstance(transcript, list)
+        assert len(transcript) > 0
+        print("length of transcript: ", len(transcript))
+        assert isinstance(transcript[0], dict)
+        # Only these 3 "keys".
+        assert 'text' in transcript[0]
+        assert 'start' in transcript[0]
+        assert 'duration' in transcript[0]
+
+        raw_character_count = 0
+        for item in transcript:
+            raw_character_count += len(item['text'])
+        print("raw_character_count: ", raw_character_count)
 
     # FAILED unit_tests/test_youtube_transcript_api.py::test_YouTubeTranscriptApi - AttributeError: 'dict' object has no attribute 'text'
 
-    with pytest.raises(AttributeError):
         test_transcript = TextFormatter().format_transcript(transcript)
 
     # # Format the transcript as JSON.

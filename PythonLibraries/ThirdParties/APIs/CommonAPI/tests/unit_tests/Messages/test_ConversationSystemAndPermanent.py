@@ -78,7 +78,6 @@ def test_append_message_appends_for_pairs():
         assert message.content == conversation[index]["content"]
         assert message.role == conversation[index]["role"]
         assert message.conversation_id == index
-        assert message.embedding is None
 
     for index, message_pair in enumerate(csp.pc.message_pairs):
         i = 2 * index

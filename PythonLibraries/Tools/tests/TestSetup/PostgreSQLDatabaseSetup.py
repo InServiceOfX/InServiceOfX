@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from commonapi.Databases import PostgreSQLConnection
+from tools.Databases import PostgreSQLConnection
 from pathlib import Path
 
 import asyncpg
