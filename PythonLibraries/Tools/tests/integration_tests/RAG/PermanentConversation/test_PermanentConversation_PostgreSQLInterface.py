@@ -71,7 +71,7 @@ def test_db_name():
     return "test_permanent_conversation_database"
 
 @pytest.mark.asyncio
-async def test_permanent_conversation_database_lifecycle(
+async def test_permanent_conversation_database_inserts_and_persists(
     test_dsn: str,
     test_db_name: str,
     postgres_connection: PostgreSQLConnection):
@@ -121,5 +121,158 @@ async def test_permanent_conversation_database_lifecycle(
     for message_pair_chunk in message_pair_chunks:
         await pcpsqli.insert_message_pair_chunk(message_pair_chunk)
 
+    # Check if we can retrieve all message chunks.
+
+    all_message_chunks = await pcpsqli.get_all_message_chunks()
+
+    for index, message_chunk in enumerate(all_message_chunks):
+        assert message_chunk.content == message_chunks[index].content
+        assert message_chunk.role == message_chunks[index].role
+        assert message_chunk.datetime == message_chunks[index].datetime
+        assert message_chunk.hash == message_chunks[index].hash
+        assert message_chunk.conversation_id == \
+            message_chunks[index].conversation_id
+        assert message_chunk.chunk_type == "message"
+        assert message_chunk.embedding == pytest.approx(
+            message_chunks[index].embedding)
+
+    assert len(all_message_chunks) == len(message_chunks), \
+        "All message chunks should be retrieved"
+
+    reconstructed_messages = \
+        EmbedPermanentConversation.recreate_conversation_messages_from_chunks(
+            all_message_chunks)
+
+    assert len(reconstructed_messages) == len(csp.pc.messages), \
+        "All messages should be reconstructed"
+
+    for i in range(len(reconstructed_messages)):
+        assert reconstructed_messages[i].content == csp.pc.messages[i].content
+        assert reconstructed_messages[i].role == csp.pc.messages[i].role
+        assert reconstructed_messages[i].datetime == csp.pc.messages[i].datetime
+        assert reconstructed_messages[i].hash == csp.pc.messages[i].hash
+        assert reconstructed_messages[i].conversation_id == csp.pc.messages[i].conversation_id
+
+    # Check if we can retrieve all message pair chunks.
+
+    all_message_pair_chunks = await pcpsqli.get_all_message_pair_chunks()
+
+    for index, message_pair_chunk in enumerate(all_message_pair_chunks):
+        assert message_pair_chunk.content == message_pair_chunks[index].content
+        assert message_pair_chunk.role == message_pair_chunks[index].role
+        assert message_pair_chunk.datetime == message_pair_chunks[index].datetime
+        assert message_pair_chunk.hash == message_pair_chunks[index].hash
+        assert message_pair_chunk.conversation_id == \
+            message_pair_chunks[index].conversation_id
+        assert message_pair_chunk.chunk_type == "message_pair"
+        assert message_pair_chunk.embedding == pytest.approx(
+            message_pair_chunks[index].embedding)
+
     # Cleanup is handled by the fixture
 
+@pytest.mark.asyncio
+async def test_permanent_conversation_database_does_vector_similarity_search(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    await postgres_connection.create_extension("vector")
+
+    pcpsqli = PermanentConversationPostgreSQLInterface(
+        postgres_connection)
+
+    assert await pcpsqli.create_tables() is True, "Tables should be created"
+
+    # Set up test conversation.
+
+    conversation = load_test_conversation()
+    text_splitter = TextSplitterByTokens(model_path=model_path)
+    embedding_model = SentenceTransformer(str(model_path), device = "cuda:0",)
+    csp = ConversationSystemAndPermanent()
+    for message in conversation:
+        if message["role"] == "user":
+            csp.append_message(UserMessage(message["content"]))
+        elif message["role"] == "assistant":
+            csp.append_message(AssistantMessage(message["content"]))
+        elif message["role"] == "system":
+            csp.add_system_message(message["content"])
+    embed_pc = EmbedPermanentConversation(
+        text_splitter,
+        embedding_model,
+        csp.pc)
+    message_chunks, message_pair_chunks = embed_pc.embed_conversation()
+
+    # Insert chunks into database.
+    for message_chunk in message_chunks:
+        await pcpsqli.insert_message_chunk(message_chunk)
+    for message_pair_chunk in message_pair_chunks:
+        await pcpsqli.insert_message_pair_chunk(message_pair_chunk)
+
+    test_queries = [
+        "HTML CSS JavaScript ball hexagon animation physics gravity",
+        "Go language recursive function maze solving algorithm", 
+        "transformer neural network attention mechanism machine learning"
+    ]
+
+    results_for_queries = []
+
+    for query in test_queries:
+        query_results = []
+        query_embeddings = text_splitter.text_to_embedding(
+            embedding_model,
+            query)
+        for embedding in query_embeddings:
+            results = await pcpsqli.vector_similarity_search_message_chunks(
+                query_embedding=embedding)
+            query_results.append(results)
+        results_for_queries.append(query_results)
+
+    assert len(results_for_queries) == len(test_queries)
+    assert type(results_for_queries[0]) == list
+
+    assert len(results_for_queries[0]) == 1
+    # Number of closest matches
+    assert len(results_for_queries[0][0]) == 10
+    assert results_for_queries[0][0][0]["similarity_score"] == pytest.approx(
+        0.8292039138553209,)
+
+    # Uncomment out print statements to see actual content.
+
+    # print(
+    #     "results_for_queries[0][0][0]['content']",
+    #     results_for_queries[0][0][0]["content"])
+
+    assert results_for_queries[0][0][1]["similarity_score"] == pytest.approx(
+        0.826344689566536,)
+    # print(
+    #     "results_for_queries[0][0][1]['content']",
+    #     results_for_queries[0][0][1]["content"])
+
+    assert results_for_queries[0][0][2]["similarity_score"] == pytest.approx(
+        0.8079813833247805,)
+    # print(
+    #     "results_for_queries[0][0][2]['content']",
+    #     results_for_queries[0][0][2]["content"])
+
+    assert len(results_for_queries[1]) == 1
+    # Number of closest matches
+    assert len(results_for_queries[1][0]) == 10
+    assert results_for_queries[1][0][0]["similarity_score"] == pytest.approx(
+        0.7993406773006526,)
+    # print(
+    #     "results_for_queries[1][0][0]['content']",
+    #     results_for_queries[1][0][0]["content"])
+
+    assert results_for_queries[1][0][1]["similarity_score"] == pytest.approx(
+        0.7295023202896118,)
+    # print(
+    #     "results_for_queries[1][0][1]['content']",
+    #     results_for_queries[1][0][1]["content"])
+
+    assert results_for_queries[1][0][2]["similarity_score"] == pytest.approx(
+        0.6303956884381596,)
+    # print(
+    #     "results_for_queries[1][0][2]['content']",
+    #     results_for_queries[1][0][2]["content"])

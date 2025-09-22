@@ -3,7 +3,7 @@ from corecode.Utilities import DataSubdirectories, is_model_there
 from embeddings.TextSplitters import (get_token_count, TextSplitterByTokens)
 from sentence_transformers import SentenceTransformer
 
-from tools import YouTubeTranscripts
+from tools.YouTubeTranscripts import ProcessYouTube
 from youtube_transcript_api.formatters import TextFormatter
 from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -42,7 +42,7 @@ def test_TextSplitterByTokens_inits():
     assert text_splitter.add_special_tokens is None
 
 def test_TextSplitterByTokens_split_text_works():
-    video_id = YouTubeTranscripts.extract_video_id(youtube_url_1)
+    video_id = ProcessYouTube.extract_video_id(youtube_url_1)
     ytt_api = YouTubeTranscriptApi()
     fetched_transcript = ytt_api.fetch(video_id)
 
@@ -140,3 +140,21 @@ def test_TextSplitterByTokens_splits_long_text():
     reconstructed_text = "".join(split_chunks[11])
     assert reconstructed_text == conversation[11]["content"]
 
+def test_text_to_embedding_works():
+    conversation = load_test_conversation()
+
+    text_splitter = TextSplitterByTokens(model_path=model_path)
+
+    embedding_model = SentenceTransformer(str(model_path), device = "cuda:0",)
+
+    embeddings = []
+    for message in conversation:
+        embeddings.append(
+            text_splitter.text_to_embedding(
+                embedding_model,
+                message["content"]))
+
+    assert len(embeddings) == len(conversation)
+    for i in range(len(embeddings)):
+        for j in range(len(embeddings[i])):
+            assert len(embeddings[i][j])== 1024

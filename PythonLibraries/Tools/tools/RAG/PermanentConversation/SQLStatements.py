@@ -112,129 +112,78 @@ class SQLStatements:
     ) RETURNING id;
     """
 
-    # Get chunks by conversation ID
-    GET_CHUNKS_BY_CONVERSATION = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $1 
-    ORDER BY chunk_index;
-    """
-
-    # Get chunks by conversation ID and chunk type
-    GET_CHUNKS_BY_CONVERSATION_AND_TYPE = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $1 AND chunk_type = $2
-    ORDER BY chunk_index;
-    """
-
-    # Get chunks by conversation ID and role
-    GET_CHUNKS_BY_CONVERSATION_AND_ROLE = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $1 AND role = $2
-    ORDER BY chunk_index;
-    """
-
-    # Vector similarity search - find most similar chunks
-    VECTOR_SIMILARITY_SEARCH = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at,
+    VECTOR_SIMILARITY_SEARCH_MESSAGE_CHUNKS = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+           content, datetime, hash, role, embedding, created_at,
            1 - (embedding <=> $1) as similarity_score
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $2
-    ORDER BY embedding <=> $1
-    LIMIT $3;
-    """
-
-    # Vector similarity search across all conversations
-    VECTOR_SIMILARITY_SEARCH_ALL = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at,
-           1 - (embedding <=> $1) as similarity_score
-    FROM permanent_conversation_chunks 
-    ORDER BY embedding <=> $1
-    LIMIT $2;
-    """
-
-    # Vector similarity search with minimum similarity threshold
-    VECTOR_SIMILARITY_SEARCH_WITH_THRESHOLD = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at,
-           1 - (embedding <=> $1) as similarity_score
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $2 AND (1 - (embedding <=> $1)) >= $3
+    FROM permanent_conversation_message_chunks 
+    WHERE ($2::text IS NULL OR role = $2::text)  -- Explicit text casting
+    AND ($3::float IS NULL OR (1 - (embedding <=> $1)) >= $3::float) -- to float
     ORDER BY embedding <=> $1
     LIMIT $4;
     """
 
-    # Get chunk by ID
-    GET_CHUNK_BY_ID = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    WHERE id = $1;
+    # Vector similarity search with datetime filter
+    VECTOR_SIMILARITY_SEARCH_MESSAGE_CHUNKS_WITH_DATETIME_FILTER = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+        content, datetime, hash, role, embedding, created_at,
+        1 - (embedding <=> $1) as similarity_score
+    FROM permanent_conversation_message_chunks 
+    WHERE ($2::float IS NULL OR datetime >= $2::float)
+    AND ($3::float IS NULL OR datetime <= $3::float)
+    AND ($4::text IS NULL OR role = $4::text)
+    AND ($5::float IS NULL OR (1 - (embedding <=> $1)) >= $5::float)
+    ORDER BY embedding <=> $1
+    LIMIT $6;
     """
 
-    # Update chunk content and hash
-    UPDATE_CHUNK_CONTENT = """
-    UPDATE permanent_conversation_chunks 
-    SET content = $2, content_hash = $3, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $1;
+    # Combined vector similarity search
+    VECTOR_SIMILARITY_SEARCH_COMBINED = """
+    WITH message_chunks AS (
+        SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+            content, datetime, hash, role, embedding, created_at,
+            1 - (embedding <=> $1) as similarity_score,
+            'message' as chunk_type
+        FROM permanent_conversation_message_chunks 
+        WHERE ($2 IS NULL OR datetime >= $2)  -- Optional start_date filter
+        AND ($3 IS NULL OR datetime <= $3)  -- Optional end_date filter
+        AND ($4 IS NULL OR role = $4)  -- Optional role filter
+        AND ($5 IS NULL OR (1 - (embedding <=> $1)) >= $5)  -- Optional similarity threshold
+    ),
+    message_pair_chunks AS (
+        SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+            content, datetime, hash, role, embedding, created_at,
+            1 - (embedding <=> $1) as similarity_score,
+            'message_pair' as chunk_type
+        FROM permanent_conversation_message_pair_chunks 
+        WHERE ($2 IS NULL OR datetime >= $2)  -- Optional start_date filter
+        AND ($3 IS NULL OR datetime <= $3)  -- Optional end_date filter
+        AND ($4 IS NULL OR role = $4)  -- Optional role filter
+        AND ($5 IS NULL OR (1 - (embedding <=> $1)) >= $5)  -- Optional similarity threshold
+    ),
+    combined_results AS (
+        SELECT * FROM message_chunks
+        UNION ALL
+        SELECT * FROM message_pair_chunks
+    )
+    SELECT * FROM combined_results
+    ORDER BY similarity_score DESC
+    LIMIT $6;
     """
 
-    # Delete chunks by conversation ID
-    DELETE_CHUNKS_BY_CONVERSATION = """
-    DELETE FROM permanent_conversation_chunks 
-    WHERE conversation_id = $1;
+    # Get all message chunks from the table
+    GET_ALL_MESSAGE_CHUNKS = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+           content, datetime, hash, role, embedding, created_at
+    FROM permanent_conversation_message_chunks 
+    ORDER BY conversation_id, chunk_index;
     """
 
-    # Delete chunk by ID
-    DELETE_CHUNK_BY_ID = """
-    DELETE FROM permanent_conversation_chunks 
-    WHERE id = $1;
-    """
-
-    # Check if conversation exists
-    CONVERSATION_EXISTS = """
-    SELECT EXISTS(
-        SELECT 1 FROM permanent_conversation_chunks 
-        WHERE conversation_id = $1
-    );
-    """
-
-    # Get all unique conversation IDs
-    GET_ALL_CONVERSATION_IDS = """
-    SELECT DISTINCT conversation_id 
-    FROM permanent_conversation_chunks 
-    ORDER BY conversation_id;
-    """
-
-    # Get chunks by content hash (since hash is not unique, this returns multiple)
-    GET_CHUNKS_BY_HASH = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    WHERE content_hash = $1
-    ORDER BY created_at;
-    """
-
-    # Count chunks by conversation
-    COUNT_CHUNKS_BY_CONVERSATION = """
-    SELECT COUNT(*) 
-    FROM permanent_conversation_chunks 
-    WHERE conversation_id = $1;
-    """
-
-    # Get recent chunks
-    GET_RECENT_CHUNKS = """
-    SELECT id, conversation_id, chunk_type, chunk_index, role, 
-           content, content_hash, embedding, created_at, updated_at
-    FROM permanent_conversation_chunks 
-    ORDER BY created_at DESC
-    LIMIT $1;
+    # Get all message chunks from the table
+    GET_ALL_MESSAGE_PAIR_CHUNKS = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash, 
+           content, datetime, hash, role, embedding, created_at
+    FROM permanent_conversation_message_pair_chunks 
+    ORDER BY conversation_id, chunk_index;
     """
 

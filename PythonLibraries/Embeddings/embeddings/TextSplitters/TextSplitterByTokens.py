@@ -169,3 +169,14 @@ class TextSplitterByTokens:
                 current_pos += 1
         
         return chunks
+
+    def text_to_embedding(self, embedding_model, text: str) \
+        -> List[List[float]]:
+        chunks = self.split_text(text)
+        embeddings = []
+        for chunk in chunks:
+            embeddings.append(
+                embedding_model.encode(
+                    chunk,
+                    normalize_embeddings=True).tolist())
+        return embeddings

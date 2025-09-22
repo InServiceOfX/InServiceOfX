@@ -316,3 +316,74 @@ def test_embed_conversation_detailed_chunking_analysis():
         f"Message pairs that needed splitting: {pairs_split}/{len(original_pairs)}")
     print(
         f"Split rate: {(messages_split + pairs_split) / (len(original_messages) + len(original_pairs)) * 100:.1f}%")
+
+def test_recreate_conversation_messages_from_chunks_works():
+    conversation = load_test_conversation()
+
+    text_splitter = TextSplitterByTokens(model_path=model_path)
+    embedding_model = SentenceTransformer(str(model_path), device = "cuda:0",)
+    csp = ConversationSystemAndPermanent()
+
+    for message in conversation:
+        if message["role"] == "user":
+            csp.append_message(UserMessage(message["content"]))
+        elif message["role"] == "assistant":
+            csp.append_message(AssistantMessage(message["content"]))
+        elif message["role"] == "system":
+            csp.add_system_message(message["content"])
+
+    embed_pc = EmbedPermanentConversation(
+        text_splitter,
+        embedding_model,
+        csp.pc)
+    message_chunks, _ = embed_pc.embed_conversation()
+
+    reconstructed_messages = EmbedPermanentConversation.recreate_conversation_messages_from_chunks(
+        message_chunks)
+
+    assert len(reconstructed_messages) == len(csp.pc.messages)
+    for i in range(len(reconstructed_messages)):
+        assert reconstructed_messages[i].content == csp.pc.messages[i].content
+        assert reconstructed_messages[i].role == csp.pc.messages[i].role
+        assert reconstructed_messages[i].datetime == csp.pc.messages[i].datetime
+        assert reconstructed_messages[i].hash == csp.pc.messages[i].hash
+        assert reconstructed_messages[i].conversation_id == csp.pc.messages[i].conversation_id
+
+def test_recreate_conversation_message_pairs_from_chunks_works():
+    conversation = load_test_conversation()
+
+    text_splitter = TextSplitterByTokens(model_path=model_path)
+    embedding_model = SentenceTransformer(str(model_path), device = "cuda:0",)
+    csp = ConversationSystemAndPermanent()
+
+    for message in conversation:
+        if message["role"] == "user":
+            csp.append_message(UserMessage(message["content"]))
+        elif message["role"] == "assistant":
+            csp.append_message(AssistantMessage(message["content"]))
+        elif message["role"] == "system":
+            csp.add_system_message(message["content"])
+
+    embed_pc = EmbedPermanentConversation(
+        text_splitter,
+        embedding_model,
+        csp.pc)
+    _, message_pair_chunks = embed_pc.embed_conversation()
+
+    reconstructed_message_pairs = \
+        EmbedPermanentConversation.recreate_conversation_messages_pairs_from_chunks(
+            message_pair_chunks)
+
+    assert len(reconstructed_message_pairs) == len(csp.pc.message_pairs)
+    for i in range(len(reconstructed_message_pairs)):
+        content = reconstructed_message_pairs[i]["content"]
+        content_0 = content.split("assistant:")[0][6:-1]
+        content_1 = content.split("assistant:")[1]
+        # TODO: Originally we added a '\n' and we hadn't been able to split
+        # correctly to get rid of this extra '\n'.
+        assert content_0 in csp.pc.message_pairs[i].content_0
+        assert content_1 == csp.pc.message_pairs[i].content_1
+        assert reconstructed_message_pairs[i]["datetime"] == csp.pc.message_pairs[i].datetime
+        assert reconstructed_message_pairs[i]["hash"] == csp.pc.message_pairs[i].hash
+        assert reconstructed_message_pairs[i]["conversation_pair_id"] == \
+            csp.pc.message_pairs[i].conversation_pair_id

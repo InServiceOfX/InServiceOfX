@@ -1,10 +1,14 @@
 from dataclasses import dataclass
-from commonapi.Messages.PermanentConversation import PermanentConversation
+from commonapi.Messages.PermanentConversation import (
+    ConversationMessage,
+    PermanentConversation)
 from embeddings.TextSplitters import TextSplitterByTokens
 from sentence_transformers import SentenceTransformer
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 import hashlib
 import time
+from typing import List
+from collections import defaultdict
 
 @dataclass
 class ConversationMessageChunk:
@@ -155,3 +159,110 @@ class EmbedPermanentConversation:
             content,
             normalize_embeddings=True)
         return embedding.tolist()
+
+    @staticmethod
+    def recreate_conversation_messages_from_chunks(
+        message_chunks: List[ConversationMessageChunk]
+    ) -> List[ConversationMessage]:
+        """
+        Use this function for testing purposes.
+        """
+        # Filter only message chunks (not message_pair chunks)
+        message_only_chunks = [
+            chunk for chunk in message_chunks 
+            if chunk.chunk_type == "message"
+        ]
+
+        # Group chunks by a "composite key":
+        # (parent_message_hash, conversation_id, datetime)
+        chunks_by_composite_key = defaultdict(list)
+        for chunk in message_only_chunks:
+            composite_key = \
+                (
+                    chunk.parent_message_hash,
+                    chunk.conversation_id,
+                    chunk.datetime)
+            chunks_by_composite_key[composite_key].append(chunk)
+        
+        # Sort chunks within each group by chunk_index
+        for composite_key in chunks_by_composite_key:
+            chunks_by_composite_key[composite_key].sort(
+                key=lambda x: x.chunk_index)
+        
+        # Reconstruct ConversationMessage instances
+        reconstructed_messages = []
+        
+        for composite_key, chunks in chunks_by_composite_key.items():
+            parent_hash, conversation_id, datetime_val = composite_key
+
+            # Sort by chunk_index to ensure correct order
+            chunks.sort(key=lambda x: x.chunk_index)
+
+            # Get the first chunk to extract metadata
+            first_chunk = chunks[0]
+            
+            # Reconstruct the original content by concatenating chunks
+            reconstructed_content = "".join(chunk.content for chunk in chunks)
+            
+            # Create ConversationMessage instance
+            message = ConversationMessage(
+                conversation_id=conversation_id,
+                content=reconstructed_content,
+                datetime=datetime_val,
+                hash=parent_hash,
+                role=first_chunk.role
+            )
+            
+            reconstructed_messages.append(message)
+        
+        # Sort by conversation_id to maintain original order
+        reconstructed_messages.sort(key=lambda x: x.conversation_id)
+        
+        return reconstructed_messages
+
+    @staticmethod
+    def recreate_conversation_messages_pairs_from_chunks(
+        message_pair_chunks: List[ConversationMessageChunk]):
+        """
+        Use this function for testing purposes.
+        """
+        # Filter only message_pair chunks
+        message_pair_chunks_filtered = [
+            chunk for chunk in message_pair_chunks 
+            if chunk.chunk_type == "message_pair"
+        ]
+        
+        # Group chunks by a "composite key"
+        chunks_by_composite_key = defaultdict(list)
+        for chunk in message_pair_chunks_filtered:
+            composite_key = \
+                (
+                    chunk.parent_message_hash,
+                    chunk.conversation_id,
+                    chunk.datetime)
+            chunks_by_composite_key[composite_key].append(chunk)
+
+        # Sort chunks within each group by chunk_index
+        for composite_key in chunks_by_composite_key:
+            chunks_by_composite_key[composite_key].sort(
+                key=lambda x: x.chunk_index)
+        
+        reconstructed_message_pairs = []
+        
+        for composite_key, chunks in chunks_by_composite_key.items():
+            parent_hash, conversation_id, datetime_val = composite_key
+            chunks.sort(key=lambda x: x.chunk_index)
+            reconstructed_content = "".join(chunk.content for chunk in chunks)
+            reconstructed_message_pairs.append(
+                {
+                    "conversation_pair_id": conversation_id,
+                    "content": reconstructed_content,
+                    "datetime": datetime_val,
+                    "hash": parent_hash,
+                    "role": chunks[0].role,
+                }
+            )
+
+        return reconstructed_message_pairs
+
+

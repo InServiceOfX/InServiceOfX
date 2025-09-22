@@ -6,7 +6,8 @@ from .EmbedPermanentConversation import (
 from commonapi.Messages.PermanentConversation import PermanentConversation
 
 from typing import List, Optional, Dict, Any
-import asyncio
+from warnings import warn
+import asyncio, json
 
 class PostgreSQLInterface:
     """Database interface for persisting permanent conversation chunks."""
@@ -29,7 +30,8 @@ class PostgreSQLInterface:
         try:
             # First, ensure pgvector extension is available
             if not await self._postgres_connection.extension_exists("vector"):
-                success = await self._postgres_connection.create_extension("vector")
+                success = await self._postgres_connection.create_extension(
+                    "vector")
                 if not success:
                     print("Failed to create pgvector extension")
                     return False
@@ -43,7 +45,8 @@ class PostgreSQLInterface:
 
                 # Create indexes for better performance
                 await conn.execute(SQLStatements.CREATE_MESSAGE_CHUNKS_INDEXES)
-                await conn.execute(SQLStatements.CREATE_MESSAGE_PAIR_CHUNKS_INDEXES)
+                await conn.execute(
+                    SQLStatements.CREATE_MESSAGE_PAIR_CHUNKS_INDEXES)
                 
                 return True
         except Exception as e:
@@ -126,114 +129,20 @@ class PostgreSQLInterface:
             print(f"Error inserting message pair chunk: {e}")
             return None
 
-    async def get_chunks_by_conversation(self, conversation_id: str) -> List[ConversationMessageChunk]:
+    async def vector_similarity_search_message_chunks(
+        self, 
+        query_embedding: List[float], 
+        role_filter: Optional[str] = None,
+        similarity_threshold: Optional[float] = None,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """
-        Get all chunks for a specific conversation.
-        
-        Args:
-            conversation_id: The conversation ID to retrieve chunks for
-            
-        Returns:
-            List of ConversationMessageChunk objects
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.GET_CHUNKS_BY_CONVERSATION,
-                    conversation_id)
-                
-                chunks = []
-                for row in rows:
-                    chunk = ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                    chunks.append(chunk)
-                return chunks
-        except Exception as e:
-            print(f"Error getting chunks by conversation: {e}")
-            return []
-
-    async def get_chunks_by_conversation_and_type(self, conversation_id: str, chunk_type: str) -> List[ConversationMessageChunk]:
-        """
-        Get chunks for a specific conversation and chunk type.
-        
-        Args:
-            conversation_id: The conversation ID
-            chunk_type: 'message' or 'message_pair'
-            
-        Returns:
-            List of ConversationMessageChunk objects
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.GET_CHUNKS_BY_CONVERSATION_AND_TYPE,
-                    conversation_id, chunk_type)
-                
-                chunks = []
-                for row in rows:
-                    chunk = ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                    chunks.append(chunk)
-                return chunks
-        except Exception as e:
-            print(f"Error getting chunks by conversation and type: {e}")
-            return []
-
-    async def get_chunks_by_conversation_and_role(self, conversation_id: str, role: str) -> List[ConversationMessageChunk]:
-        """
-        Get chunks for a specific conversation and role.
-        
-        Args:
-            conversation_id: The conversation ID
-            role: 'user', 'assistant', 'system', or 'user_assistant'
-            
-        Returns:
-            List of ConversationMessageChunk objects
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.GET_CHUNKS_BY_CONVERSATION_AND_ROLE,
-                    conversation_id, role)
-                
-                chunks = []
-                for row in rows:
-                    chunk = ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                    chunks.append(chunk)
-                return chunks
-        except Exception as e:
-            print(f"Error getting chunks by conversation and role: {e}")
-            return []
-
-    async def vector_similarity_search(self, query_embedding: List[float], conversation_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Perform vector similarity search within a specific conversation.
+        Perform vector similarity search on message chunks.
         
         Args:
             query_embedding: The query embedding vector
-            conversation_id: The conversation ID to search within
+            role_filter: Optional role filter ('user', 'assistant', 'system')
+            similarity_threshold: Optional minimum similarity score (0.0 to 1.0)
             limit: Maximum number of results to return
             
         Returns:
@@ -241,226 +150,34 @@ class PostgreSQLInterface:
         """
         try:
             async with self._postgres_connection.connect() as conn:
+                query_embedding_as_string = \
+                    PostgreSQLConnection.convert_list_to_string(query_embedding)
                 rows = await conn.fetch(
-                    SQLStatements.VECTOR_SIMILARITY_SEARCH,
-                    query_embedding, conversation_id, limit)
+                    SQLStatements.VECTOR_SIMILARITY_SEARCH_MESSAGE_CHUNKS,
+                    query_embedding_as_string, role_filter, similarity_threshold, limit)
                 
                 results = []
                 for row in rows:
                     result = {
                         'id': row['id'],
                         'conversation_id': row['conversation_id'],
-                        'chunk_type': row['chunk_type'],
                         'chunk_index': row['chunk_index'],
-                        'role': row['role'],
-                        'content': row['content'],
-                        'content_hash': row['content_hash'],
-                        'embedding': row['embedding'],
-                        'similarity_score': row['similarity_score'],
-                        'created_at': row['created_at'],
-                        'updated_at': row['updated_at']
-                    }
-                    results.append(result)
-                return results
-        except Exception as e:
-            print(f"Error performing vector similarity search: {e}")
-            return []
-
-    async def vector_similarity_search_all(self, query_embedding: List[float], limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Perform vector similarity search across all conversations.
-        
-        Args:
-            query_embedding: The query embedding vector
-            limit: Maximum number of results to return
-            
-        Returns:
-            List of dictionaries containing chunk data and similarity scores
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.VECTOR_SIMILARITY_SEARCH_ALL,
-                    query_embedding, limit)
-                
-                results = []
-                for row in rows:
-                    result = {
-                        'id': row['id'],
-                        'conversation_id': row['conversation_id'],
-                        'chunk_type': row['chunk_type'],
-                        'chunk_index': row['chunk_index'],
-                        'role': row['role'],
-                        'content': row['content'],
-                        'content_hash': row['content_hash'],
-                        'embedding': row['embedding'],
-                        'similarity_score': row['similarity_score'],
-                        'created_at': row['created_at'],
-                        'updated_at': row['updated_at']
-                    }
-                    results.append(result)
-                return results
-        except Exception as e:
-            print(f"Error performing vector similarity search all: {e}")
-            return []
-
-    async def vector_similarity_search_with_threshold(self, query_embedding: List[float], conversation_id: str, threshold: float, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Perform vector similarity search with a minimum similarity threshold.
-        
-        Args:
-            query_embedding: The query embedding vector
-            conversation_id: The conversation ID to search within
-            threshold: Minimum similarity score (0.0 to 1.0)
-            limit: Maximum number of results to return
-            
-        Returns:
-            List of dictionaries containing chunk data and similarity scores
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.VECTOR_SIMILARITY_SEARCH_WITH_THRESHOLD,
-                    query_embedding, conversation_id, threshold, limit)
-                
-                results = []
-                for row in rows:
-                    result = {
-                        'id': row['id'],
-                        'conversation_id': row['conversation_id'],
-                        'chunk_type': row['chunk_type'],
-                        'chunk_index': row['chunk_index'],
-                        'role': row['role'],
-                        'content': row['content'],
-                        'content_hash': row['content_hash'],
-                        'embedding': row['embedding'],
-                        'similarity_score': row['similarity_score'],
-                        'created_at': row['created_at'],
-                        'updated_at': row['updated_at']
-                    }
-                    results.append(result)
-                return results
-        except Exception as e:
-            print(f"Error performing vector similarity search with threshold: {e}")
-            return []
-
-    async def get_chunk_by_id(self, chunk_id: int) -> Optional[ConversationMessageChunk]:
-        """
-        Get a specific chunk by its ID.
-        
-        Args:
-            chunk_id: The chunk ID
-            
-        Returns:
-            ConversationMessageChunk object or None if not found
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                row = await conn.fetchrow(
-                    SQLStatements.GET_CHUNK_BY_ID,
-                    chunk_id)
-                
-                if row:
-                    return ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                return None
-        except Exception as e:
-            print(f"Error getting chunk by ID: {e}")
-            return None
-
-    async def get_chunks_by_hash(self, content_hash: str) -> List[ConversationMessageChunk]:
-        """
-        Get all chunks with a specific content hash.
-        
-        Args:
-            content_hash: The content hash to search for
-            
-        Returns:
-            List of ConversationMessageChunk objects
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.GET_CHUNKS_BY_HASH,
-                    content_hash)
-                
-                chunks = []
-                for row in rows:
-                    chunk = ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                    chunks.append(chunk)
-                return chunks
-        except Exception as e:
-            print(f"Error getting chunks by hash: {e}")
-            return []
-
-    async def get_conversation_stats(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get statistics for a specific conversation.
-        
-        Args:
-            conversation_id: The conversation ID
-            
-        Returns:
-            Dictionary containing conversation statistics
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                row = await conn.fetchrow(
-                    SQLStatements.GET_CONVERSATION_STATS,
-                    conversation_id)
-                
-                if row:
-                    return {
-                        'conversation_id': row['conversation_id'],
                         'total_chunks': row['total_chunks'],
-                        'message_chunks': row['message_chunks'],
-                        'message_pair_chunks': row['message_pair_chunks'],
-                        'user_chunks': row['user_chunks'],
-                        'assistant_chunks': row['assistant_chunks'],
-                        'system_chunks': row['system_chunks'],
-                        'user_assistant_chunks': row['user_assistant_chunks'],
-                        'first_chunk_created': row['first_chunk_created'],
-                        'last_chunk_created': row['last_chunk_created']
+                        'parent_message_hash': row['parent_message_hash'],
+                        'content': row['content'],
+                        'datetime': row['datetime'],
+                        'hash': row['hash'],
+                        'role': row['role'],
+                        'embedding': row['embedding'],
+                        'similarity_score': row['similarity_score'],
+                        'created_at': row['created_at']
                     }
-                return None
+                    results.append(result)
+                return results
         except Exception as e:
-            print(f"Error getting conversation stats: {e}")
-            return None
+            print(f"Error performing vector similarity search on message chunks: {e}")
+            return []
 
-    async def conversation_exists(self, conversation_id: str) -> bool:
-        """
-        Check if a conversation exists in the database.
-        
-        Args:
-            conversation_id: The conversation ID to check
-            
-        Returns:
-            True if conversation exists, False otherwise
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                exists = await conn.fetchval(
-                    SQLStatements.CONVERSATION_EXISTS,
-                    conversation_id)
-                return exists
-        except Exception as e:
-            print(f"Error checking if conversation exists: {e}")
-            return False
 
     async def get_all_conversation_ids(self) -> List[str]:
         """
@@ -477,99 +194,6 @@ class PostgreSQLInterface:
             print(f"Error getting all conversation IDs: {e}")
             return []
 
-    async def count_chunks_by_conversation(self, conversation_id: str) -> int:
-        """
-        Count the number of chunks for a specific conversation.
-        
-        Args:
-            conversation_id: The conversation ID
-            
-        Returns:
-            Number of chunks
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                count = await conn.fetchval(
-                    SQLStatements.COUNT_CHUNKS_BY_CONVERSATION,
-                    conversation_id)
-                return count or 0
-        except Exception as e:
-            print(f"Error counting chunks by conversation: {e}")
-            return 0
-
-    async def get_recent_chunks(self, limit: int = 100) -> List[ConversationMessageChunk]:
-        """
-        Get the most recently created chunks.
-        
-        Args:
-            limit: Maximum number of chunks to return
-            
-        Returns:
-            List of ConversationMessageChunk objects
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                rows = await conn.fetch(
-                    SQLStatements.GET_RECENT_CHUNKS,
-                    limit)
-                
-                chunks = []
-                for row in rows:
-                    chunk = ConversationMessageChunk(
-                        conversation_id=row['conversation_id'],
-                        chunk_type=row['chunk_type'],
-                        chunk_index=row['chunk_index'],
-                        role=row['role'],
-                        content=row['content'],
-                        content_hash=row['content_hash'],
-                        embedding=row['embedding']
-                    )
-                    chunks.append(chunk)
-                return chunks
-        except Exception as e:
-            print(f"Error getting recent chunks: {e}")
-            return []
-
-    async def delete_chunks_by_conversation(self, conversation_id: str) -> bool:
-        """
-        Delete all chunks for a specific conversation.
-        
-        Args:
-            conversation_id: The conversation ID
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                await conn.execute(
-                    SQLStatements.DELETE_CHUNKS_BY_CONVERSATION,
-                    conversation_id)
-                return True
-        except Exception as e:
-            print(f"Error deleting chunks by conversation: {e}")
-            return False
-
-    async def delete_chunk_by_id(self, chunk_id: int) -> bool:
-        """
-        Delete a specific chunk by its ID.
-        
-        Args:
-            chunk_id: The chunk ID
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            async with self._postgres_connection.connect() as conn:
-                await conn.execute(
-                    SQLStatements.DELETE_CHUNK_BY_ID,
-                    chunk_id)
-                return True
-        except Exception as e:
-            print(f"Error deleting chunk by ID: {e}")
-            return False
-
     async def drop_tables(self) -> bool:
         """
         Drop the permanent conversation chunks table.
@@ -582,20 +206,71 @@ class PostgreSQLInterface:
             print(f"Error dropping table: {e}")
             return False
 
-    # Legacy methods for backward compatibility (if needed)
-    async def load_conversation_to_manager(self, conversation: PermanentConversation) -> bool:
+    async def get_all_message_chunks(self) \
+        -> List[ConversationMessageChunk]:
         """
-        Legacy method - not applicable for chunk-based system.
-        Use get_chunks_by_conversation instead.
+        Retrieve all message chunks from the database. This function is
+        typically used for testing.
+        
+        Returns:
+            List of ConversationMessageChunk dataclass instances
         """
-        print("Warning: load_conversation_to_manager is not applicable for chunk-based system")
-        return False
+        try:
+            async with self._postgres_connection.connect() as conn:
+                rows = await conn.fetch(SQLStatements.GET_ALL_MESSAGE_CHUNKS)
 
-    async def save_conversation_from_manager(self, conversation: PermanentConversation) -> bool:
-        """
-        Legacy method - not applicable for chunk-based system.
-        Use insert_chunks_batch instead.
-        """
-        print("Warning: save_conversation_from_manager is not applicable for chunk-based system")
-        return False
+                chunks = []
+                for row in rows:
+                    chunk = ConversationMessageChunk(
+                        conversation_id=row['conversation_id'],
+                        chunk_index=row['chunk_index'],
+                        total_chunks=row['total_chunks'],
+                        parent_message_hash=row['parent_message_hash'],
+                        content=row['content'],
+                        datetime=row['datetime'],
+                        hash=row['hash'],
+                        role=row['role'],
+                        chunk_type="message",
+                        embedding=json.loads(row['embedding']) \
+                            if row['embedding'] is not None else None
+                    )
+                    chunks.append(chunk)
+                return chunks
+        except Exception as e:
+            warn(f"Error retrieving all message chunks: {e}")
+            return []
 
+    async def get_all_message_pair_chunks(self) \
+        -> List[ConversationMessageChunk]:
+        """
+        Retrieve all message pair chunks from the database. This function is
+        typically used for testing.
+        
+        Returns:
+            List of ConversationMessageChunk dataclass instances
+        """
+        try:
+            async with self._postgres_connection.connect() as conn:
+                rows = await conn.fetch(
+                    SQLStatements.GET_ALL_MESSAGE_PAIR_CHUNKS)
+
+                chunks = []
+                for row in rows:
+                    chunk = ConversationMessageChunk(
+                        conversation_id=row['conversation_id'],
+                        chunk_index=row['chunk_index'],
+                        total_chunks=row['total_chunks'],
+                        parent_message_hash=row['parent_message_hash'],
+                        content=row['content'],
+                        datetime=row['datetime'],
+                        hash=row['hash'],
+                        role=row['role'],
+                        chunk_type="message_pair",
+                        embedding=json.loads(row['embedding']) \
+                            if row['embedding'] is not None else None
+                    )
+                    chunks.append(chunk)
+                return chunks
+        except Exception as e:
+            warn(f"Error retrieving all message pair chunks: {e}")
+            return []
