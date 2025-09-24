@@ -160,6 +160,11 @@ class EmbedPermanentConversation:
             normalize_embeddings=True)
         return embedding.tolist()
 
+    def make_query_embeddings(self, query: str):
+        return self._text_splitter.text_to_embedding(
+            self._embedding_model,
+            query)
+
     @staticmethod
     def recreate_conversation_messages_from_chunks(
         message_chunks: List[ConversationMessageChunk]

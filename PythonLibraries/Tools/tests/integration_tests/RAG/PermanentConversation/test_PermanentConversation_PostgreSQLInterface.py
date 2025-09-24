@@ -170,6 +170,12 @@ async def test_permanent_conversation_database_inserts_and_persists(
 
     # Cleanup is handled by the fixture
 
+test_queries = [
+    "HTML CSS JavaScript ball hexagon animation physics gravity",
+    "Go language recursive function maze solving algorithm", 
+    "transformer neural network attention mechanism machine learning"
+]
+
 @pytest.mark.asyncio
 async def test_permanent_conversation_database_does_vector_similarity_search(
     test_dsn: str,
@@ -210,12 +216,6 @@ async def test_permanent_conversation_database_does_vector_similarity_search(
     for message_pair_chunk in message_pair_chunks:
         await pcpsqli.insert_message_pair_chunk(message_pair_chunk)
 
-    test_queries = [
-        "HTML CSS JavaScript ball hexagon animation physics gravity",
-        "Go language recursive function maze solving algorithm", 
-        "transformer neural network attention mechanism machine learning"
-    ]
-
     results_for_queries = []
 
     for query in test_queries:
@@ -232,6 +232,7 @@ async def test_permanent_conversation_database_does_vector_similarity_search(
     assert len(results_for_queries) == len(test_queries)
     assert type(results_for_queries[0]) == list
 
+    # 1 chunk for the 0th query (no text splitting needed)
     assert len(results_for_queries[0]) == 1
     # Number of closest matches
     assert len(results_for_queries[0][0]) == 10
@@ -276,3 +277,87 @@ async def test_permanent_conversation_database_does_vector_similarity_search(
     # print(
     #     "results_for_queries[1][0][2]['content']",
     #     results_for_queries[1][0][2]["content"])
+
+
+async def setup_test_database(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection,
+    model_path,
+    conversation):
+
+    await postgres_connection.create_database(test_db_name)
+    await postgres_connection.create_new_pool(test_db_name)
+    await postgres_connection.create_extension("vector")
+
+    pcpsqli = PermanentConversationPostgreSQLInterface(
+        postgres_connection)
+
+    assert await pcpsqli.create_tables() is True, "Tables should be created"
+
+    text_splitter = TextSplitterByTokens(model_path=model_path)
+    embedding_model = SentenceTransformer(str(model_path), device = "cuda:0",)
+    csp = ConversationSystemAndPermanent()
+    for message in conversation:
+        if message["role"] == "user":
+            csp.append_message(UserMessage(message["content"]))
+        elif message["role"] == "assistant":
+            csp.append_message(AssistantMessage(message["content"]))
+        elif message["role"] == "system":
+            csp.add_system_message(message["content"])
+    embed_pc = EmbedPermanentConversation(
+        text_splitter,
+        embedding_model,
+        csp.pc)
+    message_chunks, message_pair_chunks = embed_pc.embed_conversation()
+
+    # Insert chunks into database.
+    for message_chunk in message_chunks:
+        await pcpsqli.insert_message_chunk(message_chunk)
+    for message_pair_chunk in message_pair_chunks:
+        await pcpsqli.insert_message_pair_chunk(message_pair_chunk)
+
+    return pcpsqli, text_splitter, embedding_model
+
+def make_query_embeddings(text_splitter, embedding_model, query):
+    return text_splitter.text_to_embedding(
+        embedding_model,
+        query)
+
+@pytest.mark.asyncio
+async def test_vector_similarity_search_with_role(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection):
+
+    conversation = load_test_conversation()
+
+    pcpsqli, text_splitter, embedding_model = await setup_test_database(
+        test_dsn,
+        test_db_name,
+        postgres_connection,
+        model_path,
+        conversation)
+
+    results_for_queries = []
+
+    for query in test_queries:
+        query_results = []
+        query_embeddings = make_query_embeddings(
+            text_splitter,
+            embedding_model,
+            query)
+        for embedding in query_embeddings:
+            results = await pcpsqli.vector_similarity_search_message_chunks(
+                query_embedding=embedding,
+                role_filter="user",
+                limit=5)
+            query_results.append(results)
+        results_for_queries.append(query_results)
+
+    for query_results in results_for_queries:
+        # 1 chunk for each query (no text splitting needed)
+        assert len(query_results) == 1
+        assert len(query_results[0]) == 5
+        for result in query_results[0]:
+            assert result["role"] == "user"

@@ -3,7 +3,6 @@ from .SQLStatements import SQLStatements
 from .EmbedPermanentConversation import (
     ConversationMessageChunk,
 )
-from commonapi.Messages.PermanentConversation import PermanentConversation
 
 from typing import List, Optional, Dict, Any
 from warnings import warn
@@ -178,7 +177,6 @@ class PostgreSQLInterface:
             print(f"Error performing vector similarity search on message chunks: {e}")
             return []
 
-
     async def get_all_conversation_ids(self) -> List[str]:
         """
         Get all unique conversation IDs from the database.
@@ -200,7 +198,10 @@ class PostgreSQLInterface:
         """
         try:
             async with self._postgres_connection.connect() as conn:
-                await conn.execute(f"DROP TABLE IF EXISTS {self.CHUNKS_TABLE_NAME}")
+                await conn.execute(
+                    f"DROP TABLE IF EXISTS {self.MESSAGE_CHUNKS_TABLE_NAME}")
+                await conn.execute(
+                    f"DROP TABLE IF EXISTS {self.MESSAGE_PAIR_CHUNKS_TABLE_NAME}")
                 return True
         except Exception as e:
             print(f"Error dropping table: {e}")
