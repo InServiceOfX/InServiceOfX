@@ -1,35 +1,33 @@
 from typing import Optional, Any, List, Dict
 from commonapi.Messages import UserMessage, AssistantMessage
-from commonapi.Messages.ConversationSystemAndPermanent import ConversationSystemAndPermanent
+from commonapi.Messages import ConversationAndSystemMessages
 
 from .RAGProcessor import RAGProcessor
 
 from textwrap import dedent
 
-class PermanentConversationRAGAgent:
+class RAGAgent:
     """AI agent that uses permanent conversation RAG for answering questions."""
     
-    DEFAULT_SYSTEM_MESSAGE = (
-        "You are a helpful AI assistant that answers questions based on previous conversation history. "
-        "When answering questions, use the context from previous conversations to provide accurate and relevant information. "
-        "If you don't have enough context to answer a question, say so."
-    )
+    DEFAULT_SYSTEM_MESSAGE = dedent("""
+        You are a helpful AI assistant that answers questions based on previous
+        conversation history. When answering questions, use the context from
+        previous conversations to provide accurate and relevant information.
+    """)
     
     def __init__(
         self,
         rag_processor: RAGProcessor,
-        llm_engine: Any,
-        conversation_system_and_permanent: Optional[ConversationSystemAndPermanent] = None
+        conversation_and_system_messages: Optional[ConversationAndSystemMessages] = None
     ):
         self.rag_processor = rag_processor
-        self.llm_engine = llm_engine
         
-        if conversation_system_and_permanent is None:
-            self.csp = ConversationSystemAndPermanent()
+        if conversation_and_system_messages is None:
+            self.csm = ConversationAndSystemMessages()
         else:
-            self.csp = conversation_system_and_permanent
+            self.csm = conversation_and_system_messages
         
-        self.csp.add_system_message(self.DEFAULT_SYSTEM_MESSAGE)
+        self.csm.add_system_message(self.DEFAULT_SYSTEM_MESSAGE)
     
     async def answer_question(
         self,
@@ -104,10 +102,10 @@ Please provide a comprehensive answer based on the context provided. If the cont
         # Placeholder for now
         return f"Based on the context provided, here's what I found:\n\n{enhanced_prompt}\n\n[Note: This is a placeholder response. Integrate with your actual LLM to generate real answers.]"
     
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
+    def get_conversation_as_list_of_dicts(self) -> List[Dict[str, Any]]:
         """Get the conversation history."""
         return self.csp.get_conversation_as_list_of_dicts()
     
-    def clear_conversation(self):
+    def clear_conversation_history(self):
         """Clear the conversation history."""
         self.csp.clear_conversation_history()

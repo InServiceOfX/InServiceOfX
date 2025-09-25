@@ -3,6 +3,10 @@ from commonapi.Messages.ConversationAndSystemMessages \
 
 def test_ConversationAndSystemMessages_init():
     conversation_and_system_messages = ConversationAndSystemMessages()
+
+    assert conversation_and_system_messages.system_messages_manager._messages_dict \
+        == {}
+
     list_of_messages_dict = \
         conversation_and_system_messages.get_conversation_as_list_of_dicts()
     assert len(list_of_messages_dict) == 0
