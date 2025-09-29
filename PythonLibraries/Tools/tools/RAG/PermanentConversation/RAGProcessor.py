@@ -69,7 +69,8 @@ class RAGProcessor:
             self,
             query: str,
             role_filter: Optional[str] = None,
-            limit: int = DEFAULT_LIMIT):
+            limit: int = DEFAULT_LIMIT,
+            is_return_matches: bool = False):
         search_results = \
             await self._retrieve_relevant_message_chunks(
                 query,
@@ -78,4 +79,4 @@ class RAGProcessor:
         context = self._build_context_from_message_chunks(
             search_results,
             role_filter)
-        return context
+        return context if not is_return_matches else (context, search_results)

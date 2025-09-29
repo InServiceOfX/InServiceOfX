@@ -21,7 +21,6 @@ from tools.RAG.PermanentConversation.EmbedPermanentConversation \
 from tools.RAG.PermanentConversation import PostgreSQLInterface
 
 import json
-import pytest_asyncio
 
 def setup_PermanentConversation_RAG_dependences(
         test_database_name: str = "test_permanent_conversation_database"):
@@ -52,19 +51,20 @@ def setup_PermanentConversation_RAG_dependences(
         test_database_name,
         load_test_conversation,
         cleanup_test_database,
-        postgres_connection)
+        postgres_connection,
+        postgresql_database_setup_data.test_dsn)
 
-async def setup_PermanentConversation_RAG():
-    model_path, is_model_downloaded, model_is_not_downloaded_message, \
-        test_db_name, load_test_conversation, \
-        cleanup_test_database, postgres_connection = \
-            setup_PermanentConversation_RAG_dependences()
+async def setup_PermanentConversation_RAG(
+        input_postgres_connection,
+        test_db_name,
+        model_path,
+        load_test_conversation):
 
-    await postgres_connection.create_database(test_db_name)
-    await postgres_connection.create_new_pool(test_db_name)
-    await postgres_connection.create_extension("vector")
+    await input_postgres_connection.create_database(test_db_name)
+    await input_postgres_connection.create_new_pool(test_db_name)
+    await input_postgres_connection.create_extension("vector")
 
-    pgsql_interface = PostgreSQLInterface(postgres_connection)
+    pgsql_interface = PostgreSQLInterface(input_postgres_connection)
     assert await pgsql_interface.create_tables() is True, \
         "Tables should be created"
 
@@ -94,6 +94,4 @@ async def setup_PermanentConversation_RAG():
     return (
         pgsql_interface,
         embed_pc,
-        cleanup_test_database,
-        postgres_connection
     )

@@ -243,7 +243,9 @@ class ModelAndTokenizer:
 
         return (thinking_content, content)
 
-    def generate_with_thinking_enabled(self, conversation):
+    def apply_chat_template_and_generate_with_thinking_enabled(
+            self,
+            conversation):
         tokenizer_outputs = self.apply_chat_template(
             conversation,
             add_generation_prompt=True,

@@ -255,7 +255,8 @@ def test_generate_with_enable_thinking_works_with_Qwen3_0_6B():
     conversation = [{"role": "user", "content": prompt}]
 
     thinking_response, content_response = \
-        mat.generate_with_thinking_enabled(conversation)
+        mat.apply_chat_template_and_generate_with_thinking_enabled(
+            conversation)
 
     assert isinstance(thinking_response, str)
     assert isinstance(content_response, str)
