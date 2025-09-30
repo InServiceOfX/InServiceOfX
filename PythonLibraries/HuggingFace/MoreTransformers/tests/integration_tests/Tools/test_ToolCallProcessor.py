@@ -7,13 +7,16 @@ is_model_downloaded, model_path = is_model_there(
     data_subdirectories)
 model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
 
+from commonapi.Messages import ToolMessage
+
 from moretransformers.Applications import ModelAndTokenizer
 from moretransformers.Configurations import (
     CreateDefaultGenerationConfigurations,
     FromPretrainedModelConfiguration,
     FromPretrainedTokenizerConfiguration,)
+from moretransformers.Tools import ToolCallProcessor
 
-import json, pytest, re, torch
+import pytest, torch
 
 # https://huggingface.co/docs/transformers/en/chat_extras#passing-tools
 # Although passing Python functions is very convenient (pass functions to the
@@ -49,11 +52,6 @@ messages = [
   {"role": "user", "content": "Hey, what's the temperature in Paris right now?"}
 ]
 
-def parse_tool_call(s: str) -> dict:
-    return json.loads(
-        re.search(
-            r'<tool_call>\s*(.*?)\s*</tool_call>', s, re.DOTALL).group(1))
-
 @pytest.mark.skipif(
         not is_model_downloaded, reason=model_is_not_downloaded_message)
 def test_use_Qwen3_following_tool_use_example():
@@ -86,6 +84,14 @@ def test_use_Qwen3_following_tool_use_example():
     mat.load_tokenizer()
 
     tools = [get_current_temperature, get_current_wind_speed]
+    tool_call_processor = ToolCallProcessor(
+        available_functions={
+            "get_current_temperature": get_current_temperature,
+            "get_current_wind_speed": get_current_wind_speed
+        })
+
+    # Pass messages, and list of tools to apply_chat_template. Tokenize the
+    # chat and then generate a response.
 
     input_ids = mat.apply_chat_template(
         messages,
@@ -95,23 +101,10 @@ def test_use_Qwen3_following_tool_use_example():
         tools=tools,
         to_device=True)
 
-    # data: {'input_ids': ...}
-    #for attr, value in vars(input_ids).items():
-    #    print(f"{attr}: {value}")
-
-    # KeysView 'input_ids', 'attention_mask', _encodings
-    #print(input_ids.keys())
-
-    assert len(vars(input_ids)) == 3
-
     outputs = mat._model.generate(
         **input_ids,
-        max_new_tokens=mat._generation_configuration.max_new_tokens,
-        temperature=mat._generation_configuration.temperature,
-        top_p=mat._generation_configuration.top_p,
-        top_k=mat._generation_configuration.top_k,
-        min_p=mat._generation_configuration.min_p,
-        do_sample=mat._generation_configuration.do_sample)
+        **mat._generation_configuration.to_dict(),
+        )
 
     # We will provide a function for detecting a tool call.
     # skip_special_tokens=False results in tags <|im_start|>, <|im_end|>,
@@ -119,34 +112,85 @@ def test_use_Qwen3_following_tool_use_example():
         outputs,
         skip_special_tokens=True)
 
-    # It includes the thinking.
-    #print(decoded_from_mat)
+    assert ToolCallProcessor.has_tool_call(decoded_from_mat)
+
+    # The chat model should have called get_current_temperature tool with the
+    # correct parameters from the docstring. It inferred France as the location
+    # based on Parise, and it should use Celsius for the units of temperature.
 
     # This parses out the tool calling exactly.
     decoded = mat._tokenizer.decode(
-        outputs[0][len(input_ids["input_ids"][0]):],
+        ToolCallProcessor.parse_generate_output_for_tool_calls(
+            outputs,
+            input_ids),
         skip_special_tokens=True)
 
-    #<tool_call>
-    #{"name": "get_current_temperature", "arguments": {"location": "Paris, France", "unit": "celsius"}}
-    #</tool_call>
-    #print(decoded)
+    # This could possible be None as in no tool calls were found.
+    tool_calls = ToolCallProcessor._parse_tool_call(decoded)
 
-    tool_call = parse_tool_call(decoded)
+    # Hold the call in the tool_calls key of an assistant message. This is the
+    # recommended API, and should be supported by chat template of most
+    # tool-using models.
+    # Although tool_calls is similar to the OpenAI API, the OpenAI API uses a
+    # JSON string as its tool_calls format. This may cause errors if used in
+    # Transformers, which expects a dict.
 
-    # {'name': 'get_current_temperature', 'arguments': {'location': 'Paris, France', 'unit': 'celsius'}}
-    #print(tool_call)
+    assistant_message_with_tool_calls = \
+        ToolCallProcessor._convert_tool_calls_to_assistant_message(tool_calls)
 
-    messages.append(
-        {
-            "role": "assistant",
-            "tool_calls": [
-                {
-                    "type": "function",
-                    "function": tool_call
-                }
-            ]
-        }
-    )
+    messages.append(assistant_message_with_tool_calls.to_dict())
 
     #print(messages)
+
+    tool_call_responses = tool_call_processor.handle_possible_tool_calls(
+        tool_calls)
+
+    # [22.0]
+    #print(tool_call_responses)
+    assert tool_call_responses[0] == 22.0
+
+    # Append the tool response to the chat history with the tool role.
+
+    tool_response_message = ToolMessage(
+        content=str(tool_call_responses[0]),
+        role="tool")
+
+    messages.append(tool_response_message.to_dict())
+
+    # Finally, allow the model to read tool response and reply to user.
+
+    input_ids = mat.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        tools=tools,
+        to_device=True)
+
+    outputs = mat._model.generate(
+        **input_ids,
+        **mat._generation_configuration.to_dict(),
+        )
+
+    decoded_from_mat = mat.decode_with_tokenizer(
+        outputs,
+        skip_special_tokens=True)
+
+    assert isinstance(decoded_from_mat, str)
+    # This also has the system message, Tools section
+    #print("\n decoded_from_mat: ", decoded_from_mat)
+
+    decoded = mat._tokenizer.decode(
+        ToolCallProcessor.parse_generate_output_for_tool_calls(
+            outputs,
+            input_ids),
+        skip_special_tokens=True)
+
+    #print("\n decoded: ", decoded)
+
+    thinking_content, content = mat._parse_generate_output_into_thinking_and_content(
+        input_ids,
+        outputs)
+
+    print("\n thinking_content: ", thinking_content)
+    print("\n content: ", content)

@@ -6,6 +6,7 @@ from commonapi.Messages.Messages import (
     create_user_message,
     parse_dict_into_specific_message,
     SystemMessage,
+    ToolMessage,
     UserMessage,
 )
 
@@ -36,6 +37,7 @@ __all__ = [
     "RecordedSystemMessage",
     "SystemMessagesManager",
     "SystemMessage",
+    "ToolMessage",
     "UserMessage",
 ]
 
