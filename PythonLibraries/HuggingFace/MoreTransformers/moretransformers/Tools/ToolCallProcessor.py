@@ -55,7 +55,7 @@ class ToolCallProcessor:
         return tool_calls
 
     @staticmethod
-    def parse_generate_output_for_tool_calls(generate_outputs, input_ids):
+    def parse_generate_output_for_output_only(generate_outputs, input_ids):
         return generate_outputs[0][len(input_ids["input_ids"][0]):]
 
     @staticmethod
@@ -95,7 +95,7 @@ class ToolCallProcessor:
         """
         Args:
             possible_tool_calls: This is typically the output of either
-            parse_generate_output_for_tool_calls or _parse_tool_call.
+            parse_generate_output_for_output_only or _parse_tool_call.
         """
         if isinstance(possible_tool_calls, str):
             possible_tool_calls = self._parse_tool_call(possible_tool_calls)
@@ -116,3 +116,6 @@ class ToolCallProcessor:
                 tool_call_responses.append(function_response)
 
         return tool_call_responses
+
+    def get_tools_as_list(self):
+        return list(self.available_functions.values())

@@ -58,3 +58,14 @@ else:
     print(
         f"Embeddings directory not found. Please ensure it exists at the "
         "expected location. Expected path directory: " + str(embeddings_path))
+    
+moretransformers_path = tools_path.parents[0] / "HuggingFace" / \
+    "MoreTransformers"
+if moretransformers_path.exists():
+    if str(moretransformers_path) not in sys.path:
+        sys.path.append(str(moretransformers_path))
+else:
+    print(
+        f"MoreTransformers directory not found. Please ensure it exists at the "
+        "expected location. Expected path directory: " + \
+            str(moretransformers_path))

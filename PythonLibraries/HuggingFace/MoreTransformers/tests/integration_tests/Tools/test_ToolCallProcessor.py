@@ -90,6 +90,8 @@ def test_use_Qwen3_following_tool_use_example():
             "get_current_wind_speed": get_current_wind_speed
         })
 
+    assert tools == tool_call_processor.get_tools_as_list()
+
     # Pass messages, and list of tools to apply_chat_template. Tokenize the
     # chat and then generate a response.
 
@@ -120,12 +122,13 @@ def test_use_Qwen3_following_tool_use_example():
 
     # This parses out the tool calling exactly.
     decoded = mat._tokenizer.decode(
-        ToolCallProcessor.parse_generate_output_for_tool_calls(
+        ToolCallProcessor.parse_generate_output_for_output_only(
             outputs,
             input_ids),
         skip_special_tokens=True)
 
-    # This could possible be None as in no tool calls were found.
+    # This could possible be None as in no tool calls were found. But we are
+    # checking above that there is a tool call.
     tool_calls = ToolCallProcessor._parse_tool_call(decoded)
 
     # Hold the call in the tool_calls key of an assistant message. This is the
@@ -181,7 +184,7 @@ def test_use_Qwen3_following_tool_use_example():
     #print("\n decoded_from_mat: ", decoded_from_mat)
 
     decoded = mat._tokenizer.decode(
-        ToolCallProcessor.parse_generate_output_for_tool_calls(
+        ToolCallProcessor.parse_generate_output_for_output_only(
             outputs,
             input_ids),
         skip_special_tokens=True)
