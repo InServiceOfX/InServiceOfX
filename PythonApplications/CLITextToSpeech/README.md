@@ -3,9 +3,10 @@
 ### Create an audio snippet from start timestamp to end
 
 ```
-fmpeg -i 'drinks White Claw once - Trevor Wallace.mp3' -ss 01:00 -to 2:53 FakeTrevorWallace-en.wav
+ffmpeg -i 'drinks White Claw once - Trevor Wallace.mp3' -ss 01:00 -to 2:53 FakeTrevorWallace-en.wav
 
 ```
+(Use `-t` if you want the audio snippet by specifying the time duration)
 
 ### Concatenate a few audio clips together
 
