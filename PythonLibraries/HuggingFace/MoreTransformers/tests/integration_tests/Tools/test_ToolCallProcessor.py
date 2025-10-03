@@ -114,7 +114,7 @@ def test_use_Qwen3_following_tool_use_example():
         outputs,
         skip_special_tokens=True)
 
-    assert ToolCallProcessor.has_tool_call(decoded_from_mat)
+    assert ToolCallProcessor.has_nonempty_tool_call(decoded_from_mat)
 
     # The chat model should have called get_current_temperature tool with the
     # correct parameters from the docstring. It inferred France as the location
@@ -150,12 +150,15 @@ def test_use_Qwen3_following_tool_use_example():
 
     # [22.0]
     #print(tool_call_responses)
-    assert tool_call_responses[0] == 22.0
+
+    assert tool_call_responses[0][0] == "get_current_temperature"
+    assert tool_call_responses[0][1] == 22.0
 
     # Append the tool response to the chat history with the tool role.
 
     tool_response_message = ToolMessage(
-        content=str(tool_call_responses[0]),
+        name=tool_call_responses[0][0],
+        content=str(tool_call_responses[0][1]),
         role="tool")
 
     messages.append(tool_response_message.to_dict())

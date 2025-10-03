@@ -15,9 +15,31 @@ class ToolCallProcessor:
     available_functions: Dict[str, Callable] = None
 
     @staticmethod
-    def has_tool_call(response_message: Any) -> bool:
-        return "<tool_call>" in response_message and \
-            "</tool_call>" in response_message
+    def has_nonempty_tool_call(response_message: Any) -> bool:
+        text = str(response_message)
+        
+        # Find all <tool_call> positions
+        start_positions = []
+        pos = 0
+        while True:
+            pos = text.find("<tool_call>", pos)
+            if pos == -1:
+                break
+            start_positions.append(pos)
+            pos += 1
+        
+        # For each <tool_call>, find the next </tool_call>
+        for start_pos in start_positions:
+            start_tag_end = start_pos + len("<tool_call>")
+            end_pos = text.find("</tool_call>", start_tag_end)
+            
+            if end_pos != -1:
+                # Get content between tags
+                content = text[start_tag_end:end_pos].strip()
+                if len(content) > 0:  # Non-empty content found
+                    return True
+
+        return False
 
     @staticmethod
     def _parse_tool_call(tool_call: str) -> Dict[str, Any]:
@@ -113,7 +135,7 @@ class ToolCallProcessor:
                 function_args = tool_call.get('arguments')
                 function_response = function_to_call(**function_args)
     
-                tool_call_responses.append(function_response)
+                tool_call_responses.append((function_name, function_response))
 
         return tool_call_responses
 
