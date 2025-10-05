@@ -285,12 +285,14 @@ RUN git clone https://github.com/InServiceOfX/insightface.git /ThirdParty/insigh
 ARG ARCH
 ARG COMPUTE_CAPABILITY
 ARG PTX
+ARG NUNCHAKU_VERSION
+
 # Look for your version here:
 # https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
 # torch                      2.8.0
 # root@baa0fec3e185:/# python --version
 # Python 3.12.3
-RUN pip install https://github.com/nunchaku-tech/nunchaku/releases/download/v0.3.2/nunchaku-0.3.2+torch2.8-cp312-cp312-linux_x86_64.whl
+RUN pip install ${NUNCHAKU_VERSION}
     # TODO: Try to get build from source to work
     # git clone https://github.com/mit-han-lab/nunchaku /ThirdParty/nunchaku && \
     # cd /ThirdParty/nunchaku && \

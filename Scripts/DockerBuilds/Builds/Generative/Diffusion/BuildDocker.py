@@ -7,8 +7,8 @@ sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from Utilities import (
     BuildDockerBase,
-    ReadBuildConfigurationWithOpenCV,
-    BuildDockerImageWithOpenCV)
+    ReadBuildConfigurationWithNunchaku,
+    BuildDockerImageWithNunchaku)
 
 class BuildDocker(BuildDockerBase):
     def __init__(self):
@@ -16,8 +16,8 @@ class BuildDocker(BuildDockerBase):
             "Build Docker image for diffusers with minimal dependencies",
             Path(__file__).resolve(),
             3,
-            configuration_reader_class=ReadBuildConfigurationWithOpenCV,
-            docker_builder_class=BuildDockerImageWithOpenCV)
+            configuration_reader_class=ReadBuildConfigurationWithNunchaku,
+            docker_builder_class=BuildDockerImageWithNunchaku)
 
     def get_dockerfile_components(self) -> List[Tuple[str, Path]]:
         return [

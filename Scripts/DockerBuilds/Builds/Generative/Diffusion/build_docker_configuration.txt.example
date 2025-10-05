@@ -9,7 +9,10 @@ OPENCV_VERSION=4.11.0
 DOCKER_IMAGE_NAME=diffusion-nvidia-pytorch:24.12-py3
 BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
 
-# Or TODO: try 24.07 and see what breaks.
+# Or try 24.07.
+# On 24.07, python is 3.10.12 (python --version) and after this Docker Build
+# instead of PyTorch 2.4.0a0+3bcc3cd, we have 2.8.0+cu128.
+# 
 # On 24.06, CUDA is 12.5, NVIDIA CUDA 12.5.0.23 but in the same description it
 # says it's CUDA 12.4 (what?). See
 # https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html
@@ -18,3 +21,13 @@ BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch/tags
 #DOCKER_IMAGE_NAME=minimal-diffusers-nvidia-python-24.07
 #BASE_IMAGE=nvcr.io/nvidia/pytorch:24.07-py3
+
+# Look for your version here:
+# https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
+# torch                      2.8.0
+# root@baa0fec3e185:/# python --version
+# Python 3.12.3
+# and so Python 3.12.3 corresponds to cp312.
+NUNCHAKU_VERSION=https://github.com/nunchaku-tech/nunchaku/releases/download/v0.3.2/nunchaku-0.3.2+torch2.8-cp312-cp312-linux_x86_64.whl
+# Or for say Python 3.10.12, PyTorch 2.8,
+#NUNCHAKU_VERSION=https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.8-cp310-cp310-linux_x86_64.whl
