@@ -1,4 +1,5 @@
 from commonapi.Messages import (
+    AssistantMessage,
     ConversationSystemAndPermanent,
     UserMessage)
 from corecode.Utilities import DataSubdirectories, is_model_there
@@ -16,6 +17,8 @@ from moretransformers.Configurations import (
     FromPretrainedModelConfiguration,
     FromPretrainedTokenizerConfiguration,)
 from moretransformers.Tools import ToolCallProcessor
+from moretransformers.Tools.ToolCallChatTemplates import \
+    AssistantMessageWithToolCalls
 
 import pytest, torch
 
@@ -78,15 +81,19 @@ def test_process_messages_once_for_any_tool_calls_with_Qwen3_and_single_tool():
 
     assert len(csp.get_conversation_as_list_of_dicts()) == 2
 
+    new_messages = []
     process_once_results = matcm._process_messages_once_for_any_tool_calls(
-        csp.get_conversation_as_list_of_dicts())
+        csp.get_conversation_as_list_of_dicts(),
+        new_messages)
 
     assert len(csp.get_conversation_as_list_of_dicts()) == 2
-    assert len(process_once_results) == 3
+    assert len(process_once_results) == 4
     assert process_once_results[0]
     assert len(process_once_results[1]) == 3
     assert process_once_results[1][2]["role"] == "assistant"
     assert len(process_once_results[2]) == 1
+    # Single tool call was created.
+    assert len(new_messages) == 1
 
     print(process_once_results[2])
 
@@ -140,25 +147,37 @@ def test_run_tool_calls_with_Qwen3_and_single_tool():
         mat,
         tool_call_processor)
 
+    new_messages = []
     process_once_results = matcm._process_messages_once_for_any_tool_calls(
-        csp.get_conversation_as_list_of_dicts())
+        csp.get_conversation_as_list_of_dicts(),
+        new_messages)
 
     assert process_once_results[0]
+    assert len(new_messages) == 1
 
     messages = matcm._run_tool_calls_and_append_to_messages(
         process_once_results[1],
-        process_once_results[2]
-    )
+        process_once_results[2],
+        new_messages)
 
     # Break down, i.e. explicitly run, the steps of the second call of
     # processing messages once for any tool calls.
+
+    print(isinstance(messages, list))
+    for index, message in enumerate(messages):
+        print(f"index: {index}, message: {message}")
+        print(isinstance(message, dict))
+
+    # TODO: We have to add padding=True here but not in the function that wraps
+    # this call in ModelAndToolCallManager.process_messages().
     input_ids = mat.apply_chat_template(
         messages,
         add_generation_prompt=True,
         tokenize=True,
         return_dict=True,
         tools=tool_call_processor.get_tools_as_list(),
-        to_device=True)        
+        to_device=True,
+        padding=True)
 
     outputs = mat._model.generate(
         **input_ids,
@@ -203,8 +222,123 @@ def test_process_messages_with_Qwen3_and_single_tool():
     process_messages_results = matcm.process_messages(
         csp.get_conversation_as_list_of_dicts())
 
+    # Expected that function returns True in first element.
     assert process_messages_results[0]
-    assert len(process_messages_results) == 3
+    # length 4 for expected tool call completion.
+    assert len(process_messages_results) == 4
+    # Returning messages.
     assert len(process_messages_results[1]) == 4
+    # Returning the successful tool calls.
     assert isinstance(process_messages_results[2], str)
+    # These are the newly created messages; first, an
+    # AssistantMessageWithToolCalls, and second, a ToolMessage
+    assert len(process_messages_results[3]) == 2
     print("process_messages_results[2]: ", process_messages_results[2])
+
+def create_more_user_queries():
+    return [
+        "Hey, what's the temperature in Paris right now?",
+        (
+            "What's the weather like in New York? I need both temperature and "
+            "wind information."
+        ),
+        "How windy is it in Tokyo right now?",
+        "Tell me about the weather in London."
+    ]
+
+@pytest.mark.skipif(
+        not is_model_downloaded, reason=model_is_not_downloaded_message)
+def test_process_messages_with_Qwen3_and_two_tools():
+    more_user_queries = create_more_user_queries()
+    messages = [
+        ToolsForTest.create_wind_weather_system_message(),
+        more_user_queries[0]
+    ]
+
+    mat, tool_call_processor, csp = \
+        setup_test_for_ModelAndToolCallManager_with_Qwen3(messages)
+
+    mat.load_model()
+    mat.load_tokenizer()
+
+    matcm = ModelAndToolCallManager(
+        mat,
+        tool_call_processor)
+
+    process_messages_results = matcm.process_messages(
+        csp.get_conversation_as_list_of_dicts())
+
+    # True for successful tool call to completion.
+    assert process_messages_results[0]
+    # Length would not be 4 if tool call was not processed to completion.
+    assert len(process_messages_results) == 4
+    # Returned messages.
+    assert len(process_messages_results[1]) == 4
+    # These are the newly created messages
+    assert len(process_messages_results[3]) == 2
+    # Conversation was not mutated through the as_list_of_dicts() method.
+    assert len(csp.get_conversation_as_list_of_dicts()) == 2
+
+    assert process_messages_results[1][2] == \
+        process_messages_results[3][0].to_dict()
+    assert process_messages_results[1][3] == \
+        process_messages_results[3][1].to_dict()
+
+    assert not hasattr(process_messages_results[3][0], "content")
+    assert isinstance(
+        process_messages_results[3][0],
+        AssistantMessageWithToolCalls)
+    csp.append_message(process_messages_results[3][1])
+    assistant_message = \
+        matcm._add_assistant_message_to_conversation_system_and_permanent(
+            csp,
+            process_messages_results[2])
+    assert isinstance(assistant_message, AssistantMessage)
+
+    assert len(csp.get_conversation_as_list_of_dicts()) == 4
+
+    csp.append_message(UserMessage(content=more_user_queries[1]))
+    process_messages_results = matcm.process_messages(
+        csp.get_conversation_as_list_of_dicts())
+    assert process_messages_results[0]
+    assert len(process_messages_results) == 4
+    # To obtain this result, try running again since this appears stochastic for
+    # now.
+    assert len(process_messages_results[1]) == 8
+    assert len(process_messages_results[3]) == 3
+    assert len(csp.get_conversation_as_list_of_dicts()) == 5
+
+    new_assistant_message = \
+        matcm.update_conversation_system_and_permanent_from_process_messages(
+            process_messages_results,
+            csp)
+    print("new_assistant_message: ", new_assistant_message)
+
+    assert len(csp.get_conversation_as_list_of_dicts()) == 8
+
+    csp.append_message(UserMessage(content=more_user_queries[2]))
+    process_messages_results = matcm.process_messages(
+        csp.get_conversation_as_list_of_dicts())
+    assert process_messages_results[0]
+    assert len(process_messages_results) == 4
+
+    new_assistant_message = \
+        matcm.update_conversation_system_and_permanent_from_process_messages(
+            process_messages_results,
+            csp)
+    print("new_assistant_message: ", new_assistant_message)
+
+    csp.append_message(UserMessage(content=more_user_queries[3]))
+    process_messages_results = matcm.process_messages(
+        csp.get_conversation_as_list_of_dicts())
+    assert process_messages_results[0]
+    assert len(process_messages_results) == 4
+
+    new_assistant_message = \
+        matcm.update_conversation_system_and_permanent_from_process_messages(
+            process_messages_results,
+            csp)
+    print("new_assistant_message: ", new_assistant_message)
+
+    for index, message in enumerate(csp.get_conversation_as_list_of_dicts()):
+        print(f"index: {index}, message: {message}")

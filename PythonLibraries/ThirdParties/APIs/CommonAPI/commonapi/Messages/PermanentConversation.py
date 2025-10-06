@@ -42,20 +42,31 @@ class PermanentConversation:
         self._message_pair_counter: int = 0
 
     def add_message(self, message: Message):
-        self.messages.append(ConversationMessage(
-            conversation_id=self._counter,
-            content=message.content,
-            datetime=time.time(),
-            hash=Message._hash_content(message.content),
-            role=message.role,))
-        self._counter += 1
-        self.content_hashes.append(hash)
-        if hash not in self.hash_to_indices_reverse_map:
-            self.hash_to_indices_reverse_map[hash] = [
-                len(self.content_hashes) - 1,]
-        else:
-            self.hash_to_indices_reverse_map[hash].append(
-                len(self.content_hashes) - 1)
+        """
+        For right now, we've consciously decided to not allow messages with
+        no content to be added to the permanent conversation.
+        """
+        try:
+            self.messages.append(ConversationMessage(
+                conversation_id=self._counter,
+                content=message.content,
+                datetime=time.time(),
+                hash=Message._hash_content(message.content),
+                role=message.role,))
+            self._counter += 1
+            self.content_hashes.append(hash)
+            if hash not in self.hash_to_indices_reverse_map:
+                self.hash_to_indices_reverse_map[hash] = [
+                    len(self.content_hashes) - 1,]
+            else:
+                self.hash_to_indices_reverse_map[hash].append(
+                    len(self.content_hashes) - 1)
+        # For right now, we've consciously decided to not allow messages with
+        # no content to be added to the permanent conversation.
+        except AttributeError as err:
+            if err.args[0] == "object has no attribute 'content'" or \
+                not hasattr(message, "content"):
+                raise err
 
     def append_message_pair(self, message_0: Message, message_1: Message):
         self.message_pairs.append(ConversationMessagePair(

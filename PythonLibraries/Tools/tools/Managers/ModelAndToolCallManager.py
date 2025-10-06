@@ -18,7 +18,7 @@ class ModelAndToolCallManager:
     def process_messages(self, messages):
         """
         Returns:
-            - tuple of 3: if first (index 0) element is True, then a list of
+            - tuple of 4: if first (index 0) element is True, then a list of
             Python dicts, messages, is returned in the second (index 1) element,
             and the result of decoding is returned in the third (index 2)
             element.
@@ -26,41 +26,49 @@ class ModelAndToolCallManager:
             maximum number of iterations allowed while trying to handle tool
             calls. In this case, the second (index 1) element is the mutated
             messages.
+            Last element is any new messages created.
         """
+        new_messages = []
         iteration_count = 0
 
         while iteration_count < self._max_number_of_iterations:
 
             process_messages_once_results = \
                 self._process_messages_once_for_any_tool_calls(
-                    messages
+                    messages,
+                    new_messages
                 )
             # No tool call was obtained,
             if not process_messages_once_results[0]:
                 return (
                     True,
                     process_messages_once_results[1],
-                    process_messages_once_results[2])
+                    process_messages_once_results[2],
+                    new_messages)
             # Tool call was obtained
             else:
-                messages = self._run_tool_calls_and_append_to_messages(
-                    process_messages_once_results[1],
-                    process_messages_once_results[2])
+                messages, new_messages = \
+                    self._run_tool_calls_and_append_to_messages(
+                        process_messages_once_results[1],
+                        process_messages_once_results[2],
+                        new_messages)
 
         warn("Message processing iterations exceeded maximum due to tool calls")
-        return False, messages 
+        return False, messages, new_messages
 
     def _process_messages_once_for_any_tool_calls(
             self,
-            messages: Dict[str, str]):
+            messages: Dict[str, str],
+            new_messages: list):
         """
         Returns:
-            - tuple of 3; if first is True, then a tool call was detected and
+            - tuple of 4; if first is True, then a tool call was detected and
             the tool_calls are returned as the 3rd (index 2) element.
             If first (index 0) is False, then no tool call was detected and the
             decoded response is returned as the 3rd (index 2) element.
 
             In both cases, the second (index 1) element is the mutated messages.
+            The fourth (index 3) element is any new messages created.
         """
         tools = self._tool_call_processor.get_tools_as_list()
 
@@ -98,15 +106,17 @@ class ModelAndToolCallManager:
                     tool_calls)
 
             messages.append(assistant_message_with_tool_calls.to_dict())
+            new_messages.append(assistant_message_with_tool_calls)
 
-            return True, messages, tool_calls
+            return True, messages, tool_calls, new_messages
         else:
-            return False, messages, decoded
+            return False, messages, decoded, new_messages
 
     def _run_tool_calls_and_append_to_messages(
             self,
             messages: Dict[str, str],
-            tool_calls):
+            tool_calls,
+            new_messages: list):
         tool_call_responses = self._tool_call_processor.handle_possible_tool_calls(
             tool_calls
         )
@@ -114,7 +124,7 @@ class ModelAndToolCallManager:
         # This should be checked beforehand if
         # _process_messages_once_for_any_tool_calls() is run before.
         if tool_call_responses is None:
-            return messages
+            return messages, new_messages
 
         tool_response_messages = []
         for tool_call_response in tool_call_responses:
@@ -124,22 +134,39 @@ class ModelAndToolCallManager:
                 role="tool"
             ))
 
-
         for tool_response_message in tool_response_messages:
             messages.append(tool_response_message.to_dict())
-
-        return messages
+            new_messages.append(tool_response_message)
+        return messages, new_messages
 
     @staticmethod
-    def create_assistant_message(decoded):
+    def _create_assistant_message(decoded):
         assistant_message = AssistantMessage(content=str(decoded))
-        return assistant_message.to_dict()
+        return assistant_message
 
     @staticmethod
-    def add_assistant_message_to_conversation_system_and_permanent(
+    def _add_assistant_message_to_conversation_system_and_permanent(
             conversation_system_and_permanent,
             decoded):
         conversation_system_and_permanent.append_message(
-            ModelAndToolCallManager.create_assistant_message(decoded))
+            ModelAndToolCallManager._create_assistant_message(decoded))
 
         return AssistantMessage(content=str(decoded))
+
+    @staticmethod
+    def update_conversation_system_and_permanent_from_process_messages(
+        process_messages_results,
+        conversation_system_and_permanent):
+        assert len(process_messages_results) == 4
+        new_messages = process_messages_results[3]
+        for new_message in new_messages:
+            if hasattr(new_message, "content"):
+                conversation_system_and_permanent.append_message(
+                    new_message)
+
+        decoded = process_messages_results[2]
+        conversation_system_and_permanent.append_message(
+            ModelAndToolCallManager._create_assistant_message(
+                decoded))
+
+        return decoded

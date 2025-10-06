@@ -14,7 +14,9 @@ RUN python3 -m pip install --upgrade pip && \
   cd /ThirdParty/transformers && \
   # 2025-08-23
   #git checkout v4.55.4 && \
-  git checkout v4.54-release && \
+  #git checkout v4.54-release && \
+  # 2025-10-04 NVIDIA GeForce 3070
+  git checkout v4.57.0 && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
