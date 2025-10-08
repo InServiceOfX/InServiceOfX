@@ -17,10 +17,10 @@ is_model_downloaded, model_path = is_model_there(
     relative_model_path,
     data_subdirectories)
 
-relative_nunchaku_mode_path = "Models/Diffusion/jib-mix-svdq"
+relative_nunchaku_model_path = "Models/Diffusion/jib-mix-svdq"
 
 is_nunchaku_model_downloaded, nunchaku_model_path = is_model_there(
-    relative_nunchaku_mode_path,
+    relative_nunchaku_model_path,
     data_subdirectories)
 
 relative_nunchaku_t5_model_path = "Models/Diffusion/nunchaku-tech/nunchaku-t5"
