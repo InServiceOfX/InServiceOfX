@@ -3,7 +3,16 @@
 ## transformers (hugging face), required to run most popular diffusion models.
 RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout main && \
+  # We used to checkout main, but now we'd like to control versions better.
+  #git checkout main && \
+  # From
+  # stabilityai/sdxl-turbo/text_encoder/config.json
+  #   "transformers_version": "4.36.0.dev0".
+  # TODO: But, "downstream", later in the steps of building the Docker image,
+  # transformers gets upgraded to the latest tag; investigate if this is what
+  # we want and where it happens. Also, the latest nunchaku, since about v.1,0.1
+  # doesn't allow for transformers, v4.36.1, it raises compatibility error.
+  git checkout v4.57.0 && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -12,9 +21,11 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 ## diffusers (hugging face)
   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
-  git checkout master && \
-  git config --local pull.rebase true && \
-  git pull origin master && \
+  # We used to checkout master, but now we'd like to control versions better.
+  #git checkout master && \
+  #git config --local pull.rebase true && \
+  #git pull origin master && \
+  git checkout v0.35.2-b60ab1f82 && \
   pip install -e . && \
   # TODO: This is needed, because "from_slow" tokenizer.json field of
   # FluxPipeline models. Consider
