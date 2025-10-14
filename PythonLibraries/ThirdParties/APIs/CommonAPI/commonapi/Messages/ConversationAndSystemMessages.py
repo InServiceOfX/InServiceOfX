@@ -61,6 +61,13 @@ class ConversationAndSystemMessages:
         self.conversation_history.append_general_message(message)
 
     def get_conversation_as_list_of_dicts(self) -> List[Dict[str, Any]]:
+        """
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries with each dictionary,
+            being in a message format with keys that typically include "role",
+            "content", and we've allowed for the value to be any type (but still
+            typically a str string).
+        """
         return self.conversation_history.as_list_of_dicts()
 
     def add_only_active_system_messages_to_conversation_history(self):

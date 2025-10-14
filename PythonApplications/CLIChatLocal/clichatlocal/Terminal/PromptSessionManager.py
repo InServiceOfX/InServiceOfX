@@ -69,11 +69,16 @@ class PromptSessionManager:
     
         def get_bottom_toolbar():
             """Returns bottom toolbar text"""
-            multiline_status = "ON" if getattr(self._session.app, "multiline", False) else "OFF"
+            # Read mode from app at render time; keeps display live
+            if self._app._pgsql_and_embedding is not None:
+                current_mode = self._app._pgsql_and_embedding.get_prompt_mode()
+            else:
+                current_mode = "Direct"
+
             return HTML(
                 f'<b>CLIChatLocal</b> | '
-                f'<style fg="{self.cli_configuration.info_color}">Multiline: {multiline_status}</style> '
-                f'(Ctrl+M to toggle) | Type .help for commands'
+                f'<style fg="{self.cli_configuration.info_color}">Mode: {current_mode}</style> '
+                f'| Type .help for commands'
             )
         
         # Create and return the session with all available options

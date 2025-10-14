@@ -185,6 +185,69 @@ def test_ModelAndTokenizer_generate_works_with_direct_attention_mask():
     assert isinstance(response, str)
     print("\n -------- response --------\n", response)
 
+def test_ModelAndTokenizer_apply_chat_template_and_generate_works_with_parsing():
+    """
+    Test for multiple responses.
+    """
+    mat = ModelAndTokenizer(
+        model_path,
+        model_class=Qwen3ForCausalLM,
+        tokenizer_class=Qwen2Tokenizer)
+
+    mat._fpmc.device_map = "cuda:0"
+    mat._fpmc.torch_dtype = torch.bfloat16
+
+    mat._generation_configuration.max_new_tokens = 65536
+    mat._generation_configuration.do_sample = True
+    mat._generation_configuration.temperature = 0.9
+    mat._generation_configuration.min_p = 0.15
+    mat._generation_configuration.repetition_penalty = 1.05
+
+    mat.load_tokenizer()
+    mat.load_model()
+
+    prompt = (
+        "I am sending this user message to create test cases for deployment.")
+    conversation = [{"role": "user", "content": prompt}]
+
+    response = mat.apply_chat_template_and_generate(
+        conversation,
+        with_attention_mask=True)
+
+    assert isinstance(response, str)
+    #print("\n -------- response --------\n", response)
+
+    thinking_content, content = mat._parse_thinking_and_content_from_text(
+        response)
+
+    assert isinstance(thinking_content, str)
+    assert isinstance(content, str)
+    print("\n -------- thinking_content --------\n", thinking_content)
+    print("\n -------- content --------\n", content)
+
+    conversation.append(
+        {
+            "role": "assistant",
+            "content": (thinking_content + "\n" + content)})
+
+    prompt_1 = "Yes, I am deploying you as a model locally."
+
+    conversation.append({"role": "user", "content": prompt_1})
+
+    response_1 = mat.apply_chat_template_and_generate(
+        conversation,
+        with_attention_mask=True)
+
+    thinking_content_1, content_1 = mat._parse_thinking_and_content_from_text(
+        response_1)
+    assert isinstance(response_1, str)
+    #print("\n -------- response_1 --------\n", response_1)
+
+    assert isinstance(thinking_content_1, str)
+    assert isinstance(content_1, str)
+    print("\n -------- thinking_content_1 --------\n", thinking_content_1)
+    print("\n -------- content_1 --------\n", content_1)
+
 def test_ModelAndTokenizer_generate_with_enable_thinking():
     mat = ModelAndTokenizer(
         model_path,)

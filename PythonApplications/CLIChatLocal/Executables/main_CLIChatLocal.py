@@ -7,9 +7,10 @@ where you run it from the CLIChatLocal/Executables subdirectory where this file
 is stored.
 """
 from pathlib import Path
-import argparse
-import sys
 from warnings import warn
+import argparse
+import asyncio
+import sys
 
 application_path = Path(__file__).resolve().parents[1]
 
@@ -19,6 +20,10 @@ elif not str(application_path) in sys.path:
     sys.path.append(str(application_path))
 
 from clichatlocal import ApplicationPaths
+
+async def main_CLIChatLocal_async(cli_chat_local):
+    await cli_chat_local.setup_postgresql_resource_and_embedding()
+    await cli_chat_local.run_async()
 
 def main_CLIChatLocal():
     parser = argparse.ArgumentParser()
@@ -55,7 +60,7 @@ def main_CLIChatLocal():
 
     cli_chat_local = CLIChatLocal(application_paths)
 
-    cli_chat_local.run()
+    asyncio.run(main_CLIChatLocal_async(cli_chat_local))
 
 if __name__ == "__main__":
 

@@ -361,3 +361,42 @@ async def test_vector_similarity_search_with_role(
         assert len(query_results[0]) == 5
         for result in query_results[0]:
             assert result["role"] == "user"
+
+@pytest.mark.asyncio
+async def test_get_latest_message_chunks_gets(
+    test_dsn: str,
+    test_db_name: str,
+    postgres_connection: PostgreSQLConnection):
+
+    conversation = load_test_conversation()
+
+    pcpsqli, text_splitter, embedding_model = await setup_test_database(
+        test_dsn,
+        test_db_name,
+        postgres_connection,
+        model_path,
+        conversation)
+
+    latest_message_chunks = await pcpsqli.get_latest_message_chunks(1)
+
+    import re
+
+    assert len(latest_message_chunks) == 1
+    for index, message_chunk in enumerate(latest_message_chunks):
+        print("index: ", index)
+        print("role: ", message_chunk.role)
+        print(
+            "content: ",
+            re.sub(r'\s+', ' ', message_chunk.content[:120]).strip())
+        print("datetime: ", message_chunk.datetime)
+
+    latest_message_chunks = await pcpsqli.get_latest_message_chunks(5)
+
+    assert len(latest_message_chunks) == 5
+    for index, message_chunk in enumerate(latest_message_chunks):
+        print("index: ", index)
+        print("role: ", message_chunk.role)
+        print(
+            "content: ",
+            re.sub(r'\s+', ' ', message_chunk.content[:120]).strip())
+        print("datetime: ", message_chunk.datetime)

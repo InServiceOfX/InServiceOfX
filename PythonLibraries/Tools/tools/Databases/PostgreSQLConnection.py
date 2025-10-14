@@ -482,3 +482,25 @@ class PostgreSQLConnection:
         except Exception as e:
             print(f"Error dropping extension {extension_name}: {e}")
             return False
+
+    async def drop_database(self, database_name: str):
+        """
+        Drop a PostgreSQL database.
+        
+        Args:
+            database_name: Name of the database to drop
+        """
+        connection = await asyncpg.connect(self.system_dsn)
+        try:
+            # First terminate all connections to the database
+            await connection.execute(f"""
+                SELECT pg_terminate_backend(pid) 
+                FROM pg_stat_activity 
+                WHERE datname = $1
+            """, database_name)
+            
+            # Then drop the database
+            await connection.execute(f'DROP DATABASE {database_name}')
+            
+        finally:
+            await connection.close()

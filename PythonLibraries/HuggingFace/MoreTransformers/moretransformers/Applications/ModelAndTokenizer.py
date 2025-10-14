@@ -226,6 +226,56 @@ class ModelAndTokenizer:
 
         return response
 
+    def _parse_thinking_and_content_from_text(self, response_text: str) \
+        -> tuple[str, str]:
+        """
+        Parse thinking content and actual response from text containing <think>
+        tags. Input is typically the response from
+        apply_chat_template_and_generate().
+
+        Args:
+            response_text: Full response text with <think>...</think> sections
+
+        Returns:
+            tuple: (thinking_content, actual_response)
+        """
+        import re
+
+        # Pattern to match <think>...</think> sections. Parentheses wrap entire
+        # pattern.
+        think_pattern = r'(<think>.*?</think>)'
+
+        # Find the first <think> tag to separate previous history
+        first_think_match = re.search(think_pattern, response_text, re.DOTALL)
+
+        if not first_think_match:
+            # No thinking content found, return empty thinking and full response
+            # as actual response
+            return "", response_text
+
+        # Find all thinking sections
+        thinking_matches = re.findall(think_pattern, response_text, re.DOTALL)
+
+        # Combine all thinking content
+        thinking_content = "\n".join(thinking_matches)
+
+        # Find the last </think> tag to get actual response (everything after it)
+        last_think_end_match = re.search(r'</think>', response_text)
+
+        if last_think_end_match:
+            # Extract actual response (everything after the last </think>)
+            actual_response = response_text[last_think_end_match.end():].strip()
+        else:
+            # Fallback: remove all <think>...</think> sections
+            actual_response = \
+                re.sub(
+                    think_pattern,
+                    "",
+                    response_text,
+                    flags=re.DOTALL).strip()
+
+        return thinking_content, actual_response
+
     def _parse_generate_output_into_thinking_and_content(
             self,
             model_inputs,

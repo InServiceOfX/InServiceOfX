@@ -2,11 +2,13 @@ import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
 from clichatlocal.Core import ModelAndConversationManager, ProcessConfigurations
+from clichatlocal.Core.Databases import PostgreSQLResource
+from clichatlocal.Core.RAG.PermanentConversation import PostgreSQLAndEmbedding
 from clichatlocal.Messages import SystemMessagesDialogHandler
 from clichatlocal.Terminal import (
-    TerminalUI,
+    CommandHandler,
     PromptSessionManager,
-    CommandHandler)
+    TerminalUI)
 
 class CLIChatLocal:
     def __init__(self, application_paths):
@@ -22,14 +24,34 @@ class CLIChatLocal:
         self._macm = ModelAndConversationManager(self)
         self._macm.load_configurations_and_model()
             
-        # Setup command handler
+        # Setup command handler. This is before the PromptSessionManager, since
+        # the PromptSessionManager needs to know the command names.
         self._command_handler = CommandHandler(self)
-        
-        # Create prompt session
+
+        # Create prompt session. This is done after CommandHandler, since
+        # CommandHandler supplies the command names to the prompt session.
         self._psm = PromptSessionManager(self, self.cli_configuration)
+
+        self._command_handler._setup_confirmation_dialog(self._psm)
 
         self._system_messages_dialog_handler = \
             SystemMessagesDialogHandler(self, self.cli_configuration)
+
+        self._pgsqlr = PostgreSQLResource(self._process_configurations)
+        self._pgsql_and_embedding = None
+
+    async def setup_postgresql_resource_and_embedding(self):
+        await self._pgsqlr.load_configuration_and_create_pool()
+
+        self._pgsql_and_embedding = PostgreSQLAndEmbedding(
+            self._pgsqlr.get_connection("PermanentConversation"),
+            self._process_configurations
+        )
+        await self._pgsql_and_embedding.create_tables()
+        self._pgsql_and_embedding.setup_embedding_model()
+        self._pgsql_and_embedding.create_EmbedPermanentConversation(
+            self._macm._csp.pc
+        )
 
     def run_iterative(self):
         try:
@@ -52,7 +74,9 @@ class CLIChatLocal:
                 return continue_running
 
             # Generate response
-            self._terminal_ui.print_user_message(prompt)
+            # Commented out because we may not want to re-print the user's
+            # message.
+            #self._terminal_ui.print_user_message(prompt)
             response = self._macm.respond_to_user_message(prompt)
             self._terminal_ui.print_assistant_message(response)
 
@@ -69,17 +93,25 @@ class CLIChatLocal:
     async def run_iterative_async(self):
         """Single iteration of chat interaction"""
         try:
-            prompt = await self._psm.session.prompt_async(
+            # This has to be async because otherwise, you'll get this error:
+            # Error: Error: asyncio.run() cannot be called from a running event loop
+            # This is possibly because prompt_toolkit itself is also running
+            # asyncio.
+            prompt = await self._psm.prompt_async(
                 "Chat prompt (or type .help for options): "
             )
-            
+
             if not prompt.strip():
                 return True
 
             # Check if it's a command
             if prompt.strip().startswith('.'):
-                continue_running, command_handled = \
-                    await self._command_handler.handle_command(prompt)
+                if self._command_handler.is_command_async(prompt):
+                    continue_running, command_handled = \
+                        await self._command_handler.handle_command_async(prompt)
+                else:
+                    continue_running, command_handled = \
+                        self._command_handler.handle_command(prompt)
 
                 # If command wasn't handled, treat as regular user input
                 if not command_handled:
@@ -91,8 +123,7 @@ class CLIChatLocal:
 
             # Generate response
             self._terminal_ui.print_user_message(prompt)
-            response = self.llama3_engine.generate_from_single_user_content(
-                prompt)
+            response = self._macm.respond_to_user_message(prompt)
             self._terminal_ui.print_assistant_message(response)
 
             return True
@@ -106,18 +137,22 @@ class CLIChatLocal:
             self._terminal_ui.print_error(f"Error: {str(e)}")
             return True
     
-    def run_async(self):
+    async def run_async(self):
         """Main run loop"""
         print("Running CLIChatLocal")
         self._terminal_ui.print_header("Welcome to CLIChatLocal!")
         self._terminal_ui.print_info("Press Ctrl+C to exit.")
-        
-        async def run_async():
-            continue_running = True
-            while continue_running:
-                continue_running = await self.run_iterative()
 
-        asyncio.run(run_async())
+        try:
+            while True:
+                should_continue = await self.run_iterative_async()
+                if not should_continue:
+                    break
+        except KeyboardInterrupt:
+            self._terminal_ui.print_info("Goodbye!")
+        except Exception as e:
+            self._terminal_ui.print_error(f"Error: {str(e)}")
+        
         self._terminal_ui.print_info("Thank you for using CLIChatLocal!")
 
     def run(self):

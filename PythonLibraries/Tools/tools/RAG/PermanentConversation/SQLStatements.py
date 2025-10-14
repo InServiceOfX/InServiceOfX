@@ -187,3 +187,20 @@ class SQLStatements:
     ORDER BY conversation_id, chunk_index;
     """
 
+    # Get latest N message chunks ordered by datetime
+    GET_LATEST_MESSAGE_CHUNKS = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash,
+        content, datetime, hash, role, embedding, created_at
+    FROM permanent_conversation_message_chunks
+    ORDER BY datetime DESC
+    LIMIT $1;
+    """
+
+    # Get latest N message pair chunks ordered by datetime
+    GET_LATEST_MESSAGE_PAIR_CHUNKS = """
+    SELECT id, conversation_id, chunk_index, total_chunks, parent_message_hash,
+        content, datetime, hash, role, embedding, created_at
+    FROM permanent_conversation_message_pair_chunks
+    ORDER BY datetime DESC
+    LIMIT $1;
+    """

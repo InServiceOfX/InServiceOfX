@@ -46,4 +46,4 @@ local_llm_full_database=#
 ```
 DROP DATABASE test_pydantic_ai_database_1;
 ```
-where I used the example of `test_pydantic_ai_database_1` (maybe spuriously created in a `pytest` integration test).
+where I used the example of `test_pydantic_ai_database_1` (maybe spuriously created in a `pytest` integration test). Don't forget the semicolon at the end!

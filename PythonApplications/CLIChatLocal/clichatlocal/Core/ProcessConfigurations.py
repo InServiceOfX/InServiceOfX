@@ -7,6 +7,12 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.styles import Style
 
+from tools.Databases.PostgreSQLSetup import (
+    PostgreSQLSetup,
+    PostgreSQLSetupData)
+
+from tools.RAG import EmbeddingModelsConfiguration
+
 class ProcessConfigurations:
     def __init__(self, application_paths, terminal_ui):
         self._application_paths = application_paths
@@ -77,6 +83,21 @@ class ProcessConfigurations:
                     " using default configuration")
             )
 
+        postgresql_configuration_path = \
+            self._application_paths.configuration_file_paths[
+                "postgresql_configuration"]
+
+        if postgresql_configuration_path.exists():
+            postgresql_setup_data = PostgreSQLSetupData.from_yaml(
+                postgresql_configuration_path)
+            self._print_info(
+                f"PostgreSQL setup configuration loaded from {postgresql_configuration_path}")
+        else:
+            postgresql_setup_data = PostgreSQLSetupData.from_default_values()
+            self._print_error(
+                f"From pretrained model configuration not found at {postgresql_configuration_path};"
+                " using default values")
+
         generation_configuration_path = \
             self._application_paths.configuration_file_paths["generation"]
 
@@ -91,14 +112,34 @@ class ProcessConfigurations:
                 "Generation configuration not found at {generation_configuration_path};"
                 " using default configuration")
 
+        embedding_models_configuration_path = \
+            self._application_paths.configuration_file_paths[
+                "embedding_models_configuration"]
+
+        if embedding_models_configuration_path.exists():
+            embedding_models_configuration = \
+                EmbeddingModelsConfiguration.from_yaml(
+                    embedding_models_configuration_path)
+            self._print_info(
+                f"Embedding Models configuration loaded from {embedding_models_configuration_path}")
+        else:
+            embedding_models_configuration = EmbeddingModelsConfiguration()
+            self._print_error(
+                "Embedding Models configuration not found at {embedding_models_configuration_path};"
+                " using values for __init__")
+
         self.configurations["from_pretrained_model_configuration"] = \
             from_pretrained_model_configuration
         self.configurations["from_pretrained_tokenizer_configuration"] = \
             from_pretrained_tokenizer_configuration
         self.configurations["generation_configuration"] = \
             generation_configuration
+        self.configurations["postgresql_configuration"] = postgresql_setup_data
+        self.configurations["embedding_models_configuration"] = \
+            embedding_models_configuration
 
         return (
             from_pretrained_model_configuration,
             from_pretrained_tokenizer_configuration,
-            generation_configuration)
+            generation_configuration,
+            postgresql_setup_data)

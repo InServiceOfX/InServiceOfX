@@ -1,7 +1,8 @@
 from cliimage.Core import (GenerateImages, ProcessConfigurations)
-from cliimage.Terminal import CommandHandler
-from cliimage.Terminal import PromptSessionsManager
-from cliimage.Terminal import TerminalUI
+from cliimage.Terminal import (
+    CommandHandler,
+    PromptSessionsManager,
+    TerminalUI)
 
 from morediffusers.Applications import (
     FluxDepthNunchakuAndLoRAs,

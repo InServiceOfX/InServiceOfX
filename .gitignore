@@ -128,9 +128,11 @@ PythonApplications/CLIChat/Deployment/build
 PythonApplications/CLIChat/Deployment/dist/
 PythonApplications/CLIChat/dist/
 PythonApplications/CLIChat/tests/TestData/chat_history.txt
+PythonApplications/CLIChatLocal/Configurations/embedding_models_configuration.yml
 PythonApplications/CLIChatLocal/Configurations/from_pretrained_model.yml
 PythonApplications/CLIChatLocal/Configurations/generation_configuration.yml
 PythonApplications/CLIChatLocal/Configurations/model_list.yml
+PythonApplications/CLIChatLocal/Configurations/postgresql_configuration.yml
 PythonApplications/CLIImage/Configurations/batch_processing_configuration.yml
 PythonApplications/CLIImage/Configurations/flux_generation_configuration.yml
 PythonApplications/CLIImage/Configurations/nunchaku_configuration.yml
@@ -139,6 +141,7 @@ PythonApplications/CLIImage/Configurations/nunchaku_loras_configuration.yml
 PythonApplications/CLIImage/Configurations/pipeline_inputs.yml
 PythonApplications/CLITextToSpeech/Configurations/vibe_voice_configuration.yml
 PythonApplications/CLITextToSpeech/Configurations/vibe_voice_model_configuration.yml
+PythonLibraries/Tools/tests/TestSetup/postgresql_setup_configuration.yml
 PythonLibraries/Tools/tests/TestSetup/postgresql_test_configuration.yml
 Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt

@@ -19,7 +19,6 @@ class PostgreSQLDatabaseSetupData:
             self.postgres_user = configuration["postgres_user"]
             self.postgres_password = configuration["postgres_password"]
 
-
             self.test_dsn = \
                 f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.ip_address}:{self.database_port}"
 

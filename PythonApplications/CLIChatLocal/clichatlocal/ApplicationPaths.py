@@ -22,6 +22,25 @@ class ApplicationPaths:
             is_development: bool = False,
             is_current_path: bool = False,
             configpath: str = None) -> 'ApplicationPaths':
+        """
+        # Update to add a Python library, module to sys.path
+
+        For each Python library, module you want to be able to import in, make
+        sure to update inhouse_library_paths directly below and then
+        add_library_to_paths function that will actually do the appending of the
+        path to this Python library into the sys.path at runtime.
+
+        Finally, you'll want to update ProcessConfigurations, under the function
+        process_configurations 
+
+        # Update to add a configuration file (typically YAML)
+
+        Update configuration_file_paths local variable inside
+        create_paths_from_base_path
+
+        Finally, you'll want to update ProcessConfigurations, in
+        process_configurations
+        """
         app_path = Path(__file__).resolve().parents[1]
         project_path = app_path.parents[1]
         
@@ -31,12 +50,16 @@ class ApplicationPaths:
                     "CommonAPI",
             "CoreCode": \
                 project_path / "PythonLibraries" / "CoreCode",
+            "Embeddings": \
+                project_path / "PythonLibraries" / "Embeddings",
             "MoreSGLang": \
                 project_path / "PythonLibraries" / "ThirdParties" / "APIs" / \
                     "MoreSGLang",
             "MoreTransformers": \
                 project_path / "PythonLibraries" / "HuggingFace" / \
                     "MoreTransformers",
+            "Tools": \
+                project_path / "PythonLibraries" / "Tools"
         }
 
         def create_paths_from_base_path(base_path: Path | str):
@@ -54,7 +77,11 @@ class ApplicationPaths:
                     base_path / "Configurations" / \
                         "generation_configuration.yml",
                 "cli_configuration": \
-                    base_path / "Configurations" / "cli_configuration.yml"
+                    base_path / "Configurations" / "cli_configuration.yml",
+                "postgresql_configuration": base_path / "Configurations" / \
+                    "postgresql_configuration.yml",
+                "embedding_models_configuration": base_path / \
+                    "Configurations" / "embedding_models_configuration.yml"
             }
 
             system_messages_file_path = \
@@ -109,11 +136,19 @@ class ApplicationPaths:
 
         add_path_to_sys_path(path)
 
+        path = self.inhouse_library_paths["Embeddings"]
+
+        add_path_to_sys_path(path)
+
         path = self.inhouse_library_paths["MoreSGLang"]
 
         add_path_to_sys_path(path)
 
         path = self.inhouse_library_paths["MoreTransformers"]
+
+        add_path_to_sys_path(path)
+
+        path = self.inhouse_library_paths["Tools"]
 
         add_path_to_sys_path(path)
 

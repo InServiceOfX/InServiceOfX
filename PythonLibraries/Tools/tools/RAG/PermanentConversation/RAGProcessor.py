@@ -1,6 +1,11 @@
 from typing import Optional
 
 class RAGProcessor:
+    """
+    Given an input string, called a "query" here, this retrieves the relevant
+    message chunks from the database, and returns it as a string called
+    "context".
+    """
     DEFAULT_LIMIT = 5
 
     def __init__(
@@ -71,6 +76,11 @@ class RAGProcessor:
             role_filter: Optional[str] = None,
             limit: int = DEFAULT_LIMIT,
             is_return_matches: bool = False):
+        """
+        Args:
+            is_return_matches: If True, return the search results along with the
+            processed context. If False, return only the processed context.
+        """
         search_results = \
             await self._retrieve_relevant_message_chunks(
                 query,

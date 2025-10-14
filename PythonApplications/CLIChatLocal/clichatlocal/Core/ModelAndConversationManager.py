@@ -5,6 +5,7 @@ from commonapi.Messages import (
     UserMessage)
 from corecode.Configuration import ModelList
 from moretransformers.Applications import ModelAndTokenizer
+from tools.Managers import ModelAndToolCallManager
 
 class ModelAndConversationManager:
     def __init__(self, app):
@@ -54,23 +55,16 @@ class ModelAndConversationManager:
         return first_model_name, first_model_path
 
     def _load_model_configurations(self):
-        if self._app._process_configurations.configurations is not None:
-            return (
-                self._app._process_configurations.configurations[
-                    "from_pretrained_model_configuration"],
-                self._app._process_configurations.configurations[
-                    "from_pretrained_tokenizer_configuration"],
-                self._app._process_configurations.configurations[
-                    "generation_configuration"])
-        else:
+        if self._app._process_configurations.configurations is None:
             self._app._process_configurations.process_configurations()
-            return (
-                self._app._process_configurations.configurations[
-                    "from_pretrained_model_configuration"],
-                self._app._process_configurations.configurations[
-                    "from_pretrained_tokenizer_configuration"],
-                self._app._process_configurations.configurations[
-                    "generation_configuration"])
+
+        return (
+            self._app._process_configurations.configurations[
+                "from_pretrained_model_configuration"],
+            self._app._process_configurations.configurations[
+                "from_pretrained_tokenizer_configuration"],
+            self._app._process_configurations.configurations[
+                "generation_configuration"])
 
     def _load_model_and_tokenizer(
             self,
@@ -112,12 +106,18 @@ class ModelAndConversationManager:
 
         response = self._mat.apply_chat_template_and_generate(
             self._csp.get_conversation_as_list_of_dicts(),
-            with_attention_mask=True)
+            with_attention_mask=True,
+            )
 
-        assistant_message = AssistantMessage(response)
+        thinking_content, content = \
+            self._mat._parse_thinking_and_content_from_text(response)
+
+        assistant_message = AssistantMessage(
+            content=(thinking_content + "\n" + content))
+
         self._csp.append_message(assistant_message)
 
-        return response
+        return thinking_content + "\n" + content
 
     def clear_conversation_history(self, is_keep_active_system_messages=True):
         self._csp.clear_conversation_history(

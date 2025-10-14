@@ -11,10 +11,11 @@ database_port: 5432
 # /usr/lib/python3.12/asyncio/timeouts.py:115: TimeoutError
 #ip_address: "192.168.86.91"
 # Prefer since PostgreSQL is running on same Docker network, use
-# "postgresql"
-#ip_address: "postgres"
-# Or more preferred is the Container name from docker-compose.yml
+# "postgres"
+# or even better, the docker container name as specified in docker-compose.yml
 ip_address: "local-llm-full-postgres"
 # TODO: Have docker-compose.yml have user and password as environment variables.
 postgres_user: "inserviceofx"
 postgres_password: "inserviceofx"
+database_names:
+    PermanentConversation: "permanent_conversation"

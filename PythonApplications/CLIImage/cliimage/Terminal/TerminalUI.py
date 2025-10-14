@@ -64,7 +64,7 @@ class TerminalUI:
     
     def print_goodbye(self):
         print_formatted_text(HTML("\n<goodbye>👋 Goodbye! Thanks for using CLIImage!</goodbye>\n"))
-    
+
     def print_help(self, help_text: str):
         print_formatted_text(HTML(f"\n<help>📖 Help:</help>"))
         print_formatted_text(HTML(f"<help>{help_text}</help>\n"))

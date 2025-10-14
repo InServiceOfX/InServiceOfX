@@ -1,0 +1,2 @@
+# This gets used in the class EmbeddingModelsConfiguration.
+text_embedding_model: 

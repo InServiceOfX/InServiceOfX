@@ -1,9 +1,11 @@
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any, Callable, List, Dict
 
 from .RAGProcessor import RAGProcessor
 
 from string import Template
 from textwrap import dedent
+
+import asyncio
 
 class RAGTool:
     """Tool that given a query, retrieves previous conversations and returns
@@ -58,7 +60,7 @@ class RAGTool:
                     context=context,
                     question=query
                 )
-                
+
             return_dict = {
                 "message": message,
                 "context": context,
@@ -69,7 +71,21 @@ class RAGTool:
                 return_dict["search_results"] = search_results
 
             return return_dict
-            
+
         except Exception as err:
             error_msg = f"Error retrieving context for query: {query}: {err}"
             raise RuntimeError(error_msg)
+
+    def create_function_as_tool(
+            self,
+            role_filter: Optional[str] = None,
+            max_chunks: int = 5,
+            is_return_matches: bool = False) -> Callable:
+        """
+        Create a function as a tool that retrieves context from previous conversations.
+        """
+        return partial(
+            self.retrieve_context_sync,
+            role_filter=role_filter,
+            max_chunks=max_chunks,
+            is_return_matches=is_return_matches)

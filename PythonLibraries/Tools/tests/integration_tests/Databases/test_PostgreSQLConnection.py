@@ -14,8 +14,16 @@ root@5a53362ce66a:/InServiceOfX/PythonLibraries/ThirdParties/APIs/MorePydanticAI
 
 20250701: I've also tried running all the tests at once; it seems that pytest
 runs tests synchronously (i.e. sequentially one by one).
+
+TODO: It looks like this test suite does not "clean up" and remove databases
+used for test. You can "drop" or delete the databases manually for now by
+running the following:
+
+DROP DATABASE test_pydantic_ai_database_1;
+
+Don't forget the semicolon at the end!
 """
-from commonapi.Databases import PostgreSQLConnection
+from tools.Databases import PostgreSQLConnection
 import pytest
 import pytest_asyncio
 

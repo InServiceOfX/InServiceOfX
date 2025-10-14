@@ -24,7 +24,8 @@ class PostgreSQLInterface:
 
     async def create_tables(self) -> bool:
         """
-        Create the permanent conversation chunks tables and indexes if they don't exist.
+        Create the permanent conversation chunks tables and indexes if they
+        don't exist.
         """
         try:
             # First, ensure pgvector extension is available
@@ -274,4 +275,80 @@ class PostgreSQLInterface:
                 return chunks
         except Exception as e:
             warn(f"Error retrieving all message pair chunks: {e}")
+            return []
+
+    async def get_latest_message_chunks(self, limit: int) \
+        -> List[ConversationMessageChunk]:
+        """
+        Get the latest N message chunks ordered by datetime.
+
+        Args:
+            limit: Maximum number of chunks to return
+
+        Returns:
+            List of ConversationMessageChunk instances (latest first)
+        """
+        try:
+            async with self._postgres_connection.connect() as conn:
+                rows = await conn.fetch(
+                    SQLStatements.GET_LATEST_MESSAGE_CHUNKS,
+                    limit)
+
+                chunks = []
+                for row in rows:
+                    chunk = ConversationMessageChunk(
+                        conversation_id=row['conversation_id'],
+                        chunk_index=row['chunk_index'],
+                        total_chunks=row['total_chunks'],
+                        parent_message_hash=row['parent_message_hash'],
+                        content=row['content'],
+                        datetime=row['datetime'],
+                        hash=row['hash'],
+                        role=row['role'],
+                        chunk_type="message",
+                        embedding=json.loads(row['embedding']) \
+                            if row['embedding'] is not None else None
+                    )
+                    chunks.append(chunk)
+                return chunks
+        except Exception as e:
+            print(f"Error retrieving latest message chunks: {e}")
+            return []
+
+    async def get_latest_message_pair_chunks(self, limit: int) \
+        -> List[ConversationMessageChunk]:
+        """
+        Get the latest N message pair chunks ordered by datetime.
+        
+        Args:
+            limit: Maximum number of chunks to return
+            
+        Returns:
+            List of ConversationMessageChunk instances (latest first)
+        """
+        try:
+            async with self._postgres_connection.connect() as conn:
+                rows = await conn.fetch(
+                    SQLStatements.GET_LATEST_MESSAGE_PAIR_CHUNKS,
+                    limit)
+                
+                chunks = []
+                for row in rows:
+                    chunk = ConversationMessageChunk(
+                        conversation_id=row['conversation_id'],
+                        chunk_index=row['chunk_index'],
+                        total_chunks=row['total_chunks'],
+                        parent_message_hash=row['parent_message_hash'],
+                        content=row['content'],
+                        datetime=row['datetime'],
+                        hash=row['hash'],
+                        role=row['role'],
+                        chunk_type="message_pair",
+                        embedding=json.loads(row['embedding']) \
+                            if row['embedding'] is not None else None
+                    )
+                    chunks.append(chunk)
+                return chunks
+        except Exception as e:
+            print(f"Error retrieving latest message pair chunks: {e}")
             return []
