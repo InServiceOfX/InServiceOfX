@@ -3,7 +3,9 @@ from commonapi.Messages import (
     UserMessage)
 from clichatlocal import ApplicationPaths
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
-from clichatlocal.Core import ModelAndConversationManager, ProcessConfigurations
+from clichatlocal.Core import (
+    ModelConversationAndToolsManager,
+    ProcessConfigurations)
 from clichatlocal.Core.Databases import PostgreSQLResource
 from clichatlocal.Core.RAG.PermanentConversation import PostgreSQLAndEmbedding
 from clichatlocal.Terminal import TerminalUI
@@ -47,7 +49,7 @@ async def test_PostgreSQLAndEmbedding_sets_up():
         application_paths,
         process_configurations)
 
-    model_and_conversation_manager = ModelAndConversationManager(
+    model_conversation_and_tools_manager = ModelConversationAndToolsManager(
         test_application)
 
     postgresql_resource = PostgreSQLResource(process_configurations)
@@ -64,10 +66,10 @@ async def test_PostgreSQLAndEmbedding_sets_up():
     await postgresql_and_embedding.create_tables()
     postgresql_and_embedding.setup_embedding_model()
     postgresql_and_embedding.create_EmbedPermanentConversation(
-        model_and_conversation_manager._csp.pc)
+        model_conversation_and_tools_manager._csp.pc)
 
     assert len(
-        model_and_conversation_manager._csp.get_permanent_conversation_messages()) \
+        model_conversation_and_tools_manager._csp.get_permanent_conversation_messages()) \
             == 0
 
     message_chunks, message_pair_chunks = \
@@ -95,7 +97,7 @@ async def test_PostgreSQLAndEmbedding_embeds_permanent_conversation():
         application_paths,
         process_configurations)
 
-    model_and_conversation_manager = ModelAndConversationManager(
+    model_conversation_and_tools_manager = ModelConversationAndToolsManager(
         test_application)
 
     postgresql_resource = PostgreSQLResource(process_configurations)
@@ -112,18 +114,18 @@ async def test_PostgreSQLAndEmbedding_embeds_permanent_conversation():
     await postgresql_and_embedding.create_tables()
     postgresql_and_embedding.setup_embedding_model()
     postgresql_and_embedding.create_EmbedPermanentConversation(
-        model_and_conversation_manager._csp.pc)
+        model_conversation_and_tools_manager._csp.pc)
 
     conversation = load_test_conversation()
     for message in conversation:
         if message["role"] == "user":
-            model_and_conversation_manager._csp.append_message(
+            model_conversation_and_tools_manager._csp.append_message(
                 UserMessage(message["content"]))
         elif message["role"] == "assistant":
-            model_and_conversation_manager._csp.append_message(
+            model_conversation_and_tools_manager._csp.append_message(
                 AssistantMessage(message["content"]))
         elif message["role"] == "system":
-            model_and_conversation_manager._csp.add_system_message(
+            model_conversation_and_tools_manager._csp.add_system_message(
                 message["content"])
 
     message_chunks, message_pair_chunks = \

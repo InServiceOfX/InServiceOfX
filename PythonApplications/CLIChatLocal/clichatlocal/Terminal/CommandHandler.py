@@ -191,7 +191,7 @@ class CommandHandler:
         return True
 
     def handle_clear_conversation_history(self) -> bool:
-        self._app._macm.clear_conversation_history()
+        self._app._mcatm.clear_conversation_history()
         return True
 
     def handle_show_active_system_messages(self) -> bool:
@@ -252,7 +252,7 @@ class CommandHandler:
                     pass
 
         conversation_messages = \
-            self._app._macm._csp.get_conversation_as_list_of_dicts()
+            self._app._mcatm._csp.get_conversation_as_list_of_dicts()
 
         recent_messages = conversation_messages[-count:] \
             if len(conversation_messages) >= count else conversation_messages
@@ -274,7 +274,7 @@ class CommandHandler:
                     pass
 
         conversation_messages = \
-            self._app._macm._csp.get_permanent_conversation_messages()
+            self._app._mcatm._csp.get_permanent_conversation_messages()
 
         conversation_messages = [
             {"role": message.role, "content": message.content}

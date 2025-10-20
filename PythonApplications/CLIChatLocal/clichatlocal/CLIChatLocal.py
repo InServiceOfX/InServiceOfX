@@ -1,7 +1,9 @@
 import asyncio
 
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
-from clichatlocal.Core import ModelAndConversationManager, ProcessConfigurations
+from clichatlocal.Core import (
+    ModelConversationAndToolsManager,
+    ProcessConfigurations)
 from clichatlocal.Core.Databases import PostgreSQLResource
 from clichatlocal.Core.RAG.PermanentConversation import PostgreSQLAndEmbedding
 from clichatlocal.Messages import SystemMessagesDialogHandler
@@ -21,8 +23,8 @@ class CLIChatLocal:
             self._terminal_ui)
         self._process_configurations.process_configurations()
 
-        self._macm = ModelAndConversationManager(self)
-        self._macm.load_configurations_and_model()
+        self._mcatm = ModelConversationAndToolsManager(self)
+        self._mcatm.load_configurations_and_model()
             
         # Setup command handler. This is before the PromptSessionManager, since
         # the PromptSessionManager needs to know the command names.
@@ -50,7 +52,7 @@ class CLIChatLocal:
         await self._pgsql_and_embedding.create_tables()
         self._pgsql_and_embedding.setup_embedding_model()
         self._pgsql_and_embedding.create_EmbedPermanentConversation(
-            self._macm._csp.pc
+            self._mcatm._csp.pc
         )
 
     def run_iterative(self):
@@ -77,7 +79,7 @@ class CLIChatLocal:
             # Commented out because we may not want to re-print the user's
             # message.
             #self._terminal_ui.print_user_message(prompt)
-            response = self._macm.respond_to_user_message(prompt)
+            response = self._mcatm.respond_to_user_message(prompt)
             self._terminal_ui.print_assistant_message(response)
 
             return True
@@ -123,7 +125,7 @@ class CLIChatLocal:
 
             # Generate response
             self._terminal_ui.print_user_message(prompt)
-            response = self._macm.respond_to_user_message(prompt)
+            response = self._mcatm.respond_to_user_message(prompt)
             self._terminal_ui.print_assistant_message(response)
 
             return True

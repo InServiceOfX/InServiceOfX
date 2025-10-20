@@ -17,7 +17,7 @@ class SystemMessagesDialogHandler:
         self.configuration = configuration
     
     def show_active_system_messages(self):
-        active_messages = self._app._macm._csp.casm.get_active_system_messages()
+        active_messages = self._app._mcatm._csp.casm.get_active_system_messages()
         if not active_messages:
             print_formatted_text(
                 HTML(
@@ -63,7 +63,7 @@ class SystemMessagesDialogHandler:
         print("-" * 40)
 
         if confirm("Add this system message and make it active?"):
-            new_message = self._app._macm._csp.add_system_message(
+            new_message = self._app._mcatm._csp.add_system_message(
                 message_content)
             if new_message:
                 print_formatted_text(
@@ -91,7 +91,7 @@ class SystemMessagesDialogHandler:
         async def configure_system_messages_dialog_async(..)
         and change .run() to .run_async().
         """
-        messages = self._app._macm._csp.casm.get_all_system_messages()
+        messages = self._app._mcatm._csp.casm.get_all_system_messages()
         if not messages:
             print_formatted_text(
                 HTML(
@@ -108,7 +108,7 @@ class SystemMessagesDialogHandler:
 
         default_values = [
             msg.hash 
-            for msg in self._app._macm._csp.casm.get_active_system_messages()]
+            for msg in self._app._mcatm._csp.casm.get_active_system_messages()]
 
         selected_hashes = checkboxlist_dialog(
             title="System Messages",
@@ -126,7 +126,7 @@ class SystemMessagesDialogHandler:
         for msg in messages:
             should_be_active = msg.hash in selected_hashes
             if msg.is_active != should_be_active:
-                self._app._macm._csp.casm.toggle_system_message(msg.hash)
+                self._app._mcatm._csp.casm.toggle_system_message(msg.hash)
                 changes_made = True
         
         if changes_made:
@@ -155,9 +155,9 @@ class SystemMessagesDialogHandler:
 
     def handle_configure_system_messages_dialog_choice(self, choice: str):
         if choice == "reset":
-            self._app._macm._csp.clear_conversation_history()
+            self._app._mcatm._csp.clear_conversation_history()
         elif choice == "append":
-            self._app._macm._csp.casm.add_only_active_system_messages_to_conversation_history()
+            self._app._mcatm._csp.casm.add_only_active_system_messages_to_conversation_history()
         elif choice == "nothing":
             pass
 

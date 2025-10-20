@@ -1,2 +1,3 @@
-from .ModelAndConversationManager import ModelAndConversationManager
+from .ModelConversationAndToolsManager import ModelConversationAndToolsManager
 from .ProcessConfigurations import ProcessConfigurations
+from .ToolsManager import ToolsManager

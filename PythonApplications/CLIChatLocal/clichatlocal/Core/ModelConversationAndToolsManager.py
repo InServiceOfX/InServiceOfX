@@ -7,7 +7,7 @@ from corecode.Configuration import ModelList
 from moretransformers.Applications import ModelAndTokenizer
 from tools.Managers import ModelAndToolCallManager
 
-class ModelAndConversationManager:
+class ModelConversationAndToolsManager:
     def __init__(self, app):
         self._app = app
 
@@ -24,6 +24,7 @@ class ModelAndConversationManager:
         # Explicitly run load_configurations_and_model() to load the model and
         # tokenizer (i.e. self._mat)
         self._mat = None
+        self._matcm = None
 
     def _load_system_messages(self):
         self._application_paths.create_missing_system_messages_file()
@@ -100,6 +101,9 @@ class ModelAndConversationManager:
             from_pretrained_tokenizer_configuration,
             generation_configuration)
 
+    def load_model_and_tool_call_manager(self, tool_call_processor):
+        self._matcm = ModelAndToolCallManager(self.mat, tool_call_processor)
+
     def respond_to_user_message(self, user_message: str):
         user_message = UserMessage(user_message)
         self._csp.append_message(user_message)
@@ -118,6 +122,22 @@ class ModelAndConversationManager:
         self._csp.append_message(assistant_message)
 
         return thinking_content + "\n" + content
+
+    def respond_to_user_message_with_tools(self, user_message: str):
+        user_message = UserMessage(user_message)
+        self._csp.append_message(user_message)
+
+        process_messages_results = self._matcm.process_messages(
+            self._csp.get_conversation_as_list_of_dicts())
+
+        # The result of this call should be a str.
+        new_assistant_message = \
+            self._matcm.update_conversation_system_and_permanent_from_process_messages(
+                process_messages_results,
+                self._csp
+            )
+
+        return new_assistant_message
 
     def clear_conversation_history(self, is_keep_active_system_messages=True):
         self._csp.clear_conversation_history(
