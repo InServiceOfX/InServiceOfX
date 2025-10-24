@@ -21,9 +21,10 @@ elif not str(application_path) in sys.path:
 
 from clichatlocal import ApplicationPaths
 
-async def main_CLIChatLocal_async(cli_chat_local):
-    await cli_chat_local.setup_postgresql_resource_and_embedding()
-    await cli_chat_local.run_async()
+async def main_CLIChatLocal_async(clichat_local):
+    await clichat_local.setup_postgresql_resource_and_embedding()
+    clichat_local.setup_PermanentConversation_RAG_tools()
+    await clichat_local.run_async()
 
 def main_CLIChatLocal():
     parser = argparse.ArgumentParser()

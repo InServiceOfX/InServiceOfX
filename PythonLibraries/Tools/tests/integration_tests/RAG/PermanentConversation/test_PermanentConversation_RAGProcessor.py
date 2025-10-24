@@ -8,9 +8,7 @@ model_is_not_downloaded_message = f"Model {relative_model_path} not downloaded"
 
 from pathlib import Path
 from tools.Databases import PostgreSQLConnection
-from tools.RAG.PermanentConversation import (
-    PostgreSQLInterface,
-    RAGProcessor)
+from tools.RAG.PermanentConversation import PostgreSQLInterface, RAGProcessor
 import pytest
 import pytest_asyncio
 

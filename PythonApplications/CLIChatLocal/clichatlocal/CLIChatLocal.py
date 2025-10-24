@@ -3,7 +3,9 @@ import asyncio
 from clichatlocal.Configuration.CLIConfiguration import CLIConfiguration
 from clichatlocal.Core import (
     ModelConversationAndToolsManager,
-    ProcessConfigurations)
+    ProcessConfigurations,
+    ToolsManager,
+    )
 from clichatlocal.Core.Databases import PostgreSQLResource
 from clichatlocal.Core.RAG.PermanentConversation import PostgreSQLAndEmbedding
 from clichatlocal.Messages import SystemMessagesDialogHandler
@@ -25,7 +27,9 @@ class CLIChatLocal:
 
         self._mcatm = ModelConversationAndToolsManager(self)
         self._mcatm.load_configurations_and_model()
-            
+        self._tools_manager = ToolsManager()
+        self._mcatm.load_model_and_tool_call_manager(self._tools_manager)
+
         # Setup command handler. This is before the PromptSessionManager, since
         # the PromptSessionManager needs to know the command names.
         self._command_handler = CommandHandler(self)
@@ -55,6 +59,9 @@ class CLIChatLocal:
             self._mcatm._csp.pc
         )
 
+    def setup_PermanentConversation_RAG_tools(self):
+        self._pgsql_and_embedding.create_RAG()
+
     def run_iterative(self):
         try:
             prompt = self._psm.prompt(
@@ -70,7 +77,6 @@ class CLIChatLocal:
                 
                 if not command_handled:
                     self._terminal_ui.print_user_message(prompt)
-                    # response = self.llama3_engine.generate_from_single_user_content(prompt)
                     # self._terminal_ui.print_assistant_message(response)
 
                 return continue_running
@@ -80,7 +86,11 @@ class CLIChatLocal:
             # message.
             #self._terminal_ui.print_user_message(prompt)
             response = self._mcatm.respond_to_user_message(prompt)
-            self._terminal_ui.print_assistant_message(response)
+            if not isinstance(response, str) and len(response) >= 2:
+                self._terminal_ui.print_thinking_content(response[1])
+                self._terminal_ui.print_assistant_message(response[0])
+            else:
+                self._terminal_ui.print_assistant_message(response)
 
             return True
 
@@ -118,15 +128,17 @@ class CLIChatLocal:
                 # If command wasn't handled, treat as regular user input
                 if not command_handled:
                     self._terminal_ui.print_user_message(prompt)
-                    # response = self.llama3_engine.generate_from_single_user_content(prompt)
                     # self._terminal_ui.print_assistant_message(response)
                 
                 return continue_running
 
             # Generate response
-            self._terminal_ui.print_user_message(prompt)
             response = self._mcatm.respond_to_user_message(prompt)
-            self._terminal_ui.print_assistant_message(response)
+            if not isinstance(response, str) and len(response) >= 2:
+                self._terminal_ui.print_thinking_content(response[1])
+                self._terminal_ui.print_assistant_message(response[0])
+            else:
+                self._terminal_ui.print_assistant_message(response)
 
             return True
             

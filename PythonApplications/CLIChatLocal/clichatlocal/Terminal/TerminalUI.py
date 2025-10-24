@@ -44,6 +44,22 @@ class TerminalUI:
             f"<{self.config.user_color}>User: {escaped_message}</{self.config.user_color}>"
         print_formatted_text(HTML(formatted_message))
 
+    def print_thinking_content(self, thinking_text):
+        """Print thinking content with distinctive styling"""
+        if thinking_text is None or not thinking_text.strip():
+            return
+            
+        # Escape HTML
+        safe_thinking = escape(thinking_text)
+        
+        # Create thinking box with icon and border
+        formatted_thinking = f"""
+    <thinking>┌─ 🧠 Thinking Process ─────────────────────────────────────────┐
+    │ {safe_thinking:<120} │
+    └─────────────────────────────────────────────────────────────────┘</thinking>"""
+        
+        print_formatted_text(HTML(formatted_thinking))
+
     def print_assistant_message(self, message):
         """Print an assistant message"""
         # Escape any HTML-like content in the message

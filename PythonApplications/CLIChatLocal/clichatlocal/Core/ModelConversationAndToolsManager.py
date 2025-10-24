@@ -102,7 +102,7 @@ class ModelConversationAndToolsManager:
             generation_configuration)
 
     def load_model_and_tool_call_manager(self, tool_call_processor):
-        self._matcm = ModelAndToolCallManager(self.mat, tool_call_processor)
+        self._matcm = ModelAndToolCallManager(self._mat, tool_call_processor)
 
     def respond_to_user_message(self, user_message: str):
         user_message = UserMessage(user_message)
@@ -121,7 +121,7 @@ class ModelConversationAndToolsManager:
 
         self._csp.append_message(assistant_message)
 
-        return thinking_content + "\n" + content
+        return content, thinking_content
 
     def respond_to_user_message_with_tools(self, user_message: str):
         user_message = UserMessage(user_message)
@@ -129,6 +129,34 @@ class ModelConversationAndToolsManager:
 
         process_messages_results = self._matcm.process_messages(
             self._csp.get_conversation_as_list_of_dicts())
+
+        # The result of this call should be a str.
+        new_assistant_message = \
+            self._matcm.update_conversation_system_and_permanent_from_process_messages(
+                process_messages_results,
+                self._csp
+            )
+
+        return new_assistant_message
+
+    async def respond_to_user_message_with_tools_asynchronously(
+            self,
+            user_message: str):
+        """
+        Returns:
+            - tuple of 2: if first (index 0) element is True, then a str,
+            content, is returned in the second (index 1) element.
+            If first (index 0) element is False, then we had surely exceeded the
+            maximum number of iterations allowed while trying to handle tool
+            calls. In this case, the second (index 1) element is the mutated
+            messages.
+        """
+        user_message = UserMessage(user_message)
+        self._csp.append_message(user_message)
+
+        process_messages_results = \
+            await self._matcm.process_messages_asynchronously(
+                self._csp.get_conversation_as_list_of_dicts())
 
         # The result of this call should be a str.
         new_assistant_message = \

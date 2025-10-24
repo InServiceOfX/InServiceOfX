@@ -139,5 +139,33 @@ class ToolCallProcessor:
 
         return tool_call_responses
 
+    async def handle_possible_tool_calls_asynchronously(
+            self,
+            possible_tool_calls: Union[str, List[Any]]):
+        """
+        Args:
+            possible_tool_calls: This is typically the output of either
+            parse_generate_output_for_output_only or _parse_tool_call.
+        """
+        if isinstance(possible_tool_calls, str):
+            possible_tool_calls = self._parse_tool_call(possible_tool_calls)
+
+        if possible_tool_calls is None:
+            return None
+
+        tool_call_responses = []
+
+        for tool_call in possible_tool_calls:
+            function_name = tool_call.get('name')
+            function_to_call = self.available_functions.get(function_name)
+
+            if function_to_call:
+                function_args = tool_call.get('arguments')
+                function_response = awaitfunction_to_call(**function_args)
+    
+                tool_call_responses.append((function_name, function_response))
+
+        return tool_call_responses
+
     def get_tools_as_list(self):
         return list(self.available_functions.values())

@@ -56,6 +56,47 @@ class ModelAndToolCallManager:
         warn("Message processing iterations exceeded maximum due to tool calls")
         return False, messages, new_messages
 
+    async def process_messages_asynchronously(self, messages):
+        """
+        Returns:
+            - tuple of 4: if first (index 0) element is True, then a list of
+            Python dicts, messages, is returned in the second (index 1) element,
+            and the result of decoding is returned in the third (index 2)
+            element.
+            If first (index 0) element is False, then we had surely exceeded the
+            maximum number of iterations allowed while trying to handle tool
+            calls. In this case, the second (index 1) element is the mutated
+            messages.
+            Last element is any new messages created.
+        """
+        new_messages = []
+        iteration_count = 0
+
+        while iteration_count < self._max_number_of_iterations:
+
+            process_messages_once_results = \
+                self._process_messages_once_for_any_tool_calls(
+                    messages,
+                    new_messages
+                )
+            # No tool call was obtained,
+            if not process_messages_once_results[0]:
+                return (
+                    True,
+                    process_messages_once_results[1],
+                    process_messages_once_results[2],
+                    new_messages)
+            # Tool call was obtained
+            else:
+                messages, new_messages = \
+                    await self._run_tool_calls_and_append_to_messages_asynchronously(
+                        process_messages_once_results[1],
+                        process_messages_once_results[2],
+                        new_messages)
+
+        warn("Message processing iterations exceeded maximum due to tool calls")
+        return False, messages, new_messages
+
     def _process_messages_once_for_any_tool_calls(
             self,
             messages: Dict[str, str],
@@ -119,6 +160,34 @@ class ModelAndToolCallManager:
             new_messages: list):
         tool_call_responses = self._tool_call_processor.handle_possible_tool_calls(
             tool_calls
+        )
+
+        # This should be checked beforehand if
+        # _process_messages_once_for_any_tool_calls() is run before.
+        if tool_call_responses is None:
+            return messages, new_messages
+
+        tool_response_messages = []
+        for tool_call_response in tool_call_responses:
+            tool_response_messages.append(ToolMessage(
+                name=tool_call_response[0],
+                content=json.dumps(tool_call_response[1]),
+                role="tool"
+            ))
+
+        for tool_response_message in tool_response_messages:
+            messages.append(tool_response_message.to_dict())
+            new_messages.append(tool_response_message)
+        return messages, new_messages
+
+    async def _run_tool_calls_and_append_to_messages_asynchronously(
+            self,
+            messages: Dict[str, str],
+            tool_calls,
+            new_messages: list):
+        tool_call_responses = \
+            await self._tool_call_processor.handle_possible_tool_calls_asynchronously(
+                tool_calls
         )
 
         # This should be checked beforehand if

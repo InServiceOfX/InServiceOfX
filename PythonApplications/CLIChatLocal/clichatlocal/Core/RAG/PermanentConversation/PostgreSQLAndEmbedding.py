@@ -3,7 +3,7 @@ from embeddings.TextSplitters import TextSplitterByTokens
 from sentence_transformers import SentenceTransformer
 from tools.RAG.PermanentConversation.EmbedPermanentConversation \
     import EmbedPermanentConversation
-from tools.RAG.PermanentConversation import PostgreSQLInterface
+from tools.RAG.PermanentConversation import PostgreSQLInterface, RAGProcessor
 
 class PostgreSQLAndEmbedding:
     def __init__(
@@ -29,6 +29,9 @@ class PostgreSQLAndEmbedding:
             "from_pretrained_model_configuration"].device_map
 
         self._prompt_mode = "Direct"
+
+        self._rag_processor = None
+        self._rag_tool = None
 
     def get_prompt_mode(self) -> str:
         return self._prompt_mode
@@ -73,3 +76,25 @@ class PostgreSQLAndEmbedding:
             await self._pgsql_interface.insert_message_pair_chunk(
                 message_pair_chunk)
         return message_chunks, message_pair_chunks
+
+    def _create_RAG_Processor(self):
+        if self._pgsql_interface is not None and self._embed_pc is not None:
+            self._rag_processor = RAGProcessor(
+                self._pgsql_interface,
+                self._embed_pc)
+            return True
+        else:
+            return None
+
+    def _create_RAG_Tool(self):
+        if self._rag_processor is not None:
+            self._rag_tool = RAGTool(rag_processor)
+            return True
+        else:
+            return None
+
+    def create_RAG(self):
+        create_RAG_processor_result = self._create_RAG_Processor()
+        if create_RAG_processor_result is None:
+            return None
+        return self._create_RAG_Tool()
