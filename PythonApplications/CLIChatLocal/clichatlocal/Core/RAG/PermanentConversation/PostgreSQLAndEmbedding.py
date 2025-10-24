@@ -3,7 +3,11 @@ from embeddings.TextSplitters import TextSplitterByTokens
 from sentence_transformers import SentenceTransformer
 from tools.RAG.PermanentConversation.EmbedPermanentConversation \
     import EmbedPermanentConversation
-from tools.RAG.PermanentConversation import PostgreSQLInterface, RAGProcessor
+from tools.RAG.PermanentConversation import (
+    PostgreSQLInterface,
+    RAGProcessor,
+    RAGTool
+)
 
 class PostgreSQLAndEmbedding:
     def __init__(
@@ -88,7 +92,7 @@ class PostgreSQLAndEmbedding:
 
     def _create_RAG_Tool(self):
         if self._rag_processor is not None:
-            self._rag_tool = RAGTool(rag_processor)
+            self._rag_tool = RAGTool(self._rag_processor)
             return True
         else:
             return None

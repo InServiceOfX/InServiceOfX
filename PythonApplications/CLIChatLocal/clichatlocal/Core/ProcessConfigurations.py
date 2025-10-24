@@ -123,10 +123,18 @@ class ProcessConfigurations:
             self._print_info(
                 f"Embedding Models configuration loaded from {embedding_models_configuration_path}")
         else:
-            embedding_models_configuration = EmbeddingModelsConfiguration()
-            self._print_error(
-                "Embedding Models configuration not found at {embedding_models_configuration_path};"
-                " using values for __init__")
+            try:
+                embedding_models_configuration = EmbeddingModelsConfiguration()
+                self._print_error(
+                    "Embedding Models configuration not found at "
+                    f"{embedding_models_configuration_path};"
+                    " using values for __init__")
+            except TypeError as type_error:
+                raise RuntimeError(
+                    f"Maybe try to check if "
+                    f"{embedding_models_configuration_path} exists? Original "
+                    f"error: {type_error}"
+                )
 
         self.configurations["from_pretrained_model_configuration"] = \
             from_pretrained_model_configuration

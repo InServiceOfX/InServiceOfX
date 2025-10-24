@@ -1,2 +1,2 @@
 # This gets used in the class EmbeddingModelsConfiguration.
-text_embedding_model: 
+text_embedding_model: : /Data/Models/Embeddings/BAAI/bge-large-en-v1.5
