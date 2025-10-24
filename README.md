@@ -29,15 +29,6 @@ Deactivate it:
 deactivate
 ```
 
-## Running Python tests
-
-From the "base directory" of this repository, you may run the Python unit tests and integration tests as follows:
-
-```
-$ pytest ./ThirdParty/NeuralOperators
-```
-This is a specific example (you may change it) illustrating running the integration tests for `neuraloperators`, and it seems pytest will recursively run all the tests it detects in all the subdirectories.
-
 ## Setting up a Virtual Machine
 
 Requiring manual effort:
