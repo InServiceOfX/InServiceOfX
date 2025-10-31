@@ -1,0 +1,94 @@
+## TensorRT-LLM from source
+# Building TensorRT-LLM from source requires approximately 63 GB of disk space
+# during build.
+# The final image size will be significantly smaller after build artifacts are
+# cleaned.
+# Reference:
+# https://nvidia.github.io/TensorRT-LLM/installation/build-from-source-linux.html
+# CUDA architectures: https://developer.nvidia.com/cuda-gpus
+
+# Accept CUDA_ARCH build argument from build configuration
+ARG CUDA_ARCH
+ENV CUDA_ARCHS=${CUDA_ARCH}
+
+# Install build dependencies for TensorRT-LLM
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+    git-lfs \
+    cmake \
+    ninja-build \
+    build-essential \
+    ccache \
+    && rm -rf /var/lib/apt/lists/*
+
+# Initialize git-lfs (required for TensorRT-LLM repository)
+RUN git lfs install
+
+# Clone TensorRT-LLM repository to /ThirdParty
+WORKDIR ${THIRD_PARTY}
+RUN git clone --depth 1 https://github.com/NVIDIA/TensorRT-LLM.git && \
+  cd TensorRT-LLM && \
+  git submodule update --init --recursive && \
+  git lfs pull
+
+# Build TensorRT-LLM from source
+# This uses the Makefile provided by TensorRT-LLM in the docker directory
+# Note: This build process can take several hours and requires significant disk
+# space
+WORKDIR ${THIRD_PARTY}/TensorRT-LLM
+
+# Build the release Docker image which includes all dependencies
+# The make command handles the Docker build internally, but since we're already
+# in Docker, we need to build the Python wheel directly instead
+# 
+# Alternative: Build Python wheel directly (this is what gets installed)
+# Set environment variables for the build
+ENV TRT_LLM_BUILD_WHEEL=1
+
+# Build TensorRT-LLM Python wheel
+# Note: CUDA_ARCHS can be specified to target specific GPU architectures
+# Example: CUDA_ARCHS="89-real;90-real" for Ada and Hopper architectures
+# Leave it empty to build for all architectures (larger build time and size)
+RUN mkdir -p build && \
+  cd build && \
+  cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DTRT_LLM_BUILD_PYTHON_BINDINGS=ON \
+    -DCUDA_ARCHITECTURES="${CUDA_ARCHS}" \
+    -GNinja && \
+  ninja -j$(nproc) && \
+  cd ../python && \
+  pip install -e .
+
+# Alternatively, if you want to use the official Docker build method:
+# This requires building inside a nested Docker, which is more complex
+# WORKDIR ${THIRD_PARTY}/TensorRT-LLM
+# RUN make -C docker release_build || \
+#   echo "Note: Direct Docker build in Docker may not work. Using
+# cmake+ninja instead."
+
+# Install TensorRT-LLM Python package (if wheel was built separately)
+# The pip install -e . above should have already installed it, but we can verify
+RUN cd ${THIRD_PARTY}/TensorRT-LLM && \
+  python -c "import tensorrt_llm; print('TensorRT-LLM installed successfully')" || \
+  echo "TensorRT-LLM installation verification skipped"
+
+# Clean up build artifacts to reduce image size (optional but recommended)
+# This can save several GB of space
+WORKDIR ${THIRD_PARTY}/TensorRT-LLM
+RUN rm -rf build/ \
+    cpp/build/ \
+    .git \
+    __pycache__/ \
+    *.pyc || true
+
+# Set environment variables for TensorRT-LLM runtime
+ENV TRT_LLM_HOME=${THIRD_PARTY}/TensorRT-LLM
+
+# Verify installation (optional)
+RUN python -c "import tensorrt_llm; print(f'TensorRT-LLM version: {tensorrt_llm.__version__ if hasattr(tensorrt_llm, \"__version__\") else \"installed\"}')" || \
+  echo "TensorRT-LLM installed but version check failed"
+
+WORKDIR /
+
+

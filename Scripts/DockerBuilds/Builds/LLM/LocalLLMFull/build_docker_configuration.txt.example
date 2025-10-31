@@ -16,3 +16,13 @@ BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
 # For an older GPU like NVIDIA GeForce 1050 Ti, consider using this base image:
 # DOCKER_IMAGE_NAME=local-llm-full-nvidia-pytorch-24.06
 # BASE_IMAGE=nvcr.io/nvidia/pytorch:24.06-py3
+
+# CUDA architectures for TensorRT-LLM build
+# Format: "XX-real;YY-real" where XX, YY are compute capability versions
+# Examples:
+#   "86-real;90-real" - RTX 3060/3070 (8.6) and Hopper (9.0)
+#   "86-real" - RTX 3060/3070 only
+#   "89-real;90-real" - Ada (8.9) and Hopper (9.0)
+# Leave empty to build for all architectures (larger build time and size)
+# Reference: https://nvidia.github.io/TensorRT-LLM/installation/build-from-source-linux.html
+CUDA_ARCH=86-real;90-real

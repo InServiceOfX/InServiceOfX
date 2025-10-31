@@ -94,7 +94,7 @@ def concatenate_dockerfiles(output_dockerfile, *dockerfile_paths):
                     f"Dockerfile component '{file_path}' does not exist.")
             with file_path.open('r') as infile:
                 outfile.write(infile.read())
-# Ensure separation between files
+                # Ensure separation between files
                 outfile.write('\n')
 
     print(f"Successfully concatenated Dockerfiles into '{output_dockerfile}'.")

@@ -33,6 +33,7 @@ Options:
   directory_path      Path to the directory containing build configuration files
   --gpu GPU_ID       Specific GPU ID to use (non-negative integer). If not specified, uses all GPUs.
   --help             Show this help message and exit
+  --no_gradio_and_jupyter_ports Do not add gradio and jupyter ports to the docker run command
 """
     print(help_text)
 
@@ -65,6 +66,11 @@ def main():
         '--help',
         action='store_true',
         help='Show help message and exit')
+
+    parser.add_argument(
+        '--no_gradio_and_jupyter_ports',
+        action='store_true',
+        help='Do not add gradio and jupyter ports to the docker run command')
 
     args = parser.parse_args()
 
@@ -127,12 +133,18 @@ def main():
     if network_name:
         run_configuration['network'] = network_name
 
+    if args.no_gradio_and_jupyter_ports:
+        is_add_gradio_and_jupyter_ports = False
+    else:
+        is_add_gradio_and_jupyter_ports = True
+
     # Create and run docker command
     create_docker_run_command = CreateDockerRunCommand(
         get_project_directory(),
         build_configuration,
         run_configuration,
-        gpu_id=args.gpu)
+        gpu_id=args.gpu,
+        is_add_gradio_and_jupyter_ports=is_add_gradio_and_jupyter_ports)
 
     os.system(create_docker_run_command.docker_run_command)
 

@@ -42,7 +42,8 @@ class BuildDockerBase:
         print("  --help        Show this help message and exit\n")
 
     def get_dockerfile_components(self) -> List[Tuple[str, Path]]:
-        """Override this method in derived classes to specify ordered Dockerfile components"""
+        """Override this method in derived classes to specify ordered Dockerfile
+        components"""
         raise NotImplementedError
 
     def build(self, args: argparse.Namespace):

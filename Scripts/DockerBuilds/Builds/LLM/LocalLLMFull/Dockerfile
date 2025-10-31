@@ -193,6 +193,11 @@ RUN pip install streamlit && \
   apt-get install -y ffmpeg && \
   pip install -e . --no-deps
 
+# Installations for quality of life, diagnostics.
+RUN apt update && \
+  apt install -y dnsutils iputils-ping netcat-openbsd
+
+
 
 
 RUN pip install langchain langchain-community && \

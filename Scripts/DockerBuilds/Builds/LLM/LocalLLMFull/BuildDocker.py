@@ -9,7 +9,11 @@ sys.path.append(str(Path(__file__).resolve().parents[3]))
 from Utilities import (
     BuildDockerBase,
     ReadBuildConfigurationForMinimalStack,
-    BuildDockerImageNoArguments)
+    BuildDockerImage)
+
+class BuildDockerImageWithCUDAARCH(BuildDockerImage):
+    def __init__(self):
+        super().__init__(["CUDA_ARCH"])
 
 class BuildDocker(BuildDockerBase):
     def __init__(self):
@@ -31,6 +35,9 @@ class BuildDocker(BuildDockerBase):
             (
                 "Dockerfile.rust",
                 self.parent_dir / "CommonFiles" / "Dockerfile.rust"),
+            (
+                "Dockerfile.nvidia_tensorrt_llm",
+                self.script_dir / "Dockerfile.nvidia_tensorrt_llm"),
             (
                 "Dockerfile.huggingface",
                 self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),

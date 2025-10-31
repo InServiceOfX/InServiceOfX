@@ -4,7 +4,8 @@ class CreateDockerRunCommand:
             project_directory,
             build_configuration,
             configuration,
-            gpu_id: int = None):
+            gpu_id: int = None,
+            is_add_gradio_and_jupyter_ports: bool = None):
         """
         Initialize docker run command creator
         
@@ -21,13 +22,15 @@ class CreateDockerRunCommand:
         self.docker_run_command = self.create_docker_run_command(
             project_directory,
             self.configuration,
-            self.docker_image_name)
+            self.docker_image_name,
+            is_add_gradio_and_jupyter_ports)
 
     def create_docker_run_command(
         self,
         project_directory,
         configuration,
-        docker_image_name
+        docker_image_name,
+        is_add_gradio_and_jupyter_ports: bool = None
         ):
         """
         Create docker run command with optional GPU selection
@@ -40,6 +43,9 @@ class CreateDockerRunCommand:
         Returns:
             str: Complete docker run command
         """
+        if is_add_gradio_and_jupyter_ports is None:
+            is_add_gradio_and_jupyter_ports = True
+
         # Base command with interactive TTY
         docker_run_command = "docker run "
         
@@ -75,7 +81,10 @@ class CreateDockerRunCommand:
                 docker_run_command += f"-p {port}:{port} "
 
         # Add ports for gradio and jupyter
-        docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
+        if is_add_gradio_and_jupyter_ports:
+            docker_run_command += "-p 8888:8888 -p 7860:7860 --rm --ipc=host "
+        else:
+            docker_run_command += "--rm --ipc=host "
 
         # Add network if specified
         if "network" in configuration:
