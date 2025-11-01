@@ -13,20 +13,12 @@ ENV CUDA_ARCHS=${CUDA_ARCH}
 
 # Install build dependencies for TensorRT-LLM
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-    git-lfs \
-    cmake \
-    ninja-build \
-    build-essential \
-    ccache \
-    && rm -rf /var/lib/apt/lists/*
-
-# Initialize git-lfs (required for TensorRT-LLM repository)
-RUN git lfs install
+  apt-get install -y --no-install-recommends git git-lfs && \
+  git lfs install
 
 # Clone TensorRT-LLM repository to /ThirdParty
 WORKDIR ${THIRD_PARTY}
-RUN git clone --depth 1 https://github.com/NVIDIA/TensorRT-LLM.git && \
+RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git && \
   cd TensorRT-LLM && \
   git submodule update --init --recursive && \
   git lfs pull
@@ -49,16 +41,16 @@ WORKDIR ${THIRD_PARTY}/TensorRT-LLM
 # Note: CUDA_ARCHS can be specified to target specific GPU architectures
 # Example: CUDA_ARCHS="89-real;90-real" for Ada and Hopper architectures
 # Leave it empty to build for all architectures (larger build time and size)
-RUN mkdir -p build && \
-  cd build && \
-  cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DTRT_LLM_BUILD_PYTHON_BINDINGS=ON \
-    -DCUDA_ARCHITECTURES="${CUDA_ARCHS}" \
-    -GNinja && \
-  ninja -j$(nproc) && \
-  cd ../python && \
-  pip install -e .
+# To build the TensorRT LLM code.
+RUN if [ -n "$CUDA_ARCHS" ]; then \
+      python3 ./scripts/build_wheel.py --cuda_architectures "$CUDA_ARCHS" --benchmarks; \
+    else \
+      python3 ./scripts/build_wheel.py --benchmarks; \
+    fi
+
+# Alternatively, you can use editable installation, which is convenient if you
+# also develop Python code.
+RUN pip install -e .
 
 # Alternatively, if you want to use the official Docker build method:
 # This requires building inside a nested Docker, which is more complex
@@ -72,15 +64,6 @@ RUN mkdir -p build && \
 RUN cd ${THIRD_PARTY}/TensorRT-LLM && \
   python -c "import tensorrt_llm; print('TensorRT-LLM installed successfully')" || \
   echo "TensorRT-LLM installation verification skipped"
-
-# Clean up build artifacts to reduce image size (optional but recommended)
-# This can save several GB of space
-WORKDIR ${THIRD_PARTY}/TensorRT-LLM
-RUN rm -rf build/ \
-    cpp/build/ \
-    .git \
-    __pycache__/ \
-    *.pyc || true
 
 # Set environment variables for TensorRT-LLM runtime
 ENV TRT_LLM_HOME=${THIRD_PARTY}/TensorRT-LLM
