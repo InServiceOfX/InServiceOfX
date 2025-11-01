@@ -43,7 +43,7 @@ WORKDIR ${THIRD_PARTY}/TensorRT-LLM
 # 
 # Alternative: Build Python wheel directly (this is what gets installed)
 # Set environment variables for the build
-ENV TRT_LLM_BUILD_WHEEL=1
+#ENV TRT_LLM_BUILD_WHEEL=1
 
 # Build TensorRT-LLM Python wheel
 # Note: CUDA_ARCHS can be specified to target specific GPU architectures

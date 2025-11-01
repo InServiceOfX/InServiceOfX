@@ -8,12 +8,21 @@ from typing import List, Tuple
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 from Utilities import (
     BuildDockerBase,
-    ReadBuildConfigurationForMinimalStack,
+    ReadBuildConfiguration,
     BuildDockerImage)
 
 class BuildDockerImageWithCUDAARCH(BuildDockerImage):
     def __init__(self):
-        super().__init__(["CUDA_ARCH"])
+        super().__init__(["CUDA_ARCH",])
+
+class ReadBuildConfigurationWithCUDAARCH(ReadBuildConfiguration):
+    def __init__(self):
+        required_keys = {
+            "DOCKER_IMAGE_NAME",
+            "BASE_IMAGE",
+            "CUDA_ARCH"}
+
+        super().__init__(required_keys)
 
 class BuildDocker(BuildDockerBase):
     def __init__(self):
@@ -21,8 +30,8 @@ class BuildDocker(BuildDockerBase):
             "Build Docker image for diffusers with minimal dependencies",
             Path(__file__).resolve(),
             3,
-            configuration_reader_class=ReadBuildConfigurationForMinimalStack,
-            docker_builder_class=BuildDockerImageNoArguments)
+            configuration_reader_class=ReadBuildConfigurationWithCUDAARCH,
+            docker_builder_class=BuildDockerImageWithCUDAARCH)
 
     def get_dockerfile_components(self) -> List[Tuple[str, Path]]:
         return [
