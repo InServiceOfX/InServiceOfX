@@ -4,17 +4,8 @@ class BuildDockerCommand:
 
     DEFAULT_BUILD_ARGUMENTS = ["base_image", "docker_image_name"]
 
-    def __init__(self, build_arguments_keys = None):
-        """
-        Args:
-            build_arguments_keys (list): List of build arguments keys.
-        """
-        if build_arguments_keys is None:
-            build_arguments_keys = []
-        self._build_arguments_keys = build_arguments_keys
-
+    @staticmethod
     def run_build_docker_command(
-        self,
         dockerfile_path,
         build_configuration,
         use_cache,
@@ -43,17 +34,33 @@ class BuildDockerCommand:
         if use_host_network:
             docker_build_cmd.append("--network host")
 
-        # Add build arguments
-        for key in self._build_arguments_keys:
+        # Extract build_args from build_configuration
+        # build_args is a Dict[str, str] from the YAML file
+        build_args = getattr(build_configuration, 'build_args', {})
+        if build_args is None:
+            build_args = {}
+
+        # Add ALL build arguments from build_args dict to Docker build command
+        # This makes the configuration fully dynamic - any key-value pairs
+        # in the YAML's build_args section will be passed to Docker
+        for key, value in build_args.items():
             docker_build_cmd.extend([
                 "--build-arg",
-                f"{key}={build_configuration[key]}"])
+                f"{key}={value}"])
 
         # Check and add BASE_IMAGE argument
-        base_image = build_configuration.base_image
+        # Access base_image as an attribute (from BuildDockerConfigurationData)
+        base_image = getattr(build_configuration, 'base_image', None)
         if not base_image:
             raise ValueError("BASE_IMAGE is empty in the configuration file")
-        docker_image_name = build_configuration.docker_image_name
+        
+        docker_image_name = getattr(
+            build_configuration,
+            'docker_image_name',
+            None)
+        if not docker_image_name:
+            raise ValueError(
+                "DOCKER_IMAGE_NAME is empty in the configuration file")
 
         docker_build_cmd.extend([
             "--build-arg",
