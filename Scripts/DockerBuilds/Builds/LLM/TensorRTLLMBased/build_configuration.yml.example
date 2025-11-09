@@ -1,0 +1,8 @@
+docker_image_name: tensorrt-llm-based:1.2.0rc2
+# https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tensorrt-llm/containers/release/tags?version=1.2.0rc2
+# >>> print(tensorrt_llm.__version__)
+# 1.2.0rc2
+# >>> import torch
+# >>> print(torch.__version__)
+# 2.9.0a0+145a3a7bda.nv25.10
+base_image: nvcr.io/nvidia/tensorrt-llm/release:1.2.0rc2

@@ -8,10 +8,22 @@ class BuildDockerBaseClass:
 
     def __init__(
         self,
+        description: str,
         build_configuration,
         build_directory,
         build_docker_command,
         parent_dir_level: int = 1):
+        """
+
+        Args:
+            description: Description of the build.
+            build_configuration: This is expected to be a
+                BuildDockerConfiguration object.
+            build_directory: Build directory.
+            build_docker_command: Build docker command.
+            parent_dir_level: Parent directory level.
+        """
+        self.description = description
         self._build_configuration = build_configuration
         self._build_directory = build_directory
         self._build_docker_command = build_docker_command
@@ -51,8 +63,8 @@ class BuildDockerBaseClass:
 
     def build(self, args: argparse.Namespace):
 
-        if (str(self.parent_dir) not in sys.path):
-            sys.path.append(str(self.parent_dir))
+        if (str(self._parent_dir) not in sys.path):
+            sys.path.append(str(self._parent_dir))
         from CommonUtilities import concatenate_dockerfiles
 
         if args.help:

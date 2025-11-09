@@ -17,3 +17,9 @@ from .BuildDockerBase import (
 
 from .CreateDockerRunCommand import (
     CreateDockerRunCommand)
+
+from .BuildDockerBaseClass import (
+    BuildDockerBaseClass)
+
+from .BuildDockerCommand import (
+    BuildDockerCommand)
