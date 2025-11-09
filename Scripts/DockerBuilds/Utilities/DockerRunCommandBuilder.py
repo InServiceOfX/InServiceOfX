@@ -6,19 +6,22 @@ from typing import Optional
 class DockerRunConfiguration:
     """Configuration for running Docker containers."""
     docker_image_name: str
-    project_root: Path
     volumes: list = None  # Changed from mount_paths to volumes
     ports: list = None  # New field
     gpu_id: Optional[int] = None
     interactive: bool = True
     entrypoint: Optional[str] = None
-    use_host_network: bool = False
-    
+    networks: Optional[List[str]] = None
+
     def __post_init__(self):
         if self.volumes is None:
             self.volumes = []
         if self.ports is None:
             self.ports = []
+        if self.networks is None:
+            self.networks = []
+        elif not isinstance(self.networks, list):
+            self.networks = [self.networks]
 
 
 class DockerRunCommandBuilder:

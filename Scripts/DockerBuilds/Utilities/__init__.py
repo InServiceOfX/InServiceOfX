@@ -23,3 +23,5 @@ from .BuildDockerBaseClass import (
 
 from .BuildDockerCommand import (
     BuildDockerCommand)
+
+from .DockerCompose import DockerCompose

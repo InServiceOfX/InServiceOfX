@@ -24,6 +24,7 @@ from Utilities.RunDockerConfiguration import (
 from Utilities.DockerRunCommandBuilder import (
     DockerRunConfiguration,
     DockerRunCommandBuilder)
+from Utilities import DockerCompose
 
 import argparse
 import os
@@ -137,9 +138,6 @@ def main():
             if response != 'y':
                 sys.exit(0)
     
-    # Calculate project root (assuming: project_root/Deployment/DockerBuilds/[ImageDir]/)
-    project_root = build_dir.parents[2]
-    
     # Load run configuration (optional)
     run_config_file = build_dir / "run_docker_configuration.yml"
     try:
@@ -150,7 +148,6 @@ def main():
 
     run_config = DockerRunConfiguration(
         docker_image_name=build_config.docker_image_name,
-        project_root=project_root,
         volumes=[{"host_path": v.host_path, "container_path": v.container_path} for v in run_config_data.volumes],
         ports=[{"host_port": p.host_port, "container_port": p.container_port} for p in run_config_data.ports],
         gpu_id=args.gpu,
@@ -166,7 +163,6 @@ def main():
     # Convert to string for display and execution
     docker_command_str = " ".join(docker_cmd_list)
     
-    print(f"\nProject root: {project_root}")
     print(f"\nDocker command to execute:")
     print(f"  {docker_command_str}\n")
     print("=" * 80)
