@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 @dataclass
 class DockerRunConfiguration:
@@ -11,6 +11,7 @@ class DockerRunConfiguration:
     gpu_id: Optional[int] = None
     interactive: bool = True
     entrypoint: Optional[str] = None
+    use_host_network: bool = False
     networks: Optional[List[str]] = None
 
     def __post_init__(self):
@@ -53,7 +54,11 @@ class DockerRunCommandBuilder:
             # Port mappings (only apply if not using host network)
             for port in self.config.ports:
                 cmd.append(f"-p {port['host_port']}:{port['container_port']}")
-        
+
+        if self.config.networks:
+            for network in self.config.networks:
+                cmd.append(f"--network {network}")
+
         # Mount paths from configuration (always needed)
         for mount in self.config.volumes:
             cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")

@@ -4,6 +4,10 @@ Run Docker container with general support for any Docker build configuration.
 Usage: 
     python RunDocker.py [--build-dir DIR] [--gpu GPU_ID] [--interactive] [--entrypoint ENTRYPOINT]
 
+Example Usage:
+cd into "Build" directory, e.g. cd DockerBuilds/Builds/LLM/TensorRTLLMBased
+python ../../../Utilities/DockerRun.py --gpu 1 --network-host --build-dir .
+
 This script loads the build configuration from a specified build directory and runs
 the built Docker image with appropriate GPU settings and volume mounts.
 """
@@ -58,32 +62,32 @@ Examples:
   python RunDocker.py --network-host
         """
     )
-    
+
     parser.add_argument(
         '--build-dir',
         type=str,
         default='.',
         help='Directory containing build_docker_configuration.yml (default: current directory)'
     )
-    
+
     parser.add_argument(
         '--gpu',
         type=int,
         help='Specific GPU ID to use (0, 1, 2, etc.). If not specified, uses all GPUs.'
     )
-    
+
     parser.add_argument(
         '--no-interactive',
         action='store_true',
         help='Run in detached (background) mode instead of interactive'
     )
-    
+
     parser.add_argument(
         '--entrypoint',
         type=str,
         help='Override the entrypoint (e.g., /bin/bash to get a shell)'
     )
-    
+
     parser.add_argument(
         '--network-host',
         action='store_true',
@@ -105,7 +109,7 @@ def main():
     
     # Find build configuration file
     config_file = build_dir / "build_configuration.yml"
-    
+
     if not config_file.exists():
         print(f"Error: Build configuration file not found: {config_file}")
         print(f"  Searched in: {build_dir}")
@@ -137,9 +141,18 @@ def main():
             response = input().strip().lower()
             if response != 'y':
                 sys.exit(0)
-    
+
+    # Find docker-compose.yml file
+    docker_compose_file = build_dir / "docker-compose.yml"
+    if docker_compose_file.exists():
+        docker_compose = DockerCompose(docker_compose_file)
+        networks = docker_compose.parse_networks()
+        docker_compose.run_docker_compose()
+    else:
+        networks = None
+
     # Load run configuration (optional)
-    run_config_file = build_dir / "run_docker_configuration.yml"
+    run_config_file = build_dir / "run_configuration.yml"
     try:
         run_config_data = RunDockerConfiguration.load_data(run_config_file)
     except Exception as e:
@@ -148,12 +161,17 @@ def main():
 
     run_config = DockerRunConfiguration(
         docker_image_name=build_config.docker_image_name,
-        volumes=[{"host_path": v.host_path, "container_path": v.container_path} for v in run_config_data.volumes],
-        ports=[{"host_port": p.host_port, "container_port": p.container_port} for p in run_config_data.ports],
+        volumes=[
+            {"host_path": v.host_path, "container_path": v.container_path} \
+                for v in run_config_data.volumes],
+        ports=[
+            {"host_port": p.host_port, "container_port": p.container_port} \
+                for p in run_config_data.ports],
         gpu_id=args.gpu,
         interactive=not args.no_interactive,
         entrypoint=args.entrypoint,
         use_host_network=args.network_host,
+        networks=networks
     )
     
     # Build docker run command

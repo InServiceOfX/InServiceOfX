@@ -7,7 +7,7 @@ import yaml
 class DockerCompose:
     def __init__(
         self,
-        docker_compose_file_path = Optional[Union[str, Path]] = None):
+        docker_compose_file_path: Optional[Union[str, Path]] = None):
         if docker_compose_file_path == None:
             docker_compose_file_path = \
                 Path.cwd().resolve().parent / "docker-compose.yml"

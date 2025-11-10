@@ -153,4 +153,5 @@ Scripts/QuickAliases/StartDocker.sh
 Scripts/PyTorchGPUDocker/mount_paths.txt
 **/build_configuration.yml
 **/build_docker_configuration.txt
+**/run_configuration.yml
 **/run_docker_configuration.txt
