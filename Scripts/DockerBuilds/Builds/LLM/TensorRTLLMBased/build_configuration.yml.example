@@ -5,4 +5,10 @@ docker_image_name: tensorrt-llm-based:1.2.0rc2
 # >>> import torch
 # >>> print(torch.__version__)
 # 2.9.0a0+145a3a7bda.nv25.10
+# pip list
+# accelerate                        1.11.0
+# Jinja2                            3.1.6
+# peft                              0.17.1
+# tokenizers                        0.22.1
+# torchvision                       0.24.0a0+094e7af5
 base_image: nvcr.io/nvidia/tensorrt-llm/release:1.2.0rc2
