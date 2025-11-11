@@ -38,18 +38,8 @@ RUN apt-get update && \
   # Do more pip installs.
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
-  pip install --upgrade python-dotenv && \
-  #
-  #
-  # TODO: Consider removing poetry since a Docker image wouldn't necessarily
-  # need a poetry environment.
-  # Install Poetry
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  curl -sSL https://install.python-poetry.org | python3 - && \
-  # https://python-poetry.org/docs/#installing-with-the-official-installer
-  # Step 3, you have to add poetry to your PATH, which on UNIX is in
-  # $HOME/.local/bin
-  echo "export PATH=/root/.local/bin:$PATH" >> $HOME/.bashrc
+  pip install --upgrade python-dotenv
+
 
 
 
@@ -58,101 +48,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   # https://rust-lang.github.io/rustup/installation/index.html
   # export PATH once, doing both Rust and poetry binaries.
   echo "export PATH=/root/.cargo/bin:$PATH" >> $HOME/.bashrc
-
-
-
-## TensorRT-LLM from source
-# Building TensorRT-LLM from source requires approximately 63 GB of disk space
-# during build.
-# The final image size will be significantly smaller after build artifacts are
-# cleaned.
-# Reference:
-# https://nvidia.github.io/TensorRT-LLM/installation/build-from-source-linux.html
-# CUDA architectures: https://developer.nvidia.com/cuda-gpus
-
-# Accept CUDA_ARCH build argument from build configuration
-ARG CUDA_ARCH
-ENV CUDA_ARCHS=${CUDA_ARCH}
-
-# Install build dependencies for TensorRT-LLM
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-    git-lfs \
-    cmake \
-    ninja-build \
-    build-essential \
-    ccache \
-    && rm -rf /var/lib/apt/lists/*
-
-# Initialize git-lfs (required for TensorRT-LLM repository)
-RUN git lfs install
-
-# Clone TensorRT-LLM repository to /ThirdParty
-WORKDIR ${THIRD_PARTY}
-RUN git clone --depth 1 https://github.com/NVIDIA/TensorRT-LLM.git && \
-  cd TensorRT-LLM && \
-  git submodule update --init --recursive && \
-  git lfs pull
-
-# Build TensorRT-LLM from source
-# This uses the Makefile provided by TensorRT-LLM in the docker directory
-# Note: This build process can take several hours and requires significant disk
-# space
-WORKDIR ${THIRD_PARTY}/TensorRT-LLM
-
-# Build the release Docker image which includes all dependencies
-# The make command handles the Docker build internally, but since we're already
-# in Docker, we need to build the Python wheel directly instead
-# 
-# Alternative: Build Python wheel directly (this is what gets installed)
-# Set environment variables for the build
-#ENV TRT_LLM_BUILD_WHEEL=1
-
-# Build TensorRT-LLM Python wheel
-# Note: CUDA_ARCHS can be specified to target specific GPU architectures
-# Example: CUDA_ARCHS="89-real;90-real" for Ada and Hopper architectures
-# Leave it empty to build for all architectures (larger build time and size)
-RUN mkdir -p build && \
-  cd build && \
-  cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DTRT_LLM_BUILD_PYTHON_BINDINGS=ON \
-    -DCUDA_ARCHITECTURES="${CUDA_ARCHS}" \
-    -GNinja && \
-  ninja -j$(nproc) && \
-  cd ../python && \
-  pip install -e .
-
-# Alternatively, if you want to use the official Docker build method:
-# This requires building inside a nested Docker, which is more complex
-# WORKDIR ${THIRD_PARTY}/TensorRT-LLM
-# RUN make -C docker release_build || \
-#   echo "Note: Direct Docker build in Docker may not work. Using
-# cmake+ninja instead."
-
-# Install TensorRT-LLM Python package (if wheel was built separately)
-# The pip install -e . above should have already installed it, but we can verify
-RUN cd ${THIRD_PARTY}/TensorRT-LLM && \
-  python -c "import tensorrt_llm; print('TensorRT-LLM installed successfully')" || \
-  echo "TensorRT-LLM installation verification skipped"
-
-# Clean up build artifacts to reduce image size (optional but recommended)
-# This can save several GB of space
-WORKDIR ${THIRD_PARTY}/TensorRT-LLM
-RUN rm -rf build/ \
-    cpp/build/ \
-    .git \
-    __pycache__/ \
-    *.pyc || true
-
-# Set environment variables for TensorRT-LLM runtime
-ENV TRT_LLM_HOME=${THIRD_PARTY}/TensorRT-LLM
-
-# Verify installation (optional)
-RUN python -c "import tensorrt_llm; print(f'TensorRT-LLM version: {tensorrt_llm.__version__ if hasattr(tensorrt_llm, \"__version__\") else \"installed\"}')" || \
-  echo "TensorRT-LLM installed but version check failed"
-
-WORKDIR /
 
 
 
@@ -174,7 +69,9 @@ RUN python3 -m pip install --upgrade pip && \
   #git checkout v4.55.4 && \
   #git checkout v4.54-release && \
   # 2025-10-04 NVIDIA GeForce 3070
-  git checkout v4.57.0 && \
+  # git checkout v4.57.1 && \
+  # Commits on Nov 11, 2025
+  git checkout 2b8068c306a4c79350e1af5fea5f7e3d93d82d95 && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -183,7 +80,9 @@ RUN python3 -m pip install --upgrade pip && \
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \
-  git checkout main && \
+  #git checkout v1.11.0 && \
+  # Commits on Nov 10, 2025
+  git checkout a08fb323904e1c1947258cf75d498b81ff7af801 && \
   pip install -e . && \
   #
   #
@@ -199,104 +98,20 @@ RUN python3 -m pip install --upgrade pip && \
   ## PEFT (Parameter-Efficient Fine-Tuning)
   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
   cd /ThirdParty/peft && \
+  #git checkout v0.18.rc0 && \
+  # Commits on Nov 10, 2025
+  git checkout 7d4c9fd71071eeeb438e6f21cfac9480f552c816 && \
   pip install -e . && \
   #
   #
   cd /
 
-
-
-# RUN pip uninstall -y flash-attn && \
-#     pip install flash-attn --no-binary flash-attn
-
-RUN pip install pydantic-ai && \
-    # PostgreSQL database
-    pip install psycopg2-binary && \
-    pip install asyncpg && \
-    pip install -U sentence-transformers
-
-# For commands pg_isready and psql, to help debug PostgreSQL issues.
-RUN apt-get update && apt-get install -y postgresql-client-common && \
-  apt-get install -y postgresql-client && \
-  # Useful with postgreSQL
-  apt-get install -y iproute2
-
-# PDF parsing, extraction, document handling, document processing.
-RUN pip install pymupdf
-RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty/python-sdk && \
-    cd /ThirdParty/python-sdk && \
-    pip install -e ".[cli]"
-
-
-
-### Further third party code/repositories
-
-# MoreGroq would need this.
-RUN pip install groq instructor && \
-  # Immediately needed for the tests for MoreGroq.
-  pip install yfinance && \
-  # https://logfire.pydantic.dev/docs/#about-logfire
-  # TODO: See if this has a protobuf dependency version that mismatches
-  # other versions.
-  #pip install logfire && \
-  pip install pytest-asyncio
-
-# deno is for MCP using pydantic-ai.
-# https://github.com/denoland/deno_docker
-COPY --from=denoland/deno:bin-2.3.5 /deno /usr/local/bin/deno
-
-#
-#
-# InServiceOfX
-#
-#
-RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
-  cd /ThirdParty/InServiceOfX/ && \
-  git sparse-checkout init && \
-  git sparse-checkout add PythonApplications/CLIChatLocal && \
-  git sparse-checkout add PythonLibraries/CoreCode && \
-  git sparse-checkout add PythonLibraries/HuggingFace/MoreTransformers && \
-  git sparse-checkout add PythonLibraries/ThirdParties/APIs/CommonAPI && \
-  git checkout master && \
+# Create constraints file to lock versions
+RUN mkdir -p /etc/pip && \
+  pip list --format=freeze | grep -E "(transformers|accelerate|candle|peft)" \
+  > /etc/pip/constraints-hf.txt || true && \
   cd /
-#
-#
-#
 
-# https://ai.pydantic.dev/install/#__tabbed_1_2
-# https://docs.astral.sh/uv/getting-started/installation/
-# TODO: Since Docker is already a containerized environment, it might not make
-# sense to install uv.
-#RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-#  source $HOME/.local/bin/env && \
-#  uv add pydantic-ai
-
-# pip install's for tools.
-RUN pip install google-api-python-client youtube-transcript-api tweepy
-
-# HuggingFace pip installs
-RUN pip install datasets && \
-  pip install "smolagents[audio,litellm,mcp,telemetry,toolkit,transformers,vision]"
-
-# pip install's for applications.
-RUN pip install streamlit && \
-# For Dia https://huggingface.co/nari-labs/Dia-1.6B
-# Following https://github.com/nari-labs/dia#run-with-this-repo
-  git clone https://github.com/nari-labs/dia.git /ThirdParty/nari-labs/dia && \
-  cd /ThirdParty/nari-labs/dia && \
-  pip install torchcodec && \
-  apt-get install -y ffmpeg && \
-  pip install -e . --no-deps
-
-# Installations for quality of life, diagnostics.
-RUN apt update && \
-  apt install -y dnsutils iputils-ping netcat-openbsd
-
-
-
-
-RUN pip install langchain langchain-community && \
-    pip install rank_bm25
 
 
 

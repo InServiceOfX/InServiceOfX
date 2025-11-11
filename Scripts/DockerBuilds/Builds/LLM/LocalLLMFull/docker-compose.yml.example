@@ -1,0 +1,44 @@
+# USAGE:
+# Start
+# docker compose up -d
+# docker network connect local_llm_full_network <nameofcontainer>
+# Stop
+# docker compose down
+#
+# To "get into" this docker,
+# 
+# docker exec -it local-llm-full-postgres psql -U inserviceofx -d local_llm_full_database
+#
+# where local-llm-full-postgres is the container_name as given in this
+# docker-compose.yml, psql is the command line client, -U is for user name, -d
+# is for the database name, from POSTGRES_DB in this docker-compose.yml
+#
+
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    # typically kebab case
+    container_name: local-llm-full-postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      # Snake case convention preferred
+      POSTGRES_DB: local_llm_full_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./Databases/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydatabase"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local_llm_full_network
+
+networks:
+  local_llm_full_network:
+    name: local_llm_full_network
+    driver: bridge

@@ -16,7 +16,9 @@ RUN python3 -m pip install --upgrade pip && \
   #git checkout v4.55.4 && \
   #git checkout v4.54-release && \
   # 2025-10-04 NVIDIA GeForce 3070
-  git checkout v4.57.0 && \
+  # git checkout v4.57.1 && \
+  # Commits on Nov 11, 2025
+  git checkout 2b8068c306a4c79350e1af5fea5f7e3d93d82d95 && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
@@ -25,7 +27,9 @@ RUN python3 -m pip install --upgrade pip && \
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \
-  git checkout main && \
+  #git checkout v1.11.0 && \
+  # Commits on Nov 10, 2025
+  git checkout a08fb323904e1c1947258cf75d498b81ff7af801 && \
   pip install -e . && \
   #
   #
@@ -41,9 +45,23 @@ RUN python3 -m pip install --upgrade pip && \
   ## PEFT (Parameter-Efficient Fine-Tuning)
   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
   cd /ThirdParty/peft && \
+  #git checkout v0.18.rc0 && \
+  # Commits on Nov 10, 2025
+  git checkout 7d4c9fd71071eeeb438e6f21cfac9480f552c816 && \
   pip install -e . && \
   #
   #
   cd /
+
+# Create constraints file to lock versions
+RUN mkdir -p /etc/pip && \
+  pip list --format=freeze | grep -E "(transformers|accelerate|peft)" \
+  # constraints-hf.txt looks something like this:
+  # accelerate==1.12.0.dev0
+  # peft==0.18.0rc1.dev0
+  # transformers==5.0.0.dev0
+  > /etc/pip/constraints-hf.txt || true && \
+  cd /
+
 
 
