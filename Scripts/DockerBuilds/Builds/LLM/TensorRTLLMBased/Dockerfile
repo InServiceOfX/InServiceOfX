@@ -51,3 +51,23 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 
 
+# RUN pip uninstall -y flash-attn && \
+#     pip install flash-attn --no-binary flash-attn
+
+RUN pip install pydantic-ai && \
+    # PostgreSQL database
+    pip install psycopg2-binary && \
+    pip install asyncpg && \
+    pip install -U sentence-transformers
+
+# For commands pg_isready and psql, to help debug PostgreSQL issues.
+RUN apt-get update && apt-get install -y postgresql-client-common && \
+  apt-get install -y postgresql-client && \
+  # Useful with postgreSQL
+  apt-get install -y iproute2
+
+# PDF parsing, extraction, document handling, document processing.
+RUN pip install pymupdf
+
+
+

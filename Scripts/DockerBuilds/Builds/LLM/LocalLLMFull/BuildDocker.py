@@ -44,9 +44,9 @@ class BuildDocker(BuildDockerBase):
             (
                 "Dockerfile.rust",
                 self.parent_dir / "CommonFiles" / "Dockerfile.rust"),
-            (
-                "Dockerfile.nvidia_tensorrt_llm",
-                self.script_dir / "Dockerfile.nvidia_tensorrt_llm"),
+            # (
+            #     "Dockerfile.nvidia_tensorrt_llm",
+            #     self.script_dir / "Dockerfile.nvidia_tensorrt_llm"),
             (
                 "Dockerfile.huggingface",
                 self.parent_dir / "CommonFiles" / "Dockerfile.huggingface"),

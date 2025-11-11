@@ -37,6 +37,9 @@ class BuildDocker(BuildDockerBaseClass):
             (
                 "Dockerfile.rust",
                 self._parent_dir / "CommonFiles" / "Dockerfile.rust"),
+            (
+                "Dockerfile.more_pip_installs",
+                self._build_directory / "Dockerfile.more_pip_installs"),
         ]
     
 def main():
