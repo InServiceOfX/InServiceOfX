@@ -1,9 +1,9 @@
 docker_image_name: local-llm-full-nvidia-pytorch:25.02
 # For tag 25.02
 # pip list
-# accelerate                 1.12.0.dev0
+# accelerate                               1.12.0.dev0                   /ThirdParty/accelerate
 # Jinja2                     3.1.6
-# peft                       0.18.0rc1.dev0
+# peft                                     0.18.0rc1.dev0                /ThirdParty/peft
 # tensorrt                   10.8.0.43
 # tokenizers                 0.22.1
 # torch                      2.7.0a0+ecf3bae40a.nv25.2
@@ -11,6 +11,15 @@ docker_image_name: local-llm-full-nvidia-pytorch:25.02
 # torchvision                0.22.0a0
 # transformers               5.0.0.dev0
 # Version checked also against running python and import.
+
+# langchain                                1.0.5
+# langchain-core                           1.0.4
+# langgraph                                1.0.3
+# mcp                                      1.21.1.dev5+be73067           /ThirdParty/python-sdk
+# pydantic-ai                              1.14.1
+# sentence-transformers                    5.2.0.dev0                    /ThirdParty/sentence-transformers
+# smolagents                               1.22.0
+# torchcodec                               0.8.1
 
 # For tag pytorch:25.02-py3,
 # >>> import torch

@@ -51,11 +51,8 @@ RUN pip install datasets && \
 RUN pip install streamlit && \
 # For Dia https://huggingface.co/nari-labs/Dia-1.6B
 # Following https://github.com/nari-labs/dia#run-with-this-repo
-  git clone https://github.com/nari-labs/dia.git /ThirdParty/nari-labs/dia && \
-  cd /ThirdParty/nari-labs/dia && \
   pip install torchcodec && \
-  apt-get install -y ffmpeg && \
-  pip install -e . --no-deps
+  apt-get install -y ffmpeg
 
 # Installations for quality of life, diagnostics.
 RUN apt update && \

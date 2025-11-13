@@ -108,10 +108,113 @@ RUN python3 -m pip install --upgrade pip && \
 
 # Create constraints file to lock versions
 RUN mkdir -p /etc/pip && \
-  pip list --format=freeze | grep -E "(transformers|accelerate|candle|peft)" \
+  pip list --format=freeze | grep -E "(transformers|accelerate|peft)" \
+  # constraints-hf.txt looks something like this:
+  # accelerate==1.12.0.dev0
+  # peft==0.18.0rc1.dev0
+  # transformers==5.0.0.dev0
   > /etc/pip/constraints-hf.txt || true && \
   cd /
 
+
+
+
+# RUN pip uninstall -y flash-attn && \
+#     pip install flash-attn --no-binary flash-attn
+
+RUN pip install pydantic-ai && \
+  # PostgreSQL database
+  pip install psycopg2-binary && \
+  pip install asyncpg
+
+RUN git clone https://github.com/inserviceofx/sentence-transformers.git \
+  /ThirdParty/sentence-transformers && \
+  cd /ThirdParty/sentence-transformers && \
+  git checkout development && \
+  pip install -e .
+
+# For commands pg_isready and psql, to help debug PostgreSQL issues.
+RUN apt-get update && apt-get install -y postgresql-client-common && \
+  apt-get install -y postgresql-client && \
+  # Useful with postgreSQL
+  apt-get install -y iproute2
+
+# # PDF parsing, extraction, document handling, document processing.
+RUN pip install pymupdf
+
+
+
+RUN git clone https://github.com/modelcontextprotocol/python-sdk.git /ThirdParty/python-sdk && \
+    cd /ThirdParty/python-sdk && \
+    pip install -e ".[cli]"
+
+
+
+### Further third party code/repositories
+
+# MoreGroq would need this.
+RUN pip install groq instructor && \
+  # Immediately needed for the tests for MoreGroq.
+  pip install yfinance && \
+  # https://logfire.pydantic.dev/docs/#about-logfire
+  # TODO: See if this has a protobuf dependency version that mismatches
+  # other versions.
+  #pip install logfire && \
+  pip install pytest-asyncio
+
+# deno is for MCP using pydantic-ai.
+# https://github.com/denoland/deno_docker
+COPY --from=denoland/deno:bin-2.3.5 /deno /usr/local/bin/deno
+
+#
+#
+# InServiceOfX
+#
+#
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init && \
+  git sparse-checkout add PythonApplications/CLIChatLocal && \
+  git sparse-checkout add PythonLibraries/CoreCode && \
+  git sparse-checkout add PythonLibraries/HuggingFace/MoreTransformers && \
+  git sparse-checkout add PythonLibraries/ThirdParties/APIs/CommonAPI && \
+  git checkout master && \
+  cd /
+#
+#
+#
+
+# https://ai.pydantic.dev/install/#__tabbed_1_2
+# https://docs.astral.sh/uv/getting-started/installation/
+# TODO: Since Docker is already a containerized environment, it might not make
+# sense to install uv.
+#RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+#  source $HOME/.local/bin/env && \
+#  uv add pydantic-ai
+
+# pip install's for tools.
+RUN pip install google-api-python-client youtube-transcript-api tweepy
+
+# HuggingFace pip installs
+RUN pip install datasets && \
+  pip install "smolagents[audio,litellm,mcp,telemetry,toolkit,transformers,vision]"
+
+# pip install's for applications.
+RUN pip install streamlit && \
+# For Dia https://huggingface.co/nari-labs/Dia-1.6B
+# Following https://github.com/nari-labs/dia#run-with-this-repo
+  pip install torchcodec && \
+  apt-get install -y ffmpeg
+
+# Installations for quality of life, diagnostics.
+RUN apt update && \
+  apt install -y dnsutils iputils-ping netcat-openbsd
+
+
+
+
+RUN pip install langchain langchain-community && \
+    pip install rank_bm25
 
 
 

@@ -44,13 +44,13 @@ class BuildDocker(BuildDockerBaseClass):
                 self._build_directory / "Dockerfile.more_pip_installs"),
             (
                 "Dockerfile.mcp",
-                self.script_dir / "Dockerfile.mcp"),
-            # (
-            #     "Dockerfile.third_parties",
-            #     self.script_dir / "Dockerfile.third_parties"),
-            # (
-            #     "Dockerfile.langchain",
-            #     self.script_dir / "Dockerfile.langchain")
+                self._build_directory / "Dockerfile.mcp"),
+            (
+                "Dockerfile.third_parties",
+                self._build_directory / "Dockerfile.third_parties"),
+            (
+                "Dockerfile.langchain",
+                self._build_directory / "Dockerfile.langchain")
         ]
 
 def main():
