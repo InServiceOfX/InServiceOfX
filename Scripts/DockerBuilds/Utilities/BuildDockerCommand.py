@@ -43,10 +43,11 @@ class BuildDockerCommand:
         # Add ALL build arguments from build_args dict to Docker build command
         # This makes the configuration fully dynamic - any key-value pairs
         # in the YAML's build_args section will be passed to Docker
+        # Keys are uppercased to follow Docker ARG naming convention (UPPERCASE)
         for key, value in build_args.items():
             docker_build_cmd.extend([
                 "--build-arg",
-                f"{key}={value}"])
+                f"{key.upper()}={value}"])
 
         # Check and add BASE_IMAGE argument
         # Access base_image as an attribute (from BuildDockerConfigurationData)

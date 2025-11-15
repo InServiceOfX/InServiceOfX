@@ -1,0 +1,25 @@
+# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch/tags?version=25.10-py3
+# For the tag and
+# https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html
+# for the Frameworks Support Matrix.
+# Container OS	Ubuntu 24.04
+# CUDA	NVIDIA CUDA 13.0.2.006
+# cuBLAS	NVIDIA cuBLAS 13.1.0.3
+# cuDNN	9.14.0.64
+# DALI	1.51.2
+# NCCL	2.27.7
+# TensorRT	TensorRT 10.13.3.9
+# PyTorch	2.9.0a0+145a3a7bda 
+# Python 3.12
+# SGLang	2.9.0a0+145a3a7bda
+# vLLM	2.9.0a0+145a3a7bda
+#
+# 25.10-py3 has the following versions:
+# flash_attn                 2.7.4.post1+25.10          36764868
+# Jinja2                     3.1.6
+# numpy                      2.1.0
+# safetensors                0.6.2
+# torch                      2.9.0a0+145a3a7bda.nv25.10
+# torchvision                0.24.0a0+094e7af5
+docker_image_name: diffusion-nvidia-pytorch:25.10-py3
+base_image: nvcr.io/nvidia/pytorch:25.10-py3
