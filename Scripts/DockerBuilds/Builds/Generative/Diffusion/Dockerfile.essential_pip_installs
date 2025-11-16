@@ -35,29 +35,52 @@
 # upgrading optree using `python3 -m pip install --upgrade 'optree>=0.13.0'`.
 #
 
-RUN pip install --upgrade pip && \
-    # First check numpy version
-    python -c "import numpy; print(f'Current NumPy version: {numpy.__version__}')" || \
-    echo "NumPy not installed" && \
-    pip uninstall -y numpy && \
-    pip install --upgrade numpy && \
-    python -c "import numpy; print(f'Updated NumPy version: {numpy.__version__}')" && \
-    python -c "import optree; print(f'Current optree version: {optree.__version__}')" || \
-    echo "optree not installed" && \
-    pip uninstall -y optree && \
-    pip install --upgrade optree && \
-    python -c "import optree; print(f'Updated optree version: {optree.__version__}')" && \
-    python -c "import torchvision; print(f'Current torchvision version: {torchvision.__version__}')" || \
-    echo "torchvision not installed" && \
-    pip uninstall -y torchvision && \
-    pip install --upgrade torchvision && \
-    python -c "import torchvision; print(f'Updated torchvision version: {torchvision.__version__}')" && \
-    pip install --upgrade transformer-engine && \
-    pip uninstall -y flash-attn && \
-    pip install --upgrade flash-attn && \
-    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')" && \
-    # For quantization of a Diffusion pipeline.
-    pip install --upgrade bitsandbytes
+RUN pip install bitsandbytes==0.48.2 numpy==2.3.4 optree==0.18.0
+
+# # Freeze initial state
+# RUN pip freeze > /etc/pip/constraints-base.txt && \
+#     echo "=== Initial package freeze ===" && \
+#     head -20 /etc/pip/constraints-base.txt
+
+# # Install more packages with constraints
+# RUN echo "=== Installing diffusers with constraints ===" && \
+#     # Show what would change (dry-run)
+#     pip install --dry-run --constraint /etc/pip/constraints-initial.txt diffusers 2>&1 | \
+#     grep -E "(Would|Requirement)" | head -20 || true && \
+#     # Actually install
+#     pip install --constraint /etc/pip/constraints-initial.txt diffusers && \
+#     # Show what changed
+#     echo "=== Packages that were upgraded/installed ===" && \
+#     pip list --outdated 2>/dev/null | head -10 || echo "No outdated packages" && \
+#     # Re-freeze
+#     pip freeze > /etc/pip/constraints-updated.txt && \
+#     # Compare what changed
+#     echo "=== Differences in constraints ===" && \
+#     diff /etc/pip/constraints-initial.txt /etc/pip/constraints-updated.txt || true
+
+# RUN pip install --upgrade pip && \
+#     # First check numpy version
+#     python -c "import numpy; print(f'Current NumPy version: {numpy.__version__}')" || \
+#     echo "NumPy not installed" && \
+#     pip uninstall -y numpy && \
+#     pip install --upgrade numpy && \
+#     python -c "import numpy; print(f'Updated NumPy version: {numpy.__version__}')" && \
+#     python -c "import optree; print(f'Current optree version: {optree.__version__}')" || \
+#     echo "optree not installed" && \
+#     pip uninstall -y optree && \
+#     pip install --upgrade optree && \
+#     python -c "import optree; print(f'Updated optree version: {optree.__version__}')" && \
+#     python -c "import torchvision; print(f'Current torchvision version: {torchvision.__version__}')" || \
+#     echo "torchvision not installed" && \
+#     pip uninstall -y torchvision && \
+#     pip install --upgrade torchvision && \
+#     python -c "import torchvision; print(f'Updated torchvision version: {torchvision.__version__}')" && \
+#     pip install --upgrade transformer-engine && \
+#     pip uninstall -y flash-attn && \
+#     pip install --upgrade flash-attn && \
+#     python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')" && \
+#     # For quantization of a Diffusion pipeline.
+#     pip install --upgrade bitsandbytes
 
 
 

@@ -43,3 +43,143 @@ RUN apt-get update && \
 
 
 
+# These pip installs may be needed before installing diffusers (not confirmed
+# for all packages here).)
+# numpy
+# I wanted the latest numpy since it was a major version update from 1.x to 2.x.
+# However,
+# for NVIDIA Optimized Frameworks Containers,
+# for 24.06 (or 24.07) container images,
+# >>> numpy.__version__
+#'1.24.4'
+# >>> print(torchvision.__version__)
+# 0.19.0a0
+# >>> print(optree.__version__)
+# 0.11.0
+#
+# As of 2025-02-12, latest for numpy is 2.2.2.
+# Latest for torchvision is 0.21.0+cu124
+# Latest for optree is 0.14.0
+# Otherwise, this error is obtained:
+# >>> import torchvision
+#
+# A module that was compiled using NumPy 1.x cannot be run in
+# NumPy 2.2.2 as it may crash. To support both 1.x and 2.x
+# versions of NumPy, modules must be compiled with NumPy 2.0.
+# Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+#
+# If you are a user of the module, the easiest solution will be to
+# downgrade to 'numpy<2' or try to upgrade the affected module.
+# We expect that some modules will need time to support NumPy 2
+#
+# optree needed to be upgrade because otherwise,
+# 
+# /usr/local/lib/python3.10/dist-packages/torch/utils/_pytree.py:185: 
+# FutureWarning: optree is installed but the version is too old to support
+# PyTorch Dynamo in C++ pytree. C++ pytree support is disabled. Please consider
+# upgrading optree using `python3 -m pip install --upgrade 'optree>=0.13.0'`.
+#
+
+RUN pip install bitsandbytes==0.48.2 numpy==2.3.4 optree==0.18.0
+
+# # Freeze initial state
+# RUN pip freeze > /etc/pip/constraints-base.txt && \
+#     echo "=== Initial package freeze ===" && \
+#     head -20 /etc/pip/constraints-base.txt
+
+# # Install more packages with constraints
+# RUN echo "=== Installing diffusers with constraints ===" && \
+#     # Show what would change (dry-run)
+#     pip install --dry-run --constraint /etc/pip/constraints-initial.txt diffusers 2>&1 | \
+#     grep -E "(Would|Requirement)" | head -20 || true && \
+#     # Actually install
+#     pip install --constraint /etc/pip/constraints-initial.txt diffusers && \
+#     # Show what changed
+#     echo "=== Packages that were upgraded/installed ===" && \
+#     pip list --outdated 2>/dev/null | head -10 || echo "No outdated packages" && \
+#     # Re-freeze
+#     pip freeze > /etc/pip/constraints-updated.txt && \
+#     # Compare what changed
+#     echo "=== Differences in constraints ===" && \
+#     diff /etc/pip/constraints-initial.txt /etc/pip/constraints-updated.txt || true
+
+# RUN pip install --upgrade pip && \
+#     # First check numpy version
+#     python -c "import numpy; print(f'Current NumPy version: {numpy.__version__}')" || \
+#     echo "NumPy not installed" && \
+#     pip uninstall -y numpy && \
+#     pip install --upgrade numpy && \
+#     python -c "import numpy; print(f'Updated NumPy version: {numpy.__version__}')" && \
+#     python -c "import optree; print(f'Current optree version: {optree.__version__}')" || \
+#     echo "optree not installed" && \
+#     pip uninstall -y optree && \
+#     pip install --upgrade optree && \
+#     python -c "import optree; print(f'Updated optree version: {optree.__version__}')" && \
+#     python -c "import torchvision; print(f'Current torchvision version: {torchvision.__version__}')" || \
+#     echo "torchvision not installed" && \
+#     pip uninstall -y torchvision && \
+#     pip install --upgrade torchvision && \
+#     python -c "import torchvision; print(f'Updated torchvision version: {torchvision.__version__}')" && \
+#     pip install --upgrade transformer-engine && \
+#     pip uninstall -y flash-attn && \
+#     pip install --upgrade flash-attn && \
+#     python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')" && \
+#     # For quantization of a Diffusion pipeline.
+#     pip install --upgrade bitsandbytes
+
+
+
+
+
+
+
+RUN mkdir -p ${THIRD_PARTY}
+COPY ../../../BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+RUN ls -la ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    test -f ${THIRD_PARTY}/BuildOpenCVWithCUDA.sh && \
+    echo "✅ BuildOpenCVWithCUDA.sh copied successfully" || \
+    (echo "❌ BuildOpenCVWithCUDA.sh copy failed" && ls -la ${THIRD_PARTY}/ && exit 1)
+
+
+
+
+# For your implementation of a specific build, specific Dockerfile, remember to
+# write your own Dockerfile.* to copy BuildOpenCVWithCUDA.sh from your relative
+# path.
+#COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
+
+# As of July 30, 2024, for OpenCV, there's 4.10.0.
+# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
+# where CuDNN 9+ support, CUDA 12.4+ support.
+# As of January 2025, for OpenCV there's 4.11.0.
+# https://github.com/opencv/opencv/wiki/OpenCV-Change-Logs#version4110
+# No CuDNN, CUDA version change.
+
+ARG OPENCV_VERSION=4.11.0
+
+ARG ARCH
+ARG PTX
+
+RUN pip uninstall -y opencv && \
+  cd / && \
+  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
+  # -q for quiet because output of wget with progress bars is too much.
+  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
+  unzip opencv && \
+  wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
+  unzip opencv_contrib && \
+  cd /opencv-${OPENCV_VERSION} && \
+  /bin/bash /ThirdParty/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
+  # This was done in one of the layers of the "original", NVIDIA PyTorch
+  # Container for OpenCV
+  cd /opencv-${OPENCV_VERSION}/modules/python/package && \
+  pip install --no-cache-dir --disable-pip-version-check -v . && \
+  cd / && \
+  rm -rf /opencv-${OPENCV_VERSION} && \
+  rm -rf /opencv_contrib-${OPENCV_VERSION} && \
+  rm /opencv.zip && \
+  rm /opencv_contrib.zip
+
+
+

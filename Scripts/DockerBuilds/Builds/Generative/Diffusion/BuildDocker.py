@@ -43,6 +43,15 @@ class BuildDockerNew(BuildDockerBaseClass):
             (
                 "Dockerfile.minimal_base",
                 self._parent_dir / "CommonFiles" / "Dockerfile.minimal_base"),
+            (
+                "Dockerfile.essential_pip_installs",
+                self._build_directory / "Dockerfile.essential_pip_installs"),
+            (
+                "Dockerfile.copy_opencv_script",
+                self._build_directory / "Dockerfile.copy_opencv_script"),
+            (
+                "Dockerfile.opencv_with_cuda",
+                self._parent_dir / "CommonFiles" / "Dockerfile.opencv_with_cuda"),
         ]
 
 class BuildDocker(BuildDockerBase):
@@ -62,9 +71,9 @@ class BuildDocker(BuildDockerBase):
             (
                 "Dockerfile.minimal_base",
                 self.parent_dir / "CommonFiles" / "Dockerfile.minimal_base"),
-            (
-                "Dockerfile.essential_pip_installs",
-                self.script_dir / "Dockerfile.essential_pip_installs"),
+            # (
+            #     "Dockerfile.essential_pip_installs",
+            #     self.script_dir / "Dockerfile.essential_pip_installs"),
             # (
             #     "Dockerfile.copy_opencv_script",
             #     self.script_dir / "Dockerfile.copy_opencv_script"),

@@ -43,204 +43,74 @@ RUN apt-get update && \
 
 
 
-# numpy
-# I wanted the latest numpy since it was a major version update from 1.x to 2.x.
-# However,
-# for NVIDIA Optimized Frameworks Containers,
-# for 24.06 (or 24.07) container images,
-# >>> numpy.__version__
-#'1.24.4'
-# >>> print(torchvision.__version__)
-# 0.19.0a0
-# >>> print(optree.__version__)
-# 0.11.0
-#
-# As of 2025-02-12, latest for numpy is 2.2.2.
-# Latest for torchvision is 0.21.0+cu124
-# Latest for optree is 0.14.0
-# Otherwise, this error is obtained:
-# >>> import torchvision
-#
-# A module that was compiled using NumPy 1.x cannot be run in
-# NumPy 2.2.2 as it may crash. To support both 1.x and 2.x
-# versions of NumPy, modules must be compiled with NumPy 2.0.
-# Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
-#
-# If you are a user of the module, the easiest solution will be to
-# downgrade to 'numpy<2' or try to upgrade the affected module.
-# We expect that some modules will need time to support NumPy 2
-#
-# optree needed to be upgrade because otherwise,
-# 
-# /usr/local/lib/python3.10/dist-packages/torch/utils/_pytree.py:185: 
-# FutureWarning: optree is installed but the version is too old to support
-# PyTorch Dynamo in C++ pytree. C++ pytree support is disabled. Please consider
-# upgrading optree using `python3 -m pip install --upgrade 'optree>=0.13.0'`.
-#
-
-RUN pip install --upgrade pip && \
-    # First check numpy version
-    python -c "import numpy; print(f'Current NumPy version: {numpy.__version__}')" || \
-    echo "NumPy not installed" && \
-    pip uninstall -y numpy && \
-    pip install --upgrade numpy && \
-    python -c "import numpy; print(f'Updated NumPy version: {numpy.__version__}')" && \
-    python -c "import optree; print(f'Current optree version: {optree.__version__}')" || \
-    echo "optree not installed" && \
-    pip uninstall -y optree && \
-    pip install --upgrade optree && \
-    python -c "import optree; print(f'Updated optree version: {optree.__version__}')" && \
-    python -c "import torchvision; print(f'Current torchvision version: {torchvision.__version__}')" || \
-    echo "torchvision not installed" && \
-    pip uninstall -y torchvision && \
-    pip install --upgrade torchvision && \
-    python -c "import torchvision; print(f'Updated torchvision version: {torchvision.__version__}')" && \
-    pip install --upgrade transformer-engine && \
-    pip uninstall -y flash-attn && \
-    pip install --upgrade flash-attn && \
-    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')" && \
-    # For quantization of a Diffusion pipeline.
-    pip install --upgrade bitsandbytes
-
-
-
-
-
-
-# For your implementation of a specific build, specific Dockerfile, remember to
-# write your own Dockerfile.* to copy BuildOpenCVWithCUDA.sh from your relative
-# path.
-#COPY BuildOpenCVWithCUDA.sh ${THIRD_PARTY}
-
-# As of July 30, 2024, for OpenCV, there's 4.10.0.
-# https://github.com/opencv/opencv/wiki/ChangeLog#version4100
-# where CuDNN 9+ support, CUDA 12.4+ support.
-# As of January 2025, for OpenCV there's 4.11.0.
-# https://github.com/opencv/opencv/wiki/OpenCV-Change-Logs#version4110
-# No CuDNN, CUDA version change.
-
-ARG OPENCV_VERSION=4.11.0
-
-ARG ARCH
-ARG PTX
-
-RUN pip uninstall -y opencv && \
-  cd / && \
-  # https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-  # -q for quiet because output of wget with progress bars is too much.
-  wget -q https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip -O opencv.zip && \
-  unzip opencv && \
-  wget -q https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip -O opencv_contrib.zip && \
-  unzip opencv_contrib && \
-  cd /opencv-${OPENCV_VERSION} && \
-  /bin/bash /ThirdParty/BuildOpenCVWithCUDA.sh ${ARCH} ${PTX} && \
-  # This was done in one of the layers of the "original", NVIDIA PyTorch
-  # Container for OpenCV
-  cd /opencv-${OPENCV_VERSION}/modules/python/package && \
-  pip install --no-cache-dir --disable-pip-version-check -v . && \
-  cd / && \
-  rm -rf /opencv-${OPENCV_VERSION} && \
-  rm -rf /opencv_contrib-${OPENCV_VERSION} && \
-  rm /opencv.zip && \
-  rm /opencv_contrib.zip
-
-
 
 ## HuggingFace
 
 ## transformers (hugging face), required to run most popular diffusion models.
 RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  git checkout main && \
+  # main branch, Commits on Nov 15, 2025
+  git checkout 66d57110f089789ae285cc9d54d3bf051123246b && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e . && \
   #
   #
 ## diffusers (hugging face)
-  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
-  cd /ThirdParty/diffusers && \
-  git checkout master && \
-  git config --local pull.rebase true && \
-  git pull origin master && \
-  pip install -e . && \
-  # TODO: This is needed, because "from_slow" tokenizer.json field of
-  # FluxPipeline models. Consider
-  # https://discuss.huggingface.co/t/value-error-sentencepiece/4313/6
-  pip install sentencepiece && \
-  #
-  #
-## accelerate - speeds up model loading for inference and training
-  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
-  cd /ThirdParty/accelerate && \
-  git checkout main && \
-  pip install -e . && \
-  #
-  #
-## candle (hugging face)
-  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
-  cd /ThirdParty/candle && \
-  git checkout main && \
-  #
-  #
-## PEFT (Parameter-Efficient Fine-Tuning)
-  git clone https://github.com/huggingface/peft /ThirdParty/peft && \
-  cd /ThirdParty/peft && \
-  pip install -e . && \
-  #
-  #
-## For JAX/Flax
-  # Even if jax jaxlib are updated to 0.4.X and same version, you obtain
-  # AttributeError: partially initialized module 'jax' has no attribute
-  # 'version' (most likely due to a circular import)
-  #pip install --upgrade jax && \
-  # Even if you do the option --upgrade, this makes it so that jax is 0.2.X and
-  # it's too old.
-  #pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_releases.html && \
-  #pip install --upgrade jaxlib && \
-  # This fix was from here:
-  # https://github.com/google/jax/discussions/14036#discussioncomment-8717604 
-  #pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
-  #pip install flax && \
-  # https://github.com/google/jax/blob/main/README.md#instructions
-  #
-  pip install -U "jax[cuda12]" && \
-  # https://huggingface.co/docs/diffusers/en/optimization/onnx
-  # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
-  #python -m pip install optimum[onnxruntime,quanto]@git+https://github.com/huggingface/optimum.git && \
-  #cd /
-  pip install optimum-quanto && \
+#   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
+#   cd /ThirdParty/diffusers && \
+#   git checkout master && \
+#   git config --local pull.rebase true && \
+#   git pull origin master && \
+#   pip install -e . && \
+#   # TODO: This is needed, because "from_slow" tokenizer.json field of
+#   # FluxPipeline models. Consider
+#   # https://discuss.huggingface.co/t/value-error-sentencepiece/4313/6
+#   pip install sentencepiece && \
+#   #
+#   #
+# ## accelerate - speeds up model loading for inference and training
+#   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
+#   cd /ThirdParty/accelerate && \
+#   git checkout main && \
+#   pip install -e . && \
+#   #
+#   #
+# ## candle (hugging face)
+#   git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
+#   cd /ThirdParty/candle && \
+#   git checkout main && \
+#   #
+#   #
+# ## PEFT (Parameter-Efficient Fine-Tuning)
+#   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
+#   cd /ThirdParty/peft && \
+#   pip install -e . && \
+#   #
+#   #
+# ## For JAX/Flax
+#   # Even if jax jaxlib are updated to 0.4.X and same version, you obtain
+#   # AttributeError: partially initialized module 'jax' has no attribute
+#   # 'version' (most likely due to a circular import)
+#   #pip install --upgrade jax && \
+#   # Even if you do the option --upgrade, this makes it so that jax is 0.2.X and
+#   # it's too old.
+#   #pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_releases.html && \
+#   #pip install --upgrade jaxlib && \
+#   # This fix was from here:
+#   # https://github.com/google/jax/discussions/14036#discussioncomment-8717604 
+#   #pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
+#   #pip install flax && \
+#   # https://github.com/google/jax/blob/main/README.md#instructions
+#   #
+#   pip install -U "jax[cuda12]" && \
+#   # https://huggingface.co/docs/diffusers/en/optimization/onnx
+#   # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
+#   #python -m pip install optimum[onnxruntime,quanto]@git+https://github.com/huggingface/optimum.git && \
+#   #cd /
+#   pip install optimum-quanto && \
   cd /
 
-
-
-
-### Further third party code/repositories
-
-# TODO: On ASUS Zephyrus G15, pip install fails even with ninja-build installed.
-# Also, see https://github.com/facebookresearch/fairseq/issues/4246
-# pip uninstall apex works for me.
-# RUN git clone https://github.com/NVIDIA/apex /ThirdParty/apex && \
-#     cd /ThirdParty/apex && \
-#     git checkout master && \
-#     pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
-
-RUN pip uninstall -y apex
-
-#
-#
-# InServiceOfX
-#
-#
-RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
-  cd /ThirdParty/InServiceOfX/ && \
-  git sparse-checkout init --cone && \
-  git sparse-checkout set PythonLibraries/CoreCode && \
-  git checkout && \
-  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
-  #TODO: amend master branch to remove dependency on opencv.
-  #poetry install && \
-  #cd /
 
 
 
