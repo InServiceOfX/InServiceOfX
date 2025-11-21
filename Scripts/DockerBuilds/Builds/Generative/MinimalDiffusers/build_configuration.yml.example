@@ -15,22 +15,67 @@
 # vLLM	2.9.0a0+145a3a7bda
 #
 # 25.10-py3 has the following versions:
+# accelerate                 1.12.0.dev0                         /ThirdParty/accelerate
 # bitsandbytes               0.48.2
+# diffusers                  0.36.0.dev0                         /ThirdParty/diffusers
 # flash_attn                 2.7.4.post1+25.10          36764868
+# jax                        0.8.0
 # Jinja2                     3.1.6
 # numpy                      2.1.0
 # Upgraded
 # numpy                      2.3.4
+# optimum-quanto             0.2.7
 # optree needed with PyTorch Dynamo
 # optree                     0.17.0
 # Upgraded:
 # optree                     0.18.0
+# peft                       0.18.0                              /ThirdParty/peft
 # safetensors                0.6.2
+# sentencepiece              0.2.1
 # torch                      2.9.0a0+145a3a7bda.nv25.10
 # torchvision                0.24.0a0+094e7af5
 # transformer_engine         2.8.0+40c69e75
-docker_image_name: minimal-diffusion-nvidia-pytorch:25.10-py3
-base_image: nvcr.io/nvidia/pytorch:25.10-py3
+# transformers               5.0.0.dev0                          /ThirdParty/transformers
+# docker_image_name: minimal-diffusion-nvidia-pytorch:25.10-py3
+# base_image: nvcr.io/nvidia/pytorch:25.10-py3
+#
+# But for nunchaku v1.0.2, we need CUDA 12, not CUDA 13, since
+# 
+#  File "/usr/local/lib/python3.12/dist-packages/nunchaku/__init__.py", line 1, in <module>
+#    from .models import (
+#  File "/usr/local/lib/python3.12/dist-packages/nunchaku/models/__init__.py", line 1, in <module>
+#    from .text_encoders.t5_encoder import NunchakuT5EncoderModel
+#  File "/usr/local/lib/python3.12/dist-packages/nunchaku/models/text_encoders/t5_encoder.py", line 18, in <module>
+#    from .linear import W4Linear
+#  File "/usr/local/lib/python3.12/dist-packages/nunchaku/models/text_encoders/linear.py", line 10, in <module>
+#    from ..._C.ops import gemm_awq, gemv_awq
+# ImportError: libcudart.so.12: cannot open shared object file: No such file or directory
+#
+# Container Image 25.06
+# Container OS 	Ubuntu 24.04
+# CUDA NVIDIA CUDA 12.9.1
+# PyTorch 2.8.0a0+5228986c39including
+# Python 3.12
+#
+# accelerate                 1.12.0.dev0                   /ThirdParty/accelerate
+# bitsandbytes               0.48.2
+# diffusers                  0.36.0.dev0                   /ThirdParty/diffusers
+# flash_attn                 2.7.4.post1
+# jax                        0.8.0
+# Jinja2                     3.1.6
+# numpy                      2.3.4
+# optimum-quanto             0.2.7
+# optree                     0.18.0
+# peft                       0.18.0                        /ThirdParty/peft
+# safetensors                0.5.3
+# sentencepiece              0.2.1
+# torch                      2.8.0a0+5228986c39.nv25.6
+# torchvision                0.22.0a0+95f10a4e
+# transformer_engine         2.4.0+3cd6870
+# transformers               5.0.0.dev0                    /ThirdParty/transformers
+
+docker_image_name: minimal-diffusion-nvidia-pytorch:25.06-py3
+base_image: nvcr.io/nvidia/pytorch:25.06-py3
 
 build_args:
   arch: 9.0 
@@ -40,5 +85,15 @@ build_args:
   #arch: 8.6 
   #ptx: sm_86 
 
-  compute_capability=90a
-  opencv_version=4.11.0
+  # TODO: Fix OpenCV build
+  #compute_capability=90a
+  #opencv_version=4.11.0
+
+  # Look for your version here:
+  # https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
+  # torch                      2.8.0
+  # root@baa0fec3e185:/# python --version
+  # Python 3.12.3
+  # and so Python 3.12.3 corresponds to cp312.
+  # nunchaku_version: https://github.com/nunchaku-tech/nunchaku/releases/download/v0.3.2/nunchaku-0.3.2+torch2.8-cp312-cp312-linux_x86_64.whl
+  nunchaku_version: https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.2/nunchaku-1.0.2+torch2.9-cp312-cp312-linux_x86_64.whl

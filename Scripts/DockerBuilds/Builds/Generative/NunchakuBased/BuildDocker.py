@@ -46,17 +46,11 @@ class BuildDocker(BuildDockerBaseClass):
                 "Dockerfile.minimal_base",
                 self._parent_dir / "CommonFiles" / "Dockerfile.minimal_base"),
             (
-                "Dockerfile.essential_pip_installs",
-                self._build_directory / "Dockerfile.essential_pip_installs"),
+                "Dockerfile.pytorch_reinstall",
+                self._build_directory / "Dockerfile.pytorch_reinstall"),
             (
-                "Dockerfile.diffusers",
-                self._build_directory / "Dockerfile.diffusers"),
-            (
-                 "Dockerfile.third_parties",
-                 self._build_directory / "Dockerfile.third_parties"),
-            # (
-            #     "Dockerfile.nunchaku",
-            #     self._build_directory / "Dockerfile.nunchaku"),
+                "Dockerfile.nunchaku",
+                self._build_directory / "Dockerfile.nunchaku"),
         ]
 
 def main():

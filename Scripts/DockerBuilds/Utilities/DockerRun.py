@@ -153,6 +153,13 @@ def main():
 
     # Load run configuration (optional)
     run_config_file = build_dir / "run_configuration.yml"
+
+    if not run_config_file.exists():
+        print(f"Warning: Run configuration file not found: {run_config_file}")
+        print(f"  Searched in: {build_dir}")
+    else:
+        print(f"Loading run configuration from: {run_config_file}")
+
     try:
         run_config_data = RunDockerConfiguration.load_data(run_config_file)
     except Exception as e:

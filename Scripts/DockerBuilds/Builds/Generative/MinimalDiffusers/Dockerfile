@@ -43,7 +43,9 @@ RUN apt-get update && \
 
 
 
-
+# Versions from Nov 15, 2025
+#RUN pip install bitsandbytes==0.48.2 numpy==2.3.4 optree==0.18.0
+RUN pip install bitsandbytes==0.48.2 optree==0.18.0 torchaudio
 ## HuggingFace
 
 ## transformers (hugging face), required to run most popular diffusion models.
@@ -57,60 +59,90 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
   #
   #
 ## diffusers (hugging face)
-#   git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
-#   cd /ThirdParty/diffusers && \
-#   git checkout master && \
-#   git config --local pull.rebase true && \
-#   git pull origin master && \
-#   pip install -e . && \
-#   # TODO: This is needed, because "from_slow" tokenizer.json field of
-#   # FluxPipeline models. Consider
-#   # https://discuss.huggingface.co/t/value-error-sentencepiece/4313/6
-#   pip install sentencepiece && \
-#   #
-#   #
-# ## accelerate - speeds up model loading for inference and training
-#   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
-#   cd /ThirdParty/accelerate && \
-#   git checkout main && \
-#   pip install -e . && \
-#   #
-#   #
-# ## candle (hugging face)
-#   git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
-#   cd /ThirdParty/candle && \
-#   git checkout main && \
-#   #
-#   #
-# ## PEFT (Parameter-Efficient Fine-Tuning)
-#   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
-#   cd /ThirdParty/peft && \
-#   pip install -e . && \
-#   #
-#   #
-# ## For JAX/Flax
-#   # Even if jax jaxlib are updated to 0.4.X and same version, you obtain
-#   # AttributeError: partially initialized module 'jax' has no attribute
-#   # 'version' (most likely due to a circular import)
-#   #pip install --upgrade jax && \
-#   # Even if you do the option --upgrade, this makes it so that jax is 0.2.X and
-#   # it's too old.
-#   #pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_releases.html && \
-#   #pip install --upgrade jaxlib && \
-#   # This fix was from here:
-#   # https://github.com/google/jax/discussions/14036#discussioncomment-8717604 
-#   #pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
-#   #pip install flax && \
-#   # https://github.com/google/jax/blob/main/README.md#instructions
-#   #
-#   pip install -U "jax[cuda12]" && \
-#   # https://huggingface.co/docs/diffusers/en/optimization/onnx
-#   # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
-#   #python -m pip install optimum[onnxruntime,quanto]@git+https://github.com/huggingface/optimum.git && \
-#   #cd /
-#   pip install optimum-quanto && \
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
+  cd /ThirdParty/diffusers && \
+  # master branch, Commits on Nov 16, 2025
+  git checkout d306f8a498fd234f97d47fdb290f6b2d27cf25bd && \
+  #TODO: do I need this?
+  #git config --local pull.rebase true && \
+  pip install -e . && \
+  # TODO: This is needed, because "from_slow" tokenizer.json field of
+  # FluxPipeline models. Consider
+  # https://discuss.huggingface.co/t/value-error-sentencepiece/4313/6
+  pip install sentencepiece==0.2.1 && \
+  #
+  #
+## accelerate - speeds up model loading for inference and training
+  git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
+  cd /ThirdParty/accelerate && \
+  git checkout main && \
+  pip install -e . && \
+  #
+  #
+## candle (hugging face)
+  git clone https://github.com/huggingface/candle.git /ThirdParty/candle && \
+  cd /ThirdParty/candle && \
+  git checkout main && \
+  #
+  #
+## PEFT (Parameter-Efficient Fine-Tuning)
+  git clone https://github.com/huggingface/peft /ThirdParty/peft && \
+  cd /ThirdParty/peft && \
+  pip install -e . && \
+  #
+  #
+## For JAX/Flax
+  # Even if jax jaxlib are updated to 0.4.X and same version, you obtain
+  # AttributeError: partially initialized module 'jax' has no attribute
+  # 'version' (most likely due to a circular import)
+  #pip install --upgrade jax && \
+  # Even if you do the option --upgrade, this makes it so that jax is 0.2.X and
+  # it's too old.
+  #pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_releases.html && \
+  #pip install --upgrade jaxlib && \
+  # This fix was from here:
+  # https://github.com/google/jax/discussions/14036#discussioncomment-8717604 
+  #pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
+  #pip install flax && \
+  # https://github.com/google/jax/blob/main/README.md#instructions
+  #
+  pip install -U "jax[cuda12]" && \
+  # https://huggingface.co/docs/diffusers/en/optimization/onnx
+  # Optimum provides at Stable Diffusion pipeline compatible with ONNX Runtime.
+  #python -m pip install optimum[onnxruntime,quanto]@git+https://github.com/huggingface/optimum.git && \
+  #cd /
+  pip install optimum-quanto && \
   cd /
 
+
+
+
+### Further third party code/repositories
+
+# TODO: On ASUS Zephyrus G15, pip install fails even with ninja-build installed.
+# Also, see https://github.com/facebookresearch/fairseq/issues/4246
+# pip uninstall apex works for me.
+# RUN git clone https://github.com/NVIDIA/apex /ThirdParty/apex && \
+#     cd /ThirdParty/apex && \
+#     git checkout master && \
+#     pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
+
+#RUN pip uninstall -y apex
+
+#
+#
+# InServiceOfX
+#
+#
+RUN git clone --no-checkout https://github.com/InServiceOfX/InServiceOfX.git /ThirdParty/InServiceOfX && \
+  cd /ThirdParty/InServiceOfX/ && \
+  git sparse-checkout init --cone && \
+  git sparse-checkout set PythonLibraries/CoreCode && \
+  git checkout && \
+  cd /ThirdParty/InServiceOfX/PythonLibraries/CoreCode/
+  #TODO: amend master branch to remove dependency on opencv.
+  #poetry install && \
+  #cd /
 
 
 
