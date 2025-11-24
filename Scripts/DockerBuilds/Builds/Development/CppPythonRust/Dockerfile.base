@@ -1,0 +1,12 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+# Set the working directory in the container
+# https://docs.docker.com/engine/reference/builder/
+ENV THIRD_PARTY=/ThirdParty
+WORKDIR /
+
+## Update apt, pip, and do pip installs.
+RUN apt-get update
+
+

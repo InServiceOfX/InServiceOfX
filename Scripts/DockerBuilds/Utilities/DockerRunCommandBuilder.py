@@ -81,3 +81,41 @@ class DockerRunCommandBuilder:
         cmd.append(self.config.docker_image_name)
         
         return cmd
+
+    def build_with_no_gpu(self) -> list:
+        """Build complete docker run command as list without GPU."""
+        cmd = ["docker", "run"]
+
+        # Interactive mode with TTY
+        if self.config.interactive:
+            cmd.extend(["-it"])
+        else:
+            cmd.append("-d")  # Detached mode
+
+        # Network host option (if enabled, skip port mappings)
+        if self.config.use_host_network:
+            cmd.append("--network host")
+        else:
+            # Port mappings (only apply if not using host network)
+            for port in self.config.ports:
+                cmd.append(f"-p {port['host_port']}:{port['container_port']}")
+
+        if self.config.networks:
+            for network in self.config.networks:
+                cmd.append(f"--network {network}")
+
+        # Mount paths from configuration (always needed)
+        for mount in self.config.volumes:
+            cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")
+
+        # Runtime flags
+        cmd.extend(["--rm", "--ipc=host"])
+
+        # Entrypoint override if specified
+        if self.config.entrypoint:
+            cmd.extend(["--entrypoint", self.config.entrypoint])
+
+        # Image name
+        cmd.append(self.config.docker_image_name)
+
+        return cmd

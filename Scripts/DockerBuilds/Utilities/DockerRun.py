@@ -60,6 +60,10 @@ Examples:
   
   # Use host networking (bypasses Docker port mapping, default True)
   python RunDocker.py --network-host
+
+  # Run with no GPU
+  python RunDocker.py --no-gpu
+
         """
     )
 
@@ -93,7 +97,13 @@ Examples:
         action='store_true',
         help='Use host networking (--network host). Bypasses Docker port mapping. Useful when experiencing networking issues.'
     )
-    
+
+    parser.add_argument(
+        '--no-gpu',
+        action='store_true',
+        help='Run with no GPU'
+    )
+
     return parser.parse_args()
 
 
@@ -183,7 +193,11 @@ def main():
     
     # Build docker run command
     command_builder = DockerRunCommandBuilder(run_config)
-    docker_cmd_list = command_builder.build()
+
+    if args.no_gpu:
+        docker_cmd_list = command_builder.build_with_no_gpu()
+    else:
+        docker_cmd_list = command_builder.build()
     
     # Convert to string for display and execution
     docker_command_str = " ".join(docker_cmd_list)
