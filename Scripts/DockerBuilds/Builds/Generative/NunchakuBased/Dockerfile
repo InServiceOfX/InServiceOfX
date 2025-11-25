@@ -133,7 +133,7 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 
 # This past RUN installation steps result in the following versions:
 # pip list
-# accelerate                 1.11.0
+# accelerate                 1.12.0
 # apex                       0.1
 # controlnet_aux             0.0.10
 # cuda-bindings              12.9.0
@@ -178,6 +178,7 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 # torchaudio                 2.9.1
 # torchprofile               0.0.4
 # torchvision                0.24.1
+# transformer_engine         2.4.0+3cd6870
 # transformers               5.0.0.dev0                    /ThirdParty/transformers
 # triton                     3.5.1
 

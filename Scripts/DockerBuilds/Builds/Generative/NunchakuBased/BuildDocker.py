@@ -17,11 +17,6 @@ from Utilities import (BuildDockerBaseClass, BuildDockerCommand,)
 
 from Utilities.BuildDockerConfiguration import BuildDockerConfiguration
 
-from Utilities import (
-    BuildDockerBase,
-    ReadBuildConfigurationWithOpenCV,
-    BuildDockerImageWithOpenCV)
-
 from typing import List, Tuple
 
 class BuildDocker(BuildDockerBaseClass):
