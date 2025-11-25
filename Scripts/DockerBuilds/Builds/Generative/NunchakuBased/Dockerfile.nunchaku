@@ -15,16 +15,16 @@ RUN pip install ${NUNCHAKU_VERSION}
 # upgrade to
 # flash_attn                 2.8.3
 RUN pip uninstall -y flash-attn && \
-    MAX_JOBS=1 pip install --upgrade --no-build-isolation flash-attn==2.8.3 && \
-    python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')"
+  MAX_JOBS=1 pip install --upgrade --no-build-isolation flash-attn==2.8.3 && \
+  python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')"
 
 RUN git clone https://github.com/huggingface/image_gen_aux.git /ThirdParty/image_gen_aux && \
-    cd /ThirdParty/image_gen_aux && \
-    # main branch, Commits on Jul 15, 2025
-    git checkout e08ae3db5edfb5237ec84f560bba3ac4e7ad8613 && \
-    pip install -e . && \
-    # For some reason, numpy gets downgraded to 2.2.6
-    pip install --upgrade numpy==2.3.5
+  cd /ThirdParty/image_gen_aux && \
+  # main branch, Commits on Jul 15, 2025
+  git checkout e08ae3db5edfb5237ec84f560bba3ac4e7ad8613 && \
+  pip install -e . && \
+  # For some reason, numpy gets downgraded to 2.2.6
+  pip install --upgrade numpy==2.3.5
 
 # At this point, this is the (partial) result of pip list:
 # accelerate                 1.11.0
@@ -42,3 +42,17 @@ RUN git clone https://github.com/huggingface/image_gen_aux.git /ThirdParty/image
 # torchvision                0.24.1
 # transformer_engine         2.4.0+3cd6870
 # transformers               4.56.2
+
+# For svdq-int4-flux.1-canny-dev
+# https://huggingface.co/mit-han-lab/svdq-int4-flux.1-canny-dev
+RUN pip install controlnet_aux mediapipe && \
+  pip install --upgrade numpy==2.3.5
+# For some reason numpy gets downgraded to
+# numpy                      1.26.4
+# and so we upgrade it back to 2.3.5.
+#
+# Note:
+# controlnet_aux             0.0.10
+# mediapipe                  0.10.21
+# opencv-contrib-python      4.11.0.86
+# opencv-python-headless     4.11.0.86

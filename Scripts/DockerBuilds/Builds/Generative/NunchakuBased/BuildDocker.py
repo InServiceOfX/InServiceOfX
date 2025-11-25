@@ -51,6 +51,9 @@ class BuildDocker(BuildDockerBaseClass):
             (
                 "Dockerfile.nunchaku",
                 self._build_directory / "Dockerfile.nunchaku"),
+            (
+                "Dockerfile.diffusers",
+                self._build_directory / "Dockerfile.diffusers"),
         ]
 
 def main():
