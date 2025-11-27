@@ -55,14 +55,15 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
-RUN python3 -m pip install python-dotenv && \
+RUN pip install python-dotenv && \
   # PostgreSQL database
   pip install psycopg2-binary && \
   pip install asyncpg && \
   # PDF parsing, extraction, document handling, document processing.
-  pip install pymupdf
+  pip install pymupdf && \
+  pip install pyyaml pytest
 
-
+RUN pip install openai
 # Install Node.js via nvm.
 # git needed to install degit when needed.
 RUN apt-get update && apt-get install -y curl git

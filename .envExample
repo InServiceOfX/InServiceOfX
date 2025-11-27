@@ -40,3 +40,6 @@ LUMAAI_API_KEY=luma-xxxxxx
 FAL_KEY=abcdefgh-xxxxxx
 
 ANTHROPIC_API_KEY=
+
+# https://docs.x.ai/docs/tutorial
+XAI_API_KEY=xai_

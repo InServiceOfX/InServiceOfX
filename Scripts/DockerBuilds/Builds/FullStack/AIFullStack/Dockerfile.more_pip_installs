@@ -1,9 +1,12 @@
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
-RUN python3 -m pip install python-dotenv && \
+RUN pip install python-dotenv && \
   # PostgreSQL database
   pip install psycopg2-binary && \
   pip install asyncpg && \
   # PDF parsing, extraction, document handling, document processing.
-  pip install pymupdf
+  pip install pymupdf && \
+  pip install pyyaml pytest
+
+RUN pip install openai
 
