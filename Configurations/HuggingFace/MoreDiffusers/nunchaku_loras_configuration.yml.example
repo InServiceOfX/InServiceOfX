@@ -1,5 +1,13 @@
 lora_scale: 0.5
-lora_1:
-  directory_path: /Data1/Models/Diffusion/LoRAs/pgc
-  filename: qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors
-  lora_strength: 1.5
+loras:
+  - nickname: Secret Sauce [Hero]-V2.1
+    directory_path: /Data1/Models/Diffusion/LoRAs/pgc
+    filename: qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors
+    lora_strength: 1.5
+    is_active: false
+    description: "secret sauce http://civitai.com/213"
+  - nickname: "hero-v2.1"  # Human-readable identifier
+    directory_path: /Data1/Models/Diffusion/LoRAs/pgc
+    filename: qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors
+    lora_strength: 0.9
+    is_active: true

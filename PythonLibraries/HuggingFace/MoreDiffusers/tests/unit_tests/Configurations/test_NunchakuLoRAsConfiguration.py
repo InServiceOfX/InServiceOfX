@@ -51,15 +51,39 @@ def test_NunchakuLoRAsConfiguration_from_yaml_on_example_file():
 
     assert configuration.lora_scale == 0.5
 
-    assert len(configuration.loras) == 1
-    assert configuration.to_dict() == {
-        "lora_scale": 0.5,
-        "loras": {
-            "lora_1": {
-                "directory_path": Path("/Data1/Models/Diffusion/LoRAs/pgc"),
-                "filename": \
-                    "qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors",
-                "lora_strength": 1.5
-            }
-        }
-    }
+    assert len(configuration.loras) == 2
+    configuration_as_dict = configuration.to_dict()
+    assert configuration_as_dict["lora_scale"] == 0.5
+
+    assert len(configuration_as_dict["loras"]) == 2
+    assert configuration_as_dict["loras"][0][
+        "nickname"] == "Secret Sauce [Hero]-V2.1"
+    assert configuration_as_dict["loras"][0][
+        "directory_path"] == Path("/Data1/Models/Diffusion/LoRAs/pgc")
+    assert configuration_as_dict["loras"][0][
+        "filename"] == "qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors"
+    assert configuration_as_dict["loras"][0]["lora_strength"] == 1.5
+    assert configuration_as_dict["loras"][0]["is_active"] == False
+    assert configuration_as_dict["loras"][0][
+        "description"] == "secret sauce http://civitai.com/213"
+    assert configuration_as_dict["loras"][1][
+        "nickname"] == "hero-v2.1"
+    assert configuration_as_dict["loras"][1][
+        "directory_path"] == Path("/Data1/Models/Diffusion/LoRAs/pgc")
+    assert configuration_as_dict["loras"][1][
+        "filename"] == "qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors"
+    assert configuration_as_dict["loras"][1]["lora_strength"] == 0.9
+    assert configuration_as_dict["loras"][1]["is_active"] == True
+    assert configuration_as_dict["loras"][1]["description"] == None
+
+def test_NunchakuLoRAsConfiguration_get_valid_loras_works():
+    example_file_path = get_project_directory_path() / \
+        "Configurations" / "HuggingFace" / "MoreDiffusers" / \
+        "nunchaku_loras_configuration.yml.example"
+    configuration = NunchakuLoRAsConfiguration.from_yaml(example_file_path)
+
+    valid_loras = configuration.get_valid_loras()
+    assert len(valid_loras) == 1
+    print("valid_loras: ", valid_loras)
+    assert valid_loras[0][0] == Path("/Data1/Models/Diffusion/LoRAs/pgc") / "qint4-SECRET-SAUCE-HERO-V2.1-diffusers.safetensors"
+    assert valid_loras[0][1] == 0.9
