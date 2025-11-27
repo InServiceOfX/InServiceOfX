@@ -14,7 +14,6 @@ else:
         f"Docker builds directory {docker_builds_directory} does not exist")
 
 from Utilities import (BuildDockerBaseClass, BuildDockerCommand,)
-
 from Utilities.BuildDockerConfiguration import BuildDockerConfiguration
 
 from typing import List, Tuple
@@ -26,7 +25,7 @@ class BuildDocker(BuildDockerBaseClass):
         build_configuration = BuildDockerConfiguration.load_data(
             self._build_directory / "build_configuration.yml")
         super().__init__(
-            "Build Docker image for C++/Python/Rust development",
+            "Build Docker image for generative AI full-stack applications; no CUDA",
             build_configuration,
             self._build_directory,
             BuildDockerCommand(),
@@ -50,6 +49,12 @@ class BuildDocker(BuildDockerBaseClass):
             (
                 "Dockerfile.rust",
                 self._parent_dir / "CommonFiles" / "Dockerfile.rust"),
+            (
+                "Dockerfile.more_pip_installs",
+                self._build_directory / "Dockerfile.more_pip_installs"),
+            (
+                "Dockerfile.nvm_latest",
+                self._build_directory / "Dockerfile.nvm_latest"),
         ]
 
 def main():

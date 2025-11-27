@@ -3,14 +3,17 @@
 RUN apt-get update && apt-get install -y curl git
 # From https://nodejs.org/en/download
 
-ENV NVM_DIR /root/.nvm
+ENV NVM_DIR=/root/.nvm
+
+# Set shell to bash (required for nvm)
+SHELL ["/bin/bash", "-c"]
 
 # Download and install nvm:
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
   # This loads nvm.
   . "$NVM_DIR/nvm.sh" && \
   # Download and install Node.js:
-  nvm install 20
-
-
+  nvm install 20 && \
+  nvm use 20 && \
+  nvm alias default 20
 

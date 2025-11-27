@@ -1,0 +1,9 @@
+ports:
+  # 5173 should be svelte's port for development.
+  - host_port: 5173
+    container_port: 5173
+volumes:
+  - host_path: /Users/ernestyeung/Prop/HrdwCCppCUDA/
+    container_path: /HrdwCCppCUDA/
+  - host_path: /Users/ernestyeung/Prop/InServiceOfX/
+    container_path: /InServiceOfX/
