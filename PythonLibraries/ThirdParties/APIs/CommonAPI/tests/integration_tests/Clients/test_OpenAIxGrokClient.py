@@ -1,5 +1,5 @@
-from commonapi.Clients.OpenAIxGroqClient import (
-    OpenAIxGroqClient
+from commonapi.Clients.OpenAIxGrokClient import (
+    OpenAIxGrokClient
 )
 
 from commonapi.Messages import (
@@ -11,14 +11,14 @@ from corecode.Utilities import (get_environment_variable, load_environment_file)
 
 load_environment_file()
 
-def test_OpenAIxGroqClient_generates_prose():
+def test_OpenAIxGrokClient_generates_prose():
     """
     https://platform.openai.com/docs/guides/text-generation#quickstart
     """
-    client = OpenAIxGroqClient(get_environment_variable("GROQ_API_KEY"))
+    client = OpenAIxGrokClient(get_environment_variable("XAI_API_KEY"))
     
     client.clear_chat_completion_configuration()
-    client.configuration.model = "llama-3.3-70b-versatile"
+    client.configuration.model = "grok-4"
 
     messages = [
         create_system_message("You are a helpful assistant."),
@@ -29,3 +29,12 @@ def test_OpenAIxGroqClient_generates_prose():
 
     print(response.choices[0].message.content)
 
+    messages = [
+        create_system_message(
+            "You are Grok, a highly intelligent, helpful AI assistant."
+        ),
+        create_user_message(
+            "What is the meaning of life, the universe, and everything?")
+    ]
+    response = client.create_chat_completion(messages)
+    print(response.choices[0].message.content)

@@ -53,17 +53,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 
 
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
-
-RUN pip install python-dotenv && \
-  # PostgreSQL database
-  pip install psycopg2-binary && \
-  pip install asyncpg && \
-  # PDF parsing, extraction, document handling, document processing.
-  pip install pymupdf && \
-  pip install pyyaml pytest
-
-RUN pip install openai
 # Install Node.js via nvm.
 # git needed to install degit when needed.
 RUN apt-get update && apt-get install -y curl git
@@ -82,5 +71,19 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | b
   nvm install 20 && \
   nvm use 20 && \
   nvm alias default 20
+
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+RUN pip install python-dotenv && \
+  # PostgreSQL database
+  pip install psycopg2-binary && \
+  pip install asyncpg && \
+  # PDF parsing, extraction, document handling, document processing.
+  pip install pymupdf && \
+  pip install pyyaml pytest
+
+# https://docs.x.ai/docs/tutorial
+RUN pip install openai xai-sdk
 
 

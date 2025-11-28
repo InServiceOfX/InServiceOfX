@@ -1,7 +1,0 @@
-timeout:
-max_new_tokens:
-top_k: 20
-top_p: 1.0
-temperature: 0
-eos_token_id: []
-max_retries: 3

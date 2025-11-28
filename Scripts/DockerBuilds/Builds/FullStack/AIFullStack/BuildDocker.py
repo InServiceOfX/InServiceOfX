@@ -50,11 +50,11 @@ class BuildDocker(BuildDockerBaseClass):
                 "Dockerfile.rust",
                 self._parent_dir / "CommonFiles" / "Dockerfile.rust"),
             (
-                "Dockerfile.more_pip_installs",
-                self._build_directory / "Dockerfile.more_pip_installs"),
-            (
                 "Dockerfile.nvm_latest",
                 self._build_directory / "Dockerfile.nvm_latest"),
+            (
+                "Dockerfile.more_pip_installs",
+                self._build_directory / "Dockerfile.more_pip_installs"),
         ]
 
 def main():

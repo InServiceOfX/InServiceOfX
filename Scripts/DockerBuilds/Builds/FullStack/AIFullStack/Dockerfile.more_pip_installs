@@ -8,5 +8,6 @@ RUN pip install python-dotenv && \
   pip install pymupdf && \
   pip install pyyaml pytest
 
-RUN pip install openai
+# https://docs.x.ai/docs/tutorial
+RUN pip install openai xai-sdk
 
