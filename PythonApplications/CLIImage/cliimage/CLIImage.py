@@ -1,4 +1,4 @@
-from cliimage.Core import (GenerateImages, ProcessConfigurations)
+from cliimage.Core import (GenerateImages, ProcessConfigurations, ProcessLogs)
 from cliimage.Terminal import (
     CommandHandler,
     PromptSessionsManager,
@@ -19,6 +19,9 @@ class CLIImage:
             application_paths,
             self._terminal_ui)
         self._process_configurations.process_configurations()
+
+        self._process_logs = ProcessLogs(application_paths)
+
         self._generate_images = GenerateImages(self)
 
         self._flux_nunchaku_and_loras = FluxNunchakuAndLoRAs(

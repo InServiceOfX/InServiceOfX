@@ -13,6 +13,7 @@ class ApplicationPaths:
     project_path: Path
     inhouse_library_paths: dict[str, Path]
     configuration_file_paths: dict[str, Path]
+    logs_file_paths: dict[str, Path]
 
     @classmethod
     def create(
@@ -61,20 +62,25 @@ class ApplicationPaths:
                     base_path / "Configurations" / "cli_configuration.yml"
             }
 
-            return configuration_file_paths
+            logs_file_paths = {
+                "nunchaku_generation_logs": \
+                    base_path / "Logs" / "nunchaku_generations.yml"
+            }
+
+            return configuration_file_paths, logs_file_paths
 
         if configpath is not None:
-            configuration_file_paths = \
+            configuration_file_paths, logs_file_paths = \
                 create_paths_from_base_path(configpath)
         elif is_current_path:
-            configuration_file_paths = \
+            configuration_file_paths, logs_file_paths = \
                 create_paths_from_base_path(Path.cwd())
         elif is_development:
-            configuration_file_paths = \
+            configuration_file_paths, logs_file_paths = \
                 create_paths_from_base_path(app_path)
         else:
             config_dir = Path.home() / ".config" / "cliimage"
-            configuration_file_paths = \
+            configuration_file_paths, logs_file_paths = \
                 create_paths_from_base_path(config_dir)
 
         return cls(
@@ -82,6 +88,7 @@ class ApplicationPaths:
             project_path=project_path,
             inhouse_library_paths=inhouse_library_paths,
             configuration_file_paths=configuration_file_paths,
+            logs_file_paths=logs_file_paths
         )
 
     def add_libraries_to_path(self):
@@ -107,23 +114,3 @@ class ApplicationPaths:
 
         add_path_to_sys_path(path)
 
-    @staticmethod
-    def _create_missing_file(path: Path) -> bool:
-        """
-        Create file for specified path if it doesn't exist.
-
-        Args:
-            path: Path to create file for
-
-        Returns:
-            True if file was created, False if it already existed.
-        """
-        if path.exists():
-            return False
-        else:
-            # Create parent directories if they don't exist
-            path.parent.mkdir(parents=True, exist_ok=True)
-
-            # Create the file if it doesn't exist.
-            path.touch()
-            return True

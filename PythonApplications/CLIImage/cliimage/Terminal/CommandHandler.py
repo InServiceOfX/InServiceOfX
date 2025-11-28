@@ -5,7 +5,8 @@ class CommandHandler:
         self._command_descriptions = {
             ".exit": "Exit the application",
             ".help": "Show help message",
-            ".batch_process_on_single_prompt": "Batch process on single prompt",
+            ".batch_process_on_single_prompt": \
+                "Intended to be run *after* running generate_image. Batch process on single prompt",
             ".batch_process_on_single_image_with_depth_control": \
                 "Batch process on single image with depth control",
             ".batch_process_on_single_image_with_kontext": \
@@ -83,7 +84,7 @@ class CommandHandler:
 
     def handle_batch_process_on_single_prompt(self) -> bool:
         self._app._terminal_ui.print_info(
-            "Batch processing on single prompt...")
+            "This is intended to be run *after* running generate_image. Batch processing on single prompt...")
     
         self._app._generate_images.process_batch()
 

@@ -111,7 +111,7 @@ class BatchProcessingConfiguration(BaseModel):
 
         filename += f"Iter{index}-{config_hash}"
 
-        return filename, full_hash
+        return filename, full_hash, config_hash
 
     def create_and_save_image(
             self,
@@ -120,7 +120,7 @@ class BatchProcessingConfiguration(BaseModel):
             flux_generation_configuration,
             model_name: str) -> None:
 
-        filename, full_hash = self._create_image_filename(
+        filename, full_hash, config_hash = self._create_image_filename(
             index,
             model_name,
             flux_generation_configuration)
@@ -132,4 +132,4 @@ class BatchProcessingConfiguration(BaseModel):
 
         image.save(file_path)
 
-        return full_hash
+        return full_hash, config_hash

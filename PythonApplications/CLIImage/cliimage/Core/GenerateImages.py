@@ -1,6 +1,23 @@
+from typing import Optional
+from warnings import warn
+
 class GenerateImages:
     def __init__(self, app):
         self._app = app
+
+    def _log_nunchaku_generation(
+        self,
+        model_index: int,
+        generation_hash: Optional[str] = None,
+        truncated_generation_hash: Optional[str] = None) -> None:
+        self._app._process_logs.log_nunchaku_generation(
+            self._app._flux_nunchaku_and_loras._configuration,
+            self._app._flux_nunchaku_and_loras._generation_configuration,
+            self._app._flux_nunchaku_and_loras._pipeline_inputs,
+            self._app._flux_nunchaku_and_loras._loras_configuration,
+            model_index,
+            generation_hash,
+            truncated_generation_hash)
 
     def generate_image(self, prompt_index: int = 0):
 
@@ -13,6 +30,7 @@ class GenerateImages:
             return False
 
         self._app._flux_nunchaku_and_loras.delete_text_encoder_2_and_pipeline()
+        # By default, this sets nunchaku_model_index to 0
         self._app._flux_nunchaku_and_loras.create_transformer_and_pipeline()
 
         self._app._flux_nunchaku_and_loras.update_transformer_with_loras()
@@ -24,11 +42,20 @@ class GenerateImages:
         batch_processing_configuration = \
             self._app._process_configurations.get_batch_processing_configuration()
 
-        batch_processing_configuration.create_and_save_image(
-            0,
-            images[0],
-            self._app._flux_nunchaku_and_loras._generation_configuration,
-            self._app._process_configurations.get_model_name())
+        full_hash, config_hash = \
+            batch_processing_configuration.create_and_save_image(
+                0,
+                images[0],
+                self._app._flux_nunchaku_and_loras._generation_configuration,
+                self._app._process_configurations.get_model_name())
+
+        try:
+            self._log_nunchaku_generation(
+                model_index=0,
+                generation_hash=full_hash,
+                truncated_generation_hash=config_hash)
+        except Exception as e:
+            warn(f"Warning: Could not log nunchaku generation: {e}")
 
         self._app._terminal_ui.print_success("Image generated successfully!")
 
@@ -125,6 +152,11 @@ class GenerateImages:
         return True
 
     def process_batch(self, prompt_index: int = 0):
+        """
+        USAGE:
+        This is intended to be run *after* one runs generate_image(..) for the
+        first time because generate_image(..) will load the model pipeline.
+        """
         batch_processing_configuration = \
             self._app._process_configurations.get_batch_processing_configuration()
 
@@ -133,11 +165,22 @@ class GenerateImages:
                 self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(
                     prompt_index)
             if images is not None:
-                batch_processing_configuration.create_and_save_image(
+                full_hash, config_hash = \
+                    batch_processing_configuration.create_and_save_image(
                         index,
                         images[0],
                         self._app._flux_nunchaku_and_loras._generation_configuration,
                         self._app._process_configurations.get_model_name())
+
+                try:
+                    # Model index is assumed to be 0 because we assume we had
+                    # generate_image(..) beforehand.
+                    self._log_nunchaku_generation(
+                        model_index=0,
+                        generation_hash=full_hash,
+                        truncated_generation_hash=config_hash)
+                except Exception as e:
+                    warn(f"Warning: Could not log nunchaku generation: {e}")
             else:
                 self._app._terminal_ui.print_error(
                     "Pipeline execution failed! Images is None")
@@ -248,12 +291,21 @@ class GenerateImages:
                     self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(
                         prompt_index)
                 if images is not None:
-                    batch_processing_configuration.create_and_save_image(
-                        index,
-                        images[0],
-                        self._app._flux_nunchaku_and_loras._generation_configuration,
-                        self._app._process_configurations.get_model_name(
-                            nunchaku_model_index))
+                    full_hash, config_hash = \
+                        batch_processing_configuration.create_and_save_image(
+                            index,
+                            images[0],
+                            self._app._flux_nunchaku_and_loras._generation_configuration,
+                            self._app._process_configurations.get_model_name(
+                                nunchaku_model_index))
+
+                    try:
+                        self._log_nunchaku_generation(
+                            model_index=nunchaku_model_index,
+                            generation_hash=full_hash,
+                            truncated_generation_hash=config_hash)
+                    except Exception as e:
+                        warn(f"Warning: Could not log nunchaku generation: {e}")
                 else:
                     self._app._terminal_ui.print_error(
                         "Pipeline execution failed! Images is None")
