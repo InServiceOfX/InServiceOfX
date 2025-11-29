@@ -1,37 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import Literal, Optional, Dict, Any, Tuple, List
 import hashlib
-
-@dataclass
-class UserMessageWithImageURL:
-    """Base message class for LLM interactions"""
-    content: List[Dict[str, str]]
-    role: Literal["user"] = "user"
-
-    @staticmethod
-    def to_string_and_counts(message: 'Message', prefix: Optional[str] = None) \
-        -> Tuple[str, int, int]:
-        """Convert message to string with optional prefix override and return
-        character and word counts of the content"""
-        role = prefix if prefix else message.role.capitalize()
-        formatted = f"{role}: {message.content}"
-        char_count = len(message.content)
-        word_count = len(message.content.split())
-        return formatted, char_count, word_count
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert message to dictionary format for API requests"""
-        return asdict(self)
-
-    @staticmethod
-    def _hash_content(content: str) -> str:
-        """Generate SHA256 hash of message content"""
-        return hashlib.sha256(content.encode()).hexdigest()
-
-
-from dataclasses import dataclass, asdict
-from typing import Literal, Optional, Dict, Any, Tuple, List
-import hashlib
 import json
 
 @dataclass
@@ -41,14 +10,15 @@ class UserMessageWithImageURL:
     role: Literal["user"] = "user"
 
     @classmethod
-    def from_text_and_image(cls, text_content: str, image_url: str) -> 'UserMessageWithImageURL':
+    def from_text_and_image(cls, text_content: str, image_url: str) \
+        -> 'UserMessageWithImageURL':
         """
         Create a UserMessageWithImageURL from text content and an image URL.
-        
+
         Args:
             text_content: The text prompt/question
             image_url: URL of the image
-            
+
         Returns:
             UserMessageWithImageURL instance ready for OpenAI Vision API
             
@@ -79,8 +49,9 @@ class UserMessageWithImageURL:
         return cls(content=content)
 
     @staticmethod
-    def to_string_and_counts(message: 'UserMessageWithImageURL', prefix: Optional[str] = None) \
-        -> Tuple[str, int, int]:
+    def to_string_and_counts(
+        message: 'UserMessageWithImageURL',
+        prefix: Optional[str] = None) -> Tuple[str, int, int]:
         """Convert message to string with optional prefix override and return
         character and word counts of the content"""
         role = prefix if prefix else message.role.capitalize()
@@ -98,7 +69,8 @@ class UserMessageWithImageURL:
         return formatted, char_count, word_count
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert message to dictionary format for OpenAI Vision API requests"""
+        """Convert message to dictionary format for OpenAI Vision API
+        requests"""
         return {
             "role": self.role,
             "content": self.content

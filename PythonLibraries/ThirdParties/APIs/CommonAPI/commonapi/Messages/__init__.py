@@ -24,6 +24,8 @@ from commonapi.Messages.SystemMessagesManager import (
     RecordedSystemMessage,
     SystemMessagesManager)
 
+from .UserMessageWithImageURL import UserMessageWithImageURL
+
 __all__ = [
     "AssistantMessage",
     "ConversationHistory",
@@ -39,6 +41,7 @@ __all__ = [
     "SystemMessage",
     "ToolMessage",
     "UserMessage",
+    "UserMessageWithImageURL",
 ]
 
 # Note: import the PermanentConversation module as

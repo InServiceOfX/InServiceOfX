@@ -81,6 +81,12 @@ class OpenAIClientWrapper(BaseOpenAIClientWrapper):
             base_url=base_url)
 
     def create_chat_completion(self, messages: list[dict]):
+        """
+        Return:
+        <class 'openai.types.chat.chat_completion.ChatCompletion'>
+
+        See https://platform.openai.com/docs/api-reference/chat/object
+        """
         config_dict = self.configuration.to_dict()
         return self.client.chat.completions.create(
             messages=messages,

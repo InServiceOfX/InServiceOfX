@@ -1,6 +1,4 @@
-from commonapi.Clients.OpenAIxGroqClient import (
-    OpenAIxGroqClient
-)
+from commonapi.Clients.OpenAIxGroqClient import OpenAIxGroqClient
 
 from commonapi.Messages import (
     create_system_message,

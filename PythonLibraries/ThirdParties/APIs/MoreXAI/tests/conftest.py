@@ -16,3 +16,10 @@ if (corecode_path).exists():
         sys.path.append(str(corecode_path))
 else:
     raise FileNotFoundError(f"CoreCode path not found: {corecode_path}")
+
+commonapi_path = Path(__file__).resolve().parents[2] / "CommonAPI"
+if (commonapi_path).exists():
+    if str(commonapi_path) not in sys.path:
+        sys.path.append(str(commonapi_path))
+else:
+    raise FileNotFoundError(f"CommonAPI path not found: {commonapi_path}")

@@ -17,6 +17,10 @@ RUN apt-get update
 
 
 
+RUN apt-get update && apt-get install -y tree
+
+
+
 RUN apt-get -y install build-essential ccache libboost-all-dev \
   libtbb-dev
 
