@@ -1,7 +1,0 @@
-DOCKER_IMAGE_NAME=music-development-nvidia-python-24.12
-# For 24.12-py3,
-# torchvision @ file:///opt/transfer/torchvision-0.20.0a0-cp312-cp312-manylinux_2_28_x86_64.whl#sha256=0612854a6dd2d2928742437694346de2c7952d8630926d2a1e44abb126d11f98
-BASE_IMAGE=nvcr.io/nvidia/pytorch:24.12-py3
-
-
-

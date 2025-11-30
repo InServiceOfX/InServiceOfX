@@ -1,0 +1,17 @@
+docker_image_name: music-development:25.11-py3
+# After pip upgrade of pip, here is the result of pip list:
+# apex                       0.1
+# flash_attn                 2.7.4.post1+25.11           38114660
+# Jinja2                     3.1.6
+# numpy                      2.1.0
+# optree                     0.17.0
+# pydantic                   2.12.4
+# pytest                     8.1.1
+# python-dotenv              1.2.1
+# PyYAML                     6.0.3
+# safetensors                0.6.2
+# torch                      2.10.0a0+b558c986e8.nv25.11
+# torchvision                0.25.0a0+7a13ad0f
+# transformer_engine         2.9.0+70f53666
+
+base_image: nvcr.io/nvidia/pytorch:25.11-py3

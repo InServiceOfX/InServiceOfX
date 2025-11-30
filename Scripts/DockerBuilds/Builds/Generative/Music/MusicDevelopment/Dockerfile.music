@@ -1,0 +1,9 @@
+RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
+  cd /ThirdParty/mixxx && \
+  # main branch as of Nov 30, 2025
+  git checkout 2d79b10f07bed9a5711946b8ba96e87032a25854 && \
+  tools/debian_buildenv.sh setup && \
+  mkdir Build && \
+  cd Build && \
+  cmake ..
+  cmake --build .

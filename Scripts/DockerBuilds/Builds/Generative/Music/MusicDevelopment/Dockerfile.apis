@@ -1,0 +1,2 @@
+# https://docs.x.ai/docs/tutorial
+RUN pip install groq instructor openai xai-sdk
