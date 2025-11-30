@@ -40,9 +40,6 @@ class BuildDocker(BuildDockerBaseClass):
                 "Dockerfile.base",
                 self._parent_dir / "CommonFiles" / "Dockerfile.base"),
             (
-                "Dockerfile.more_pip_installs",
-                self._build_directory / "Dockerfile.more_apt_installs"),
-            (
                 "Dockerfile.cpp",
                 self._parent_dir / "CommonFiles" / \
                     "Dockerfile.cpp_development"),
