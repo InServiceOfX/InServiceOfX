@@ -4,7 +4,8 @@
 # libsox-fmt-all/noble 14.4.2+git20190427-4build4 amd64
 RUN apt-get update && apt-get install -y ffmpeg libsox-fmt-all
 
-RUN pip install pymusiclooper==3.6.0 torchaudio==2.9.1
+# torchaudio==2.9.1 on 25.11-py3
+RUN pip install pymusiclooper==3.6.0 torchaudio>=2.9.1
 
 # audiocraft                 1.4.0a2                              /ThirdParty/audiocraft
 # Be wary of installing xformers,
