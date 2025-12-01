@@ -17,12 +17,16 @@ RUN apt-get update
 
 
 
+RUN apt-get update && apt-get install -y tree
+
+
+
 RUN apt-get -y install build-essential ccache libboost-all-dev \
   libtbb-dev
 
 # Install prerequisites for Kitware repository
 RUN apt-get install -y ca-certificates gpg wget
- 
+
 # If kitware-archive-keyring package hasn't been installed previously, manually
 # obtain a copy of signing key:
 RUN (test -f /usr/share/doc/kitware-archive-keyring/copyright) || \
@@ -41,7 +45,7 @@ RUN (test -f /usr/share/doc/kitware-archive-keyring/copyright) || \
   # Install kitware-archive-keyring package to ensure keyring stays up to date
   # as kitware rotates keys.
   apt-get install kitware-archive-keyring && \
-  apt-get install -y cmake  
+  apt-get install -y cmake
 
 
 RUN apt-get install -y python3-dev python3-pip
