@@ -49,7 +49,10 @@ class BuildDocker(BuildDockerBaseClass):
                 self._build_directory / "Dockerfile.third_parties"),
             (
                 "Dockerfile.apis",
-                self._build_directory / "Dockerfile.third_parties"),
+                self._build_directory / "Dockerfile.apis"),
+            (
+                "Dockerfile.music",
+                self._build_directory / "Dockerfile.music"),
         ]
 
 def main():

@@ -43,6 +43,33 @@ RUN apt-get update && \
 
 
 
+RUN apt-get -y install build-essential ccache libboost-all-dev \
+  libtbb-dev
+
+# Install prerequisites for Kitware repository
+RUN apt-get install -y ca-certificates gpg wget
+
+# If kitware-archive-keyring package hasn't been installed previously, manually
+# obtain a copy of signing key:
+RUN (test -f /usr/share/doc/kitware-archive-keyring/copyright) || \
+  (wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+    gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null) && \
+  # Add repository to sources list and update.
+  # For Ubuntu Jammy Jellyfish (22.04):
+  echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] \
+    https://apt.kitware.com/ubuntu/ noble main' | \
+      tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+  apt-get update && \
+  # If kitware-archive-keyring package hasn't been installed previously, remove
+  # manually obtained signed key to make room for package:
+  test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+  rm /usr/share/keyrings/kitware-archive-keyring.gpg && \
+  # Install kitware-archive-keyring package to ensure keyring stays up to date
+  # as kitware rotates keys.
+  apt-get install kitware-archive-keyring && \
+  apt-get install -y cmake
+
+
 ### Huggingface
 
 ## transformers (hugging face), required to run most popular diffusion models.
@@ -65,7 +92,7 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 # libsox-fmt-all/noble 14.4.2+git20190427-4build4 amd64
 RUN apt-get update && apt-get install -y ffmpeg libsox-fmt-all
 
-RUN pip install pymusiclooper==3.6.0
+RUN pip install pymusiclooper==3.6.0 torchaudio==2.9.1
 
 # audiocraft                 1.4.0a2                              /ThirdParty/audiocraft
 # Be wary of installing xformers,
@@ -86,3 +113,25 @@ RUN git clone https://github.com/InServiceOfX/audiocraft.git /ThirdParty/audiocr
 
 
 
+# https://docs.x.ai/docs/tutorial
+RUN pip install groq instructor openai xai-sdk
+
+# apt list --installed
+# ccache/noble,now 4.9.1-1 amd64 [installed]
+# cmake/noble,now 4.2.0-0kitware1ubuntu24.04.1 amd64 [installed]
+# cpp-13/noble-updates,noble-security,now 13.3.0-6ubuntu2~24.04 amd64 [installed,automatic]
+# ffmpeg/noble,now 7:6.1.1-3ubuntu5 amd64 [installed]
+# g++-13/noble-updates,noble-security,now 13.3.0-6ubuntu2~24.04 amd64 [installed,automatic]
+
+RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
+  cd /ThirdParty/mixxx && \
+  # main branch as of Nov 30, 2025
+  git checkout 2d79b10f07bed9a5711946b8ba96e87032a25854 && \
+  # Remove sudo from debian_buildenv.sh to avoid issues with Docker.
+  sed 's/sudo //g' tools/debian_buildenv.sh > tools/debian_buildenv_docker.sh && \
+  chmod +x tools/debian_buildenv_docker.sh && \
+  ./tools/debian_buildenv_docker.sh setup && \
+  mkdir Build && \
+  cd Build && \
+  cmake .. && \
+  cmake --build .

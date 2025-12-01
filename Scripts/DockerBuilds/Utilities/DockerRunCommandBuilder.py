@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+import os
+
 @dataclass
 class DockerRunConfiguration:
     """Configuration for running Docker containers."""
@@ -13,6 +15,7 @@ class DockerRunConfiguration:
     entrypoint: Optional[str] = None
     use_host_network: bool = False
     networks: Optional[List[str]] = None
+    enable_gui: bool = False
 
     def __post_init__(self):
         if self.volumes is None:
@@ -30,7 +33,18 @@ class DockerRunCommandBuilder:
     
     def __init__(self, config: DockerRunConfiguration):
         self.config = config
-    
+
+    def _add_gui_support(self, cmd: list) -> None:
+        """Add X11 GUI support to docker run command."""
+        if not self.config.enable_gui:
+            return
+        
+        display = os.environ.get('DISPLAY', ':0')
+        cmd.extend([
+            "-e", f"DISPLAY={display}",
+            "-v", "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+        ])
+
     def build(self) -> list:
         """Build complete docker run command as list."""
         cmd = ["docker", "run"]
@@ -62,7 +76,9 @@ class DockerRunCommandBuilder:
         # Mount paths from configuration (always needed)
         for mount in self.config.volumes:
             cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")
-        
+
+        self._add_gui_support(cmd)
+
         # Environment variables for NVIDIA runtime
         # Don't set CUDA_VISIBLE_DEVICES - let Docker handle GPU filtering
         cmd.extend([
@@ -107,6 +123,8 @@ class DockerRunCommandBuilder:
         # Mount paths from configuration (always needed)
         for mount in self.config.volumes:
             cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")
+
+        self._add_gui_support(cmd)
 
         # Runtime flags
         cmd.extend(["--rm", "--ipc=host"])

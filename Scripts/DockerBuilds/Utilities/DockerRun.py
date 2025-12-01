@@ -36,6 +36,49 @@ import subprocess
 
 from CommonUtilities import run_command
 
+def check_and_setup_x11():
+    """Check if xhost is configured for Docker, and set it up if needed."""
+    try:
+        # Check if xhost already allows Docker
+        result = subprocess.run(
+            ["xhost"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        # TODO: Check if finding "LOCAL:" is sufficient.
+        if "LOCAL:docker" in result.stdout:
+            print("✓ X11 access already configured for Docker")
+            return True
+        else:
+            print("⚠ X11 access not configured for Docker")
+            print("  Setting up X11 access...")
+            result = subprocess.run(
+                ["xhost", "+local:docker"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                print("✓ X11 access enabled for Docker")
+                print("  (This resets on reboot/logout)")
+                return True
+            else:
+                print(f"⚠ Warning: Failed to set up X11 access: {result.stderr}")
+                print("  You may need to run: xhost +local:docker")
+                return False
+    except FileNotFoundError:
+        print("⚠ Warning: 'xhost' command not found. X11 may not work.")
+        print("  Make sure you're running from a graphical session.")
+        return False
+    except subprocess.TimeoutExpired:
+        print("⚠ Warning: xhost command timed out")
+        return False
+    except Exception as e:
+        print(f"⚠ Warning: Could not check X11 setup: {e}")
+        return False
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -64,6 +107,8 @@ Examples:
   # Run with no GPU
   python RunDocker.py --no-gpu
 
+  # Enable GUI support (X11 forwarding) for applications like Mixxx
+  python RunDocker.py --gui
         """
     )
 
@@ -104,12 +149,25 @@ Examples:
         help='Run with no GPU'
     )
 
+    parser.add_argument(
+        '--gui',
+        action='store_true',
+        help='Enable GUI support (X11 forwarding)'
+    )
+
     return parser.parse_args()
 
 
 def main():
     """Main entry point."""
     args = parse_arguments()
+
+    # Setup X11 if GUI is requested
+    if args.gui:
+        if not check_and_setup_x11():
+            print("\n⚠ Warning: X11 setup may have failed.")
+            print("  The container will still run, but GUI applications may not work.")
+            print("  You can manually run: xhost +local:docker\n")
     
     # Determine build directory
     if args.build_dir == '.':
@@ -188,7 +246,8 @@ def main():
         interactive=not args.no_interactive,
         entrypoint=args.entrypoint,
         use_host_network=args.network_host,
-        networks=networks
+        networks=networks,
+        enable_gui=args.gui
     )
     
     # Build docker run command
