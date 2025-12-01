@@ -1,3 +1,16 @@
+# Install PulseAudio development libraries BEFORE building Mixxx
+RUN apt-get update && apt-get install -y \
+  alsa-utils \
+  alsa-base \
+  libasound2-dev \
+  libjack-jackd2-dev \
+  libpulse-dev \
+  libpulse0 \
+  pulseaudio \
+  pulseaudio-utils \
+
+  && rm -rf /var/lib/apt/lists/*
+
 RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
   cd /ThirdParty/mixxx && \
   # main branch as of Nov 30, 2025
@@ -10,3 +23,6 @@ RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
   cd Build && \
   cmake .. && \
   cmake --build .
+
+
+

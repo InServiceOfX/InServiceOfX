@@ -16,6 +16,7 @@ class DockerRunConfiguration:
     use_host_network: bool = False
     networks: Optional[List[str]] = None
     enable_gui: bool = False
+    enable_audio: bool = False
 
     def __post_init__(self):
         if self.volumes is None:
@@ -35,7 +36,9 @@ class DockerRunCommandBuilder:
         self.config = config
 
     def _add_gui_support(self, cmd: list) -> None:
-        """Add X11 GUI support to docker run command."""
+        """Add X11 GUI support to docker run command. Clearly, this is not
+        needed nor desired for a 'headless' container, and so is default
+        false."""
         if not self.config.enable_gui:
             return
         
@@ -43,6 +46,60 @@ class DockerRunCommandBuilder:
         cmd.extend([
             "-e", f"DISPLAY={display}",
             "-v", "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+        ])
+
+    def _add_audio_support(self, cmd: list) -> None:
+        """Add audio support to docker run command. Clearly, this is not
+        needed nor desired for a 'headless' container, and so is default
+        false."""
+        if not self.config.enable_audio:
+            return
+        
+        # Try PulseAudio first (Ubuntu Desktop default)
+        user_id = os.getuid()
+        pulse_socket = f"/run/user/{user_id}/pulse"
+        pulse_native = f"/run/user/{user_id}/pulse/native"
+
+        if Path(pulse_native).exists():
+            # Mount PulseAudio socket to the expected location for user 1000
+            # Container runs as root, but PulseAudio expects
+            # /run/user/1000/pulse
+            cmd.extend([
+                "-v", f"{pulse_socket}:/run/user/1000/pulse:ro",
+                "-e", "PULSE_SERVER=unix:/run/user/1000/pulse/native",
+                "-e", "PULSE_RUNTIME_PATH=/run/user/1000/pulse"
+            ])
+
+            # Find and mount the PulseAudio cookie for authentication
+            # Cookie can be in multiple locations
+            cookie_paths = [
+                f"{os.path.expanduser('~')}/.config/pulse/cookie",
+                f"/run/user/{user_id}/.config/pulse/cookie",
+                f"/run/user/{user_id}/pulse-cookie",
+            ]
+            
+            cookie_mounted = False
+            for cookie_path in cookie_paths:
+                cookie_file = Path(cookie_path)
+                if cookie_file.exists():
+                    cmd.extend([
+                        "-v", f"{cookie_file}:/run/user/1000/pulse-cookie:ro"
+                    ])
+                    cookie_mounted = True
+                    break
+
+            if not cookie_mounted:
+                # If no cookie found, try to use the one from the pulse
+                # directory
+                pulse_cookie_in_socket = Path(pulse_socket) / "cookie"
+                if pulse_cookie_in_socket.exists():
+                    cmd.extend([
+                        "-v", f"{pulse_cookie_in_socket}:/run/user/1000/pulse-cookie:ro"
+                    ])
+        
+        # Always add ALSA device as fallback
+        cmd.extend([
+            "--device", "/dev/snd"
         ])
 
     def build(self) -> list:
@@ -77,7 +134,10 @@ class DockerRunCommandBuilder:
         for mount in self.config.volumes:
             cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")
 
+        # These should default to false as most of the time, we want a
+        # 'headless' container.
         self._add_gui_support(cmd)
+        self._add_audio_support(cmd)
 
         # Environment variables for NVIDIA runtime
         # Don't set CUDA_VISIBLE_DEVICES - let Docker handle GPU filtering
@@ -124,7 +184,10 @@ class DockerRunCommandBuilder:
         for mount in self.config.volumes:
             cmd.append(f"-v {mount['host_path']}:{mount['container_path']}")
 
+        # These should default to false as most of the time, we want a
+        # 'headless' container.
         self._add_gui_support(cmd)
+        self._add_audio_support(cmd)
 
         # Runtime flags
         cmd.extend(["--rm", "--ipc=host"])

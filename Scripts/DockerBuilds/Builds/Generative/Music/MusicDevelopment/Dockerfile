@@ -122,6 +122,23 @@ RUN pip install groq instructor openai xai-sdk
 # cpp-13/noble-updates,noble-security,now 13.3.0-6ubuntu2~24.04 amd64 [installed,automatic]
 # ffmpeg/noble,now 7:6.1.1-3ubuntu5 amd64 [installed]
 # g++-13/noble-updates,noble-security,now 13.3.0-6ubuntu2~24.04 amd64 [installed,automatic]
+# python3.12/now 3.12.3-1ubuntu0.8 amd64 [installed,upgradable to: 3.12.3-1ubuntu0.9]
+# sox/noble,now 14.4.2+git20190427-4build4 amd64 [installed]
+
+
+
+# Install PulseAudio development libraries BEFORE building Mixxx
+RUN apt-get update && apt-get install -y \
+  alsa-utils \
+  alsa-base \
+  libasound2-dev \
+  libjack-jackd2-dev \
+  libpulse-dev \
+  libpulse0 \
+  pulseaudio \
+  pulseaudio-utils \
+
+  && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
   cd /ThirdParty/mixxx && \
@@ -135,3 +152,7 @@ RUN git clone https://github.com/mixxxdj/mixxx.git /ThirdParty/mixxx && \
   cd Build && \
   cmake .. && \
   cmake --build .
+
+
+
+

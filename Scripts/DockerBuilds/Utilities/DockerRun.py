@@ -79,6 +79,55 @@ def check_and_setup_x11():
         print(f"⚠ Warning: Could not check X11 setup: {e}")
         return False
 
+def check_audio_setup():
+    """Check if audio is available on the host and provide helpful
+    information."""
+    audio_available = False
+    pulse_available = False
+    alsa_available = False
+
+    # Check PulseAudio (Ubuntu Desktop default)
+    pulse_socket = f"/run/user/{os.getuid()}/pulse/native"
+    if os.path.exists(pulse_socket):
+        pulse_available = True
+        audio_available = True
+        print("✓ PulseAudio detected (recommended for Ubuntu Desktop)")
+
+    # Check ALSA as fallback
+    if Path("/dev/snd").exists():
+        alsa_available = True
+        if not audio_available:
+            audio_available = True
+            print("⚠ PulseAudio not found, will use ALSA (may have limitations)")
+
+    if not audio_available:
+        print("⚠ Warning: No audio devices found")
+        print("  PulseAudio socket not found and /dev/snd not available")
+        print("  Audio may not work in the container")
+        return False
+
+    # Check if PulseAudio is running (if socket exists)
+    if pulse_available:
+        try:
+            result = subprocess.run(
+                ["pulseaudio", "--check"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            if result.returncode == 0:
+                print("✓ PulseAudio is running")
+            else:
+                print(
+                    "⚠ PulseAudio socket exists but daemon may not be running")
+                print("  Try: pulseaudio --start")
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            # pulseaudio command not found or timed out, but socket exists
+            # This is okay - the socket might work anyway
+            pass
+    
+    return True
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -109,6 +158,12 @@ Examples:
 
   # Enable GUI support (X11 forwarding) for applications like Mixxx
   python RunDocker.py --gui
+
+  # Enable audio support (PulseAudio + ALSA)
+  python RunDocker.py --audio
+
+  # Enable both GUI and audio (common for applications like Mixxx)
+  python RunDocker.py --gui --audio
         """
     )
 
@@ -155,6 +210,14 @@ Examples:
         help='Enable GUI support (X11 forwarding)'
     )
 
+    parser.add_argument(
+        '--audio',
+        action='store_true',
+        help=(
+            'Enable audio support (PulseAudio + ALSA). Requires PulseAudio on '
+            'host for best results.')
+    )
+
     return parser.parse_args()
 
 
@@ -168,7 +231,15 @@ def main():
             print("\n⚠ Warning: X11 setup may have failed.")
             print("  The container will still run, but GUI applications may not work.")
             print("  You can manually run: xhost +local:docker\n")
-    
+
+    # Check audio setup if audio is requested
+    if args.audio:
+        print("\nChecking audio setup...")
+        if not check_audio_setup():
+            print("\n⚠ Warning: Audio setup check failed.")
+            print("  The container will still run, but audio may not work.")
+            print("  For PulseAudio, ensure it's running: pulseaudio --start\n")
+
     # Determine build directory
     if args.build_dir == '.':
         build_dir = Path.cwd()
@@ -247,7 +318,8 @@ def main():
         entrypoint=args.entrypoint,
         use_host_network=args.network_host,
         networks=networks,
-        enable_gui=args.gui
+        enable_gui=args.gui,
+        enable_audio=args.audio
     )
     
     # Build docker run command
