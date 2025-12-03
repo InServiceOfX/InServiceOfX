@@ -10,8 +10,18 @@ if (Path(__file__).resolve().parents[4] / "CoreCode").exists():
 	sys.path.append(
 		str(Path(__file__).resolve().parents[4] / "CoreCode"))
 
-common_api_tests_path = Path(__file__).resolve().parents[1] / "tests"
+tools_path = Path(__file__).resolve().parents[4] / "Tools"
 
-if common_api_tests_path.exists() and \
-	str(common_api_tests_path) not in sys.path:
-	sys.path.append(str(common_api_tests_path))
+if tools_path.exists():
+	if str(tools_path) not in sys.path:
+		sys.path.append(str(tools_path))
+else:
+	raise FileNotFoundError(f"Tools path not found: {tools_path}")
+
+tools_tests_path = tools_path / "tests"
+
+if tools_tests_path.exists():
+	if str(tools_tests_path) not in sys.path:
+		sys.path.append(str(tools_tests_path))
+else:
+	raise FileNotFoundError(f"Tools tests path not found: {tools_tests_path}")

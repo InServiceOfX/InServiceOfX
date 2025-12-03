@@ -2,9 +2,10 @@
 Database operations for system messages using PostgreSQL.
 """
 from typing import List, Optional
-from commonapi.Databases import (CommonSQLStatements, PostgreSQLConnection)
 from commonapi.Databases.Messages.SystemMessages import SQLStatements
 from commonapi.Messages import RecordedSystemMessage
+
+from tools.Databases import CommonSQLStatements, PostgreSQLConnection
 
 class PostgreSQLInterface:
     """Database interface for persisting system messages."""

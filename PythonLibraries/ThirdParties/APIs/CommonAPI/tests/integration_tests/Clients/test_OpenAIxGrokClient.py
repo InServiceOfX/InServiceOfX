@@ -15,6 +15,11 @@ def test_OpenAIxGrokClient_generates_prose():
     """
     https://platform.openai.com/docs/guides/text-generation#quickstart
     """
+    api_key = get_environment_variable("XAI_API_KEY")
+
+    if api_key is None or api_key == "":
+        return
+
     client = OpenAIxGrokClient(get_environment_variable("XAI_API_KEY"))
     
     client.clear_chat_completion_configuration()

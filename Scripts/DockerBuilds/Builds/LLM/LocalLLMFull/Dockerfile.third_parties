@@ -58,5 +58,5 @@ RUN pip install streamlit && \
 RUN apt update && \
   apt install -y dnsutils iputils-ping netcat-openbsd
 
-
+RUN pip install openai xai-sdk
 

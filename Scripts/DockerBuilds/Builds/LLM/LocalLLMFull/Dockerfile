@@ -119,9 +119,6 @@ RUN mkdir -p /etc/pip && \
 
 
 
-# RUN pip uninstall -y flash-attn && \
-#     pip install flash-attn --no-binary flash-attn
-
 RUN pip install pydantic-ai && \
   # PostgreSQL database
   pip install psycopg2-binary && \
@@ -139,7 +136,7 @@ RUN apt-get update && apt-get install -y postgresql-client-common && \
   # Useful with postgreSQL
   apt-get install -y iproute2
 
-# # PDF parsing, extraction, document handling, document processing.
+# PDF parsing, extraction, document handling, document processing.
 RUN pip install pymupdf
 
 
@@ -210,7 +207,7 @@ RUN pip install streamlit && \
 RUN apt update && \
   apt install -y dnsutils iputils-ping netcat-openbsd
 
-
+RUN pip install openai xai-sdk
 
 
 RUN pip install langchain langchain-community && \

@@ -1,8 +1,10 @@
-from commonapi.Databases import PostgreSQLConnection
 from commonapi.Databases.Messages.SystemMessages \
     import PostgreSQLInterface as SystemMessagesPostgreSQLInterface
 
 from commonapi.Messages import (RecordedSystemMessage, SystemMessagesManager)
+
+from tools.Databases import PostgreSQLConnection
+
 import pytest
 import pytest_asyncio
 
