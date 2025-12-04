@@ -2,7 +2,6 @@ from xai_sdk import Client
 from xai_sdk.chat import tool, tool_result, user
 
 import json
-import os
 
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 load_environment_file()
@@ -96,7 +95,6 @@ def test_function_calling_with_temperature_as_pydantic_model():
             get_current_ceiling_schema
         )
 
-
     chat = client.chat.create(
         model="grok-4",
         tools=tool_definitions,
@@ -112,3 +110,19 @@ def test_function_calling_with_temperature_as_pydantic_model():
 
     # Append assistant message including tool calls to messages
     chat.append(response)
+
+    # Check if there is any tool calls in response body
+    # You can also wrap this in a function to make the code cleaner
+    if response.tool_calls:
+        for tool_call in response.tool_calls:
+            # Get the tool function name and arguments Grok wants to call
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
+            # Call one of the tool function defined earlier with arguments
+            result = tools_map[function_name](**function_args)
+            # Append the result from tool function call to the chat message history
+
+            tool_result_on_result = tool_result(result)
+            print(type(tool_result_on_result))
+            print(tool_result_on_result)
+            chat.append(tool_result_on_result)
