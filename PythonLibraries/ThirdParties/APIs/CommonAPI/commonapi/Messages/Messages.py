@@ -61,7 +61,27 @@ class AssistantMessage(Message):
 
 @dataclass
 class ToolMessage(Message):
-    """Tool message for function calls/responses"""
+    '''Tool message for function calls/responses
+
+    Groq API:
+    https://console.groq.com/docs/tool-use/overview
+    {
+    "role": "tool",
+    # must match the `id` from the assistant's `tool_calls`
+    "tool_call_id": "call_abc123",
+    "name": "get_weather",
+    "content": "{\"temperature\": 72, \"condition\": \"sunny\", \"unit\": \"fahrenheit\"}"
+    }
+
+    xAI API:
+    https://docs.x.ai/docs/guides/function-calling
+    The Tool message would contain the following:
+    {
+        "role": "tool",
+        "content": <json string of tool function's returned object>,
+        "tool_call_id": <tool_call.id included in the tool call response by Grok>,
+    }
+    '''
     content: Union[str, List[str]]
     role: Literal["tool"] = "tool"
     name: Optional[str] = None

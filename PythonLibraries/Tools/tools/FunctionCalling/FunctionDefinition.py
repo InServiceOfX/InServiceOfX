@@ -290,13 +290,19 @@ class Tool:
             "required": ["sign"],
         },
     },
+    However, upon empirically testing with create_chat_completion(), which is a
+    wrapper for chat.completions.create(), you get this:
+    E               openai.UnprocessableEntityError: Failed to deserialize the JSON body into the target type: tools[0]: missing field `function` at line 1 column 382
+
+    /usr/local/lib/python3.12/dist-packages/openai/_base_client.py:1047: UnprocessableEntityError
+    It appears Open AI API has an object called Responses.
 
     For xAI API, you can simply use FunctionDefinition.to_dict() directly.
     """
     type: str = "function"
     function: FunctionDefinition = None
 
-    def to_dict_for_groq(self) -> Dict[str, Any]:
+    def to_dict_for_function(self) -> Dict[str, Any]:
         return {
             "type": self.type,
             "function": self.function.to_dict()

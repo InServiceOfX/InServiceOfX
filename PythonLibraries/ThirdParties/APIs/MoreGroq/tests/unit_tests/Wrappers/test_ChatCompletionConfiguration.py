@@ -62,7 +62,7 @@ def test_tool_to_dict():
         )
     )
 
-    assert tool.to_dict_for_groq() == {
+    assert tool.to_dict_for_function() == {
         "type": "function",
         "function": {
             "name": "get_bakery_prices",

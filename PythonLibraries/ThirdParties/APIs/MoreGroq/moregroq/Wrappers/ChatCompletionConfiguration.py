@@ -80,7 +80,7 @@ class ChatCompletionConfiguration:
 
         # Add tool use parameters if specified
         if self.tools is not None:
-            config_dict["tools"] = [tool.to_dict_for_groq() \
+            config_dict["tools"] = [tool.to_dict_for_function() \
                 for tool in self.tools]
         if self.tool_choice is not None:
             config_dict["tool_choice"] = self.tool_choice

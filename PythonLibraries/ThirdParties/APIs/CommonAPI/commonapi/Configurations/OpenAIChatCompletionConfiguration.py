@@ -11,6 +11,10 @@ class OpenAIChatCompletionConfiguration:
     model: Optional[str] = None
     function_call: Optional[Any] = None
     functions: Optional[Iterable[Any]] = None
+    # See
+    # https://platform.openai.com/docs/guides/function-calling#function-tool-example
+    # It appears to be used in function calling.
+    instructions: Optional[str] = None
     max_completion_tokens: Optional[int] = None
     max_tokens: Optional[int] = None
     n: Optional[int] = None
@@ -62,7 +66,7 @@ class OpenAIChatCompletionConfiguration:
         
         # Special handling for tools
         if self.tools is not None:
-            config_dict["tools"] = [tool.to_dict() for tool in self.tools]
+            config_dict["tools"] = [tool for tool in self.tools]
             
         # Handle all other optional fields
         for field in fields(self):

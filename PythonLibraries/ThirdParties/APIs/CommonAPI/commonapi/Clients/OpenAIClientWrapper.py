@@ -33,6 +33,19 @@ class BaseOpenAIClientWrapper(ABC):
     def create_chat_completion(self, messages: list[dict]):
         pass
 
+    @abstractmethod
+    def create_response(self, input: list[dict]):
+        """
+        Following the function tool example here:
+        https://platform.openai.com/docs/guides/function-calling#function-tool-example
+
+        then we have something different from chat completion.
+
+        Instead of messages, we have the name input, though input contains
+        messages.
+        """
+        pass
+
     @staticmethod
     def get_finish_reason_and_token_usage(response: ChatCompletion):
         statistics = {
@@ -92,6 +105,13 @@ class OpenAIClientWrapper(BaseOpenAIClientWrapper):
             messages=messages,
             **config_dict)
 
+    def create_response(self, input: list[dict]):
+        config_dict = self.configuration.to_dict()
+        return self.client.responses.create(
+            input=input,
+            **config_dict
+        )
+
 class AsyncOpenAIClientWrapper(BaseOpenAIClientWrapper):
     def _create_client(self, api_key: str, base_url: str):
         return AsyncOpenAI(
@@ -103,3 +123,10 @@ class AsyncOpenAIClientWrapper(BaseOpenAIClientWrapper):
         return await self.client.chat.completions.create(
             messages=messages,
             **config_dict)
+
+    async def create_response(self, input: list[dict]):
+        config_dict = self.configuration.to_dict()
+        return await self.client.responses.create(
+            input=input,
+            **config_dict
+        )
