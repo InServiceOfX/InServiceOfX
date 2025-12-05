@@ -4,7 +4,7 @@ from tools.Messages import FunctionCallOutputMessage
 
 import json
 
-class OpenAIAPIToolCallProcessor:
+class ToolCallResponseProcessor:
 
     @staticmethod
     def default_result_to_string(result: Any) -> str:

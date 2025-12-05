@@ -1,8 +1,6 @@
-from tools.FunctionCalling import (
-    OpenAIAPIToolCallProcessor,
-    ParseFunctionAsTool)
-
+from tools.FunctionCalling import ParseFunctionAsTool
 from tools.FunctionCalling.FunctionDefinition import Tool
+from tools.FunctionCalling.ToolCallHandlers import ResponseProcessor
 
 from commonapi.Clients.OpenAIxGroqClient import OpenAIxGroqClient
 from commonapi.Clients.OpenAIxGrokClient import OpenAIxGrokClient
@@ -21,10 +19,13 @@ def get_horoscope(sign: str):
     """
     return f"{sign}: Next Tuesday you will befriend a baby otter."
 
-def test_OpenAIAPIToolCallProcessor_works_on_OpenAI_API_function_tool_example_with_Groq():
+def test_responses_works_on_OpenAI_API_function_tool_example_with_Groq():
     """
     Following the Function tool example in here:
     https://platform.openai.com/docs/guides/function-calling#function-tool-example
+
+    Notice that the returned objects are of type Response as opposed to
+    ChatCompletion.
     """
     api_key = get_environment_variable("GROQ_API_KEY")
 
@@ -35,7 +36,7 @@ def test_OpenAIAPIToolCallProcessor_works_on_OpenAI_API_function_tool_example_wi
     function_definition = ParseFunctionAsTool.parse_for_function_definition(
         get_horoscope)
 
-    tool_dict = Tool(function=function_definition).to_dict_for_function()
+    tool_dict = Tool(function=function_definition).to_dict()
 
     client.configuration.tools = [tool_dict,]
 
@@ -43,22 +44,29 @@ def test_OpenAIAPIToolCallProcessor_works_on_OpenAI_API_function_tool_example_wi
         create_user_message("What is my horoscope? I am an Aquarius.")
     ]
 
-    response = client.create_chat_completion(messages)
+    response = client.create_response(messages)
 
-    # <class 'openai.types.chat.chat_completion.ChatCompletion'>
-    # print("type(response): ", type(response))
-    # AttributeError: 'ChatCompletion' object has no attribute 'output'
+    # <class 'openai.types.responses.response.Response'>
+    #print("type(response): ", type(response))
+    # type(response.output):  <class 'list'>
     #print("type(response.output): ", type(response.output))
 
     # Example (actual) response:
-    # ChatCompletion(id='chatcmpl-531ad382-c26e-4ea6-b42e-71ee26fb4dbf', choices=[Choice(finish_reason='tool_calls', index=0, logprobs=None, message=ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='9xcbqat5q', function=Function(arguments='{"sign":"Aquarius"}', name='get_horoscope'), type='function')]))], created=1764925426, model='llama-3.3-70b-versatile', object='chat.completion', service_tier='on_demand', system_fingerprint='fp_45180df409', usage=CompletionUsage(completion_tokens=16, prompt_tokens=247, total_tokens=263, completion_tokens_details=None, prompt_tokens_details=None, queue_time=0.164911084, prompt_time=0.049820335, completion_time=0.051064094, total_time=0.100884429), usage_breakdown=None, x_groq={'id': 'req_01kbpw1jbdetkabvh3t9rst3ht', 'seed': 1645906072})
+    # Response(id='resp_01kbr65cpsf74abp61g48nqgf8', created_at=1764969591.0, error=None, incomplete_details=None, instructions=None, metadata={}, model='llama-3.3-70b-versatile', object='response', output=[ResponseReasoningItem(id='resp_01kbr65cpsf74r3vfkwsdvrydb', summary=[], type='reasoning', content=None, encrypted_content=None, status='completed'), ResponseFunctionToolCall(arguments='{"sign":"Aquarius"}', call_id='k17z2v6dw', name='get_horoscope', type='function_call', id='k17z2v6dw', status='completed')], parallel_tool_calls=True, temperature=1.0, tool_choice='auto', tools=[FunctionTool(name='get_horoscope', parameters={'properties': {'sign': {'description': 'An astrological sign like Taurus or Aquarius', 'type': 'string'}}, 'required': ['sign'], 'type': 'object'}, strict=None, type='function', description="Get today's horoscope for an astrological sign.")], top_p=1.0, background=False, conversation=None, max_output_tokens=None, max_tool_calls=None, previous_response_id=None, prompt=None, prompt_cache_key=None, prompt_cache_retention=None, reasoning=None, safety_identifier=None, service_tier='default', status='completed', text=ResponseTextConfig(format=ResponseFormatText(type='text'), verbosity=None), top_logprobs=None, truncation='disabled', usage=ResponseUsage(input_tokens=247, input_tokens_details=InputTokensDetails(cached_tokens=0), output_tokens=16, output_tokens_details=OutputTokensDetails(reasoning_tokens=0), total_tokens=263), user=None, groq=None, store=False)
     #print("response: ", response)
 
-    #messages += response.output
+    # Example (actual) response.output:
+    # [ResponseReasoningItem(id='resp_01kbr65cpsf74r3vfkwsdvrydb', summary=[], type='reasoning', content=None, encrypted_content=None, status='completed'), ResponseFunctionToolCall(arguments='{"sign":"Aquarius"}', call_id='k17z2v6dw', name='get_horoscope', type='function_call', id='k17z2v6dw', status='completed')]
+    # [ResponseReasoningItem(id='resp_01kbra77k8fe6vww0ybhkrkzgf', summary=[], type='reasoning', content=None, encrypted_content=None, status='completed'), ResponseFunctionToolCall(arguments='{"sign":"Aquarius"}', call_id='kby97en4a', name='get_horoscope', type='function_call', id='kby97en4a', status='completed')]
+    # print("response.output: ", response.output)
 
-    tool_call_processor = OpenAIAPIToolCallProcessor(
-        process_function_result=\
-            OpenAIAPIToolCallProcessor.default_result_to_string
+    assert ResponseProcessor.is_function_call(response)
+    assert ResponseProcessor.is_text_response(response)
+
+    messages += response.output
+
+    tool_call_processor = ResponseProcessor(
+        process_function_result=ResponseProcessor.default_result_to_string
     )
 
     tool_call_processor.add_function(
@@ -66,22 +74,117 @@ def test_OpenAIAPIToolCallProcessor_works_on_OpenAI_API_function_tool_example_wi
         function=get_horoscope)
 
     tool_call_messages = tool_call_processor.handle_possible_tool_calls(
-        response.choices[0].message)
-
-    print("tool_call_messages: ", tool_call_messages)
+        response)
 
     for tool_call_message in tool_call_messages:
         messages.append(tool_call_message)
 
-    # client.configuration.instructions = \
-    #     "Respond only with a horoscope generated by a tool."
+    client.configuration.instructions = \
+         "Respond only with a horoscope generated by a tool."
 
-    # response = client.create_chat_completion(messages)
+    response = client.create_response(messages)
 
+    assert not ResponseProcessor.is_function_call(response)
+    assert ResponseProcessor.is_text_response(response)
+
+    # 5. The model should be able to give a response!
+    # {
+    #   "id": "resp_01kbra7857emmr9txzetgxx4a1",
+    #   "created_at": 1764973846.0,
+    #   "error": null,
+    #   "incomplete_details": null,
+    #   "instructions": "Respond only with a horoscope generated by a tool.",
+    #   "metadata": {},
+    #   "model": "llama-3.3-70b-versatile",
+    #   "object": "response",
+    #   "output": [
+    #     {
+    #       "id": "resp_01kbra7857emn8ypeagmd004d1",
+    #       "summary": [],
+    #       "type": "reasoning",
+    #       "content": null,
+    #       "encrypted_content": null,
+    #       "status": "completed"
+    #     },
+    #     {
+    #       "id": "msg_01kbra7857emntgz93zg4tdpd6",
+    #       "content": [
+    #         {
+    #           "annotations": [],
+    #           "text": "I don't have any further information on the accuracy of the statement provided, but according to the function call, the horoscope for Aquarius is: Aquarius: Next Tuesday you will befriend a baby otter.",
+    #           "type": "output_text",
+    #           "logprobs": null
+    #         }
+    #       ],
+    #       "role": "assistant",
+    #       "status": "completed",
+    #       "type": "message"
+    #     }
+    #   ],
+    #   "parallel_tool_calls": true,
+    #   "temperature": 1.0,
+    #   "tool_choice": "auto",
+    #   "tools": [
+    #     {
+    #       "name": "get_horoscope",
+    #       "parameters": {
+    #         "properties": {
+    #           "sign": {
+    #             "description": "An astrological sign like Taurus or Aquarius",
+    #             "type": "string"
+    #           }
+    #         },
+    #         "required": [
+    #           "sign"
+    #         ],
+    #         "type": "object"
+    #       },
+    #       "strict": null,
+    #       "type": "function",
+    #       "description": "Get today's horoscope for an astrological sign."
+    #     }
+    #   ],
+    #   "top_p": 1.0,
+    #   "background": false,
+    #   "conversation": null,
+    #   "max_output_tokens": null,
+    #   "max_tool_calls": null,
+    #   "previous_response_id": null,
+    #   "prompt": null,
+    #   "prompt_cache_key": null,
+    #   "prompt_cache_retention": null,
+    #   "reasoning": null,
+    #   "safety_identifier": null,
+    #   "service_tier": "default",
+    #   "status": "completed",
+    #   "text": {
+    #     "format": {
+    #       "type": "text"
+    #     },
+    #     "verbosity": null
+    #   },
+    #   "top_logprobs": null,
+    #   "truncation": "disabled",
+    #   "usage": {
+    #     "input_tokens": 297,
+    #     "input_tokens_details": {
+    #       "cached_tokens": 0
+    #     },
+    #     "output_tokens": 45,
+    #     "output_tokens_details": {
+    #       "reasoning_tokens": 0
+    #     },
+    #     "total_tokens": 342
+    #   },
+    #   "user": null,
+    #   "groq": null,
+    #   "store": false
+    # }
     # print(
     #     "response.model_dump_json(indent=2): ",
     #     response.model_dump_json(indent=2))
 
+    # I don't have any further information on the accuracy of the statement provided, but according to the function call, the horoscope for Aquarius is: Aquarius: Next Tuesday you will befriend a baby otter.
     # print("\n" + response.output_text)
 
 def test_responses_works_on_OpenAI_API_function_tool_example_with_Grok():
@@ -123,9 +226,8 @@ def test_responses_works_on_OpenAI_API_function_tool_example_with_Grok():
     # Don't append; you need to "flatten" the list that is response.output.
     messages += response.output
 
-    tool_call_processor = OpenAIAPIToolCallProcessor(
-        process_function_result=\
-            OpenAIAPIToolCallProcessor.default_result_to_string
+    tool_call_processor = ResponseProcessor(
+        process_function_result=ResponseProcessor.default_result_to_string
     )
 
     tool_call_processor.add_function(
@@ -147,8 +249,7 @@ def test_responses_works_on_OpenAI_API_function_tool_example_with_Grok():
     #  <class 'str'>
     # print("type(function_call_output): ", type(function_call_output))
 
-    tool_call_messages = tool_call_processor.handle_possible_tool_calls_as_response(
-        response)
+    tool_call_messages = tool_call_processor.handle_possible_tool_calls(response)
 
     # print("tool_call_messages: ", tool_call_messages)
     # assert len(tool_call_messages) == 1
