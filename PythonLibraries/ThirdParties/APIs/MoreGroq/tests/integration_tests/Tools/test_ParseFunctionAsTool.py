@@ -1,7 +1,8 @@
 from corecode.Utilities import (get_environment_variable, load_environment_file)
 from moregroq.Tools import ParseFunctionAsTool, ToolCallProcessor
 from moregroq.Wrappers import GroqAPIWrapper
-from moregroq.Wrappers.ChatCompletionConfiguration import Tool
+
+from tools.FunctionCalling.FunctionDefinition import Tool
 
 from TestUtilities.TestSetup import calculate
 

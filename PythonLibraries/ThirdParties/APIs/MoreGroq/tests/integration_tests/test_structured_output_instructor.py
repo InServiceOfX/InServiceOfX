@@ -9,7 +9,8 @@ from commonapi.Messages import (
 from pydantic import BaseModel, Field
 
 from moregroq.Wrappers import GroqAPIWrapper
-from moregroq.Wrappers.ChatCompletionConfiguration import (
+
+from tools.FunctionCalling.FunctionDefinition import (
     FunctionDefinition,
     FunctionParameters,
     ParameterProperty,)

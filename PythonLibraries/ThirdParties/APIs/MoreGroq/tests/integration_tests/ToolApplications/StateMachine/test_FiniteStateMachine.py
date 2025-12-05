@@ -139,7 +139,10 @@ def test_customer_support_fsm_steps(customer_support_fsm_runner, monkeypatch):
             get_environment_variable("GROQ_API_KEY"))
         # groq.BadRequestError: Error code: 400 - {'error': {'message': "'messages.2' : for 'role:assistant' the following must be satisfied[('messages.2' : property 'reasoning' is unsupported, did you mean 'role'?)]", 'type': 'invalid_request_error'}}
         #groq_api_wrapper.configuration.model = "qwen-qwq-32b"
-        groq_api_wrapper.configuration.model = "gemma2-9b-it"
+        # E               groq.BadRequestError: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}
+        # groq_api_wrapper.configuration.model = "gemma2-9b-it"
+        # https://console.groq.com/docs/deprecations
+        groq_api_wrapper.configuration.model = "llama-3.1-8b-instant"
         groq_api_wrapper.configuration.max_completion_tokens = 4096
 
         groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)
@@ -196,7 +199,12 @@ def test_customer_support_fsm_steps(customer_support_fsm_runner, monkeypatch):
 
 def test_pizza_customer_support_fsm_steps(monkeypatch):
     groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
-    groq_api_wrapper.configuration.model = "gemma2-9b-it"
+
+    # E               groq.BadRequestError: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}
+    # groq_api_wrapper.configuration.model = "gemma2-9b-it"
+    # https://console.groq.com/docs/deprecations
+    groq_api_wrapper.configuration.model = "llama-3.1-8b-instant"
+
     groq_api_wrapper.configuration.max_completion_tokens = 4096
 
     groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)
@@ -322,7 +330,12 @@ def test_pizza_customer_support_fsm_with_user_input(monkeypatch):
     monkeypatch.setattr('builtins.input', mock_input)
 
     groq_api_wrapper = GroqAPIWrapper(get_environment_variable("GROQ_API_KEY"))
-    groq_api_wrapper.configuration.model = "gemma2-9b-it"
+
+    # E               groq.BadRequestError: Error code: 400 - {'error': {'message': 'The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}
+    # groq_api_wrapper.configuration.model = "gemma2-9b-it"
+    # https://console.groq.com/docs/deprecations
+    groq_api_wrapper.configuration.model = "llama-3.1-8b-instant"
+
     groq_api_wrapper.configuration.max_completion_tokens = 4096
 
     groq_api_and_tool_call = GroqAPIAndToolCall(groq_api_wrapper)

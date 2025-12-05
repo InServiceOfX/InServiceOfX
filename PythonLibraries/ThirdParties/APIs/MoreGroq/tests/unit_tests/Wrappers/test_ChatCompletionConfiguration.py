@@ -1,5 +1,7 @@
-from moregroq.Wrappers.ChatCompletionConfiguration import (
-    ChatCompletionConfiguration,
+from moregroq.Wrappers.ChatCompletionConfiguration \
+    import ChatCompletionConfiguration
+
+from tools.FunctionCalling.FunctionDefinition import (
     FunctionDefinition,
     FunctionParameters,
     ParameterProperty,
@@ -60,7 +62,7 @@ def test_tool_to_dict():
         )
     )
 
-    assert tool.to_dict() == {
+    assert tool.to_dict_for_groq() == {
         "type": "function",
         "function": {
             "name": "get_bakery_prices",

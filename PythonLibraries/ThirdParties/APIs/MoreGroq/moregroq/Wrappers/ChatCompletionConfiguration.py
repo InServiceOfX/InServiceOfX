@@ -1,71 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Type
 
-@dataclass
-class ParameterProperty:
-    name: str
-    type: str
-    actual_type: Optional[Type] = None
-    description: Optional[str] = None
-    enum: Optional[List[str]] = None
-    required: bool = True
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to API-compatible dictionary"""
-        property_dict = {
-            "type": self.type
-        }
-        
-        if self.description is not None:
-            property_dict["description"] = self.description
-            
-        if self.enum is not None:
-            property_dict["enum"] = self.enum
-            
-        return property_dict
-
-@dataclass
-class FunctionParameters:
-    properties: List[ParameterProperty]
-
-    def to_dict(self) -> Dict[str, Any]:
-        properties = {}
-        required = []
-        
-        for param in self.properties:
-            properties[param.name] = param.to_dict()
-            if param.required:
-                required.append(param.name)
-
-        return {
-            "type": "object",
-            "properties": properties,
-            "required": required
-        }
-
-@dataclass
-class FunctionDefinition:
-    name: str
-    description: str
-    parameters: FunctionParameters
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "description": self.description,
-            "parameters": self.parameters.to_dict()
-        }
-
-@dataclass
-class Tool:
-    type: str = "function"
-    function: FunctionDefinition = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": self.type,
-            "function": self.function.to_dict()
-        }
+from tools.FunctionCalling.FunctionDefinition import Tool
 
 @dataclass
 class ChatCompletionConfiguration:
@@ -144,7 +80,8 @@ class ChatCompletionConfiguration:
 
         # Add tool use parameters if specified
         if self.tools is not None:
-            config_dict["tools"] = [tool.to_dict() for tool in self.tools]
+            config_dict["tools"] = [tool.to_dict_for_groq() \
+                for tool in self.tools]
         if self.tool_choice is not None:
             config_dict["tool_choice"] = self.tool_choice
         if self.parallel_tool_calls is not None:

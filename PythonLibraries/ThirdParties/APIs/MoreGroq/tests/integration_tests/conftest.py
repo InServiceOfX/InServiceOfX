@@ -25,3 +25,11 @@ if more_transformers_path.exists():
 
 # To obtain TestUtilities
 sys.path.append(str(Path(__file__).resolve().parent))
+
+tools_path = Path(__file__).resolve().parents[5] / "Tools"
+
+if tools_path.exists():
+	if str(tools_path) not in sys.path:
+		sys.path.append(str(tools_path))
+else:
+	raise RuntimeError("Tools does not exist: " + str(tools_path))

@@ -9,7 +9,8 @@ from commonapi.Messages import (
     create_tool_message
 )
 from moregroq.Tools import ParseFunctionAsTool, ToolCallProcessor
-from moregroq.Wrappers.ChatCompletionConfiguration import Tool
+
+from tools.FunctionCalling.FunctionDefinition import Tool
 
 from moregroq.Wrappers import GroqAPIWrapper
 

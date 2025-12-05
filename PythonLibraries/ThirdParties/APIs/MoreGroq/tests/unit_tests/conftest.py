@@ -30,3 +30,11 @@ else:
 
 # To obtain TestUtilities from integration_tests
 sys.path.append(str(Path(__file__).resolve().parents[1] / "integration_tests"))
+
+tools_path = Path(__file__).resolve().parents[5] / "Tools"
+
+if tools_path.exists():
+	if str(tools_path) not in sys.path:
+		sys.path.append(str(tools_path))
+else:
+	raise RuntimeError(f"Tools path doesn't exist: " + str(tools_path))

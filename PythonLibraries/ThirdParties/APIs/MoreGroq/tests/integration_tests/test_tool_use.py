@@ -4,7 +4,8 @@ from commonapi.Messages import (
     create_user_message
 )
 from moregroq.Wrappers import GroqAPIWrapper
-from moregroq.Wrappers.ChatCompletionConfiguration import (
+
+from tools.FunctionCalling.FunctionDefinition import (
     FunctionDefinition,
     FunctionParameters,
     ParameterProperty,
@@ -296,9 +297,14 @@ def test_receive_and_handle_tool_results():
     assert "260" in result
 
 # Define models
-ROUTING_MODEL = "llama3-70b-8192"
+# groq.BadRequestError: Error code: 400 - {'error': {'message': 'The model `llama3-70b-8192` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.', 'type': 'invalid_request_error', 'code': 'model_decommissioned'}}
+#ROUTING_MODEL = "llama3-70b-8192"
 TOOL_USE_MODEL = "llama-3.3-70b-versatile"
-GENERAL_MODEL = "llama3-70b-8192"
+#GENERAL_MODEL = "llama3-70b-8192"
+
+ROUTING_MODEL = "llama-3.3-70b-versatile"
+GENERAL_MODEL = "llama-3.3-70b-versatile"
+
 
 def route_query(query, groq_api_wrapper):
     """

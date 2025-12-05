@@ -8,7 +8,8 @@ from moregroq.Tools.ParseFunctionAsTool import ParseFunctionAsTool
 from moregroq.Tools.ToolCallProcessor import ToolCallProcessor
 
 from moregroq.Wrappers.GroqAPIWrapper import BaseGroqWrapper
-from moregroq.Wrappers.ChatCompletionConfiguration import Tool
+
+from tools.FunctionCalling.FunctionDefinition import Tool
 
 from typing import Callable
 

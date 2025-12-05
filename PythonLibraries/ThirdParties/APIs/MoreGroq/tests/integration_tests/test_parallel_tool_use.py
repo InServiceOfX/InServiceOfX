@@ -9,13 +9,13 @@ from commonapi.Messages import (
     create_user_message
 )
 
-from moregroq.Wrappers.ChatCompletionConfiguration import (
+from moregroq.Wrappers import GroqAPIWrapper
+
+from tools.FunctionCalling.FunctionDefinition import (
     FunctionDefinition,
     FunctionParameters,
     ParameterProperty,
     Tool)
-
-from moregroq.Wrappers import GroqAPIWrapper
 
 load_environment_file()
 

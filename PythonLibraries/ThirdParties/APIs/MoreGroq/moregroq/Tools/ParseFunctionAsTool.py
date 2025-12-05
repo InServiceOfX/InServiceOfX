@@ -1,9 +1,11 @@
 from inspect import signature, Parameter, cleandoc
 import re
-from moregroq.Wrappers.ChatCompletionConfiguration import (
+
+from tools.FunctionCalling.FunctionDefinition import (
     FunctionDefinition,
     FunctionParameters,
-    ParameterProperty)
+    ParameterProperty,
+)
 
 from typing import Callable
 import typing

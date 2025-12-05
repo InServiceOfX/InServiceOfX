@@ -6,12 +6,6 @@ from commonapi.Messages import (
 
 from moregroq.Tools.ParseFunctionAsTool import ParseFunctionAsTool
 
-from moregroq.Wrappers.ChatCompletionConfiguration import (
-    FunctionDefinition,
-    FunctionParameters,
-    ParameterProperty,
-    Tool)
-
 from moregroq.Wrappers import GroqAPIWrapper
 from TestUtilities.TestSetup import (
     calculate,
@@ -19,6 +13,12 @@ from TestUtilities.TestSetup import (
     reverse_string)
 
 from moregroq.Tools import ToolCallProcessor
+
+from tools.FunctionCalling.FunctionDefinition import (
+    FunctionDefinition,
+    FunctionParameters,
+    ParameterProperty,
+    Tool)
 
 load_environment_file()
 
