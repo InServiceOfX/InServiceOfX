@@ -1,1 +1,2 @@
+from .ChatCompletionProcessor import ChatCompletionProcessor
 from .ResponseProcessor import ResponseProcessor

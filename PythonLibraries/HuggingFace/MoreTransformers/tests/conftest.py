@@ -19,3 +19,10 @@ elif not commonapi_path.exists():
 # # To obtain modules from MoreTransformers
 # if Path(__file__).resolve().parents[2].exists():
 # 	sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+tools_path = Path(__file__).resolve().parents[3] / "Tools"
+
+if tools_path.exists() and tools_path not in sys.path:
+	sys.path.append(str(tools_path))
+elif not tools_path.exists():
+	raise FileNotFoundError(f"tools path {tools_path} not found")

@@ -2,9 +2,9 @@ from commonapi.Messages import ToolMessage
 from dataclasses import dataclass
 from typing import Dict, Callable, List, Any, Union
 
-from .ToolCallChatTemplates import (
+from tools.Messages.AssistantMessageWithToolCalls import (
     AssistantMessageWithToolCalls,
-    FunctionDefinition,
+    Function,
     ToolCall,
 )
 
@@ -89,7 +89,7 @@ class ToolCallProcessor:
             tool_calls_messages.append(
                 ToolCall(
                     type="function",
-                    function=FunctionDefinition(
+                    function=Function(
                         name=tool_call.get('name'),
                         arguments=tool_call.get('arguments'))))
 

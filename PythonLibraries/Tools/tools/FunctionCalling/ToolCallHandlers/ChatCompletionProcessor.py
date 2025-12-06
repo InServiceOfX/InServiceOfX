@@ -1,4 +1,5 @@
 from .BaseToolCallProcessor import BaseToolCallProcessor
+from commonapi.Messages import create_tool_message
 from typing import Any, Callable
 
 import json
@@ -29,7 +30,56 @@ class ChatCompletionProcessor(BaseToolCallProcessor):
                 
                 tool_call_messages.append(
                     create_tool_message(
-                        content=str(function_response),
+                        content=self._process_function_result(function_response),
                         name=function_name,
                         tool_call_id=tool_call.id))
         return tool_call_messages
+
+    # Helpful utility functions
+
+    @staticmethod
+    def message_has_tool_calls(message) -> bool:
+        """
+        Args:
+            message: This is typically the result of response.choices[0].message
+            where response is what chat completion returns from the LLM model.
+        """
+        if not hasattr(message, "tool_calls"):
+            return False
+
+        if message.tool_calls == None or len(message.tool_calls) == 0:
+            return False
+
+        return True
+
+    @staticmethod
+    def choices_has_tool_calls(choices) -> bool:
+        """
+        Args:
+            choices: This is typically response.choices, where response was the
+            returned object from a chat completion by the LLM model. It is
+            typically a list of
+            <class 'openai.types.chat.chat_completion.Choice'>
+        """
+        has_tool_calls = True
+
+        for choice in choices:
+            if ChatCompletionProcessor.message_has_tool_calls(choice.message):
+                return True
+
+        return False
+
+    def process_all_tool_call_requests(self,choices):
+        """
+
+        Args:
+            choices: This is typically response.choices, where response was the
+            returned object from a chat completion by the LLM model. It is 
+            typically a list of Choice objects, i.e.
+            <class 'openai.types.chat.chat_completion.Choice'>
+        """
+        all_tool_call_messages = []
+        for choice in choices:
+            tool_call_messages = self.handle_possible_tool_calls(choice.message)
+            all_tool_call_messages += tool_call_messages
+        return all_tool_call_messages

@@ -17,7 +17,8 @@ from moretransformers.Configurations import (
     FromPretrainedModelConfiguration,
     FromPretrainedTokenizerConfiguration,)
 from moretransformers.Tools import ToolCallProcessor
-from moretransformers.Tools.ToolCallChatTemplates import \
+
+from tools.Messages.AssistantMessageWithToolCalls import \
     AssistantMessageWithToolCalls
 
 import pytest, torch

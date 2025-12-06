@@ -2,7 +2,7 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class FunctionCallOutputMessage:
-    """
+    """This is used when you use Response, instead of ChatCompletion, objects.
     OpenAI API:
     https://platform.openai.com/docs/guides/function-calling#handling-function-calls
 
