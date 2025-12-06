@@ -32,7 +32,7 @@ class ResponseProcessor(BaseToolCallProcessor):
         "conditional" statement (i.e. if is_text_response(response), then ...).
         """
         for item in response.output:
-            if item.type != "message":
+            if item.type != "message" and item.type != "reasoning":
                 return False
         return True
 

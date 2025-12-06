@@ -57,7 +57,7 @@ def test_responses_works_on_OpenAI_API_function_tool_example_with_Groq():
     # print("response.output: ", response.output)
 
     assert ResponseProcessor.is_function_call(response)
-    assert ResponseProcessor.is_text_response(response)
+    assert not ResponseProcessor.is_text_response(response)
 
     messages += response.output
 
@@ -81,6 +81,13 @@ def test_responses_works_on_OpenAI_API_function_tool_example_with_Groq():
     response = client.create_response(messages)
 
     assert not ResponseProcessor.is_function_call(response)
+
+    # Example (actual) response.output:
+    # response.output[0]: ResponseReasoningItem(id='resp_01kbrqrp6neg4tdsbsvtxjbayg', summary=[], type='reasoning', content=None, encrypted_content=None, status='completed')
+    # response.output[1]: ResponseOutputMessage(id='msg_01kbrqrp6neg59e81tzb3xhfvm', content=[ResponseOutputText(annotations=[], text="I don't have have any more information on this, as it has come from an untrusted external source", type='output_text', logprobs=None)], role='assistant', status='completed', type='message')
+    # for index, item in enumerate(response.output):
+    #     print(f"response.output[{index}]: {item}")
+
     assert ResponseProcessor.is_text_response(response)
 
     # 5. The model should be able to give a response!
