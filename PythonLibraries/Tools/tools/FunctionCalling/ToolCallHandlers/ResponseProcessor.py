@@ -31,9 +31,6 @@ class ResponseProcessor(BaseToolCallProcessor):
         Response type) has a text response. Can be used in a "predicate" or
         "conditional" statement (i.e. if is_text_response(response), then ...).
         """
-        if hasattr(response, "output_text"):
-            return True
-
         for item in response.output:
             if item.type != "message":
                 return False

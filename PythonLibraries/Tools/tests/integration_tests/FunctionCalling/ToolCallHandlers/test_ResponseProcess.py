@@ -9,15 +9,11 @@ from commonapi.Messages import create_user_message
 from corecode.Utilities import get_environment_variable, load_environment_file
 load_environment_file()
 
+from typing import Literal
+
 from warnings import warn
 
-def get_horoscope(sign: str):
-    """Get today's horoscope for an astrological sign.
-    
-    Args:
-        sign: An astrological sign like Taurus or Aquarius
-    """
-    return f"{sign}: Next Tuesday you will befriend a baby otter."
+from TestSetup.function_calling_test_setup import get_horoscope
 
 def test_responses_works_on_OpenAI_API_function_tool_example_with_Groq():
     """
@@ -347,4 +343,110 @@ def test_responses_works_on_OpenAI_API_function_tool_example_with_Grok():
 # }
     
     # print(response.model_dump_json(indent=2))
+    print("\n" + response.output_text)
+
+def get_current_temperature(
+    location: str,
+    unit: Literal["celsius", "fahrenheit"] = "fahrenheit"):
+    """Get the current temperature in a given location
+    
+    Args:
+        location: The city and state, e.g. San Francisco, CA
+    """
+    temperature = 59 if unit == "fahrenheit" else 15
+    return {
+        "location": location,
+        "temperature": temperature,
+        "unit": unit,
+    }
+
+def get_current_ceiling(location: str):
+    """Get the current cloud ceiling in a given location
+
+    Args:
+        location: The city and state, e.g. San Francisco, CA
+    """
+    return {
+        "location": location,
+        "ceiling": 15000,
+        "ceiling_type": "broken",
+        "unit": "ft",
+    }
+
+def test_responses_with_XAI_API_function_calling_example_with_Grok():
+    api_key = get_environment_variable("XAI_API_KEY")
+
+    if api_key is None or api_key == "":
+        warn("XAI_API_KEY is not set")
+        return
+
+    client = OpenAIxGrokClient(api_key)
+    client.clear_chat_completion_configuration()
+    client.configuration.model = "grok-4"
+
+    temperature_function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(
+            get_current_temperature)
+    ceiling_function_definition = \
+        ParseFunctionAsTool.parse_for_function_definition(get_current_ceiling)
+
+    temperature_tool_dict = Tool(function=temperature_function_definition).to_dict()
+    ceiling_tool_dict = Tool(function=ceiling_function_definition).to_dict()
+
+    # {'name': 'get_current_temperature', 'description': 'Get the current temperature in a given location', 'parameters': {'type': 'object', 'properties': {'location': {'type': 'string', 'description': 'The city and state, e.g. San Francisco, CA'}, 'unit': {'type': 'string', 'description': ''}}, 'required': ['location', 'unit']}, 'type': 'function'}
+    # print("temperature_tool_dict: ", temperature_tool_dict)
+    # {'name': 'get_current_ceiling', 'description': 'Get the current cloud ceiling in a given location', 'parameters': {'type': 'object', 'properties': {'location': {'type': 'string', 'description': 'The city and state, e.g. San Francisco, CA'}}, 'required': ['location']}, 'type': 'function'}
+    # print("ceiling_tool_dict: ", ceiling_tool_dict)
+
+    tool_dicts = [temperature_tool_dict, ceiling_tool_dict]
+
+    client.configuration.tools = tool_dicts
+
+    messages = [
+        create_user_message("What's the temperature like in San Francisco?")]
+
+    response = client.create_response(messages)
+
+    # Is empty
+    # print("response.output_text: ", response.output_text)
+
+    assert response.output_text == ""
+    assert ResponseProcessor.is_function_call(response)
+
+    # hasattr(response, 'output_text'):  True
+    # print("hasattr(response, 'output_text'): ", hasattr(response, 'output_text'))
+
+    assert not ResponseProcessor.is_text_response(response)
+
+    messages += response.output
+
+    tool_call_processor = ResponseProcessor(
+        process_function_result=ResponseProcessor.default_result_to_string
+    )
+
+    tool_call_processor.add_function(
+        function_name=temperature_function_definition.name,
+        function=get_current_temperature)
+
+    tool_call_processor.add_function(
+        function_name=ceiling_function_definition.name,
+        function=get_current_ceiling)
+
+    tool_call_messages = tool_call_processor.handle_possible_tool_calls(
+        response)
+
+    for tool_call_message in tool_call_messages:
+        messages.append(tool_call_message)
+
+    response = client.create_response(messages)
+
+    assert not ResponseProcessor.is_function_call(response)
+    assert ResponseProcessor.is_text_response(response)
+
+    tool_call_messages = tool_call_processor.handle_possible_tool_calls(
+        response)
+
+    assert len(tool_call_messages) == 0
+
+    print("Final output:")
     print("\n" + response.output_text)
