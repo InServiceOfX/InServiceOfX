@@ -1,0 +1,12 @@
+# Use text_file_path for a single file, or text_file_paths for multiple files
+text_file_path: "./AmericanPsychoHipToBeSquare.txt"
+text_file_paths:
+base_url: "https://api.x.ai/v1"
+# Voice options: Ara, Rex, Sal, Eve, Una, Leo
+voice: "Rex"
+# Audio format: mp3, wav, opus, flac, pcm
+response_format: "mp3"
+# Output directory (optional, uses current directory if not specified)
+output_directory:
+# Filename prefix for auto-generated filenames
+filename_prefix: "speech"

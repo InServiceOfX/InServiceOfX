@@ -1,0 +1,19 @@
+# Use text_file_path for a single file, or text_file_paths for multiple files
+text_file_path: null  # or "/path/to/text/file.txt"
+# This is optional and for convenient batch processing.
+text_file_paths: null  # or ["/path/to/file1.txt", "/path/to/file2.txt"]
+
+# API settings
+base_url: "https://api.x.ai/v1"
+
+# Voice options: Ara, Rex, Sal, Eve, Una, Leo
+voice: "Ara"
+
+# Audio format: mp3, wav, opus, flac, pcm
+response_format: "mp3"
+
+# Output directory (optional, uses current directory if not specified)
+output_directory: null  # or "/path/to/output"
+
+# Filename prefix for auto-generated filenames
+filename_prefix: "speech"
