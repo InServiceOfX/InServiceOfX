@@ -1,7 +1,0 @@
-RUN git clone https://github.com/fal-ai/fal.git /ThirdParty/fal && \
-  cd /ThirdParty/fal && \
-  git checkout main && \
-  pip install -e 'projects/fal_client[dev]' && \
-  cd /
-
-
