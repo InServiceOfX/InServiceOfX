@@ -28,9 +28,7 @@ class NunchakuGenerationLogger:
 
     def _initialize_empty_log_file(self) -> None:
         """Create an empty log file with the correct YAML structure."""
-        initial_data = {
-            'generations': []
-        }
+        initial_data = {'generations': []}
         
         with self.log_file_path.open('w') as f:
             yaml.dump(
@@ -38,7 +36,10 @@ class NunchakuGenerationLogger:
                 f,
                 default_flow_style=False,
                 indent=2,
-                allow_unicode=True
+                allow_unicode=True,
+                # Prevents line wrapper; remove this line for default 100
+                # character line limit.
+                width=float('inf')
             )
 
     def _load_existing_logs(self) -> None:
@@ -139,9 +140,12 @@ class NunchakuGenerationLogger:
                 f, 
                 default_flow_style=False, 
                 indent=2,
-                allow_unicode=True
+                allow_unicode=True,
+                # Prevents line wrapper; remove this line for default 100
+                # character line limit.
+                width=float('inf')
             )
-    
+
     def get_recent_logs(self, count: int = 10) \
         -> List[NunchakuGenerationLogEntry]:
         return self._entries[-count:]
