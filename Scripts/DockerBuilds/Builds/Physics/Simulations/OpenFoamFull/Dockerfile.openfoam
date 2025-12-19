@@ -1,14 +1,95 @@
-# https://www.openfoam.com/download/openfoam-repositories
-# "OpenFOAM can be downloaded from https://gitlab.com/openfoam/core/openfoam.
-# This site hosts the repository for the most up-to-date version including the
-# latest developments and bug fixes."
-RUN git clone https://gitlab.com/openfoam/core/openfoam.git /ThirdParty/openfoam && \
-  cd /ThirdParty/openfoam && \
+# https://openfoam.org/download/source/
+
+# https://openfoam.org/download/source/software-for-compilation/
+# openfoam-nopv-deps
+RUN apt-get install -y build-essential git ca-certificates flex \
+  libopenmpi-dev openmpi-bin openmpi-common zlib1g-dev gnuplot gnuplot-x11 libxt-dev
+# openfoam-deps:
+RUN apt-get install -y libxml2-dev libhdf5-dev libavfilter-dev libtheora-dev \
+  libgl2ps-dev libx11-dev libqt5x11extras5-dev libglew-dev libutfcpp-dev \
+  libdouble-conversion-dev libfreetype-dev libqt5svg5-dev \
+  qtxmlpatterns5-dev-tools qttools5-dev python3-dev \
+  # Ubuntu 24.04 only
+  libadios2-serial-c-dev libadios2-serial-c++11-dev
+
+# https://openfoam.org/download/source/software-for-compilation/
+# "ParaView development package (in order to compile anything relating to
+# ParaView)."
+RUN apt install -y paraview-dev
+
+# OpenFOAM-dev: the current development line of OpenFOAM, that contains the
+# source code for the next major release of OpenFOAM.
+RUN git clone https://github.com/OpenFOAM/OpenFOAM-dev.git /ThirdParty/OpenFOAM-dev && \
+  cd /ThirdParty/OpenFOAM-dev && \
   # master branch, commit on Dec 19, 2025
-  git checkout e11d7d67f69c212842024f7f42540867400b20ce && \
-  # -l logging output to file.
-  ./Allwmake -l
+  git checkout 87f81af68759c274b657e98f73d76f8e40354eb1 && \
+  cd /
+
+# https://openfoam.org/download/source/downloading-source-code/
+RUN git clone https://github.com/OpenFOAM/ThirdParty-dev.git /ThirdParty/ThirdParty-dev && \
+  cd /ThirdParty/ThirdParty-dev && \
+  # master branch, commit on Dec 19, 2025
+  git checkout e208aac90b13ed3c1cf96ec2d29282adeeb55338 && \
+  cd /
+
+# Set up OpenFOAM environment for both build-time and runtime
+# Source the bashrc file to set up environment variables
+RUN echo "source /ThirdParty/OpenFOAM-dev/etc/bashrc" >> $HOME/.bashrc
+
+# Also set it up for non-interactive shells (Docker RUN commands)
+# This ensures environment is available during build
+ENV WM_PROJECT_DIR=/ThirdParty/OpenFOAM-dev
+# Set environment variables explicitly to ensure OpenFOAM finds everything
+ENV WM_THIRD_PARTY_DIR=/ThirdParty/ThirdParty-dev
+
+# Set MPI environment variables to help configure scripts find MPI
+# Find MPI installation path and set variables accordingly
+# The NVIDIA PyTorch base image has MPI at /usr/local/mpi
+RUN MPI_PATH=$(dirname $(dirname $(which mpicc))) 2>/dev/null || MPI_PATH=/usr/local/mpi && \
+  echo "MPI found at: $MPI_PATH" && \
+  echo "export MPI_ARCH_PATH=$MPI_PATH" >> $HOME/.bashrc && \
+  echo "export MPI_HOME=$MPI_PATH" >> $HOME/.bashrc
+
+
+# Verify MPI installation before building
+#RUN which mpicc && which mpicxx && test -f /usr/include/mpi.h && echo "MPI installation verified"
+# Find mpi.h wherever it is (could be in /usr/local/mpi/include or /usr/include)
+RUN which mpicc && which mpicxx && \
+  (test -f /usr/local/mpi/include/mpi.h || test -f /usr/include/mpi.h || find /usr -name mpi.h 2>/dev/null | head -1) && \
+  echo "MPI installation verified"
+
+
+# https://openfoam.org/download/source/compiling-openfoam/
+# t can also compile multiple libraries and executables simultaneously with the
+# -q option.
+# Need to source OpenFOAM bashrc as each RUN command in Docker starts a fresh
+# shell.
+#RUN bash -c "source /ThirdParty/OpenFOAM-dev/etc/bashrc && cd /ThirdParty/OpenFOAM-dev && ./Allwmake -q -j$(nproc)"
+
+#RUN bash -c "source /ThirdParty/OpenFOAM-dev/etc/bashrc && export MPI_ARCH_PATH=/usr/lib/x86_64-linux-gnu/openmpi && cd /ThirdParty/OpenFOAM-dev && ./Allwmake -q -j$(nproc)"
 
 
 
+# https://openfoam.org/download/source/compiling-openfoam/
+# It can also compile multiple libraries and executables simultaneously with the
+# -q option.
+# Need to source OpenFOAM bashrc as each RUN command in Docker starts a fresh
+# shell.
+# Use the MPI path from the NVIDIA base image
 
+# IMPORTANT: Set WM_PROJECT_DIR and WM_THIRD_PARTY_DIR BEFORE sourcing bashrc
+
+RUN bash -c "\
+  export WM_PROJECT_DIR=/ThirdParty/OpenFOAM-dev && \
+  export WM_THIRD_PARTY_DIR=/ThirdParty/ThirdParty-dev && \
+  source /ThirdParty/OpenFOAM-dev/etc/bashrc && \
+  export MPI_ARCH_PATH=/usr/local/mpi && \
+  export MPI_HOME=/usr/local/mpi && \
+  export MPI_INCLUDE_DIR=/usr/local/mpi/include && \
+  export MPI_LIB_DIR=/usr/local/mpi/lib && \
+  export PATH=/usr/local/mpi/bin:\$PATH && \
+  export CPATH=/usr/local/mpi/include:\$CPATH && \
+  export LIBRARY_PATH=/usr/local/mpi/lib:\$LIBRARY_PATH && \
+  export LD_LIBRARY_PATH=/usr/local/mpi/lib:\$LD_LIBRARY_PATH && \
+  cd /ThirdParty/OpenFOAM-dev && \
+  ./Allwmake -q -j\$(nproc)"
