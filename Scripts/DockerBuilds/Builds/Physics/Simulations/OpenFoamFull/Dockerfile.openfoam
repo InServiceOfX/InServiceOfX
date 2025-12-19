@@ -1,0 +1,14 @@
+# https://www.openfoam.com/download/openfoam-repositories
+# "OpenFOAM can be downloaded from https://gitlab.com/openfoam/core/openfoam.
+# This site hosts the repository for the most up-to-date version including the
+# latest developments and bug fixes."
+RUN git clone https://gitlab.com/openfoam/core/openfoam.git /ThirdParty/openfoam && \
+  cd /ThirdParty/openfoam && \
+  # master branch, commit on Dec 19, 2025
+  git checkout e11d7d67f69c212842024f7f42540867400b20ce && \
+  # -l logging output to file.
+  ./Allwmake -l
+
+
+
+
