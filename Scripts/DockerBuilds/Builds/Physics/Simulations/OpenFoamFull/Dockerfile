@@ -55,7 +55,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 
 # https://openfoam.org/download/source/software-for-compilation/
 # openfoam-nopv-deps
-RUN apt-get install -y build-essential git ca-certificates flex \
+RUN apt-get update && apt-get install -y build-essential git ca-certificates flex \
   libopenmpi-dev openmpi-bin openmpi-common zlib1g-dev gnuplot gnuplot-x11 libxt-dev
 # openfoam-deps:
 RUN apt-get install -y libxml2-dev libhdf5-dev libavfilter-dev libtheora-dev \
@@ -124,7 +124,7 @@ RUN which mpicc && which mpicxx && \
 
 
 # https://openfoam.org/download/source/compiling-openfoam/
-# t can also compile multiple libraries and executables simultaneously with the
+# It can also compile multiple libraries and executables simultaneously with the
 # -q option.
 # Need to source OpenFOAM bashrc as each RUN command in Docker starts a fresh
 # shell.
