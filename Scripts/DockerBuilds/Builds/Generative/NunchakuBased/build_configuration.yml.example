@@ -1,5 +1,7 @@
 # https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html
-# We need CUDA 12.X for nunchaku
+# We need CUDA 12.X for nunchaku.
+# Otherwise, from versions higher than 25.06 for NVIDIA PyTorch containers, the
+# container uses CUDA 13, and CUDA 13 isn't compatible with nunchaku.
 # We need a PyTorch container because a NVIDIA CUDA container doesn't have
 # nvidia-smi.
 # Container OS Ubuntu 24.04
