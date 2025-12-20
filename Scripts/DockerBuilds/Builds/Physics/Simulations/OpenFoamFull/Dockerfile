@@ -111,35 +111,18 @@ RUN which mpicc && which mpicxx && \
   (test -f /usr/local/mpi/include/mpi.h || test -f /usr/include/mpi.h || find /usr -name mpi.h 2>/dev/null | head -1) && \
   echo "MPI installation verified"
 
-
-# https://openfoam.org/download/source/compiling-openfoam/
-# t can also compile multiple libraries and executables simultaneously with the
-# -q option.
-# Need to source OpenFOAM bashrc as each RUN command in Docker starts a fresh
-# shell.
-#RUN bash -c "source /ThirdParty/OpenFOAM-dev/etc/bashrc && cd /ThirdParty/OpenFOAM-dev && ./Allwmake -q -j$(nproc)"
-
-#RUN bash -c "source /ThirdParty/OpenFOAM-dev/etc/bashrc && export MPI_ARCH_PATH=/usr/lib/x86_64-linux-gnu/openmpi && cd /ThirdParty/OpenFOAM-dev && ./Allwmake -q -j$(nproc)"
-
-
-
 # https://openfoam.org/download/source/compiling-openfoam/
 # It can also compile multiple libraries and executables simultaneously with the
 # -q option.
 # Need to source OpenFOAM bashrc as each RUN command in Docker starts a fresh
 # shell.
 # Use the MPI path from the NVIDIA base image
-
 # IMPORTANT: Set WM_PROJECT_DIR and WM_THIRD_PARTY_DIR BEFORE sourcing bashrc
-
 RUN bash -c "\
   export WM_PROJECT_DIR=/ThirdParty/OpenFOAM-dev && \
   export WM_THIRD_PARTY_DIR=/ThirdParty/ThirdParty-dev && \
   source /ThirdParty/OpenFOAM-dev/etc/bashrc && \
   export MPI_ARCH_PATH=/usr/local/mpi && \
-  export MPI_HOME=/usr/local/mpi && \
-  export MPI_INCLUDE_DIR=/usr/local/mpi/include && \
-  export MPI_LIB_DIR=/usr/local/mpi/lib && \
   export PATH=/usr/local/mpi/bin:\$PATH && \
   export CPATH=/usr/local/mpi/include:\$CPATH && \
   export LIBRARY_PATH=/usr/local/mpi/lib:\$LIBRARY_PATH && \
