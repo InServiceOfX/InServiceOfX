@@ -119,7 +119,6 @@ RUN which mpicc && which mpicxx && \
 # IMPORTANT: Set WM_PROJECT_DIR and WM_THIRD_PARTY_DIR BEFORE sourcing bashrc
 RUN bash -c "\
   source /ThirdParty/OpenFOAM-dev/etc/bashrc && \
-  export LIBRARY_PATH=/usr/local/mpi/lib:\$LIBRARY_PATH && \
   export LD_LIBRARY_PATH=/usr/local/mpi/lib:\$LD_LIBRARY_PATH && \
   cd /ThirdParty/OpenFOAM-dev && \
   ./Allwmake -q -j\$(nproc)"
