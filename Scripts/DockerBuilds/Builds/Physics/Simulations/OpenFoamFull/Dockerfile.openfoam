@@ -65,10 +65,7 @@ RUN which mpicc && which mpicxx && \
 # Use the MPI path from the NVIDIA base image
 # IMPORTANT: Set WM_PROJECT_DIR and WM_THIRD_PARTY_DIR BEFORE sourcing bashrc
 RUN bash -c "\
-  export WM_PROJECT_DIR=/ThirdParty/OpenFOAM-dev && \
-  export WM_THIRD_PARTY_DIR=/ThirdParty/ThirdParty-dev && \
   source /ThirdParty/OpenFOAM-dev/etc/bashrc && \
-  export MPI_ARCH_PATH=/usr/local/mpi && \
   export PATH=/usr/local/mpi/bin:\$PATH && \
   export CPATH=/usr/local/mpi/include:\$CPATH && \
   export LIBRARY_PATH=/usr/local/mpi/lib:\$LIBRARY_PATH && \

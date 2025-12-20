@@ -103,7 +103,6 @@ RUN MPI_PATH=$(dirname $(dirname $(which mpicc))) 2>/dev/null || MPI_PATH=/usr/l
   echo "export MPI_ARCH_PATH=$MPI_PATH" >> $HOME/.bashrc && \
   echo "export MPI_HOME=$MPI_PATH" >> $HOME/.bashrc
 
-
 # Verify MPI installation before building
 #RUN which mpicc && which mpicxx && test -f /usr/include/mpi.h && echo "MPI installation verified"
 # Find mpi.h wherever it is (could be in /usr/local/mpi/include or /usr/include)
@@ -119,10 +118,7 @@ RUN which mpicc && which mpicxx && \
 # Use the MPI path from the NVIDIA base image
 # IMPORTANT: Set WM_PROJECT_DIR and WM_THIRD_PARTY_DIR BEFORE sourcing bashrc
 RUN bash -c "\
-  export WM_PROJECT_DIR=/ThirdParty/OpenFOAM-dev && \
-  export WM_THIRD_PARTY_DIR=/ThirdParty/ThirdParty-dev && \
   source /ThirdParty/OpenFOAM-dev/etc/bashrc && \
-  export MPI_ARCH_PATH=/usr/local/mpi && \
   export PATH=/usr/local/mpi/bin:\$PATH && \
   export CPATH=/usr/local/mpi/include:\$CPATH && \
   export LIBRARY_PATH=/usr/local/mpi/lib:\$LIBRARY_PATH && \
