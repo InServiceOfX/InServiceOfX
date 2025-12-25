@@ -1,4 +1,4 @@
-use super::configure_paths::{setup_paths, get_default_path_to_env_file};
+use super::configure_paths::get_default_path_to_env_file;
 use dotenv;
 use std::path::{Path};
 
@@ -31,6 +31,7 @@ pub fn get_environment_variable_unwrap(name: &str) -> String
 mod tests
 {
     use super::*;
+    use super::configure_paths::setup_paths;
 
     #[test]
     fn test_load_environment_file_loads_example()

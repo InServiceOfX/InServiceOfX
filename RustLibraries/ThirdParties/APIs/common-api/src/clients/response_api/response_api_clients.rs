@@ -98,11 +98,11 @@ pub trait ResponsesAPIClientTrait {
     /// 
     /// # Returns
     /// The response body as a JSON Value, or an error if the request fails
-    fn send_request_blocking(&self) -> Result<
+    fn send_blocking_request(&self) -> Result<
         Value,
         Box<dyn std::error::Error + Send + Sync>>
     {
-        self.client().send_request_blocking()
+        self.client().send_blocking_request()
     }
 }
 
@@ -287,7 +287,7 @@ impl ResponsesAPIClient {
         let client = client_builder.build()?;
         
         // Build the request
-        let mut request = client
+        let request = client
             .post(&self.base_url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -317,7 +317,7 @@ impl ResponsesAPIClient {
     /// 
     /// # Returns
     /// The response body as a JSON Value, or an error if the request fails
-    pub fn send_request_blocking(&self) -> Result<
+    pub fn send_blocking_request(&self) -> Result<
         Value,
         Box<dyn std::error::Error + Send + Sync>>
     {
@@ -333,7 +333,7 @@ impl ResponsesAPIClient {
         let client = client_builder.build()?;
         
         // Build the request
-        let mut request = client
+        let request = client
             .post(&self.base_url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -502,8 +502,11 @@ mod tests {
     #[test]
     fn test_xai_client_build_curl_command() {
         let config = ModelRequestConfiguration::with_model("grok-4");
-        let mut client = GrokResponsesClient::new(Some("dummy-xai-key".to_string()), None, Some(config)).unwrap();
-        
+        let mut client = GrokResponsesClient::new(
+            Some("dummy-xai-key".to_string()),
+            None,
+            Some(config)).unwrap();
+
         client.set_previous_response_id("The previous response id");
         client.add_message(Message::system(
             "You are Grok, a chatbot inspired by the Hitchhiker's Guide to the Galaxy."));

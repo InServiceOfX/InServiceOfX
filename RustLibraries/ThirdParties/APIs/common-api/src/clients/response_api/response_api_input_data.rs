@@ -265,7 +265,7 @@ mod tests {
         let config = ModelRequestConfiguration::with_model("grok-4")
             .with_max_tokens(500u32)
             .with_temperature(0.7f64);
-        let mut input_data = ResponsesAPIInputData::new(
+        let input_data = ResponsesAPIInputData::new(
             config,
             vec![
                 Message::system("You are Grok, built by xAI."),
@@ -274,9 +274,10 @@ mod tests {
         );
 
         let pretty_payload = input_data.build_curl_data_pretty().unwrap();
-        println!(
-            "=== Pretty JSON for xAI-like curl -d payload ===\n{}\n=== End of payload ===",
-            pretty_payload);
+        // Uncomment to print the pretty payload
+        // println!(
+        //     "=== Pretty JSON for xAI-like curl -d payload ===\n{}\n=== End of payload ===",
+        //     pretty_payload);
 
         // Verify structure
         assert!(pretty_payload.contains("\"model\": \"grok-4\""));
