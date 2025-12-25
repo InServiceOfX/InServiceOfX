@@ -156,3 +156,29 @@ Scripts/PyTorchGPUDocker/mount_paths.txt
 **/build_docker_configuration.txt
 **/run_configuration.yml
 **/run_docker_configuration.txt
+
+# macOS specific files
+.DS_Store
+.DS_Store?
+**/.DS_Store
+.DS_Store-*
+**/.AppleDouble
+**/.LSOverride
+**/.Spotlight-V100
+**/Icon?
+**/ehthumbs.db
+**/Thumbs.db
+
+# Windows specific files
+**/Thumbs.db
+**/ehthumbs.db
+**/Desktop.ini
+**/$RECYCLE.BIN/
+**/@eaDir
+
+# General IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+

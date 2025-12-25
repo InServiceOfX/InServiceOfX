@@ -358,4 +358,50 @@ mod tests {
 
         assert_eq!(config.reasoning_effort, Some(ReasoningEffort::High));
     }
+
+    #[test]
+    fn test_manual_field_assignment_after_construction() {
+        // Create a new instance (in Rust, we say "instance" or "value")
+        let mut config = ModelRequestConfiguration::new();
+        
+        // Verify initial state
+        assert_eq!(config.temperature, None);
+        assert_eq!(config.max_tokens, None);
+        assert_eq!(config.tools, None);
+        
+        // Manually set fields after construction
+        config.temperature = Some(0.8);
+        config.max_tokens = Some(2000);
+        
+        // Create some sample tools
+        let tools = vec![
+            serde_json::json!({
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather"
+                }
+            }),
+            serde_json::json!({
+                "type": "function",
+                "function": {
+                    "name": "calculate",
+                    "description": "Perform calculations"
+                }
+            }),
+        ];
+        config.tools = Some(tools.clone());
+        
+        // Verify the values were set correctly
+        assert_eq!(config.temperature, Some(0.8));
+        assert_eq!(config.max_tokens, Some(2000));
+        assert_eq!(config.tools, Some(tools));
+        
+        // Verify they appear in the dictionary output
+        let dict = config.to_dict().unwrap();
+        assert_eq!(dict["temperature"].as_f64().unwrap(), 0.8);
+        assert_eq!(dict["max_tokens"].as_u64().unwrap() as u32, 2000);
+        assert!(dict["tools"].is_array());
+        assert_eq!(dict["tools"].as_array().unwrap().len(), 2);
+    }
 }
