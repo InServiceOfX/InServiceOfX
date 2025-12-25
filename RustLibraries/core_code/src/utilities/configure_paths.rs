@@ -1,6 +1,8 @@
-// https://doc.rust-lang.org/std/error/trait.Error.html
-// Error is a trait representing basic expectations for error values, i.e. values of type E in
-// Result<T, E>.
+//------------------------------------------------------------------------------
+/// https://doc.rust-lang.org/std/error/trait.Error.html
+/// Error is a trait representing basic expectations for error values, i.e.
+/// values of type E in Result<T, E>.
+//------------------------------------------------------------------------------
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -15,21 +17,24 @@ pub struct BasicProjectPaths
     pub project_path: PathBuf    
 }
 
-// Instead of unwrapping paths directly (which could cause a panic if path isn't valid), it's
-// better to return a Result which can be handled gracefully
-// https://doc.rust-lang.org/std/boxed/struct.Box.html
-// Struct std::boxed::Box
-// pub struct Box<T, A = Global>
-// Box is a pointer type that uniquely owns a heap allocation of type T.
-// dyn is a keyword used to highlight that calls to methods on associated Trait are dynamically
-// dispatched.
+//------------------------------------------------------------------------------
+/// Instead of unwrapping paths directly (which could cause a panic if path
+/// isn't valid), it's better to return a Result which can be handled gracefully
+/// https://doc.rust-lang.org/std/boxed/struct.Box.html
+/// Struct std::boxed::Box
+/// pub struct Box<T, A = Global>
+/// Box is a pointer type that uniquely owns a heap allocation of type T.
+/// dyn is a keyword used to highlight that calls to methods on associated Trait
+/// are dynamically dispatched.
+//------------------------------------------------------------------------------
 pub fn setup_paths() -> Result<BasicProjectPaths, Box<dyn Error>>
 {
     // ? Operator used to propagate errors in Rust.
     // If value of Result is Ok, value inside Ok will get returned from this expression, and
     // program will continue. If value is an Err, Err will be returned from whole function as if we
     // had used return keyword so error value gets propagated to calling code.
-    let core_code_rust_path_buf = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
+    let core_code_rust_path_buf = Path::new(
+        env!("CARGO_MANIFEST_DIR")).to_path_buf();
 
     Ok(BasicProjectPaths {
         configure_paths_path: fs::canonicalize(&core_code_rust_path_buf.join("src/utilities"))?,
@@ -41,7 +46,7 @@ pub fn setup_paths() -> Result<BasicProjectPaths, Box<dyn Error>>
 
 pub fn get_default_path_to_env_file() -> Result<PathBuf, Box<dyn Error>>
 {
-    Ok(setup_paths()?.project_path)
+    Ok(setup_paths()?.project_path.join(".env"))
 }
 
 #[cfg(test)]

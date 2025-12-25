@@ -1,0 +1,386 @@
+use crate::clients::response_api::response_api_input_data::ResponsesAPIInputData;
+use crate::configurations::ModelRequestConfiguration;
+use crate::messages::basic_messages::Message;
+use core_code::utilities::load_environment_file::get_environment_variable;
+use serde_json;
+
+/// Trait defining common behavior for Responses API clients
+/// This allows us to define implementation once and reuse it
+pub trait ResponsesAPIClientTrait {
+    /// Get a mutable reference to the underlying ResponsesApiClient
+    /// This allows the trait to access the base client's methods
+    fn client_mut(&mut self) -> &mut ResponsesAPIClient;
+
+    /// Get a reference to the underlying ResponsesApiClient
+    fn client(&self) -> &ResponsesAPIClient;
+
+    // ========== Pass-through methods (defined once in trait) ==========
+
+    /// Add a message to the list
+    fn add_message(&mut self, message: Message) {
+        self.client_mut().add_message(message);
+    }
+
+    /// Add multiple messages
+    fn add_messages(&mut self, messages: Vec<Message>) {
+        self.client_mut().add_messages(messages);
+    }
+
+    /// Clear all messages
+    fn clear_messages(&mut self) {
+        self.client_mut().clear_messages();
+    }
+
+    /// Set the previous_response_id in configuration
+    fn set_previous_response_id(&mut self, previous_response_id: impl Into<String>) {
+        self.client_mut().set_previous_response_id(previous_response_id);
+    }
+
+    /// Clear the previous_response_id
+    fn clear_previous_response_id(&mut self) {
+        self.client_mut().clear_previous_response_id();
+    }
+
+    /// Get a reference to the configuration
+    fn configuration(&self) -> &ModelRequestConfiguration {
+        self.client().configuration()
+    }
+
+    /// Get a mutable reference to the configuration
+    fn configuration_mut(&mut self) -> &mut ModelRequestConfiguration {
+        self.client_mut().configuration_mut()
+    }
+
+    /// Get a reference to the messages
+    fn messages(&self) -> &Vec<Message> {
+        self.client().messages()
+    }
+
+    /// Build the complete curl command as a string
+    fn build_curl_command(&self) -> Result<String, serde_json::Error> {
+        self.client().build_curl_command()
+    }
+
+    /// Build just the JSON data for curl -d flag
+    fn build_curl_data(&self) -> Result<String, serde_json::Error> {
+        self.client().build_curl_data()
+    }
+
+    /// Build the JSON data in pretty format
+    fn build_curl_data_pretty(&self) -> Result<String, serde_json::Error> {
+        self.client().build_curl_data_pretty()
+    }
+}
+
+/// Base Responses API client
+/// Uses composition to hold API key, URL, timeout, and input data
+pub struct ResponsesAPIClient {
+    /// API key for authentication (typically loaded from environment)
+    api_key: String,
+    
+    /// Base URL for the API endpoint (e.g., "https://api.openai.com/v1/responses")
+    base_url: String,
+    
+    /// Maximum time for request in seconds (for curl -m flag)
+    /// Typical value includes 3600 seconds (1 hour) as suggested by xAI
+    /// documentation
+    timeout_seconds: Option<u32>,
+    
+    /// Input data (configuration + messages)
+    /// This is the persistent state that can be modified between calls
+    input_data: ResponsesAPIInputData,
+}
+
+impl ResponsesAPIClient {
+    /// Create a new client with API key from environment
+    /// 
+    /// # Arguments
+    /// * `api_key_env_var` - Environment variable name containing the API key
+    /// * `base_url` - Base URL for the API endpoint
+    /// * `timeout_seconds` - Optional timeout in seconds (default: None, use
+    /// 3600 for xAI)
+    /// * `configuration` - Optional model request configuration
+    pub fn new(
+        api_key_env_var: &str,
+        base_url: impl Into<String>,
+        timeout_seconds: Option<u32>,
+        configuration: Option<ModelRequestConfiguration>,
+    ) -> Result<Self, String> {
+
+        // Get API key from environment
+        let api_key = get_environment_variable(api_key_env_var)
+            .map_err(|e| format!(
+                "Failed to get {} from environment: {}", api_key_env_var, e))?;
+
+        let config = configuration.unwrap_or_default();
+        let input_data = ResponsesAPIInputData::new(config, Vec::new());
+
+        Ok(Self {
+            api_key,
+            base_url: base_url.into(),
+            timeout_seconds,
+            input_data,
+        })
+    }
+
+    /// Get the base URL
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    /// Get the API key (for use in Authorization header)
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    /// Get timeout in seconds
+    pub fn timeout_seconds(&self) -> Option<u32> {
+        self.timeout_seconds
+    }
+
+    /// Set timeout in seconds
+    pub fn set_timeout(&mut self, timeout_seconds: Option<u32>) {
+        self.timeout_seconds = timeout_seconds;
+    }
+
+    // ========== Methods that work with input_data ==========
+
+    /// Get a reference to the input data
+    pub fn input_data(&self) -> &ResponsesAPIInputData {
+        &self.input_data
+    }
+
+    /// Get a mutable reference to the input data
+    pub fn input_data_mut(&mut self) -> &mut ResponsesAPIInputData {
+        &mut self.input_data
+    }
+
+    /// Get a reference to the configuration
+    pub fn configuration(&self) -> &ModelRequestConfiguration {
+        self.input_data.configuration()
+    }
+
+    /// Get a mutable reference to the configuration
+    pub fn configuration_mut(&mut self) -> &mut ModelRequestConfiguration {
+        self.input_data.configuration_mut()
+    }
+
+    /// Get a reference to the messages
+    pub fn messages(&self) -> &Vec<Message> {
+        self.input_data.messages()
+    }
+
+    /// Add a message to the list
+    pub fn add_message(&mut self, message: Message) {
+        self.input_data.add_message(message);
+    }
+
+    /// Add multiple messages
+    pub fn add_messages(&mut self, messages: Vec<Message>) {
+        self.input_data.add_messages(messages);
+    }
+
+    /// Clear all messages
+    pub fn clear_messages(&mut self) {
+        self.input_data.clear_messages();
+    }
+
+    /// Set the previous_response_id in configuration
+    pub fn set_previous_response_id(&mut self, previous_response_id: impl Into<String>) {
+        self.input_data.set_previous_response_id(previous_response_id);
+    }
+
+    /// Clear the previous_response_id
+    pub fn clear_previous_response_id(&mut self) {
+        self.input_data.clear_previous_response_id();
+    }
+
+    // ========== Curl command building ==========
+
+    /// Build the complete curl command as a string
+    /// 
+    /// This constructs the full curl command including:
+    /// - URL
+    /// - Content-Type header (hardcoded as "application/json")
+    /// - Authorization header with API key
+    /// - Timeout flag (-m) if specified
+    /// - Data flag (-d) with the JSON request body
+    pub fn build_curl_command(&self) -> Result<String, serde_json::Error> {
+        let curl_data = self.input_data.build_curl_data()?;
+        
+        let mut curl_cmd = format!("curl {} \\\n", self.base_url);
+        curl_cmd.push_str("  -H \"Content-Type: application/json\" \\\n");
+        curl_cmd.push_str(&format!("  -H \"Authorization: Bearer {}\" \\\n", self.api_key));
+        
+        // Add timeout if specified (in seconds, for curl -m flag)
+        if let Some(timeout) = self.timeout_seconds {
+            curl_cmd.push_str(&format!("  -m {} \\\n", timeout));
+        }
+        
+        curl_cmd.push_str(&format!("  -d '{}'", curl_data));
+        
+        Ok(curl_cmd)
+    }
+
+    /// Build just the JSON data for curl -d flag
+    pub fn build_curl_data(&self) -> Result<String, serde_json::Error> {
+        self.input_data.build_curl_data()
+    }
+
+    /// Build the JSON data in pretty format
+    pub fn build_curl_data_pretty(&self) -> Result<String, serde_json::Error> {
+        self.input_data.build_curl_data_pretty()
+    }
+}
+
+/// OpenAI Responses API client
+/// Specialized client with hardcoded OpenAI URL
+pub struct OpenAIResponsesClient {
+    client: ResponsesApiClient,
+}
+
+impl ResponsesApiClientTrait for OpenAIResponsesClient {
+    fn client_mut(&mut self) -> &mut ResponsesApiClient {
+        &mut self.client
+    }
+
+    fn client(&self) -> &ResponsesApiClient {
+        &self.client
+    }
+}
+
+impl OpenAIResponsesClient {
+    /// Create a new OpenAI Responses API client
+    /// Uses OPENAI_API_KEY from environment
+    /// 
+    /// # Arguments
+    /// * `timeout_seconds` - Optional timeout (OpenAI doesn't require it, but can be set)
+    /// * `configuration` - Optional model request configuration
+    pub fn new(
+        timeout_seconds: Option<u32>,
+        configuration: Option<ModelRequestConfiguration>,
+    ) -> Result<Self, String> {
+        Ok(Self {
+            client: ResponsesApiClient::new(
+                "OPENAI_API_KEY",
+                "https://api.openai.com/v1/responses",
+                timeout_seconds,
+                configuration,
+            )?,
+        })
+    }
+}
+
+/// xAI/Grok Responses API client
+/// Specialized client with hardcoded xAI URL and default timeout
+pub struct XAIResponsesClient {
+    client: ResponsesApiClient,
+}
+
+impl ResponsesApiClientTrait for XAIResponsesClient {
+    fn client_mut(&mut self) -> &mut ResponsesApiClient {
+        &mut self.client
+    }
+
+    fn client(&self) -> &ResponsesApiClient {
+        &self.client
+    }
+}
+
+impl XAIResponsesClient {
+    /// Create a new xAI/Grok Responses API client
+    /// Uses XAI_API_KEY from environment
+    /// 
+    /// # Arguments
+    /// * `timeout_seconds` - Optional timeout in seconds (default: 3600 as suggested by xAI docs)
+    /// * `configuration` - Optional model request configuration
+    pub fn new(
+        timeout_seconds: Option<u32>,
+        configuration: Option<ModelRequestConfiguration>,
+    ) -> Result<Self, String> {
+        // Default to 3600 seconds (1 hour) as suggested by xAI documentation
+        let timeout = timeout_seconds.unwrap_or(3600);
+        
+        Ok(Self {
+            client: ResponsesApiClient::new(
+                "XAI_API_KEY",
+                "https://api.x.ai/v1/responses",
+                Some(timeout),
+                configuration,
+            )?,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_openai_client_build_curl_command() {
+        let config = ModelRequestConfiguration::with_model("gpt-4.1");
+        let mut client = OpenAIResponsesClient::new(None, Some(config)).unwrap();
+        
+        client.add_message(Message::user(
+            "Tell me a three sentence bedtime story about a unicorn."));
+        
+        let curl_cmd = client.build_curl_command().unwrap();
+        
+        println!("\n{}", "=".repeat(80));
+        println!("OpenAI Responses API - Full curl command");
+        println!("{}", "=".repeat(80));
+        println!("{}", curl_cmd);
+        println!("{}", "=".repeat(80));
+        
+        assert!(curl_cmd.contains("api.openai.com/v1/responses"));
+        assert!(curl_cmd.contains("Content-Type: application/json"));
+        assert!(curl_cmd.contains("Authorization: Bearer"));
+        assert!(curl_cmd.contains("\"model\":\"gpt-4.1\""));
+        assert!(curl_cmd.contains("-d"));
+    }
+
+    #[test]
+    fn test_xai_client_build_curl_command() {
+        let config = ModelRequestConfiguration::with_model("grok-4");
+        let mut client = XAIResponsesClient::new(None, Some(config)).unwrap();
+        
+        client.set_previous_response_id("The previous response id");
+        client.add_message(Message::system(
+            "You are Grok, a chatbot inspired by the Hitchhiker's Guide to the Galaxy."));
+        client.add_message(Message::user(
+            "What is the meaning of life, the universe, and everything?"));
+        
+        let curl_cmd = client.build_curl_command().unwrap();
+        
+        println!("\n{}", "=".repeat(80));
+        println!("xAI/Grok Responses API - Full curl command");
+        println!("{}", "=".repeat(80));
+        println!("{}", curl_cmd);
+        println!("{}", "=".repeat(80));
+        
+        assert!(curl_cmd.contains("api.x.ai/v1/responses"));
+        assert!(curl_cmd.contains("Content-Type: application/json"));
+        assert!(curl_cmd.contains("Authorization: Bearer"));
+        assert!(curl_cmd.contains("-m 3600")); // Default timeout
+        assert!(curl_cmd.contains("\"model\":\"grok-4\""));
+        assert!(curl_cmd.contains("\"previous_response_id\""));
+        assert!(curl_cmd.contains("-d"));
+    }
+
+    #[test]
+    fn test_trait_methods_work_for_both_clients() {
+        // Test that trait methods work for OpenAI
+        let mut openai_client = OpenAIResponsesClient::new(None, None).unwrap();
+        openai_client.add_message(Message::user("Test"));
+        assert_eq!(openai_client.messages().len(), 1);
+        openai_client.clear_messages();
+        assert_eq!(openai_client.messages().len(), 0);
+
+        // Test that trait methods work for xAI
+        let mut xai_client = XAIResponsesClient::new(None, None).unwrap();
+        xai_client.add_message(Message::user("Test"));
+        assert_eq!(xai_client.messages().len(), 1);
+        xai_client.clear_messages();
+        assert_eq!(xai_client.messages().len(), 0);
+    }
+}

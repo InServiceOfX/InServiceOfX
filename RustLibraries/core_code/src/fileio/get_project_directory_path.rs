@@ -1,6 +1,10 @@
 use std::env;
 use std::path::{PathBuf};
 
+//------------------------------------------------------------------------------
+/// Gets the current file's absolute path using the `file!()` macro.
+/// This is equivalent to Python's `Path(__file__).resolve()`.
+//------------------------------------------------------------------------------
 pub fn get_current_filepath() -> PathBuf
 {
   let current_dir = env::current_dir().unwrap();
@@ -46,6 +50,11 @@ pub fn get_project_directory_path_recursive() -> Result<PathBuf, &'static str> {
     Err("Repository main directory not found or .git wasn't.")
 }
 
+//------------------------------------------------------------------------------
+/// Run
+/// cargo test -- --nocapture
+/// to see the output from the println!() statements.
+//------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests
 {
