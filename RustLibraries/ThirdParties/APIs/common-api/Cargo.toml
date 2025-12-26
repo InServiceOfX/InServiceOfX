@@ -14,6 +14,9 @@ sha2 = { version = "0.10.9", features = ["std"] }
 [[test]]
 name = "integration_tests"
 path = "tests/integration_tests/mod.rs"
+
+[dev-dependencies]
+tokio = { version = "1.48.0", features = ["full"] }
 # Custom test target for mirrored integration tests (not under tests/ to avoid default run in 'cargo test').
 # 'cargo test' runs all, including unit/doc tests.
 # Run all integration: cargo test --test integration_tests

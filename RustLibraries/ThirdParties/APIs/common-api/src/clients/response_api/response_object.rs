@@ -31,16 +31,16 @@ pub struct ResponseObject {
     pub reasoning: Reasoning,
     #[serde(default)]
     pub store: bool,
-    #[serde(default)]
-    pub temperature: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f64>,
     #[serde(default)]
     pub text: Text,
     #[serde(default)]
     pub tool_choice: String,
     #[serde(default)]
     pub tools: Vec<Value>,
-    #[serde(default)]
-    pub top_p: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f64>,
     // https://platform.openai.com/docs/api-reference/responses/object#responses-object-truncation
     // "auto", "disabled" (default)
     #[serde(default)]
@@ -81,7 +81,8 @@ pub struct Content {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct Reasoning {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub effort: Option<u32>,
+    // Flexible for API values like "medium" or numbers as str; parse if needed
+    pub effort: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
 }
@@ -243,8 +244,8 @@ mod tests {
         assert!(partial_response.output.is_empty());
         // defaults to false
         assert!(!partial_response.store);
-        // defaults to 0.0
-        assert_eq!(partial_response.temperature, 0.0);
+        // Option default for missing/null, otherwise 0.0
+        assert_eq!(partial_response.temperature, None);
     }
 
     #[test]
@@ -267,7 +268,7 @@ mod tests {
                 summary: None,
             },
             store: false,
-            temperature: 0.7,
+            temperature: Some(0.7),
             text: Text {
                 format: Format {
                     type_: "text".to_string(),
@@ -275,7 +276,7 @@ mod tests {
             },
             tool_choice: "auto".to_string(),
             tools: vec![],
-            top_p: 1.0,
+            top_p: Some(1.0),
             truncation: "disabled".to_string(),
             usage: Usage {
                 input_tokens: 100,
