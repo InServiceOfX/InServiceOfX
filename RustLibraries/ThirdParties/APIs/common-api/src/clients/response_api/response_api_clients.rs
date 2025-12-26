@@ -83,11 +83,12 @@ pub trait ResponsesAPIClientTrait {
     /// 
     /// # Returns
     /// The response body as a JSON Value, or an error if the request fails
-    async fn send_request(&self) -> Result<
+    fn send_request(&self) -> impl std::future::Future<Output = Result<
         Value,
-        Box<dyn std::error::Error + Send + Sync>>
-    {
-        self.client().send_request().await
+        Box<dyn std::error::Error + Send + Sync>>> + Send {
+        async move {
+            self.client().send_request().await
+        }
     }
 
     /// Send the HTTP request using reqwest (blocking/synchronous)
