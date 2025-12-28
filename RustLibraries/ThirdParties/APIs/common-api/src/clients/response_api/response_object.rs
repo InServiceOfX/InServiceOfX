@@ -27,8 +27,8 @@ pub struct ResponseObject {
     pub parallel_tool_calls: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub previous_response_id: Option<String>,
-    #[serde(default)]
-    pub reasoning: Reasoning,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<Reasoning>,
     #[serde(default)]
     pub store: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -230,6 +230,13 @@ mod tests {
         assert!(response.error.is_none());
         assert_eq!(response.usage.input_tokens, 328u64);
 
+        // Verify reasoning deserialization from object with nulls
+        assert!(response.reasoning.is_some());
+        if let Some(reasoning) = &response.reasoning {
+            assert_eq!(reasoning.effort, None);
+            assert_eq!(reasoning.summary, None);
+        }
+
         // Test partial deserialization tolerance
         // missing other fields
         let partial_json = json!({"id": "partial_id"});
@@ -246,6 +253,21 @@ mod tests {
         assert!(!partial_response.store);
         // Option default for missing/null, otherwise 0.0
         assert_eq!(partial_response.temperature, None);
+        // defaults to None when missing
+        assert!(partial_response.reasoning.is_none());
+
+        // Test deserialization when reasoning is explicitly null
+        let null_reasoning_json = json!({
+            "id": "null_reasoning_id",
+            "reasoning": null,
+        });
+        let null_resp: ResponseObject = serde_json::from_value(
+            null_reasoning_json)
+                .expect("Should deserialize with reasoning: null");
+        assert!(null_resp.reasoning.is_none());
+        assert_eq!(null_resp.id, "null_reasoning_id");
+        // defaults still apply for other fields
+        assert_eq!(null_resp.model, "");
     }
 
     #[test]
@@ -263,10 +285,10 @@ mod tests {
             output: vec![],
             parallel_tool_calls: false,
             previous_response_id: None,
-            reasoning: Reasoning {
+            reasoning: Some(Reasoning {
                 effort: None,
                 summary: None,
-            },
+            }),
             store: false,
             temperature: Some(0.7),
             text: Text {

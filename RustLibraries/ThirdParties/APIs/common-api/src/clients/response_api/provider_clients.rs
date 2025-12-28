@@ -1,7 +1,10 @@
 // Bring the trait into scope with pub use.
 pub use crate::clients::response_api::base_composed_clients::ResponsesAndReqwestTrait;
+pub use crate::clients::response_api::base_composed_clients::ResponsesAndBlockingReqwestTrait;
 
-use crate::clients::response_api::base_composed_clients::ResponsesAndReqwestClient;
+use crate::clients::response_api::base_composed_clients::{
+    ResponsesAndReqwestClient,
+    ResponsesAndBlockingReqwestClient};
 use crate::configurations::ModelRequestConfiguration;
 
 /// OpenAI Responses API client
@@ -152,4 +155,52 @@ impl GroqResponsesClient {
         
         Ok(Self { client })
     }
+}
+
+pub struct GroqResponsesBlockingClient
+{
+    client: ResponsesAndBlockingReqwestClient,
+}
+
+impl ResponsesAndBlockingReqwestTrait for GroqResponsesBlockingClient
+{
+    fn client_mut(&mut self) -> &mut ResponsesAndBlockingReqwestClient
+    {
+        &mut self.client
+    }
+
+    fn client(&self) -> &ResponsesAndBlockingReqwestClient
+    {
+        &self.client
+    }
+}
+
+impl GroqResponsesBlockingClient
+{
+    pub fn new(
+        api_key: Option<impl Into<String>>,
+        timeout_seconds: Option<u32>,
+        configuration: Option<ModelRequestConfiguration>,
+    ) -> Result<Self, String>
+    {
+        use core_code::utilities::load_environment_file::get_environment_variable;
+        
+        let api_key = if let Some(key) = api_key {
+            key.into()
+        } else {
+            get_environment_variable("GROQ_API_KEY")
+                .map_err(|e| format!(
+                    "Failed to get GROQ_API_KEY from environment: {}", e))?
+        };
+
+        // Default to 3600 seconds (1 hour) as suggested by xAI documentation
+        let client = ResponsesAndBlockingReqwestClient::new(
+            api_key,
+            "https://api.groq.com/openai/v1/responses",
+            timeout_seconds,
+            configuration,
+        ).unwrap();
+        
+        Ok(Self { client })
+    }    
 }
