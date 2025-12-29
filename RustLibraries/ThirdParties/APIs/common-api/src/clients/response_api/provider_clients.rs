@@ -112,6 +112,54 @@ impl GrokResponsesClient {
     }
 }
 
+pub struct GrokResponsesBlockingClient
+{
+    client: ResponsesAndBlockingReqwestClient,
+}
+
+impl ResponsesAndBlockingReqwestTrait for GrokResponsesBlockingClient
+{
+    fn client_mut(&mut self) -> &mut ResponsesAndBlockingReqwestClient
+    {
+        &mut self.client
+    }
+
+    fn client(&self) -> &ResponsesAndBlockingReqwestClient
+    {
+        &self.client
+    }
+}
+
+impl GrokResponsesBlockingClient
+{
+    pub fn new(
+        api_key: Option<impl Into<String>>,
+        timeout_seconds: Option<u32>,
+        configuration: Option<ModelRequestConfiguration>,
+    ) -> Result<Self, String>
+    {
+        use core_code::utilities::load_environment_file::get_environment_variable;
+        
+        let api_key = if let Some(key) = api_key {
+            key.into()
+        } else {
+            get_environment_variable("XAI_API_KEY")
+                .map_err(|e| format!(
+                    "Failed to get XAI_API_KEY from environment: {}", e))?
+        };
+
+        // Default to 3600 seconds (1 hour) as suggested by xAI documentation
+        let client = ResponsesAndBlockingReqwestClient::new(
+            api_key,
+            "https://api.x.ai/v1/responses",
+            timeout_seconds,
+            configuration,
+        ).unwrap();
+        
+        Ok(Self { client })
+    }    
+}
+
 pub struct GroqResponsesClient {
     client: ResponsesAndReqwestClient,
 }
@@ -148,7 +196,7 @@ impl GroqResponsesClient {
         // Default to 3600 seconds (1 hour) as suggested by xAI documentation
         let client = ResponsesAndReqwestClient::new(
             api_key,
-            "https://api.groq.com/openai/v1",
+            "https://api.groq.com/openai/v1/responses",
             timeout_seconds,
             configuration,
         ).unwrap();

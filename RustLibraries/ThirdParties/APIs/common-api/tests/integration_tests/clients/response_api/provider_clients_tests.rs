@@ -519,7 +519,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grok_blocking_client_send_request_and_parse()
+    fn test_groq_blocking_client_send_request_and_parse()
     {
         load_environment_file_from_default_path();
         let configuration = ModelRequestConfiguration::with_model(
@@ -563,7 +563,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grok_blocking_client_for_multi_turn_conversations()
+    fn test_groq_blocking_client_for_multi_turn_conversations()
     {
         load_environment_file_from_default_path();
         let configuration = ModelRequestConfiguration::with_model(
