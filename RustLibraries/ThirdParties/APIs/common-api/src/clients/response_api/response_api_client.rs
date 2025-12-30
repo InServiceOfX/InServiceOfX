@@ -296,6 +296,34 @@ mod tests {
     }
 
     #[test]
+    fn test_responses_api_client_build_curl_command_with_include_field() {
+        let mut config = ModelRequestConfiguration::with_model("grok-4");
+        config.include = Some(vec![serde_json::Value::String(
+            "verbose_streaming".to_string())]);
+        let mut client = ResponsesAPIClient::new(
+            "dummy-xai-key".to_string(),
+            "https://api.x.ai/v1/responses",
+            None,
+            Some(config)).unwrap();
+
+        client.add_message(Message::system(
+            "You are Grok, a chatbot inspired by the Hitchhiker's Guide to the Galaxy."));
+        client.add_message(Message::user(
+            "What is the meaning of life, the universe, and everything?"));
+
+        let curl_cmd = client.build_curl_command().unwrap();
+
+        //Uncomment to print the curl command
+        // println!("\n{}", "=".repeat(80));
+        // println!("xAI/Grok Responses API - Full curl command");
+        // println!("{}", "=".repeat(80));
+        // println!("{}", curl_cmd);
+        // println!("{}", "=".repeat(80));
+
+        assert!(curl_cmd.contains("\"include\":[\"verbose_streaming\"]"));
+    }
+
+    #[test]
     fn test_trait_methods_work_for_both_clients() {
         // Test that trait methods work for OpenAI
         let mut openai_client = ResponsesAPIClient::new(

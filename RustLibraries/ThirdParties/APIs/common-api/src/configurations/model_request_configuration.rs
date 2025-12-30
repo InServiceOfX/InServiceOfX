@@ -26,13 +26,14 @@ pub struct ModelRequestConfiguration {
     /// Model identifier (e.g., "gpt-4", "grok-4", "llama-3-70b")
     pub model: Option<String>,
 
-    /// Function call configuration (legacy, for Chat Completions)
+    //--------------------------------------------------------------------------
+    /// https://platform.openai.com/docs/api-reference/responses/create#responses_create-include
+    /// include array Optional
+    /// Specify additional output data to include in the model response.
+    /// Currently supported values are:
+    //--------------------------------------------------------------------------
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub function_call: Option<Value>,
-
-    /// Functions/tools definitions (legacy, for Chat Completions)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub functions: Option<Vec<Value>>,
+    pub include: Option<Vec<Value>>,
 
     /// Instructions for the model (used in Responses API and some providers)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -46,13 +47,16 @@ pub struct ModelRequestConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
 
-    /// Number of completion choices to generate
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub n: Option<u32>,
-
     /// Enable parallel tool calls
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parallel_tool_calls: Option<bool>,
+
+    /// Previous response ID for conversation continuity (Responses API,
+    /// xAI/Grok).
+    /// https://docs.x.ai/docs/guides/chat "Chaining the conversation"
+    /// https://platform.openai.com/docs/api-reference/responses
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_response_id: Option<String>,
 
     /// Reasoning effort level (for thinking/reasoning models)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -61,14 +65,6 @@ pub struct ModelRequestConfiguration {
     /// Response format specification
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_format: Option<Value>,
-
-    /// Response model for structured output
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub response_model: Option<Value>,
-
-    /// Stop sequences
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stop: Option<Vec<String>>,
 
     /// Enable streaming
     #[serde(default = "default_false")]
@@ -85,17 +81,6 @@ pub struct ModelRequestConfiguration {
     /// Tools definitions (for function calling)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<Value>>,
-
-    /// User identifier for tracking
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<String>,
-
-    /// Previous response ID for conversation continuity (Responses API,
-    /// xAI/Grok).
-    /// https://docs.x.ai/docs/guides/chat "Chaining the conversation"
-    /// https://platform.openai.com/docs/api-reference/responses
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub previous_response_id: Option<String>,
 }
 
 fn default_false() -> bool {
@@ -107,23 +92,18 @@ impl ModelRequestConfiguration {
     pub fn new() -> Self {
         Self {
             model: None,
-            function_call: None,
-            functions: None,
+            include: None,
             instructions: None,
             max_completion_tokens: None,
             max_tokens: None,
-            n: None,
             parallel_tool_calls: None,
             previous_response_id: None,
             reasoning_effort: None,
             response_format: None,
-            response_model: None,
-            stop: None,
             stream: false,
             temperature: None,
             tool_choice: None,
             tools: None,
-            user: None,
         }
     }
 
@@ -218,13 +198,6 @@ impl ModelRequestConfiguration {
             dict["model"] = serde_json::json!(model);
         }
 
-        // Add all non-None fields
-        if let Some(ref function_call) = self.function_call {
-            dict["function_call"] = function_call.clone();
-        }
-        if let Some(ref functions) = self.functions {
-            dict["functions"] = serde_json::json!(functions);
-        }
         if let Some(ref instructions) = self.instructions {
             dict["instructions"] = serde_json::json!(instructions);
         }
@@ -234,9 +207,6 @@ impl ModelRequestConfiguration {
         }
         if let Some(max_tokens) = self.max_tokens {
             dict["max_tokens"] = serde_json::json!(max_tokens);
-        }
-        if let Some(n) = self.n {
-            dict["n"] = serde_json::json!(n);
         }
         if let Some(parallel_tool_calls) = self.parallel_tool_calls {
             dict["parallel_tool_calls"] = serde_json::json!(
@@ -249,14 +219,13 @@ impl ModelRequestConfiguration {
         if let Some(ref reasoning_effort) = self.reasoning_effort {
             dict["reasoning_effort"] = serde_json::json!(reasoning_effort);
         }
+
+        // Include field for additional output data (OpenAI Responses API)
+        if let Some(ref include) = self.include {
+            dict["include"] = serde_json::json!(include);
+        }
         if let Some(ref response_format) = self.response_format {
             dict["response_format"] = response_format.clone();
-        }
-        if let Some(ref response_model) = self.response_model {
-            dict["response_model"] = response_model.clone();
-        }
-        if let Some(ref stop) = self.stop {
-            dict["stop"] = serde_json::json!(stop);
         }
         if self.stream {
             dict["stream"] = serde_json::json!(self.stream);
@@ -269,9 +238,6 @@ impl ModelRequestConfiguration {
         }
         if let Some(ref tools) = self.tools {
             dict["tools"] = serde_json::json!(tools);
-        }
-        if let Some(ref user) = self.user {
-            dict["user"] = serde_json::json!(user);
         }
 
         Ok(dict)
@@ -349,6 +315,33 @@ mod tests {
         
         // Should not have temperature field if None
         assert!(!dict.as_object().unwrap().contains_key("temperature"));
+    }
+
+    #[test]
+    fn test_include_field_mutation() {
+        let mut config = ModelRequestConfiguration::default();
+        assert_eq!(config.include, None);
+
+        // Add initial array with string as Value
+        config.include = Some(vec![serde_json::Value::String(
+            "verbose_streaming".to_string())]);
+        let dict1 = config.to_dict().unwrap();
+        let include_arr = dict1["include"].as_array().unwrap();
+        assert_eq!(include_arr.len(), 1);
+        assert_eq!(include_arr[0].as_str().unwrap(), "verbose_streaming");
+
+        // Add another string
+        config.include.as_mut().unwrap().push(serde_json::Value::String(
+            "another_feature".to_string()));
+        let dict2 = config.to_dict().unwrap();
+        let include_arr2 = dict2["include"].as_array().unwrap();
+        assert_eq!(include_arr2.len(), 2);
+        assert_eq!(include_arr2[1].as_str().unwrap(), "another_feature");
+
+        // Verify ser skips if back to None (optional behavior)
+        config.include = None;
+        let dict3 = config.to_dict().unwrap();
+        assert!(!dict3.as_object().unwrap().contains_key("include"));
     }
 
     #[test]

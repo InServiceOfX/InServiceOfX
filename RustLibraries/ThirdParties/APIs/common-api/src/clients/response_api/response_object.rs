@@ -150,6 +150,20 @@ impl ResponseObject {
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string(self)
     }
+
+    pub fn extract_assistant_messages(&self) -> Vec<String> {
+        let mut assistant_messages = Vec::new();
+        for output in &self.output {
+            if output.type_ == "message" && output.role == "assistant" {
+                let mut combined_text = String::new();
+                for content in &output.content {
+                    combined_text.push_str(&content.text);
+                }
+                assistant_messages.push(combined_text);
+            }
+        }
+        assistant_messages
+    }
 }
 
 #[cfg(test)]
