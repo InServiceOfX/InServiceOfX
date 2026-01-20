@@ -1,0 +1,58 @@
+ARG NUNCHAKU_VERSION
+
+# Look for your version here:
+# https://nunchaku.tech/docs/nunchaku/installation/installation.html#installing-nunchaku
+# torch                      2.9.1
+# root@baa0fec3e185:/# python --version
+# Python 3.12.3
+RUN pip install ${NUNCHAKU_VERSION}
+
+# Fix this:
+# import flash_attn
+# ImportError: /usr/local/lib/python3.12/dist-packages/flash_attn_2_cuda.cpython-312-x86_64-linux-gnu.so: undefined symbol: _ZNK3c106SymInt6sym_neERKS0_
+# From pip list
+# flash_attn                 2.7.4.post1
+# upgrade to
+# flash_attn                 2.8.3
+RUN pip uninstall -y flash-attn && \
+  MAX_JOBS=1 pip install --upgrade --no-build-isolation flash-attn==2.8.3 && \
+  python -c "import flash_attn; print(f'Updated flash-attn version: {flash_attn.__version__}')"
+
+RUN git clone https://github.com/huggingface/image_gen_aux.git /ThirdParty/image_gen_aux && \
+  cd /ThirdParty/image_gen_aux && \
+  # main branch, Commits on Jul 15, 2025
+  git checkout e08ae3db5edfb5237ec84f560bba3ac4e7ad8613 && \
+  pip install -e . && \
+  # For some reason, numpy gets downgraded to 2.2.6
+  pip install --upgrade numpy==2.3.5
+
+# At this point, this is the (partial) result of pip list:
+# accelerate                 1.11.0
+# apex                       0.1
+# diffusers                  0.35.2
+# flash_attn                 2.8.3
+# Jinja2                     3.1.6
+# numpy                      2.3.5
+# optree                     0.16.0
+# peft                       0.18.0
+# safetensors                0.5.3
+# sentencepiece              0.2.1
+# torch                      2.9.1
+# torchaudio                 2.9.1
+# torchvision                0.24.1
+# transformer_engine         2.4.0+3cd6870
+# transformers               4.56.2
+
+# For svdq-int4-flux.1-canny-dev
+# https://huggingface.co/mit-han-lab/svdq-int4-flux.1-canny-dev
+RUN pip install controlnet_aux mediapipe && \
+  pip install --upgrade numpy==2.3.5
+# For some reason numpy gets downgraded to
+# numpy                      1.26.4
+# and so we upgrade it back to 2.3.5.
+#
+# Note:
+# controlnet_aux             0.0.10
+# mediapipe                  0.10.21
+# opencv-contrib-python      4.11.0.86
+# opencv-python-headless     4.11.0.86

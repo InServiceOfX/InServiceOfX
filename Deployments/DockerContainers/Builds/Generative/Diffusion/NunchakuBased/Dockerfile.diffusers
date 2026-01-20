@@ -1,0 +1,71 @@
+## HuggingFace
+
+## transformers (hugging face), required to run most popular diffusion models.
+RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  # main branch, Commits on Nov 15, 2025
+  git checkout 66d57110f089789ae285cc9d54d3bf051123246b && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e . && \
+  #
+  #
+## diffusers (hugging face)
+  git clone https://github.com/InServiceOfX/diffusers.git /ThirdParty/diffusers && \
+  cd /ThirdParty/diffusers && \
+  # master branch, Commits on Nov 16, 2025
+  git checkout d306f8a498fd234f97d47fdb290f6b2d27cf25bd && \
+  pip install -e .
+
+# This past RUN installation steps result in the following versions:
+# pip list
+# accelerate                 1.12.0
+# apex                       0.1
+# controlnet_aux             0.0.10
+# cuda-bindings              12.9.0
+# cuda-python                12.9.0
+# image_gen_aux              0.1.0.dev0                    /ThirdParty/image_gen_aux
+# jax                        0.7.1
+# Jinja2                     3.1.6
+# numpy                      2.3.5
+# nvidia-cublas-cu12         12.8.4.1
+# nvidia-cuda-cupti-cu12     12.8.90
+# nvidia-cuda-nvrtc-cu12     12.8.93
+# nvidia-cuda-runtime-cu12   12.8.90
+# nvidia-cudnn-cu12          9.10.2.21
+# nvidia-cudnn-frontend      1.12.0
+# nvidia-cufft-cu12          11.3.3.83
+# nvidia-cufile-cu12         1.13.1.3
+# nvidia-curand-cu12         10.3.9.90
+# nvidia-cusolver-cu12       11.7.3.90
+# nvidia-cusparse-cu12       12.5.8.93
+# nvidia-cusparselt-cu12     0.7.1
+# nvidia-dali-cuda120        1.50.0
+# nvidia-ml-py               12.575.51
+# nvidia-modelopt            0.29.0
+# nvidia-modelopt-core       0.29.0
+# nvidia-nccl-cu12           2.27.5
+# nvidia-nvcomp-cu12         4.2.0.14
+# nvidia-nvimgcodec-cu12     0.5.0.13
+# nvidia-nvjitlink-cu12      12.8.93
+# nvidia-nvjpeg-cu12         12.4.0.16
+# nvidia-nvjpeg2k-cu12       0.8.1.40
+# nvidia-nvshmem-cu12        3.3.20
+# nvidia-nvtiff-cu12         0.5.0.67
+# nvidia-nvtx-cu12           12.8.90
+# nvidia-resiliency-ext      0.4.0
+# onnx                       1.17.0
+# opencv-contrib-python      4.11.0.86
+# opencv-python-headless     4.11.0.86
+# optree                     0.16.0
+# torch                      2.9.1
+# torch_tensorrt             2.8.0a0
+# torchao                    0.11.0+git
+# torchaudio                 2.9.1
+# torchprofile               0.0.4
+# torchvision                0.24.1
+# transformer_engine         2.4.0+3cd6870
+# transformers               5.0.0.dev0                    /ThirdParty/transformers
+# triton                     3.5.1
+
+RUN apt-get install -y libgl1 libglib2.0-0

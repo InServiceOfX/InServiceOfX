@@ -1,0 +1,10 @@
+# numpy                      2.3.5
+RUN pip install numpy==2.3.5
+
+RUN sed -i '/^torch==/d' /etc/pip/constraint.txt 2>/dev/null || true && \
+    pip install torch==2.9.1 && \
+    sed -i '/^torchvision==/d' /etc/pip/constraint.txt 2>/dev/null || true && \
+    pip install torchvision==0.24.1 && \
+    pip install torchaudio
+
+
