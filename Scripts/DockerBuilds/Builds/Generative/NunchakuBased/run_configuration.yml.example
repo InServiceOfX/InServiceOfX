@@ -6,5 +6,5 @@ volumes:
     container_path: /Data/
   - host_path: /home/propdev/Data/
     container_path: /Data1/
-  - host_path: /home/propdev/InServiceOfX
+  - host_path: /home/propdev/Prop/InServiceOfX
     container_path: /InServiceOfX

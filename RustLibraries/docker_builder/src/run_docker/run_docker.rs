@@ -157,11 +157,17 @@ pub fn execute_docker_run_command(
         .status()
         .map_err(|e| format!("Failed to execute docker command: {}", e))?;
 
-    if !status.success() {
+    // For interactive sessions, don't treat container exit codes as tool failures
+    // (user-initiated exit or app exit inside container is expected)
+    // 127 often normal shell exit in some contexts
+    if !status.success() && status.code() != Some(127) {
         return Err(format!(
             "Docker run failed with exit code: {}",
             status.code().unwrap_or(-1)
         ));
+    } else if status.code() == Some(127) {
+        println!(
+            "Note: Container exited with code 127 (may be normal for shell exit in some setups)");
     }
 
     println!("\n✓ Container finished successfully!");

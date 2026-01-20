@@ -1,0 +1,18 @@
+docker_image_name: cpp-python-rust-ubuntu:24.04
+base_image: ubuntu:24.04
+
+dockerfile_components:
+  - label: "Dockerfile.header"
+    path: "../../../CommonComponents/Dockerfile.header"
+  - label: "Dockerfile.base"
+    path: "../../../CommonComponents/Dockerfile.minimal_base"
+  - label: "Dockerfile.cpp"
+    path: "../../../CommonComponents/Dockerfile.cpp_development"
+  - label: "Dockerfile.rust"
+    path: "../../../CommonComponents/Dockerfile.rust"
+  - label: "Dockerfile.python"
+    path: "../../../CommonComponents/Dockerfile.python"
+  - label: "Dockerfile.python_development"
+    path: "../../../CommonComponents/Dockerfile.python_development"
+  - label: "Dockerfile.more_pip_installs"
+    path: "Dockerfile.more_pip_installs"

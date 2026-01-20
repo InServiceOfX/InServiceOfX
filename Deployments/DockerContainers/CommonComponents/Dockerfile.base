@@ -1,0 +1,21 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+# Set the working directory in the container
+# https://docs.docker.com/engine/reference/builder/
+ENV THIRD_PARTY=/ThirdParty
+WORKDIR /
+
+## Update apt, pip, and do pip installs.
+RUN apt-get update && \
+  apt-get install --upgrade -y ccache && \
+  python -m pip install --upgrade pip && \
+  #
+  #
+  # Do more pip installs.
+  # Reads key-value pairs from .env file to set environment variables; in
+  # particular for Open AI API keys for LangChain.
+  pip install --upgrade python-dotenv
+
+
+

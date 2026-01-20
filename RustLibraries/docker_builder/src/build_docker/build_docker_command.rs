@@ -22,7 +22,6 @@ pub fn build_docker_build_command(
     use_host_network: bool,
 ) -> Vec<String> {
     let mut docker_build_cmd = vec![
-        "DOCKER_BUILDKIT=1".to_string(),
         "docker".to_string(),
         "build".to_string(),
     ];

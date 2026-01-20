@@ -1,0 +1,9 @@
+RUN apt-get install -y python-is-python3
+
+# Add this early in your Dockerfile (after Python is installed)
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# Now pip install works normally (no warnings)
+RUN python3 -m pip install --no-cache-dir pytest pytest-cov python-dotenv
+
+

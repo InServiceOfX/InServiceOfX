@@ -79,7 +79,7 @@ fn main() -> Result<(), String> {
 
     match cli.command {
         Commands::Build { build_dir, no_cache, network_host } => {
-            build_docker_image(build_dir, !no_cache, network_host)
+            build_docker_image(build_dir, no_cache, network_host)
         }
         Commands::Run {
             build_dir,
@@ -108,11 +108,27 @@ fn main() -> Result<(), String> {
 }
 
 fn build_docker_image(
-    _build_dir: PathBuf,
-    _use_cache: bool,
-    _use_host_network: bool,
+    build_dir: PathBuf,
+    no_cache: bool,
+    network_host: bool,
 ) -> Result<(), String> {
-    // ... build logic
+    use docker_builder::build_docker::build_docker::{
+        BuildDockerArgs,
+        build_docker_image_from_args,
+    };
+
+    // Create args
+    let args = BuildDockerArgs {
+        build_dir,
+        no_cache,
+        network_host,
+    };
+
+    // Build the image
+    let image_name = build_docker_image_from_args(&args)?;
+
+    println!("\n✓ Build complete: {}", image_name);
+
     Ok(())
 }
 
