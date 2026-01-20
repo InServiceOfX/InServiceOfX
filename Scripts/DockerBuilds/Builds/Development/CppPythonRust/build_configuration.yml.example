@@ -1,2 +1,0 @@
-docker_image_name: cpp-python-rust-ubuntu:24.04
-base_image: ubuntu:24.04

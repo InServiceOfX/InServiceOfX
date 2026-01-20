@@ -1,3 +1,0 @@
-volumes:
-  - host_path: /Users/ernestyeung/Prop/HrdwCCppCUDA/
-    container_path: /HrdwCCppCUDA/
