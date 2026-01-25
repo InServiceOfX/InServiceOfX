@@ -22,7 +22,18 @@ pub fn create_dockerfile<P: AsRef<Path>, Q: AsRef<Path>>(
     // Concatenate components
     let mut dockerfile_content = String::new();
 
-    for component in &data.dockerfile_components {
+    for (index, component) in data.dockerfile_components.iter().enumerate()
+    {
+        // Add a separator before each component, except the first.
+        if index > 0
+        {
+            dockerfile_content.push_str("\n\n");
+        }
+
+        dockerfile_content.push_str(
+            &format!("# --- Section: {} ---\n", component.label));
+        dockerfile_content.push_str("\n");
+
         let component_content = fs::read_to_string(&component.path)
             .map_err(|e| format!(
                 "Failed to read component '{}' at '{}': {}",

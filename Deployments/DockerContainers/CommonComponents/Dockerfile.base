@@ -16,6 +16,3 @@ RUN apt-get update && \
   # Reads key-value pairs from .env file to set environment variables; in
   # particular for Open AI API keys for LangChain.
   pip install --upgrade python-dotenv
-
-
-

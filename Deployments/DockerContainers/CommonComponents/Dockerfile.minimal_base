@@ -8,5 +8,3 @@ WORKDIR /
 
 ## Update apt, pip, and do pip installs.
 RUN apt-get update
-
-

@@ -1,0 +1,8 @@
+volumes:
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/
+    container_path: /Data/
+  - host_path: /home/propdev/Data/
+    container_path: /Data1/
+  - host_path: /home/propdev/Prop/InServiceOfX
+    container_path: /InServiceOfX
+

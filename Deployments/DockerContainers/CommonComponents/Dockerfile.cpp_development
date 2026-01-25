@@ -23,4 +23,3 @@ RUN (test -f /usr/share/doc/kitware-archive-keyring/copyright) || \
   # as kitware rotates keys.
   apt-get install kitware-archive-keyring && \
   apt-get install -y cmake
-
