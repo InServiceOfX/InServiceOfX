@@ -1,18 +1,25 @@
 # We seek here to install a working minimal of modules from HuggingFace.
-RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
+RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
+  # TODO: Decide whether to keep VibeVoice or not.
   # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
   # VibeVoice implementation.
-  git checkout w0.0.2-vibevoice && \
+  #git checkout w0.0.2-vibevoice && \
+
+  # Jan 25, 2025, on branch main
+  # Commits on Jan 24, 2026
+  git checkout a30413b78feed68da5c486746f745db092bfdf9a && \ 
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
-  pip install -e . && \
+  # transformers               5.0.0.dev0                    /ThirdParty/transformers
+  pip install -e '.[torch]' && \
   #
   #
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \
-  git checkout main && \
+  # On branch main, Commits on Jan 14, 2026
+  git checkout 38dadd9537d3cb43e3149964c06a3f011b40aa6d && \
   pip install -e . && \
   #
   #
@@ -22,6 +29,8 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   ## PEFT (Parameter-Efficient Fine-Tuning)
   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
   cd /ThirdParty/peft && \
+  # On branch main, Commits on Jan 22, 2026
+  git checkout 1d08144b855d3a58442a4f17187c5a8ebcf3b237 && \
   pip install -e . && \
   #
   #
@@ -32,7 +41,9 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   # transformers/models/vibevoice/schedule/dpm_solver.py:23
   git clone https://github.com/huggingface/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
-  git checkout main && \
+  # on branch main
+  # Commits on Jan 25, 2026
+  git checkout a7cb14efbe4b255f4c8721c91a04f0ef40f4a05a && \
   pip install -e . && \
   cd / && \
   cd /

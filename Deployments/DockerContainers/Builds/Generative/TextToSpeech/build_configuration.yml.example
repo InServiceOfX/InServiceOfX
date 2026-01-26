@@ -1,5 +1,23 @@
-docker_image_name: text-to-speech:nvidia-pytorch-25.02
-base_image: nvcr.io/nvidia/pytorch:25.02-py3
+docker_image_name: text-to-speech:nvidia-pytorch-25.11
+base_image: nvcr.io/nvidia/pytorch:25.11-py3
+
+# Or try
+#docker_image_name: text-to-speech:nvidia-pytorch-25.06
+#base_image: nvcr.io/nvidia/pytorch:25.06-py3
+
+# for this base image, nvcr.io/nvidia/pytorch:25.06-py3
+# flash_attn                 2.7.4.post1
+# numpy                      1.26.4
+# torchvision                0.22.0a0+95f10a4e
+# torch                      2.8.0a0+5228986c39.nv25.6
+
+# for this base image, nvcr.io/nvidia/pytorch:25.11-py3
+# flash_attn                 2.7.4.post1+25.11           38114660
+# numpy                      2.1.0
+# tensorrt                   10.14.1.48
+# torch                      2.10.0a0+b558c986e8.nv25.11
+# torch_tensorrt             2.10.0a0
+# torchvision                0.25.0a0+7a13ad0f
 
 dockerfile_components:
   - label: "Dockerfile.header"
@@ -14,3 +32,5 @@ dockerfile_components:
     path: "Dockerfile.pip_installs"
   - label: "Dockerfile.apt_installs"
     path: "Dockerfile.apt_installs"
+  - label: "Dockerfile.qwen3_installs"
+    path: "Dockerfile.qwen3_installs"

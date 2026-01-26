@@ -44,20 +44,27 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 # --- Section: Dockerfile.huggingface ---
 
 # We seek here to install a working minimal of modules from HuggingFace.
-RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
+RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
+  # TODO: Decide whether to keep VibeVoice or not.
   # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
   # VibeVoice implementation.
-  git checkout w0.0.2-vibevoice && \
+  #git checkout w0.0.2-vibevoice && \
+
+  # Jan 25, 2025, on branch main
+  # Commits on Jan 24, 2026
+  git checkout a30413b78feed68da5c486746f745db092bfdf9a && \ 
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
-  pip install -e . && \
+  # transformers               5.0.0.dev0                    /ThirdParty/transformers
+  pip install -e '.[torch]' && \
   #
   #
 ## accelerate - speeds up model loading for inference and training
   git clone https://github.com/huggingface/accelerate.git /ThirdParty/accelerate && \
   cd /ThirdParty/accelerate && \
-  git checkout main && \
+  # On branch main, Commits on Jan 14, 2026
+  git checkout 38dadd9537d3cb43e3149964c06a3f011b40aa6d && \
   pip install -e . && \
   #
   #
@@ -67,6 +74,8 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   ## PEFT (Parameter-Efficient Fine-Tuning)
   git clone https://github.com/huggingface/peft /ThirdParty/peft && \
   cd /ThirdParty/peft && \
+  # On branch main, Commits on Jan 22, 2026
+  git checkout 1d08144b855d3a58442a4f17187c5a8ebcf3b237 && \
   pip install -e . && \
   #
   #
@@ -77,7 +86,9 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   # transformers/models/vibevoice/schedule/dpm_solver.py:23
   git clone https://github.com/huggingface/diffusers.git /ThirdParty/diffusers && \
   cd /ThirdParty/diffusers && \
-  git checkout main && \
+  # on branch main
+  # Commits on Jan 25, 2026
+  git checkout a7cb14efbe4b255f4c8721c91a04f0ef40f4a05a && \
   pip install -e . && \
   cd / && \
   cd /
@@ -101,6 +112,46 @@ RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoic
 
 # --- Section: Dockerfile.apt_installs ---
 
+# accelerate                 1.13.0.dev0                /ThirdParty/accelerate
+# flash_attn                 2.7.4.post1+25.11 38114660
+# huggingface_hub            1.3.3
+# numpy                      2.1.0
+# peft                       0.18.2.dev0                /ThirdParty/peft
+# tensorrt                   10.14.1.48
+# tokenizers                 0.22.1
+# torch                      2.10.0
+# torch_tensorrt             2.10.0a0
+# torchaudio                 2.10.0
+# torchvision                0.25.0
+# transformers               5.0.0.dev0                 /ThirdParty/transformers
+
 RUN apt-get update && apt-get install -y ffmpeg
+
+
+
+
+# --- Section: Dockerfile.qwen3_installs ---
+
+# 
+
+RUN git clone https://github.com/InServiceOfX/Qwen3-TTS.git /ThirdParty/Qwen3-TTS && \
+  cd /ThirdParty/Qwen3-TTS && \
+  # On branch master, Commits on Jan 25, 2026
+  git checkout 0af45d81f09f5fcf935d3390fca78785a12c1987 && \
+  pip install -e . && \
+  cd /
+
+
+
+
+# --- Section: Dockerfile.luxtts_installs ---
+
+RUN git clone https://github.com/ysharma3501/LuxTTS.git /ThirdParty/LuxTTS && \
+  cd /ThirdParty/LuxTTS && \
+  # On branch master, Commits on Jan 25, 2026
+  git checkout 6c9979e6ab21b64bf10af6c35d0f4ed52b36d434 && \
+  #pip install -e . && \
+  pip install -r requirements.txt && \
+  cd /
 
 

@@ -1,1 +1,14 @@
+# accelerate                 1.13.0.dev0                /ThirdParty/accelerate
+# flash_attn                 2.7.4.post1+25.11 38114660
+# huggingface_hub            1.3.3
+# numpy                      2.1.0
+# peft                       0.18.2.dev0                /ThirdParty/peft
+# tensorrt                   10.14.1.48
+# tokenizers                 0.22.1
+# torch                      2.10.0
+# torch_tensorrt             2.10.0a0
+# torchaudio                 2.10.0
+# torchvision                0.25.0
+# transformers               5.0.0.dev0                 /ThirdParty/transformers
+
 RUN apt-get update && apt-get install -y ffmpeg
