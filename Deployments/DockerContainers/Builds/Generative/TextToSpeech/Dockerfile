@@ -44,20 +44,15 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
 # --- Section: Dockerfile.huggingface ---
 
 # We seek here to install a working minimal of modules from HuggingFace.
-RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  # TODO: Decide whether to keep VibeVoice or not.
   # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
   # VibeVoice implementation.
-  #git checkout w0.0.2-vibevoice && \
-
-  # Jan 25, 2025, on branch main
-  # Commits on Jan 24, 2026
-  git checkout a30413b78feed68da5c486746f745db092bfdf9a && \ 
+  git checkout w0.0.3-vibevoice && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   # transformers               5.0.0.dev0                    /ThirdParty/transformers
-  pip install -e '.[torch]' && \
+  pip install -e . && \
   #
   #
 ## accelerate - speeds up model loading for inference and training
@@ -101,11 +96,6 @@ RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transf
 # --- Section: Dockerfile.pip_installs ---
 
 RUN pip install torchaudio torchcodec torchvision
-
-RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoice && \
-  cd /ThirdParty/VibeVoice && \
-  git checkout master && \
-  cd /
 
 
 
@@ -152,6 +142,18 @@ RUN git clone https://github.com/ysharma3501/LuxTTS.git /ThirdParty/LuxTTS && \
   git checkout 6c9979e6ab21b64bf10af6c35d0f4ed52b36d434 && \
   #pip install -e . && \
   pip install -r requirements.txt && \
+  cd /
+
+
+
+
+# --- Section: Dockerfile.vibevoice_installs ---
+
+RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoice && \
+  cd /ThirdParty/VibeVoice && \
+  # on branch master, Commits on Jan 27, 2026
+  git checkout a709f13a13a78564c7e1b5e9c48671927546adf8 && \
+  pip install -e . && \
   cd /
 
 

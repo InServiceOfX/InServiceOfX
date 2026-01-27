@@ -34,3 +34,5 @@ dockerfile_components:
     path: "Dockerfile.apt_installs"
   - label: "Dockerfile.qwen3_installs"
     path: "Dockerfile.qwen3_installs"
+  - label: "Dockerfile.vibevoice_installs"
+    path: "Dockerfile.vibevoice_installs"
