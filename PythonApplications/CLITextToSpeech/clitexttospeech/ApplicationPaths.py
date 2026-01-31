@@ -27,6 +27,9 @@ class ApplicationPaths:
         inhouse_library_paths = {
             "CoreCode": \
                 project_path / "PythonLibraries" / "CoreCode",
+            "MoreChatterbox": \
+                project_path / "PythonLibraries" / "ThirdParties" / \
+                    "TextToSpeech" / "MoreChatterbox",
             "MoreTransformers": \
                 project_path / "PythonLibraries" / "HuggingFace" / \
                     "MoreTransformers",
@@ -36,6 +39,11 @@ class ApplicationPaths:
             if isinstance(base_path, str):
                 base_path = Path(base_path)
             configuration_file_paths = {
+                "chatterbox_tts_configuration": \
+                    base_path / "Configurations" / "chatterbox_tts_configuration.yml",
+                "chatterbox_tts_generation_configuration": \
+                    base_path / "Configurations" / \
+                        "chatterbox_tts_generation_configuration.yml",
                 "vibe_voice_model_configuration": \
                     base_path / "Configurations" / \
                         "vibe_voice_model_configuration.yml",
@@ -82,6 +90,10 @@ class ApplicationPaths:
                 warn(f"{path} does not exist")
 
         path = self.inhouse_library_paths["CoreCode"]
+
+        add_path_to_sys_path(path)
+
+        path = self.inhouse_library_paths["MoreChatterbox"]
 
         add_path_to_sys_path(path)
 

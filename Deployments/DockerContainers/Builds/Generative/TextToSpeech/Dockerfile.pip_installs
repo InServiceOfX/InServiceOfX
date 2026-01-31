@@ -1,1 +1,11 @@
+# TODO: torchaudio pip install reinstalls pytorch; is this ok?
+#RUN pip install torchaudio
+
+#RUN pip install torchcodec
+# TODO: torchvision pip install reinstalls torchvision from
+# torchvision                0.25.0a0+7a13ad0f
+# to
+# torchvision                0.25.0
+# Would this have been ok?
+
 RUN pip install torchaudio torchcodec torchvision

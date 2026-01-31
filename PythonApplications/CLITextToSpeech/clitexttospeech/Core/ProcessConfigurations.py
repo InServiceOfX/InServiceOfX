@@ -1,6 +1,9 @@
+from clitexttospeech.Configuration import CLIConfiguration
+from morechatterbox.Configurations import ChatterboxTTSConfiguration
+from morechatterbox.Configurations import TTSGenerationConfiguration \
+    as ChatterboxTTSGenerationConfiguration
 from moretransformers.Configurations import FromPretrainedModelConfiguration
 from moretransformers.Configurations.TextToSpeech import VibeVoiceConfiguration
-from clitexttospeech.Configuration import CLIConfiguration
 
 class ProcessConfigurations:
     def __init__(self, app):
@@ -12,6 +15,8 @@ class ProcessConfigurations:
     def process_configurations(self):
         path = self._application_paths.configuration_file_paths[
             "vibe_voice_model_configuration"]
+
+        # Vibe voice configurations
 
         if path.exists():
             self.configurations["vibe_voice_model_configuration"] = \
@@ -34,6 +39,30 @@ class ProcessConfigurations:
             self.configurations["vibe_voice_configuration"] = \
                 VibeVoiceConfiguration()
 
+        # Chatterbox TTS configurations
+
+        path = self._application_paths.configuration_file_paths[
+            "chatterbox_tts_configuration"]
+
+        if path.exists():
+            self.configurations["chatterbox_tts_configuration"] = \
+                ChatterboxTTSConfiguration.from_yaml(path)
+        else:
+            self._terminal_ui.print_error(
+                f"Chatterbox TTS configuration not found at {path}")
+            self.configurations["chatterbox_tts_configuration"] = \
+                ChatterboxTTSConfiguration()
+
+        path = self._application_paths.configuration_file_paths[
+            "chatterbox_tts_generation_configuration"]
+
+        if path.exists():
+            self.configurations["chatterbox_tts_generation_configuration"] = \
+                ChatterboxTTSGenerationConfiguration.from_yaml(path)
+        else:
+            self._terminal_ui.print_error(
+                f"Chatterbox TTS generation configuration not found at {path}")
+
         path = self._application_paths.configuration_file_paths[
             "cli_configuration"]
 
@@ -55,4 +84,8 @@ class ProcessConfigurations:
         self._app._vvmp.refresh_configurations(
             self.configurations["vibe_voice_model_configuration"],
             self.configurations["vibe_voice_configuration"]
+        )
+        self._app._chatterbox_tts_model.refresh_configurations(
+            self.configurations["chatterbox_tts_configuration"],
+            self.configurations["chatterbox_tts_generation_configuration"]
         )

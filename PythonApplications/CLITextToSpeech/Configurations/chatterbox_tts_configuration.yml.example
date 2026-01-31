@@ -1,0 +1,12 @@
+model_dir: /Data/Models/Generative/TextToSpeech/ResembleAI/chatterbox
+device: cuda:0
+audio_prompt_path: /Data/Public/Audio/Voices/FakeRogerVerbalKint-KevinSpacey.wav
+# For single file
+text_file_path: /Data/Public/Text/ChatterboxTT.txt
+# For multiple files (list)
+# text_file_paths:
+#   - /Data/Public/Text/ChatterboxTT_part1.txt
+#   - /Data/Public/Text/ChatterboxTT_part2.txt
+directory_path_to_save: /Data/
+base_saved_filename: ChatterboxOutput
+sample_rate: null

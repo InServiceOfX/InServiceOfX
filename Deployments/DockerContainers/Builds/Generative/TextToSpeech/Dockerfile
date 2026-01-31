@@ -48,7 +48,7 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
   cd /ThirdParty/transformers && \
   # w0.0.1-vibevoice tag has main branch from 2025-09-11 and PR 40546 that has
   # VibeVoice implementation.
-  git checkout w0.0.3-vibevoice && \
+  git checkout w0.0.4-vibevoice && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   # transformers               5.0.0.dev0                    /ThirdParty/transformers
@@ -95,8 +95,17 @@ RUN git clone https://github.com/InServiceOfX/transformers.git /ThirdParty/trans
 
 # --- Section: Dockerfile.pip_installs ---
 
-RUN pip install torchaudio torchcodec torchvision
+# TODO: torchaudio pip install reinstalls pytorch; is this ok?
+#RUN pip install torchaudio
 
+#RUN pip install torchcodec
+# TODO: torchvision pip install reinstalls torchvision from
+# torchvision                0.25.0a0+7a13ad0f
+# to
+# torchvision                0.25.0
+# Would this have been ok?
+
+RUN pip install torchaudio torchcodec torchvision
 
 
 
@@ -149,10 +158,37 @@ RUN git clone https://github.com/ysharma3501/LuxTTS.git /ThirdParty/LuxTTS && \
 
 # --- Section: Dockerfile.vibevoice_installs ---
 
+# accelerate                 1.13.0.dev0                /ThirdParty/accelerate
+# diffusers                  0.37.0.dev0                /ThirdParty/diffusers
+# flash_attn                 2.7.4.post1+25.11 38114660
+# huggingface_hub            1.3.4
+# numpy                      2.1.0
+# peft                       0.18.2.dev0                /ThirdParty/peft
+# qwen-tts                   0.0.4                      /ThirdParty/Qwen3-TTS
+# tensorrt                   10.14.1.48
+# tokenizers                 0.22.1
+# torch                      2.10.0
+# torchaudio                 2.10.0
+# torchvision                0.25.0
+# transformers               5.0.1.dev0                 /ThirdParty/transformers
+# vibevoice                  0.0.1                      /ThirdParty/VibeVoice
+
 RUN git clone https://github.com/InServiceOfX/VibeVoice.git /ThirdParty/VibeVoice && \
   cd /ThirdParty/VibeVoice && \
   # on branch master, Commits on Jan 27, 2026
   git checkout a709f13a13a78564c7e1b5e9c48671927546adf8 && \
+  pip install -e . && \
+  cd /
+
+
+
+
+# --- Section: Dockerfile.chatterbox_installs ---
+
+RUN git clone https://github.com/InServiceOfX/chatterbox.git /ThirdParty/chatterbox && \
+  cd /ThirdParty/chatterbox && \
+  # on branch development, Commits on Jan 30, 2026 and Dec 15, 2025
+  git checkout 1d29960c54cf21bd03bd0ae9a239955b183b69be && \
   pip install -e . && \
   cd /
 

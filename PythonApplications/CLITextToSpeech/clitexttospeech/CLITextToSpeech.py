@@ -1,8 +1,12 @@
-from clitexttospeech.Core import GenerateWithVibeVoice, ProcessConfigurations
+from clitexttospeech.Core import (
+    GenerateWithChatterbox,
+    GenerateWithVibeVoice,
+    ProcessConfigurations)
 from clitexttospeech.Terminal import CommandHandler
 from clitexttospeech.Terminal import PromptSessionsManager
 from clitexttospeech.Terminal import TerminalUI
 
+from morechatterbox.Wrappers import ChatterboxTTSModel
 from moretransformers.Applications.TextToSpeech \
     import VibeVoiceModelAndProcessor
 
@@ -16,6 +20,7 @@ class CLITextToSpeech:
         self._process_configurations = ProcessConfigurations(self)
         self._process_configurations.process_configurations()
 
+        self._generate_with_chatterbox = GenerateWithChatterbox(self)
         self._generate_with_vibe_voice = GenerateWithVibeVoice(self)
 
         self._command_handler = CommandHandler(self)
@@ -27,6 +32,12 @@ class CLITextToSpeech:
                 "vibe_voice_model_configuration"],
             self._process_configurations.configurations[
                 "vibe_voice_configuration"])
+
+        self._chatterbox_tts_model = ChatterboxTTSModel(
+            self._process_configurations.configurations[
+                "chatterbox_tts_configuration"],
+            self._process_configurations.configurations[
+                "chatterbox_tts_generation_configuration"])
 
     def run_iterative(self):
         try:

@@ -1,2 +1,3 @@
 from .GenerateWithVibeVoice import GenerateWithVibeVoice
+from .GenerateWithChatterbox import GenerateWithChatterbox
 from .ProcessConfigurations import ProcessConfigurations

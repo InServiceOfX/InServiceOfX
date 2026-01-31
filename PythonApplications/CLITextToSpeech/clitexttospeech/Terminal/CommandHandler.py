@@ -10,6 +10,9 @@ class CommandHandler:
         self._app = app
 
         self._command_descriptions = {
+            ".generate_with_chatterbox": "Generate with Chatterbox",
+            ".generate_multiple_with_chatterbox": 
+                "Generate multiple audio from multiple text files with Chatterbox",
             ".generate_with_vibe_voice": "Generate with VibeVoice",
             ".refresh_configurations": "Refresh configurations",
             ".exit": "Exit the application",
@@ -20,6 +23,9 @@ class CommandHandler:
         # Dictionary mapping command strings to handler methods.
         # Add more commands as needed here.
         self.commands: Dict[str, Callable[[], Awaitable[bool]]] = {
+            ".generate_with_chatterbox": self.handle_generate_with_chatterbox,
+            ".generate_multiple_with_chatterbox": \
+                self.handle_generate_multiple_with_chatterbox,
             ".generate_with_vibe_voice": self.handle_generate_with_vibe_voice,
             ".refresh_configurations": self.handle_refresh_configurations,
             ".exit": self.handle_exit,
@@ -67,6 +73,18 @@ class CommandHandler:
     def handle_refresh_configurations(self) -> bool:
         self._app._terminal_ui.print_info("Refreshing configurations...")
         self._app._process_configurations.refresh_configurations()
+        return True
+
+    def handle_generate_with_chatterbox(self) -> bool:
+        self._app._terminal_ui.print_info("Generating with Chatterbox...")
+        self._app._generate_with_chatterbox.generate_with_chatterbox()
+        return True
+
+    def handle_generate_multiple_with_chatterbox(self) -> bool:
+        self._app._terminal_ui.print_info((
+            "Generating multiple audio from multiple text files with "
+            "Chatterbox..."))
+        self._app._generate_with_chatterbox.generate_multiple_with_chatterbox()
         return True
 
     def handle_generate_with_vibe_voice(self) -> bool:
