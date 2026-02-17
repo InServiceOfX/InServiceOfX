@@ -1,0 +1,43 @@
+# Huggingface 
+# https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+# which links to sglang cookbook for Nemotron-3-Nano:
+# https://github.com/NVIDIA-NeMo/Nemotron/blob/main/usage-cookbook/Nemotron-3-Nano/sglang_cookbook.ipynb
+
+# Use BF16 for NVIDIA architectures starting from Ampere. So my 3060 can run it.
+# From the cookbook:
+# Load the BF16 version
+
+# python3 -m sglang.launch_server --model-path nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 \
+# --host 0.0.0.0 --port 5000 --log-level warning --trust-remote-code --tool-call-parser qwen3_coder --reasoning-parser deepseek-r1
+
+docker_image_name: lmsysorg/sglang:latest-cu130
+
+gpus: "device=1"
+shm_size: "32g"
+ipc: "host"
+
+ports:
+  - host_port: 5000
+    container_port: 5000
+
+volumes:
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/LLM/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+    container_path: /models/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+
+command:
+  - python3
+  - -m
+  - sglang.launch_server
+  - --model-path
+  - /models/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "5000"
+  - --log-level
+  - "warning"
+  - --trust-remote-code
+  - --tool-call-parser
+  - "qwen3_coder"
+  - --reasoning-parser
+  - "deepseek-r1"

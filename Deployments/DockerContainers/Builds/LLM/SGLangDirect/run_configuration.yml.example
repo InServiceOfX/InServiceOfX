@@ -1,0 +1,42 @@
+# Example: SGLang with local Qwen3-4B on GPU 1 (device=1)
+# Matches: docker run --gpus "device=1" --shm-size 16g -p 30000:30000 --ipc=host -v ... lmsysorg/sglang:latest-cu130 python3 -m sglang.launch_server ...
+
+# From
+# https://huggingface.co/Qwen/Qwen3-4B
+# They suggest sglang>=0.4.6.post1
+# python -m sglang.launch_server --model-path Qwen/Qwen3-4B --reasoning-parser qwen3
+# For processing long texts, they claim to have "validated the model's 
+# performance on context lengths of up to 131,072 tokens using the YaRN method."
+# "Qwen3 natively supports context lengths of up to 32,768 tokens."
+#
+# python -m sglang.launch_server ... --json-model-override-args '{"rope_scaling":{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}}'
+
+
+docker_image_name: lmsysorg/sglang:latest-cu130
+
+gpus: "device=1"
+shm_size: "16g"
+ipc: "host"
+
+ports:
+  - host_port: 30000
+    container_port: 30000
+
+volumes:
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/LLM/Qwen/Qwen3-4B/
+    container_path: /models/Qwen3-4B
+
+command:
+  - python3
+  - -m
+  - sglang.launch_server
+  - --model-path
+  - /models/Qwen3-4B
+  - --reasoning-parser
+  - "qwen3"
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "30000"
+  - --json-model-override-args
+  - '{"rope_scaling":{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}}'

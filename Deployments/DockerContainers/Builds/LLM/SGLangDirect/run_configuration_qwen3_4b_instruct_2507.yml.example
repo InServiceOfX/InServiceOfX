@@ -1,0 +1,33 @@
+# Example: SGLang with local Qwen3-4B-Instruct-2507 on GPU 1 (device=1)
+
+# From
+# https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
+# They suggest sglang>=0.4.6.post1
+# python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --context-length 262144
+
+docker_image_name: lmsysorg/sglang:latest-cu130
+
+gpus: "device=1"
+shm_size: "32g"
+ipc: "host"
+
+ports:
+  - host_port: 30000
+    container_port: 30000
+
+volumes:
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/LLM/Qwen/Qwen3-4B-Instruct-2507/
+    container_path: /models/Qwen3-4B-Instruct-2507
+
+command:
+  - python3
+  - -m
+  - sglang.launch_server
+  - --model-path
+  - /models/Qwen3-4B-Instruct-2507
+  - --context-length
+  - "262144"
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "30000"

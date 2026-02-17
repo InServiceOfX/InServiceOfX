@@ -1,3 +1,0 @@
-RUN pip install --upgrade pytest python-dotenv
-
-
