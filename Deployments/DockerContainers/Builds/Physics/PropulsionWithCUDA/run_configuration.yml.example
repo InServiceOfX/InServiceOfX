@@ -1,0 +1,9 @@
+# Mount Propulsion from host if you want live source editing cloned copies baked into the image.
+# volumes:
+#   - host_path: /path/to/Propulsion
+#     container_path: /workspace/repos/Propulsion
+#   - host_path: /path/to/CoolProp
+#     container_path: /workspace/repos/CoolProp
+volumes:
+  - host_path: /home/propdev/.openclaw/workspace/workspace2/repos/Propulsion
+    container_path: /Propulsion
