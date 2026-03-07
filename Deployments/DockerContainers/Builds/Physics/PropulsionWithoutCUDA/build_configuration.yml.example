@@ -1,0 +1,20 @@
+docker_image_name: propulsion-without-cuda:24.04
+base_image: ubuntu:24.04
+
+dockerfile_components:
+  - label: "Dockerfile.header"
+    path: "../../../CommonComponents/Dockerfile.header"
+  - label: "Dockerfile.minimal_base"
+    path: "../../../CommonComponents/Dockerfile.minimal_base"
+  - label: "Dockerfile.more_apt_installs"
+    path: "Dockerfile.more_apt_installs"
+  - label: "Dockerfile.cpp_development"
+    path: "../../../CommonComponents/Dockerfile.cpp_development"
+  - label: "Dockerfile.rust"
+    path: "../../../CommonComponents/Dockerfile.rust"
+  - label: "Dockerfile.python"
+    path: "../../../CommonComponents/Dockerfile.python"
+  - label: "Dockerfile.python_development"
+    path: "../../../CommonComponents/Dockerfile.python_development"
+  - label: "Dockerfile.coolprop"
+    path: "../../../CommonComponents/Dockerfile.coolprop"

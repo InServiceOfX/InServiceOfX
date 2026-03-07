@@ -31,3 +31,5 @@ dockerfile_components:
     path: "../../../CommonComponents/Dockerfile.python"
   - label: "Dockerfile.python_development"
     path: "../../../CommonComponents/Dockerfile.python_development"
+  - label: "Dockerfile.coolprop"
+    path: "../../../CommonComponents/Dockerfile.coolprop"
