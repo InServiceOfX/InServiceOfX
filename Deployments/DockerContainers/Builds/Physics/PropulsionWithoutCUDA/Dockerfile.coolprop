@@ -1,0 +1,23 @@
+# See
+# https://coolprop.org/coolprop/wrappers/StaticLibrary/index.html#static-library
+RUN git clone https://github.com/CoolProp/CoolProp.git /ThirdParty/CoolProp && \
+  cd /ThirdParty/CoolProp && \
+  # master branch, commit on Mar 1, 2026
+  git checkout d4ebdf1ef17ec6aa3fbfefd6504e419f01076351 && \
+  git submodule update --init \
+    externals/Catch2 \
+    externals/Eigen \
+    externals/IF97 \
+    externals/REFPROP-headers \
+    externals/fmtlib \
+    externals/incbin \
+    externals/miniz-3.0.2 \
+    externals/msgpack-c \
+    externals/multicomplex \
+    externals/nlohmann-json \
+    externals/pybind11 \
+    externals/rapidjson && \
+  mkdir -p BuildGcc && \
+  cd BuildGcc && \
+  cmake .. -DCOOLPROP_STATIC_LIBRARY=ON -DFORCE_BITNESS_NATIVE=ON && \
+  make -j2
