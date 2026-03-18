@@ -1,0 +1,24 @@
+# After this step, here are the following versions,
+# in pip list
+# huggingface_hub                   1.7.1
+# transformers                      5.3.0.dev0                           /ThirdParty/transformers
+#
+# and these are "NEW":
+#
+# torchprofile                      0.0.4
+# torchtitan                        0.2.0
+# transformer_engine                2.10.0+769ed778
+# triton                            3.5.1
+# triton_kernels                    1.0.0+gitbfeb0668.nv25.12
+
+
+## transformers (hugging face), required to run most popular diffusion models.
+RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+  cd /ThirdParty/transformers && \
+  # main branch, Commits on  Mar 17, 2026
+  git checkout f1f34de0a68497ebc95ae690893fb75b89814c0d && \
+  # Install editable install from source.
+  # See https://huggingface.co/docs/transformers/installation#installing-from-source
+  pip install -e .
+
+
