@@ -24,15 +24,36 @@ RUN apt-get update
 
 # --- Section: Dockerfile.transformers_reinstall ---
 
-## transformers (hugging face), required to run most popular diffusion models.
-RUN git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
+# After this step, here are the following versions,
+# in pip list
+# huggingface_hub                   0.36.2
+# transformers                      4.57.6                               /ThirdParty/transformers
+# accelerate                        1.13.0
+# diffusers                         0.37.0
+# flash_attn                        2.7.4.post1+25.12           40345937
+# numpy                             2.1.0
+# nvidia-modelopt                   0.42.0
+# 
+# and these are "NEW":
+#
+# torchprofile                      0.0.4
+# torchtitan                        0.2.0
+# transformer_engine                2.10.0+769ed778
+# triton                            3.5.1
+# triton_kernels                    1.0.0+gitbfeb0668.nv25.12
+
+# We get this warning otherwise:
+# /usr/local/lib/python3.12/dist-packages/modelopt/torch/__init__.py:36: UserWarning: transformers version 4.57.6 is incompatible with nvidia-modelopt and may cause issues. Please install recommended version with `pip install nvidia-modelopt[hf]` if working with HF models. 
+RUN pip uninstall -y nvidia-modelopt && pip install nvidia-modelopt[hf]
+
+RUN pip uninstall -y transformers && \
+  git clone https://github.com/huggingface/transformers.git /ThirdParty/transformers && \
   cd /ThirdParty/transformers && \
-  # main branch, Commits on  Mar 17, 2026
-  git checkout f1f34de0a68497ebc95ae690893fb75b89814c0d && \
+  # main branch, Commits on tag v4.57.6 Jan 16, 2026
+  git checkout 753d61104116eefc8ffc977327b441ee0c8d599f && \
   # Install editable install from source.
   # See https://huggingface.co/docs/transformers/installation#installing-from-source
   pip install -e .
-
 
 
 
