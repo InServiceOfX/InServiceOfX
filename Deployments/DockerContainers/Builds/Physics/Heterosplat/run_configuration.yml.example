@@ -1,0 +1,5 @@
+# Mount heterosplat from host if you want live source editing cloned copies baked into the image.
+# This is an example of how to mount a repo from the host; use your own path(s).
+volumes:
+  - host_path: /home/ernest/.openclaw/workspace/workspace2/repos/heterosplat
+    container_path: /heterosplat

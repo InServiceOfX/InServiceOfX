@@ -1,0 +1,8 @@
+# See
+RUN git clone https://github.com/nerfstudio-project/gsplat.git /ThirdParty/gsplat && \
+  cd /ThirdParty/gsplat && \
+  git submodule update --init --recursive && \
+  # main branch, commit on Apr 25, 2026
+  git checkout 53f89aa58fdbe6bf1b442975e1e4b7d5411e94e5 && \
+  pip install -e .
+
