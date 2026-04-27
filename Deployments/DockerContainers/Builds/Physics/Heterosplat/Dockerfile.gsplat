@@ -1,4 +1,15 @@
-# See
+# Fix libucs.so.0 ABI mismatch in NGC PyTorch 26.02: distro libucs at
+# /usr/lib/x86_64-linux-gnu/ is older than hpcx's and missing
+# ucs_config_doc_nop, which libucc.so.1 needs. The /etc/ld.so.conf.d approach
+# loses to trusted-directory precedence in NGC's ldconfig at runtime, so use
+# LD_LIBRARY_PATH which is consulted before ld.so.cache and trusted dirs.
+ENV LD_LIBRARY_PATH=/opt/hpcx/ucx/lib:${LD_LIBRARY_PATH}
+
+# Pin gsplat JIT build to RTX 3060 (Ampere sm_86) and cap nvcc parallelism so
+# 32 GB hosts don't OOM during compile.
+ENV TORCH_CUDA_ARCH_LIST=8.6 \
+    MAX_JOBS=6
+
 RUN git clone https://github.com/nerfstudio-project/gsplat.git /ThirdParty/gsplat && \
   cd /ThirdParty/gsplat && \
   git submodule update --init --recursive && \
@@ -6,3 +17,7 @@ RUN git clone https://github.com/nerfstudio-project/gsplat.git /ThirdParty/gspla
   git checkout 53f89aa58fdbe6bf1b442975e1e4b7d5411e94e5 && \
   pip install -e .
 
+# Pre-compile gsplat's CUDA extension at build time so the .so is baked into
+# this image layer. Without this, every --rm container start triggers a ~14
+# min JIT compile.
+RUN python -c "from gsplat.cuda._backend import _C; assert _C is not None, 'gsplat CUDA extension failed to build'; print('gsplat CUDA ext OK:', _C)"
