@@ -18,7 +18,7 @@ Last updated: 2026-05-10 (after Phase 1 image build succeeded).
 | Phase | Model | Weights on disk | Wrapper code | CLI wiring | Image built | Smoke-tested |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (1.2B, doc extraction) | yes | yes (`MoreMinerU`) | yes (`CLIPDFExtraction`) | **yes** | **yes (2026-05-10)** |
-| 2 | `Qwen/Qwen3-VL-4B-Instruct` (4B, general VLM) | yes | no | no | reuses Phase 1 image (same vLLM) | n/a |
+| 2 | `Qwen/Qwen3-VL-4B-Instruct` (4B, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM`) | no | reuses Phase 1 image (same vLLM) | blocked: bf16 doesn't fit 12 GB (see notes) |
 | 3 | `vidore/colqwen2.5-v0.2` (LoRA, multimodal retrieval) | LoRA only | no | no | reuses Phase 1 image | n/a |
 
 ### Local paths to weights (host)
@@ -134,17 +134,23 @@ If OOM on the 3070 (8 GB): drop `gpu_memory_utilization` 0.85 → 0.80 and `max_
 
 ### Phase 2 (Qwen3-VL-4B-Instruct)
 
-The image already supports it. Required code:
+**Done as of 2026-05-10:**
+- `MoreMinerU/moremineru/Configurations/Qwen3VLConfiguration.py` — Pydantic config mirroring `MinerUConfiguration` shape (`model_path`, optional `system_prompt`, `vllm_engine_kwargs`, `default_sampling_params`). Rejects MinerU-specific keys (`backend`, `image_analysis`) inside `vllm_engine_kwargs` as a guard against config copy-paste mistakes.
+- `MoreMinerU/moremineru/Applications/Qwen3VLVLLM.py` — wraps `vllm.LLM.chat(...)`. `generate(image, prompt)` for single calls, `generate_batch(items)` for true batched throughput. Default greedy decoding (`temperature=0`, `max_tokens=1024`); per-call overrides via `sampling_overrides=`.
+- 6 new unit tests in `tests/test_qwen3vl_configuration.py` (all green: round-trip YAML, required-field validation, default sampling params, MinerU-key rejection).
 
-1. **New wrapper** at `PythonLibraries/HuggingFace/MoreMinerU/moremineru/Applications/Qwen3VLVLLM.py` (or move to a new sibling library `MoreVLM` if you prefer separation; current taste is to keep them under `MoreMinerU` since they share the vLLM engine).
-   - Constructor takes a config object with `model_path`, `vllm_engine_kwargs`, plus prompt-template knobs (system prompt, chat template handling).
-   - `generate(image: Image, prompt: str) -> str` and a batched variant.
-   - vLLM API: `LLM(model=..., trust_remote_code=False)` + `llm.generate(prompts=[{"prompt": ..., "multi_modal_data": {"image": image}}])`. The exact format varies by vLLM version — check `https://docs.vllm.ai/en/v0.11.0/multimodal/` for v0.11.
-2. **New configuration** at `MoreMinerU/moremineru/Configurations/Qwen3VLConfiguration.py` — mirror `MinerUConfiguration` (use `protected_namespaces=()`).
-3. **CLI extension**: either add a `--mode qwen3vl` flag to `CLIPDFExtraction` or create a sibling `PythonApplications/CLIQwen3VLChat/`. Pick by intended UX:
-   - PDF batch extraction with general VLM = extend `CLIPDFExtraction`.
-   - Interactive image+prompt chat = new `CLIQwen3VLChat` modeled on `CLIImage`'s terminal UI.
-4. **Memory budget on 3070 (8 GB)**: Qwen3-VL-4B in bf16 is ~8 GB just for weights. Either run on the 3060, or quantize. AWQ / FP8 weights aren't included in the user's download — would need a fresh fetch.
+**Blocked at end-to-end smoke test:** Qwen3-VL-4B in bf16 will not load on a 12 GB RTX 3060 under vLLM 0.11.2. vLLM's `profile_run` at engine init unconditionally tries to allocate a ~2.89 GiB activation buffer (Qwen2VL-style multimodal vision-tower forward pass). The model weights themselves load to ~9.1 GB of the 11.63 GiB physical capacity, leaving only ~1.78 GB free — short of the 2.89 GB the profiler needs.
+
+Empirically reproduced 4 times: at `max_model_len` of 8192, 4096, and 2048 the OOM is the *same* 2.89 GiB, confirming the limit is the vision-tower profile, not the KV cache. `max_num_seqs=1` + `limit_mm_per_prompt={"image": 1}` reduced memory usage by only ~80 MB — not enough. `gpu_memory_utilization=0.95` does not help because the issue is absolute capacity, not budget.
+
+**Unblockers (user decision, all untested locally):**
+1. **AWQ/INT4 quantized weights.** Check `https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-AWQ` (or `-Int4`); weights drop ~8 GB → ~3 GB, comfortably fits 12 GB with KV cache.
+2. **A 16 GB+ GPU.** RTX 3070 Ti, 4070 Ti, A4000, 3090, etc.
+3. **Smaller VLM in bf16.** Qwen2.5-VL-3B-Instruct (~6 GB weights), InternVL2-4B, Phi-3.5-Vision.
+
+The wrapper code is logically complete and unit-tested. The only gap is GPU validation, which needs either quantized weights or a bigger card.
+
+**CLI choice (still open, defer until smoke test path is unblocked):** add `--mode qwen3vl` to `CLIPDFExtraction` (PDF batch + general VLM) vs. new `PythonApplications/CLIQwen3VLChat/` (interactive chat). Pick by intended UX once we know the workload.
 
 ### Phase 3 (ColQwen2.5-v0.2)
 
