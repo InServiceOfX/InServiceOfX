@@ -18,7 +18,7 @@ Last updated: 2026-05-10 (after Phase 1 image build succeeded).
 | Phase | Model | Weights on disk | Wrapper code | CLI wiring | Image built | Smoke-tested |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (1.2B, doc extraction) | yes | yes (`MoreMinerU`) | yes (`CLIPDFExtraction`) | **yes** | **yes (2026-05-10)** |
-| 2 | `Qwen/Qwen3-VL-4B-Instruct` (4B, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM`) | no | reuses Phase 1 image (same vLLM) | blocked: bf16 doesn't fit 12 GB (see notes) |
+| 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (4B, AWQ-8bit, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM` via `qwen-vl-utils`) | in progress (`CLIPDFQwen3VLChat`) | reuses Phase 1 image + new `Dockerfile.qwen3vl` layer | in progress |
 | 3 | `vidore/colqwen2.5-v0.2` (LoRA, multimodal retrieval) | LoRA only | no | no | reuses Phase 1 image | n/a |
 
 ### Local paths to weights (host)
@@ -26,7 +26,7 @@ Last updated: 2026-05-10 (after Phase 1 image build succeeded).
 ```
 /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/Multimodal/
   opendatalab/MinerU2.5-Pro-2604-1.2B/    # 2.3 GB, full model
-  Qwen/Qwen3-VL-4B-Instruct/              # 8.9 GB across 2 shards
+  cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit/  # ~4 GB AWQ-8bit (replaces deleted bf16)
   vidore/colqwen2.5-v0.2/                 # 240 MB, LoRA adapter only
 ```
 
@@ -132,25 +132,27 @@ If OOM on the 3070 (8 GB): drop `gpu_memory_utilization` 0.85 → 0.80 and `max_
 2. If extraction quality is poor on P&ID diagrams specifically, set `image_analysis: true` in `mineru_configuration.yml` — that turns on figure/chart analysis at extra latency.
 3. Inspect a few `page_N.md` outputs vs the source PNGs in `<output_dir>/<pdf_stem>/` and decide whether the parsed tables match the part/instrumentation tables on each page.
 
-### Phase 2 (Qwen3-VL-4B-Instruct)
+### Phase 2 (Qwen3-VL-4B-Instruct via AWQ-8bit)
 
-**Done as of 2026-05-10:**
-- `MoreMinerU/moremineru/Configurations/Qwen3VLConfiguration.py` — Pydantic config mirroring `MinerUConfiguration` shape (`model_path`, optional `system_prompt`, `vllm_engine_kwargs`, `default_sampling_params`). Rejects MinerU-specific keys (`backend`, `image_analysis`) inside `vllm_engine_kwargs` as a guard against config copy-paste mistakes.
-- `MoreMinerU/moremineru/Applications/Qwen3VLVLLM.py` — wraps `vllm.LLM.chat(...)`. `generate(image, prompt)` for single calls, `generate_batch(items)` for true batched throughput. Default greedy decoding (`temperature=0`, `max_tokens=1024`); per-call overrides via `sampling_overrides=`.
-- 6 new unit tests in `tests/test_qwen3vl_configuration.py` (all green: round-trip YAML, required-field validation, default sampling params, MinerU-key rejection).
+**Why AWQ-8bit not bf16:** Qwen3-VL-4B in bf16 (~8 GB weights) does not fit on a 12 GB Ampere GPU under vLLM 0.11.2 — the engine's `profile_run` at init unconditionally allocates a ~2.89 GiB vision-tower activation buffer on top of the loaded weights, exceeding the 11.63 GiB physical capacity. Tested at `max_model_len` 2048 / 4096 / 8192, all the same OOM. FP8 is hardware-accelerated only on sm_89+ (Ada/Hopper), so the 3060 (sm_86) can't use it either. **AWQ-8bit (`cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit`)** is the chosen path: ~4 GB weights, runs on Ampere via vLLM's `quantization="compressed-tensors"` loader (cyankiwi published this through llm-compressor, which writes compressed-tensors format).
 
-**Blocked at end-to-end smoke test:** Qwen3-VL-4B in bf16 will not load on a 12 GB RTX 3060 under vLLM 0.11.2. vLLM's `profile_run` at engine init unconditionally tries to allocate a ~2.89 GiB activation buffer (Qwen2VL-style multimodal vision-tower forward pass). The model weights themselves load to ~9.1 GB of the 11.63 GiB physical capacity, leaving only ~1.78 GB free — short of the 2.89 GB the profiler needs.
+**Wrapper architecture:** Follows the QwenLM/Qwen3-VL upstream canonical inference pattern:
 
-Empirically reproduced 4 times: at `max_model_len` of 8192, 4096, and 2048 the OOM is the *same* 2.89 GiB, confirming the limit is the vision-tower profile, not the KV cache. `max_num_seqs=1` + `limit_mm_per_prompt={"image": 1}` reduced memory usage by only ~80 MB — not enough. `gpu_memory_utilization=0.95` does not help because the issue is absolute capacity, not budget.
+1. `transformers.AutoProcessor.from_pretrained(model_path)` — provides `apply_chat_template`
+2. `qwen_vl_utils.process_vision_info(messages)` — Qwen-VL family image/video preprocessing (resize to model's expected pixel budget, etc.)
+3. `vllm.LLM.generate([{"prompt": ..., "multi_modal_data": {"image": [...]}}], sampling_params=...)` — actual inference
 
-**Unblockers (user decision, all untested locally):**
-1. **AWQ/INT4 quantized weights.** Check `https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-AWQ` (or `-Int4`); weights drop ~8 GB → ~3 GB, comfortably fits 12 GB with KV cache.
-2. **A 16 GB+ GPU.** RTX 3070 Ti, 4070 Ti, A4000, 3090, etc.
-3. **Smaller VLM in bf16.** Qwen2.5-VL-3B-Instruct (~6 GB weights), InternVL2-4B, Phi-3.5-Vision.
+The previous draft of the wrapper used `vllm.LLM.chat()`, which works for most VLMs but bypasses `process_vision_info`'s image budget logic; upstream specifically recommends the explicit path.
 
-The wrapper code is logically complete and unit-tested. The only gap is GPU validation, which needs either quantized weights or a bigger card.
+**Done (2026-05-10):**
+- `Dockerfile.qwen3vl` build component installs `qwen-vl-utils==0.0.14` + `accelerate`. Added `qwen_vl_utils_version` build arg. Image needs rebuild to pick this up.
+- `MoreMinerU/moremineru/Applications/Qwen3VLVLLM.py` refactored to the explicit `AutoProcessor` + `process_vision_info` + `llm.generate` path.
+- `Qwen3VLConfiguration` default sampling params updated to the model card's recommended VL settings (`top_p=0.8`, `top_k=20`, `temperature=0.7`, `presence_penalty=1.5`).
+- `smoke_qwen3vl_gpu.py` default model-path / quantization updated for AWQ-8bit; old bf16-OOM-fighting flags (`--max-num-seqs=1`, `--limit-images=1`) reverted to sane values.
 
-**CLI choice (still open, defer until smoke test path is unblocked):** add `--mode qwen3vl` to `CLIPDFExtraction` (PDF batch + general VLM) vs. new `PythonApplications/CLIQwen3VLChat/` (interactive chat). Pick by intended UX once we know the workload.
+**In progress:**
+- Re-smoke-test against the AWQ-8bit weights on the rebuilt image.
+- New `PythonApplications/CLIPDFQwen3VLChat/` — PDF rasterize → Qwen3-VL with user-supplied prompt → freeform per-page text output. Mirrors `CLIPDFExtraction` shape but emits `.txt` not structured JSON.
 
 ### Phase 3 (ColQwen2.5-v0.2)
 

@@ -65,8 +65,12 @@ def test_default_sampling_params_when_omitted(tmp_path: Path):
     )
 
     config = Qwen3VLConfiguration.from_yaml(config_path)
-    # The Field default is greedy decoding with 1024 max_tokens.
-    assert config.default_sampling_params["temperature"] == 0.0
+    # Field defaults match the Qwen3-VL model card's recommended VL-task
+    # generation hyperparameters (not greedy — see Qwen3VLConfiguration).
+    assert config.default_sampling_params["temperature"] == 0.7
+    assert config.default_sampling_params["top_p"] == 0.8
+    assert config.default_sampling_params["top_k"] == 20
+    assert config.default_sampling_params["presence_penalty"] == 1.5
     assert config.default_sampling_params["max_tokens"] == 1024
 
 

@@ -51,12 +51,22 @@ class Qwen3VLConfiguration(BaseModel):
     )
 
     default_sampling_params: Dict[str, Any] = Field(
-        default_factory=lambda: {"max_tokens": 1024, "temperature": 0.0},
+        default_factory=lambda: {
+            "max_tokens": 1024,
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 20,
+            "repetition_penalty": 1.0,
+            "presence_penalty": 1.5,
+        },
         description=(
-            "Default keyword arguments for vllm.SamplingParams when the "
-            "caller doesn't pass an explicit one. Greedy decoding "
-            "(temperature=0) is the right default for grounded extraction; "
-            "callers doing creative tasks should override."
+            "Default keyword arguments for vllm.SamplingParams. The defaults "
+            "match the Qwen3-VL model card's recommended generation "
+            "hyperparameters for *VL* tasks (top_p=0.8, top_k=20, "
+            "temperature=0.7, presence_penalty=1.5). Switch to greedy "
+            "(temperature=0) per call if you need deterministic structured "
+            "extraction; the upstream defaults are tuned for descriptive "
+            "image-grounded chat."
         ),
     )
 

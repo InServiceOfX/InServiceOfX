@@ -54,9 +54,14 @@ def parse_args() -> argparse.Namespace:
         "--model-path",
         type=Path,
         default=Path(
-            "/Data/Models/Multimodal/Qwen/Qwen3-VL-4B-Instruct"
+            "/Data/Models/Multimodal/cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit"
         ),
-        help="Directory containing the model's config.json + safetensors.",
+        help=(
+            "Directory containing the model's config.json + safetensors. "
+            "Default is the AWQ-8bit community quant which fits on a 12 GB "
+            "Ampere GPU; for un-quantized bf16 weights or a different quant, "
+            "override + pass --quantization."
+        ),
     )
     parser.add_argument(
         "--image-path",
@@ -86,37 +91,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-model-len",
         type=int,
-        default=4096,
+        default=8192,
         help="Forwarded to vllm.LLM(max_model_len=...).",
     )
     parser.add_argument(
         "--gpu-mem-util",
         type=float,
-        default=0.95,
+        default=0.90,
         help="Forwarded to vllm.LLM(gpu_memory_utilization=...).",
     )
     parser.add_argument(
         "--max-num-seqs",
         type=int,
-        default=1,
+        default=4,
         help="Forwarded to vllm.LLM(max_num_seqs=...).",
     )
     parser.add_argument(
         "--limit-images",
         type=int,
-        default=1,
+        default=0,
         help=(
-            "Becomes limit_mm_per_prompt={'image': N}. Reduces vision-tower "
-            "profile-run memory."
+            "Becomes limit_mm_per_prompt={'image': N} when N > 0. The "
+            "default of 0 omits the limit entirely (vLLM picks its own)."
         ),
     )
     parser.add_argument(
         "--quantization",
         type=str,
-        default=None,
+        default="compressed-tensors",
         help=(
-            "Pass a vLLM-supported quantization tag (e.g. 'awq', 'gptq', "
-            "'fp8'). Leave unset for un-quantized bf16."
+            "Pass a vLLM-supported quantization tag. Default 'compressed-"
+            "tensors' matches the cyankiwi AWQ-8bit model. For unquantized "
+            "bf16 weights pass an empty string '' (or use a different "
+            "model-path)."
         ),
     )
     parser.add_argument(
@@ -164,8 +171,9 @@ def main() -> int:
         "gpu_memory_utilization": args.gpu_mem_util,
         "enforce_eager": not args.no_eager,
         "max_num_seqs": args.max_num_seqs,
-        "limit_mm_per_prompt": {"image": args.limit_images},
     }
+    if args.limit_images > 0:
+        engine_kwargs["limit_mm_per_prompt"] = {"image": args.limit_images}
     if args.quantization:
         engine_kwargs["quantization"] = args.quantization
 

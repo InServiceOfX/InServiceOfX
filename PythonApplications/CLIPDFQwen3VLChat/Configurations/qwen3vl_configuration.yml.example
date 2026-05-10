@@ -1,0 +1,40 @@
+# Path to Qwen3-VL weights as visible *inside the container*.
+# Host:      /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/Multimodal/cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit
+# Container: /Data/Models/Multimodal/cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit
+# (mapping defined in Builds/Multimodal/VLLMMultimodal/run_configuration.yml)
+model_path: /Data/Models/Multimodal/cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit
+
+# Optional system-role message prepended to every chat. Leave None for
+# pure user-prompt mode; set to nudge the model toward a particular persona
+# (e.g. "You are a propulsion engineer; answer concisely and cite figure
+# numbers when visible.").
+system_prompt: null
+
+# Forwarded verbatim to vllm.LLM(...).
+# - quantization: "compressed-tensors" matches the cyankiwi AWQ-8bit packaging
+#   (which uses llm-compressor's compressed-tensors output format). For the
+#   AWQ-4bit cyankiwi build use "awq" or "awq_marlin" instead.
+# - max_model_len: 8192 is comfortable on a 12 GB Ampere card with AWQ-8bit
+#   weights (~4 GB) + KV cache.
+# - gpu_memory_utilization: 0.90 leaves a bit of headroom for the vision tower
+#   profile-run; raise to 0.95 if you have spare VRAM.
+vllm_engine_kwargs:
+  dtype: bfloat16
+  quantization: compressed-tensors
+  max_model_len: 8192
+  gpu_memory_utilization: 0.90
+  enforce_eager: true
+  max_num_seqs: 4
+  tensor_parallel_size: 1
+  trust_remote_code: false
+
+# Defaults match the Qwen3-VL model card's recommended *VL* generation
+# hyperparameters. For deterministic structured-extraction-style prompts,
+# override with temperature: 0.0.
+default_sampling_params:
+  max_tokens: 1024
+  temperature: 0.7
+  top_p: 0.8
+  top_k: 20
+  repetition_penalty: 1.0
+  presence_penalty: 1.5

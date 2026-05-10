@@ -36,6 +36,8 @@ runner.release()
 
 ## Qwen3-VL — general-purpose VLM chat
 
+Wraps `vllm.LLM` following the QwenLM/Qwen3-VL upstream's canonical pattern: `processor.apply_chat_template` + `qwen_vl_utils.process_vision_info` + `llm.generate({"prompt": ..., "multi_modal_data": {"image": [...]}})`. The Docker image installs `qwen-vl-utils==0.0.14` and `accelerate` for this path.
+
 ```python
 from pathlib import Path
 from PIL import Image
@@ -56,24 +58,18 @@ answers = runner.generate_batch([
 runner.release()
 ```
 
-`generate(image, prompt)` returns natural-language text. Unlike MinerU, this is open-ended and not structured. Defaults to greedy decoding (`temperature=0`, `max_tokens=1024`); override per call via `sampling_overrides=` or globally via `default_sampling_params` in the YAML.
+`generate(image, prompt)` returns natural-language text. Defaults match the Qwen3-VL model card's recommended *VL* sampling: `top_p=0.8`, `top_k=20`, `temperature=0.7`, `presence_penalty=1.5`, `repetition_penalty=1.0`, `max_tokens=1024`. Override per call via `sampling_overrides={...}` or globally via `default_sampling_params` in the YAML. For grounded structured extraction, pass `sampling_overrides={"temperature": 0.0}` to force greedy.
 
 ## Memory budget notes
 
-| Model | Weights (bf16) | Comfortable `gpu_memory_utilization` on 12 GB / 8 GB | Comfortable `max_model_len` |
-| --- | --- | --- | --- |
-| MinerU2.5-Pro (1.2B) | ~2.4 GB | 0.85 / 0.80 | 8192 (architectural cap; do not raise) |
-| Qwen3-VL-4B | ~8 GB | doesn't fit on 12 GB in bf16 (see below) / never | n/a in bf16 on consumer GPUs |
+| Model | Variant we use | Weights on disk | Fits 12 GB? | Notes |
+| --- | --- | --- | --- | --- |
+| MinerU2.5-Pro (1.2B) | bf16 (full) | ~2.4 GB | yes | `max_model_len 8192` is the model's architectural cap |
+| Qwen3-VL-4B | AWQ-8bit (`cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit`) | ~4 GB | yes | Pass `quantization="compressed-tensors"` to vLLM — that's the AWQ-8bit packaging the cyankiwi build uses (via `llm-compressor`) |
 
-### Qwen3-VL-4B in bf16 doesn't fit on a 12 GB GPU under vLLM 0.11.2
+### Why AWQ-8bit, not bf16 or FP8
 
-Empirically reproduced on RTX 3060 (11.63 GiB visible): vLLM's `profile_run` at engine init unconditionally tries to allocate a ~2.89 GiB activation buffer (Qwen2VL-style multimodal forward pass through the vision tower). Weights load uses ~9.1 GB of the 11.63 GiB physical capacity (`gpu_memory_utilization` not the cause — the model genuinely uses that much), leaving only ~1.78 GB free, less than the 2.89 GB the profiler needs.
-
-`max_model_len` does not affect this: the same 2.89 GiB error reproduces at 2048, 4096, and 8192. `max_num_seqs=1` and `limit_mm_per_prompt={"image": 1}` did not reduce the profile allocation either.
-
-Workarounds (untested locally; user-side decision):
-- **AWQ/INT4 quantized weights** (e.g. `Qwen/Qwen3-VL-4B-Instruct-AWQ` if released by Qwen team — check HF) drop weights from ~8 GB to ~3 GB; should fit comfortably with KV cache.
-- **Run on a 16 GB+ GPU** (3070 Ti / 4070 Ti / A4000 / 3090 etc.).
-- **Use a smaller VLM** like Qwen2.5-VL-3B-Instruct in bf16 (~6 GB weights), or InternVL/Phi-3.5-Vision in similar size class.
-
-The `Qwen3VLVLLM` wrapper itself is fully implemented and unit-tested; the constraint is purely about GPU memory at validation time.
+- **bf16 (`Qwen/Qwen3-VL-4B-Instruct`):** ~8 GB weights + ~2.89 GB profile-run activation buffer at engine init = 12+ GB peak. Confirmed not to fit on a 12 GB 3060 under vLLM 0.11.2 — `max_model_len`, `max_num_seqs`, and `limit_mm_per_prompt` don't reduce the profile allocation.
+- **FP8 (`Qwen/Qwen3-VL-4B-Instruct-FP8`):** halves weights but FP8 hardware acceleration in vLLM requires **compute capability ≥ 8.9** (Ada Lovelace / Hopper). Ampere GPUs (sm_86, including the 3060) can't run it.
+- **AWQ-4bit (`cyankiwi/Qwen3-VL-4B-Instruct-AWQ-4bit`):** smallest (~2-3 GB), works on Ampere via vLLM AWQ-Marlin kernel. Choose this if 8-bit doesn't fit in your particular workload's KV cache budget.
+- **AWQ-8bit (`cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit`):** best quality among Ampere-compatible options. Default in this repo.

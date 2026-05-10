@@ -1,0 +1,34 @@
+# input_path may be either a single .pdf file or a directory of .pdf files.
+# Paths must be visible from inside the container.
+#
+# Example (example PDF corpus, host path mapped to /Workspace via
+# VLLMMultimodal run_configuration.yml):
+input_path: /Workspace/your-pdfs/EXAMPLE-DOC-001 - example P&IDs rev12.pdf
+
+# Where Qwen3-VL responses (page_N.txt) and optional page PNGs land.
+output_path: /Workspace/Generated/CLIPDFQwen3VLChat
+
+# The question the model is asked about EACH page. Edit freely. Multi-line is
+# supported via YAML literal block (see commented example).
+prompt: |
+  You are reading a single page of an engineering Piping and Instrumentation
+  Diagram (P&ID). In 3-6 sentences, describe what this page shows: the
+  document title, revision, owning organization, the major systems or
+  subsystems visible, and any prominent components (valves, regulators,
+  tanks, heat exchangers, etc.). Be specific; quote labels and IDs verbatim
+  where legible.
+
+# Rasterization DPI. P&IDs have small text; 250-300 is a sweet spot.
+# Higher = sharper but slower rasterize + bigger images for the model.
+pdf_dpi: 250
+
+# Format for saved rasterized pages (only used if save_intermediate_images: true).
+image_format: PNG
+
+# Keep the rasterized page PNGs alongside Qwen3-VL responses (useful for
+# debugging response quality against the source image).
+save_intermediate_images: true
+
+# Skip pages whose .txt output already exists. Lets you resume an interrupted
+# run, and re-running with the same prompt is idempotent.
+skip_existing: true

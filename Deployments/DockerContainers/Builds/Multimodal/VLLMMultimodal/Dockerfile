@@ -114,7 +114,7 @@ RUN pip install --no-cache-dir transformers==${TRANSFORMERS_VERSION}
 RUN python -c "import vllm, transformers; \
   print(f'vLLM version: {vllm.__version__}'); \
   print(f'transformers version: {transformers.__version__}'); \
-  assert transformers.__version__.startswith('4.'), 'transformers must be 4.x, vLLM 0.11.0 is incompatible with 5.x'"
+  assert transformers.__version__.startswith('4.'), 'transformers must be 4.x; vLLM <0.12 is incompatible with 5.x (mineru-vl-utils caps vLLM at <0.12)'"
 
 
 
@@ -142,5 +142,33 @@ RUN python -c "from mineru_vl_utils import MinerUClient, MinerULogitsProcessor; 
 # usage of this image always rasterizes PDFs before sending to MinerU.
 # poppler-utils is installed at the system layer (Dockerfile.system_deps).
 RUN pip install --no-cache-dir pdf2image
+
+
+
+
+# --- Section: Dockerfile.qwen3vl ---
+
+ARG QWEN_VL_UTILS_VERSION
+
+# qwen-vl-utils provides `process_vision_info`, the canonical image / video
+# preprocessing helper for the Qwen-VL family. The QwenLM/Qwen3-VL upstream
+# README shows it as the recommended path for vLLM offline inference:
+#     from qwen_vl_utils import process_vision_info
+#     image_inputs, video_inputs = process_vision_info(messages)
+#
+# accelerate is co-installed because Qwen recommends it for the transformers-
+# side helpers (notably AutoProcessor.from_pretrained on multi-shard checkpoints
+# and any subsequent fine-tuning utilities).
+#
+# We don't git-clone QwenLM/Qwen3-VL into /ThirdParties because that repo is
+# cookbooks + docs, not a Python package — everything we need at runtime is
+# in this pip package.
+RUN pip install --no-cache-dir \
+  "qwen-vl-utils==${QWEN_VL_UTILS_VERSION}" \
+  accelerate
+
+# Sanity check the import that the wrapper actually uses.
+RUN python -c "from qwen_vl_utils import process_vision_info; \
+  print('qwen-vl-utils imports OK')"
 
 

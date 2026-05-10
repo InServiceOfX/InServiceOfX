@@ -43,6 +43,10 @@ build_args:
   # https://pypi.org/project/mineru-vl-utils/
   mineru_vl_utils_version: "0.2.7"
 
+  # qwen-vl-utils: process_vision_info() — Qwen-VL family image/video
+  # preprocessing. https://pypi.org/project/qwen-vl-utils/
+  qwen_vl_utils_version: "0.0.14"
+
 dockerfile_components:
   - label: "Dockerfile.header"
     path: "../../../CommonComponents/Dockerfile.header"
@@ -56,3 +60,5 @@ dockerfile_components:
     path: "Dockerfile.vllm"
   - label: "Dockerfile.mineru"
     path: "Dockerfile.mineru"
+  - label: "Dockerfile.qwen3vl"
+    path: "Dockerfile.qwen3vl"

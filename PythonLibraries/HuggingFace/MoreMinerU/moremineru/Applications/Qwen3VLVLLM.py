@@ -1,3 +1,16 @@
+"""vLLM-served Qwen3-VL wrapper.
+
+Follows the canonical inference pattern from the QwenLM/Qwen3-VL upstream
+README: load ``transformers.AutoProcessor`` alongside ``vllm.LLM``, build the
+prompt text via ``processor.apply_chat_template``, extract image inputs via
+``qwen_vl_utils.process_vision_info``, then feed both to ``llm.generate``.
+
+This is the path the Qwen team recommends; ``llm.chat`` (the higher-level vLLM
+convenience) skips ``process_vision_info`` and can mis-handle Qwen3-VL's
+specific image patching / resizing budget.
+"""
+from __future__ import annotations
+
 import gc
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -7,17 +20,16 @@ from moremineru.Configurations import Qwen3VLConfiguration
 
 
 class Qwen3VLVLLM:
-    """Thin wrapper around vllm.LLM serving Qwen3-VL.
+    """Thin wrapper around vllm.LLM serving Qwen3-VL (bf16 or AWQ/INT4/INT8/FP8).
 
-    Lifecycle mirrors MinerU2_5ProVLLM: construct cheaply, call load() before
-    inference, call release() to free GPU. The vLLM engine handles the chat
-    template (loaded from chat_template.json in the model dir) and the
-    multi-modal image plumbing automatically when we use llm.chat(...).
+    Lifecycle mirrors ``MinerU2_5ProVLLM``: construct cheaply, ``load()`` before
+    inference, ``release()`` to free GPU.
     """
 
     def __init__(self, configuration: Qwen3VLConfiguration):
         self._configuration = configuration
         self._llm: Optional[Any] = None
+        self._processor: Optional[Any] = None
         self._loaded = False
 
     def is_loaded(self) -> bool:
@@ -27,13 +39,16 @@ class Qwen3VLVLLM:
         if self._loaded:
             return
 
+        # Lazy imports so constructing the wrapper doesn't drag in vLLM/CUDA.
         from vllm import LLM
+        from transformers import AutoProcessor
 
+        model_path_str = str(self._configuration.model_path)
         engine_kwargs = dict(self._configuration.vllm_engine_kwargs)
-        self._llm = LLM(
-            model=str(self._configuration.model_path),
-            **engine_kwargs,
-        )
+        self._llm = LLM(model=model_path_str, **engine_kwargs)
+        # The processor lives on CPU and is cheap; load from the same dir so
+        # tokenizer + chat template + image processor versions all match.
+        self._processor = AutoProcessor.from_pretrained(model_path_str)
         self._loaded = True
 
     def _ensure_loaded(self, method: str) -> None:
@@ -60,9 +75,8 @@ class Qwen3VLVLLM:
         image: Image.Image,
         prompt: str,
     ) -> List[Dict[str, Any]]:
-        # ChatML format that vLLM 0.11.x feeds to the model's chat_template.
-        # The chat template reads `image` entries from the user-role content
-        # list and routes them through the multimodal preprocessor.
+        # Qwen3-VL expects ChatML user/system roles; vision inputs go under
+        # the user content as ``{"type": "image", "image": <PIL.Image>}``.
         messages: List[Dict[str, Any]] = []
         if self._configuration.system_prompt:
             messages.append(
@@ -82,24 +96,49 @@ class Qwen3VLVLLM:
         )
         return messages
 
+    def _build_vllm_inputs(
+        self,
+        messages: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        # Two-step: render the prompt text from the chat template, then run
+        # qwen_vl_utils to extract resized image tensors at Qwen3-VL's expected
+        # pixel budget.
+        from qwen_vl_utils import process_vision_info
+
+        prompt_text = self._processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        image_inputs, video_inputs = process_vision_info(messages)
+
+        multi_modal_data: Dict[str, Any] = {}
+        if image_inputs:
+            multi_modal_data["image"] = image_inputs
+        if video_inputs:
+            multi_modal_data["video"] = video_inputs
+
+        inputs: Dict[str, Any] = {"prompt": prompt_text}
+        if multi_modal_data:
+            inputs["multi_modal_data"] = multi_modal_data
+        return inputs
+
     def generate(
         self,
         image: Image.Image,
         prompt: str,
         sampling_overrides: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Single image+prompt -> generated text. Greedy by default."""
+        """Single image+prompt → generated text."""
         self._ensure_loaded("generate")
         messages = self._build_messages(image, prompt)
+        vllm_inputs = self._build_vllm_inputs(messages)
         sampling_params = self._build_sampling_params(sampling_overrides)
-        outputs = self._llm.chat(
-            [messages],
+        outputs = self._llm.generate(
+            [vllm_inputs],
             sampling_params=sampling_params,
             use_tqdm=False,
         )
-        # vllm.chat returns one RequestOutput per input; each holds a list of
-        # CompletionOutput. We submitted a single conversation, take its first
-        # candidate.
         return outputs[0].outputs[0].text
 
     def generate_batch(
@@ -107,21 +146,19 @@ class Qwen3VLVLLM:
         items: Sequence[Dict[str, Any]],
         sampling_overrides: Optional[Dict[str, Any]] = None,
     ) -> List[str]:
-        """Batched variant: each item is {"image": PIL.Image, "prompt": str}.
+        """Batched variant: each item is ``{"image": PIL.Image, "prompt": str}``.
 
-        vLLM 0.11.x batches multimodal inputs natively as long as we pass a
-        list of conversations to llm.chat, so this is a real throughput win
-        over a Python loop around generate(). Order of returns matches the
-        order of items.
+        vLLM batches multimodal prompts natively when given a list of
+        per-prompt input dicts. Order of returns matches order of items.
         """
         self._ensure_loaded("generate_batch")
-        conversations = [
-            self._build_messages(item["image"], item["prompt"])
-            for item in items
-        ]
+        all_inputs: List[Dict[str, Any]] = []
+        for item in items:
+            messages = self._build_messages(item["image"], item["prompt"])
+            all_inputs.append(self._build_vllm_inputs(messages))
         sampling_params = self._build_sampling_params(sampling_overrides)
-        outputs = self._llm.chat(
-            conversations,
+        outputs = self._llm.generate(
+            all_inputs,
             sampling_params=sampling_params,
             use_tqdm=False,
         )
@@ -129,6 +166,7 @@ class Qwen3VLVLLM:
 
     def release(self) -> None:
         self._llm = None
+        self._processor = None
         self._loaded = False
         gc.collect()
         try:
