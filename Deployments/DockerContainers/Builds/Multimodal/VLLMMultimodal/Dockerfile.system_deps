@@ -1,0 +1,12 @@
+# System libraries needed by:
+#   - pdf2image (poppler-utils provides pdftoppm/pdftocairo used to rasterize PDFs)
+#   - opencv / pillow image pipelines (libgl1, libglib2.0-0)
+#   - headless rendering on a stripped container (libsm6, libxext6)
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+    poppler-utils \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+  && rm -rf /var/lib/apt/lists/*

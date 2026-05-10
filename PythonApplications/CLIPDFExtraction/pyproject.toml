@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "clipdfextraction"
+version = "0.1.0"
+description = "CLI: rasterize PDFs and extract structured content via MinerU2.5-Pro on vLLM"
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

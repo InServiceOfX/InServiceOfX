@@ -1,0 +1,28 @@
+# Volumes mount your model weights and the InServiceOfX repo into the container.
+# The container_path values are referenced by the YAML configs in
+# PythonApplications/CLIPDFExtraction/Configurations/.
+volumes:
+  # Large external drive holding all downloaded model weights.
+  # Inside the container this becomes /Data/Models/Multimodal/<vendor>/<model>.
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/
+    container_path: /Data/
+
+  # Optional: a second models drive if you keep some on the home partition.
+  - host_path: /home/propdev/Data/
+    container_path: /Data1/
+
+  # The InServiceOfX repo, mounted so you can edit code on the host and re-run
+  # in the container without rebuilding the image.
+  - host_path: /home/propdev/.openclaw/workspace/workspace2/repos/InServiceOfX
+    container_path: /InServiceOfX
+
+  # Working directory for PDF inputs / extracted outputs. Adjust to taste.
+  - host_path: /home/propdev/.openclaw/workspace/workspace2/Data
+    container_path: /Workspace
+
+ports:
+  # vLLM's OpenAI-compatible HTTP server (only needed if you later run
+  # `vllm serve ...` instead of using the in-process LLM API). Safe to leave
+  # mapped — nothing listens on it unless you start a server.
+  - host_port: 8000
+    container_port: 8000

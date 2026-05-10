@@ -1,0 +1,22 @@
+ARG VLLM_VERSION
+ARG TRANSFORMERS_VERSION
+
+# Install vLLM separately from mineru-vl-utils so the version is explicitly
+# pinned and pip won't try to upgrade it later. mineru-vl-utils[vllm] only
+# constrains vllm>=0.10.1.1,<0.12 — pinning here keeps the build reproducible.
+RUN pip install --no-cache-dir vllm==${VLLM_VERSION}
+
+# vLLM 0.11.0 declares transformers>=4.55.2 with no upper bound. transformers
+# 5.x dropped legacy attributes (e.g. PreTrainedTokenizerBase.all_special_tokens_extended)
+# that vLLM 0.11.0 still calls in get_cached_tokenizer, which raises
+# `AttributeError: Qwen2Tokenizer has no attribute all_special_tokens_extended`
+# at LLM(...) load time. Force-downgrade to the latest 4.x. mineru-vl-utils'
+# transformers extra also caps at <5.0.0, so this matches the upstream intent.
+RUN pip install --no-cache-dir transformers==${TRANSFORMERS_VERSION}
+
+# Quick sanity check during build: import vllm so layer fails fast if there's
+# a torch/CUDA ABI mismatch (rather than at first run).
+RUN python -c "import vllm, transformers; \
+  print(f'vLLM version: {vllm.__version__}'); \
+  print(f'transformers version: {transformers.__version__}'); \
+  assert transformers.__version__.startswith('4.'), 'transformers must be 4.x; vLLM <0.12 is incompatible with 5.x (mineru-vl-utils caps vLLM at <0.12)'"

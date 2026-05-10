@@ -1,0 +1,58 @@
+# VLLMMultimodal: vLLM-based image for MinerU2.5-Pro, Qwen3-VL-4B, and (later) ColQwen2.5.
+#
+# Base image rationale:
+#   nvcr.io/nvidia/pytorch:25.06-py3 is the LAST CUDA 12.x release in NVIDIA's
+#   PyTorch container line (CUDA 12.9.1, Python 3.12, torch 2.8.0a0+5228986c39).
+#   Releases >= 25.07-py3 ship CUDA 13, which has compatibility issues with
+#   nunchaku and (currently) less consistent vLLM wheel coverage.
+#
+# https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html
+# Container OS:   Ubuntu 24.04
+# CUDA:           12.9.1
+# Python:         3.12
+# PyTorch (NV):   2.8.0a0+5228986c39  (reinstalled to stable 2.8.0 below;
+#                                      vLLM wheels require a stable torch tag,
+#                                      not a pre-release alpha tag)
+#
+# Targets compute capability sm_86 (RTX 3060/3070) and up.
+docker_image_name: vllm-multimodal:25.06-py3
+base_image: nvcr.io/nvidia/pytorch:25.06-py3
+
+build_args:
+  # Pin torch to a stable wheel tag that vLLM accepts.
+  # vLLM 0.11.2 requires torch 2.9.x (0.11.0 was 2.8.x). The
+  # Dockerfile.pytorch_reinstall installs this version to clear the NV alpha
+  # tag; vLLM install would re-resolve anyway, but pinning here keeps the
+  # rebuild deterministic and avoids one extra install/uninstall cycle.
+  torch_version: "2.9.0"
+  torchvision_version: "0.24.0"
+  numpy_version: "2.1.2"
+
+  # mineru-vl-utils[vllm] requires:  vllm >= 0.10.1.1, < 0.12
+  # Pin a known-good 0.11 release; bump as needed.
+  # 0.11.2 is the latest within mineru-vl-utils' cap; 0.11.1+ also added the
+  # `transformers<5` upper bound that 0.11.0 was missing (matches our pin).
+  vllm_version: "0.11.2"
+
+  # transformers must be 4.x: vLLM 0.11.0 still calls legacy attributes that
+  # transformers 5.x dropped (see Dockerfile.vllm comment). 4.57.6 is the
+  # latest 4.x line with full Qwen2VL support; mineru-vl-utils caps at <5.0.
+  transformers_version: "4.57.6"
+
+  # MinerU helper library that exposes MinerUClient and MinerULogitsProcessor.
+  # https://pypi.org/project/mineru-vl-utils/
+  mineru_vl_utils_version: "0.2.7"
+
+dockerfile_components:
+  - label: "Dockerfile.header"
+    path: "../../../CommonComponents/Dockerfile.header"
+  - label: "Dockerfile.base"
+    path: "../../../CommonComponents/Dockerfile.base"
+  - label: "Dockerfile.system_deps"
+    path: "Dockerfile.system_deps"
+  - label: "Dockerfile.pytorch_reinstall"
+    path: "Dockerfile.pytorch_reinstall"
+  - label: "Dockerfile.vllm"
+    path: "Dockerfile.vllm"
+  - label: "Dockerfile.mineru"
+    path: "Dockerfile.mineru"

@@ -1,0 +1,24 @@
+# input_path may be either a single .pdf file or a directory of .pdf files.
+# Paths must be visible from inside the container.
+#
+# Example (example PDF corpus, host path mapped to /Workspace via VLLMMultimodal
+# run_configuration.yml):
+#   /Workspace/your-pdfs/example-doc.pdf
+input_path: /Workspace/your-pdfs
+
+# Where extracted markdown + (optional) page PNGs land.
+output_path: /Workspace/Generated/CLIPDFExtraction
+
+# Rasterization DPI. P&IDs have small text; 250-300 is a sweet spot.
+# Higher = sharper but slower and more VRAM during MinerU pass.
+pdf_dpi: 250
+
+# Format to save rasterized pages in (only used if save_intermediate_images: true).
+image_format: PNG
+
+# Keep the rasterized page PNGs alongside the extraction outputs (useful for
+# debugging extraction quality against the source image).
+save_intermediate_images: true
+
+# Skip pages whose .md output already exists. Lets you resume an interrupted run.
+skip_existing: true

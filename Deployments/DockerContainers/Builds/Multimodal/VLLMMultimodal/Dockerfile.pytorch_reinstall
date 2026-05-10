@@ -1,0 +1,37 @@
+ARG TORCH_VERSION
+ARG TORCHVISION_VERSION
+ARG NUMPY_VERSION
+
+# The NVIDIA 25.06-py3 container ships torch 2.8.0a0+<sha> (a pre-release alpha
+# tag). vLLM's wheel metadata pins a stable torch version (e.g. torch==2.8.0),
+# and pip will refuse to use the container's alpha because alpha < stable in
+# PEP 440 ordering. We reinstall to the stable wheel before installing vLLM.
+#
+# Same trick the NunchakuBased build uses; see its Dockerfile.pytorch_reinstall.
+RUN sed -i '/^numpy==/d' /etc/pip/constraint.txt 2>/dev/null || true && \
+    pip install --no-cache-dir numpy==${NUMPY_VERSION}
+
+RUN sed -i '/^torch==/d' /etc/pip/constraint.txt 2>/dev/null || true && \
+    sed -i '/^torchvision==/d' /etc/pip/constraint.txt 2>/dev/null || true && \
+    pip install --no-cache-dir \
+      torch==${TORCH_VERSION} \
+      torchvision==${TORCHVISION_VERSION} \
+      torchaudio
+
+# The NV container ships flash-attn 2.7.4.post1 compiled against the alpha torch
+# above. After torch is downgraded to stable, the prebuilt flash_attn_2_cuda.so
+# fails to load with `undefined symbol: _ZN3c104cuda9SetDeviceEa` (libtorch C++
+# ABI symbol). Rebuilding flash-attn against stable torch is a 30-min nvcc
+# compile; uninstalling lets vLLM fall back to xformers (already present) for
+# attention. Throughput drops modestly on long sequences; correctness is
+# unaffected. If flash-attn becomes important later, reinstall it here with
+# --no-build-isolation against the now-stable torch.
+RUN pip uninstall -y flash-attn 2>&1 | tail -1
+
+# /etc/pip/constraint.txt ships from the NV container with `nvidia-cudnn-frontend==1.12.0`.
+# vLLM 0.11.1+ pulls in flashinfer-python==0.5.2 which requires
+# nvidia-cudnn-frontend>=1.13.0; the constraint blocks the install with
+# `ResolutionImpossible`. Strip the pin so flashinfer's bound wins. Same shape
+# as the torch/numpy strips above. We're not the team that needs the cudnn
+# frontend at 1.12.0 — that's a NV container assumption, not ours.
+RUN sed -i '/^nvidia-cudnn-frontend==/d' /etc/pip/constraint.txt 2>/dev/null || true

@@ -1,0 +1,22 @@
+# Path to MinerU2.5-Pro weights as visible *inside the container*.
+# Host:      /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/Multimodal/opendatalab/MinerU2.5-Pro-2604-1.2B
+# Container: /Data/Models/Multimodal/opendatalab/MinerU2.5-Pro-2604-1.2B
+# (mapping defined in Builds/Multimodal/VLLMMultimodal/run_configuration.yml)
+model_path: /Data/Models/Multimodal/opendatalab/MinerU2.5-Pro-2604-1.2B
+
+backend: vllm-engine
+image_analysis: false
+
+# Forwarded verbatim to vllm.LLM(...).
+# max_model_len is capped by the model architecture: MinerU2.5-Pro is built on
+# Qwen2VL-1.2B with max_position_embeddings=8192. Going higher would force RoPE
+# positions past the trained range and produce NaN; vLLM rejects it by default.
+# gpu_memory_utilization 0.85 fits a 12 GB consumer card (RTX 3060). On 8 GB
+# (RTX 3070) drop to 0.80 and consider max_model_len: 4096 if you OOM.
+vllm_engine_kwargs:
+  dtype: bfloat16
+  max_model_len: 8192
+  gpu_memory_utilization: 0.85
+  enforce_eager: true        # disables CUDA graphs; saves VRAM, costs a bit of throughput
+  tensor_parallel_size: 1
+  trust_remote_code: false

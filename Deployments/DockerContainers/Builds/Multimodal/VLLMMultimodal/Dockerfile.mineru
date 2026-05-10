@@ -1,0 +1,21 @@
+ARG MINERU_VL_UTILS_VERSION
+
+# mineru-vl-utils provides MinerUClient (high-level extract API) and
+# MinerULogitsProcessor (required to be passed to vllm.LLM(logits_processors=...)
+# for vllm>=0.10.1).
+#
+# We install with the [vllm] extra purely so the metadata records the intended
+# backend; vLLM itself is already installed from Dockerfile.vllm at a pinned
+# version and pip will satisfy the (>=0.10.1.1,<0.12) constraint with the
+# already-installed wheel.
+RUN pip install --no-cache-dir \
+  "mineru-vl-utils[vllm]==${MINERU_VL_UTILS_VERSION}"
+
+# Sanity check: the imports we'll use from MoreMinerU.
+RUN python -c "from mineru_vl_utils import MinerUClient, MinerULogitsProcessor; \
+  print('mineru-vl-utils imports OK')"
+
+# pdf2image is installed here (not in CommonComponents yet) because the runtime
+# usage of this image always rasterizes PDFs before sending to MinerU.
+# poppler-utils is installed at the system layer (Dockerfile.system_deps).
+RUN pip install --no-cache-dir pdf2image
