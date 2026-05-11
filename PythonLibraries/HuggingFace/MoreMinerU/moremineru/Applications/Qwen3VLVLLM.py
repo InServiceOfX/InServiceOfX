@@ -77,6 +77,10 @@ class Qwen3VLVLLM:
     ) -> List[Dict[str, Any]]:
         # Qwen3-VL expects ChatML user/system roles; vision inputs go under
         # the user content as ``{"type": "image", "image": <PIL.Image>}``.
+        # Optional `max_pixels` / `min_pixels` are read by
+        # ``qwen_vl_utils.process_vision_info`` and forwarded to the image
+        # processor — they cap the visual-token count so a high-DPI page
+        # doesn't blow past `max_model_len`.
         messages: List[Dict[str, Any]] = []
         if self._configuration.system_prompt:
             messages.append(
@@ -85,11 +89,16 @@ class Qwen3VLVLLM:
                     "content": self._configuration.system_prompt,
                 }
             )
+        image_content: Dict[str, Any] = {"type": "image", "image": image}
+        if self._configuration.image_max_pixels is not None:
+            image_content["max_pixels"] = self._configuration.image_max_pixels
+        if self._configuration.image_min_pixels is not None:
+            image_content["min_pixels"] = self._configuration.image_min_pixels
         messages.append(
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": image},
+                    image_content,
                     {"type": "text", "text": prompt},
                 ],
             }

@@ -3,7 +3,7 @@
 #
 # Example (example PDF corpus, host path mapped to /Workspace via
 # VLLMMultimodal run_configuration.yml):
-input_path: /Workspace/your-pdfs/EXAMPLE-DOC-001 - example P&IDs rev12.pdf
+input_path: /Workspace/your-pdfs/example-doc.pdf
 
 # Where Qwen3-VL responses (page_N.txt) and optional page PNGs land.
 output_path: /Workspace/Generated/CLIPDFQwen3VLChat

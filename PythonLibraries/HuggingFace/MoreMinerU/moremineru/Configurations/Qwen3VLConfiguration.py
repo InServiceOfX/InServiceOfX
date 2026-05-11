@@ -41,6 +41,27 @@ class Qwen3VLConfiguration(BaseModel):
         ),
     )
 
+    image_max_pixels: Optional[int] = Field(
+        1280 * 28 * 28,
+        description=(
+            "Cap on image pixel count after `qwen_vl_utils.process_vision_info` "
+            "resize, attached as `max_pixels` on each image content item. "
+            "Qwen3-VL uses 28x28 visual patches; default 1,003,520 px caps "
+            "the visual-token count to ~1280 patches, comfortably under "
+            "max_model_len=8192 with text overhead. Set to None to disable."
+        ),
+    )
+
+    image_min_pixels: Optional[int] = Field(
+        256 * 28 * 28,
+        description=(
+            "Floor on image pixel count after resize. Attached as "
+            "`min_pixels` on each image content item. Default 200,704 px "
+            "prevents the processor from squashing small images below "
+            "~256 visual patches (which hurts OCR / fine-text quality)."
+        ),
+    )
+
     vllm_engine_kwargs: Dict[str, Any] = Field(
         default_factory=dict,
         description=(

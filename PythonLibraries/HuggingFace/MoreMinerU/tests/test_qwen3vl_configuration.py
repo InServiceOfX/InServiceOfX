@@ -88,6 +88,33 @@ def test_rejects_minerU_specific_keys_in_engine_kwargs(tmp_path: Path):
     assert "image_analysis" in str(excinfo.value)
 
 
+def test_image_pixel_caps_have_defaults(tmp_path: Path):
+    config_path = tmp_path / "qwen.yml"
+    config_path.write_text(
+        "model_path: /tmp/does-not-exist/Qwen3-VL-4B-Instruct\n"
+    )
+
+    config = Qwen3VLConfiguration.from_yaml(config_path)
+    # Defaults cap visual-token count comfortably under max_model_len=8192:
+    # 1280 * 28 * 28 = 1,003,520 pixels (~1280 patches)
+    # 256  * 28 * 28 =   200,704 pixels (~256 patches)
+    assert config.image_max_pixels == 1280 * 28 * 28
+    assert config.image_min_pixels == 256 * 28 * 28
+
+
+def test_image_pixel_caps_can_be_disabled(tmp_path: Path):
+    config_path = tmp_path / "qwen.yml"
+    config_path.write_text(
+        "model_path: /tmp/does-not-exist/Qwen3-VL-4B-Instruct\n"
+        "image_max_pixels: null\n"
+        "image_min_pixels: null\n"
+    )
+
+    config = Qwen3VLConfiguration.from_yaml(config_path)
+    assert config.image_max_pixels is None
+    assert config.image_min_pixels is None
+
+
 def test_save_yaml_round_trip(tmp_path: Path):
     config_path = tmp_path / "qwen.yml"
     config_path.write_text(VALID_YAML)

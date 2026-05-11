@@ -18,7 +18,7 @@ Last updated: 2026-05-10 (after Phase 1 image build succeeded).
 | Phase | Model | Weights on disk | Wrapper code | CLI wiring | Image built | Smoke-tested |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (1.2B, doc extraction) | yes | yes (`MoreMinerU`) | yes (`CLIPDFExtraction`) | **yes** | **yes (2026-05-10)** |
-| 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (4B, AWQ-8bit, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM` via `qwen-vl-utils`) | in progress (`CLIPDFQwen3VLChat`) | reuses Phase 1 image + new `Dockerfile.qwen3vl` layer | in progress |
+| 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (4B, AWQ-8bit, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM` via `qwen-vl-utils`) | yes (`CLIPDFQwen3VLChat`) | yes (`vllm-multimodal:25.06-py3` sha `ea1221c0b9c5` with `Dockerfile.qwen3vl`) | **yes (2026-05-10)** |
 | 3 | `vidore/colqwen2.5-v0.2` (LoRA, multimodal retrieval) | LoRA only | no | no | reuses Phase 1 image | n/a |
 
 ### Local paths to weights (host)
@@ -150,9 +150,16 @@ The previous draft of the wrapper used `vllm.LLM.chat()`, which works for most V
 - `Qwen3VLConfiguration` default sampling params updated to the model card's recommended VL settings (`top_p=0.8`, `top_k=20`, `temperature=0.7`, `presence_penalty=1.5`).
 - `smoke_qwen3vl_gpu.py` default model-path / quantization updated for AWQ-8bit; old bf16-OOM-fighting flags (`--max-num-seqs=1`, `--limit-images=1`) reverted to sane values.
 
-**In progress:**
-- Re-smoke-test against the AWQ-8bit weights on the rebuilt image.
-- New `PythonApplications/CLIPDFQwen3VLChat/` — PDF rasterize → Qwen3-VL with user-supplied prompt → freeform per-page text output. Mirrors `CLIPDFExtraction` shape but emits `.txt` not structured JSON.
+**Done (2026-05-10, second session):**
+- Image rebuilt with `Dockerfile.qwen3vl` layer (qwen-vl-utils 0.0.14 + accelerate 1.13.0 + av 17.0.1). New image sha `ea1221c0b9c5`.
+- Smoke test passed against AWQ-8bit weights end-to-end (no manual `pip` patches). Per-page latency on RTX 3060: ~10-12 s.
+- New `CLIPDFQwen3VLChat` app ran full corpus on `rev11.pdf` (7 pages, all `status: ok`, total ~76 s). Output is freeform `page_N.txt` + `manifest.json` (which now also records the prompt for reproducibility).
+- Two memory-management gotchas surfaced (both now documented in `qwen3vl_configuration.yml.example`):
+  - **`gpu_memory_utilization` must be ≥ 0.95** for `max_model_len=8192`: at 0.90, KV cache memory is 1.10 GiB but vLLM needs 1.12 GiB → ValueError at engine init (NOT an OOM, a sanity-check). At 0.95 we get 1.69 GiB KV cache.
+  - **`image_max_pixels` / `image_min_pixels`** must be set on each image content item, else a 250-DPI rasterized P&ID page (~12 MP) produces ~11,466 visual tokens, overrunning `max_model_len=8192`. Defaults of `1280*28*28 = 1,003,520` (max) and `256*28*28 = 200,704` (min) cap to ~1,280 visual tokens, well under the limit. The wrapper attaches these from `Qwen3VLConfiguration` automatically.
+- 13 unit tests pass (5 MinerU + 8 Qwen3VL, with 2 new tests for `image_max_pixels` / `image_min_pixels` defaults and disable-via-null behavior).
+
+**Known limitation:** dense P&ID schematics produce some hallucinated component labels (e.g. "SCHNIPPERY" for what is probably "SOLENOID"). General-purpose VLMs aren't built for engineering OCR; MinerU is the right tool when you need verbatim labels. Use Qwen3-VL for descriptive / question-answering work where approximate identification suffices.
 
 ### Phase 3 (ColQwen2.5-v0.2)
 

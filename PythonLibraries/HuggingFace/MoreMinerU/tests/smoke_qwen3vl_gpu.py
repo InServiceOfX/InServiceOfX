@@ -97,8 +97,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--gpu-mem-util",
         type=float,
-        default=0.90,
-        help="Forwarded to vllm.LLM(gpu_memory_utilization=...).",
+        default=0.95,
+        help=(
+            "Forwarded to vllm.LLM(gpu_memory_utilization=...). 0.95 (not "
+            "0.90) is the minimum that fits Qwen3-VL-4B AWQ-8bit + an "
+            "8192-token KV cache on a 12 GB Ampere; 0.90 leaves the KV "
+            "cache about 0.02 GiB short."
+        ),
     )
     parser.add_argument(
         "--max-num-seqs",
