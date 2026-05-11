@@ -172,3 +172,63 @@ RUN python -c "from qwen_vl_utils import process_vision_info; \
   print('qwen-vl-utils imports OK')"
 
 
+
+
+# --- Section: Dockerfile.colqwen ---
+
+ARG COLPALI_ENGINE_VERSION
+ARG TRANSFORMERS_VERSION
+
+# colpali-engine provides ColQwen2_5 + ColQwen2_5_Processor — the multi-vector
+# retrieval model + scorer for `vidore/colqwen2.5-v0.2`. It's the upstream
+# (Illuin Technology) reference library for ColPali / ColQwen models. Loading
+# `ColQwen2_5.from_pretrained("vidore/colqwen2.5-v0.2", ...)` reads the LoRA's
+# adapter_config.json and stitches it onto the base (`vidore/colqwen2.5-base`)
+# automatically; transformers will fetch the base on first load if it's not
+# already in the HF cache.
+#
+# Why not vLLM: ColQwen produces multi-vector ColBERT-style embeddings (one
+# vector per image patch / text token) used with MaxSim scoring, not next-token
+# generation. vLLM's API doesn't expose this surface. transformers direct is
+# the right path.
+# Install colpali-engine with `--no-deps`: its setup.py pins torch ~2.7 +
+# CUDA 12.6 libs and (depending on version) transformers ranges that conflict
+# with vLLM 0.11.2's torch 2.9 / transformers 4.57.6 stack. Without --no-deps
+# pip silently downgrades torch + transformers + nvidia-cuda-* and the vLLM
+# stack stops working. colpali-engine's runtime surface for ColQwen2_5
+# (process_images, process_queries, model.forward, score_multi_vector) does
+# not actually depend on those specific versions — it just lists them as
+# tested. Install peft separately for LoRA loading; everything else
+# (transformers, torch, pillow, etc.) is already in the image from earlier
+# layers.
+RUN pip install --no-deps --no-cache-dir \
+  "colpali-engine==${COLPALI_ENGINE_VERSION}"
+
+RUN pip install --no-cache-dir "peft>=0.10,<0.20" "GPUtil"
+
+# The NV PyTorch container ships `torchao 0.11.0+git` (pre-release). peft 0.16+
+# does a strict version check in `is_torchao_available()`: if torchao is
+# importable but the version is < 0.16.0, it RAISES ImportError (instead of
+# returning False, which would be the saner contract). We don't use torchao
+# in our codepaths — uninstalling makes peft's check return False cleanly.
+# If we ever need torchao, install >= 0.16.0 instead.
+RUN pip uninstall -y torchao 2>&1 | tail -1
+
+# Re-pin transformers in case anything above touched it, and to keep the
+# final assert below crisp.
+RUN pip install --no-cache-dir "transformers==${TRANSFORMERS_VERSION}"
+
+# Final sanity check: confirm BOTH stacks are importable AND transformers is
+# still 4.x. This is the assertion that catches future regressions where a
+# new dep silently pulls transformers 5.x.
+RUN python -c "import vllm, transformers; \
+  from colpali_engine.models import ColQwen2_5, ColQwen2_5_Processor; \
+  from mineru_vl_utils import MinerUClient; \
+  from qwen_vl_utils import process_vision_info; \
+  print(f'vLLM: {vllm.__version__}'); \
+  print(f'transformers: {transformers.__version__}'); \
+  print('all wrappers import OK'); \
+  assert transformers.__version__.startswith('4.'), \
+    f'transformers must stay 4.x (got {transformers.__version__}) — vLLM 0.11.2 incompat with 5.x'"
+
+

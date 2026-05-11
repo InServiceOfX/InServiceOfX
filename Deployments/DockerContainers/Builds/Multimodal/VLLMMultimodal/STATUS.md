@@ -19,7 +19,7 @@ Last updated: 2026-05-10 (after Phase 1 image build succeeded).
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (1.2B, doc extraction) | yes | yes (`MoreMinerU`) | yes (`CLIPDFExtraction`) | **yes** | **yes (2026-05-10)** |
 | 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (4B, AWQ-8bit, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM` via `qwen-vl-utils`) | yes (`CLIPDFQwen3VLChat`) | yes (`vllm-multimodal:25.06-py3` sha `ea1221c0b9c5` with `Dockerfile.qwen3vl`) | **yes (2026-05-10)** |
-| 3 | `vidore/colqwen2.5-v0.2` (LoRA, multimodal retrieval) | LoRA only | no | no | reuses Phase 1 image | n/a |
+| 3 | `vidore/colqwen2.5-v0.2` (LoRA on `vidore/colqwen2.5-base`, multimodal retrieval) | LoRA + base (auto-fetched to HF cache) | yes (`MoreMinerU.ColQwen2_5Embedder` via colpali-engine) | not yet — embedding-CLI is a separate Phase 4 | yes (reuses Phase 1 image + new `Dockerfile.colqwen` layer) | **yes (2026-05-10)** |
 
 ### Local paths to weights (host)
 

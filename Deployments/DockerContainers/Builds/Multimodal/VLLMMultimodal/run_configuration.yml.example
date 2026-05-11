@@ -20,6 +20,13 @@ volumes:
   - host_path: /home/propdev/.openclaw/workspace/workspace2/Data
     container_path: /Workspace
 
+  # HuggingFace cache. ColQwen2.5-v0.2's LoRA depends on `vidore/colqwen2.5-base`
+  # (~8 GB) which transformers fetches on first `from_pretrained`. Mounting the
+  # cache onto the big data drive keeps the download out of the ephemeral
+  # container filesystem so `docker run --rm` doesn't lose it.
+  - host_path: /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/.cache/huggingface
+    container_path: /root/.cache/huggingface
+
 ports:
   # vLLM's OpenAI-compatible HTTP server (only needed if you later run
   # `vllm serve ...` instead of using the in-process LLM API). Safe to leave
