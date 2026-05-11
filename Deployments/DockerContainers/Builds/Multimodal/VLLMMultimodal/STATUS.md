@@ -1,17 +1,20 @@
 # VLLMMultimodal — Status
 
-**Cross-agent continuity doc.** If you (Claude Code / Codex / OpenClaw) were asked to "continue the docker for 3 visual models" or similar, start here. This is the source of truth for what is done, what is next, and which decisions are load-bearing.
+> **Agents: read [`AGENTS.md`](./AGENTS.md) first for pickup commands, then this file for state and decisions, then [`NEXT_STEPS.md`](./NEXT_STEPS.md) for open backlog.** This file is the source of truth for *what's been done and why*, not for *what to do next*.
 
-Last updated: 2026-05-10 (after Phase 1 image build succeeded).
+Last updated: 2026-05-10 (Phase 3 smoke-tested).
 
 ---
 
 ## TL;DR for an incoming agent
 
-- The goal is **one Docker image** that hosts three vision-language models served via vLLM, used to extract structured content (markdown + tables) from propulsion P&ID PDFs.
-- **Phase 1 is built.** Docker image `vllm-multimodal:25.06-py3` exists locally. End-to-end smoke test against a real PDF has not been run yet — that's the immediate next thing.
-- **Phase 2 and 3 are not started.** Qwen3-VL-4B weights are on disk; ColQwen2.5 needs base download + LoRA merge first.
-- All design decisions have rationale captured below — do not change base image, torch reinstall logic, or the protected_namespaces escape hatch without reading "Decisions" first.
+- **All 3 phases smoke-tested end-to-end** on the user's RTX 3060 (12 GB Ampere) as of 2026-05-10:
+  - **Phase 1**: MinerU2.5-Pro for structured PDF document extraction → `CLIPDFExtraction` CLI ran the full 12-PDF example P&IDs corpus.
+  - **Phase 2**: Qwen3-VL-4B AWQ-8bit for general-purpose VLM Q&A → `CLIPDFQwen3VLChat` CLI ran rev11 (7 pages, ~10 s/page).
+  - **Phase 3**: ColQwen2.5-v0.2 multi-vector retrieval → wrapper smoke produced a sensible MaxSim score matrix.
+- The current image (`vllm-multimodal:25.06-py3` sha `f96c8b89ae50`, ~37 GB) hosts all three. torch 2.9.0+cu128, vllm 0.11.2, transformers 4.57.6.
+- All design decisions below are load-bearing — don't change base image, torch reinstall, flash-attn uninstall, cudnn-frontend strip, transformers 4.x pin, colpali-engine version pin, or torchao uninstall without reading the matching "Decisions" entry.
+- Open work: indexing + query CLIs for ColQwen retrieval — see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
 
 ## Phase status
 

@@ -1,14 +1,14 @@
 # VLLMMultimodal
 
-> **Continuing this work?** Read [STATUS.md](./STATUS.md) first — it captures phase status, load-bearing design decisions, and the next concrete steps. This README is for build/run mechanics only.
+> **Continuing this work?** AI agents — read [AGENTS.md](./AGENTS.md) for pickup commands, then [STATUS.md](./STATUS.md) for state + decisions, then [NEXT_STEPS.md](./NEXT_STEPS.md) for the open backlog. This README is for build/run mechanics in isolation.
 
-Single Docker image hosting vision-language models served via vLLM:
+Single Docker image hosting three vision-language workloads — all served on the same vLLM 0.11.2 / torch 2.9.0 / transformers 4.57.6 stack inside `vllm-multimodal:25.06-py3`:
 
-| Phase | Model | Status |
-| --- | --- | --- |
-| 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (PDF / document extraction) | implemented |
-| 2 | `Qwen/Qwen3-VL-4B-Instruct` (general VLM) | runs out-of-the-box on this image; CLI wiring later |
-| 3 | `vidore/colqwen2.5-v0.2` (multimodal retrieval) | needs base model + LoRA merge first |
+| Phase | Model | Library wrapper | CLI app | Smoke status |
+| --- | --- | --- | --- | --- |
+| 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (PDF / document extraction, vLLM) | `MoreMinerU.MinerU2_5ProVLLM` | `CLIPDFExtraction` | yes (2026-05-10) |
+| 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (general VLM, vLLM, AWQ-8bit via compressed-tensors) | `MoreMinerU.Qwen3VLVLLM` | `CLIPDFQwen3VLChat` | yes (2026-05-10) |
+| 3 | `vidore/colqwen2.5-v0.2` (multi-vector retrieval, transformers + colpali-engine) | `MoreMinerU.ColQwen2_5Embedder` | (open — see NEXT_STEPS.md) | yes (2026-05-10, wrapper-level) |
 
 Base image: `nvcr.io/nvidia/pytorch:25.06-py3` — last CUDA 12.x release (CUDA 12.9.1, Python 3.12). Newer NVIDIA containers ship CUDA 13 and currently break vLLM / nunchaku.
 
