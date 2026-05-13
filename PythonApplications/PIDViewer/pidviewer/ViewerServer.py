@@ -133,6 +133,13 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             raise HTTPException(404, f"Tesseract output not found for {doc_id} page {page}")
         return data
 
+    @app.get("/api/documents/{doc_id}/pages/{page}/tesseract-bboxes")
+    async def get_tesseract_bboxes(doc_id: str, page: int):
+        data = store.get_page_tesseract_tag_bboxes(doc_id, page)
+        if data is None:
+            raise HTTPException(404, f"Tesseract output not found for {doc_id} page {page}")
+        return data
+
     @app.get("/api/search")
     async def search(
         q: str = Query(..., description="Search query (case-insensitive substring)"),

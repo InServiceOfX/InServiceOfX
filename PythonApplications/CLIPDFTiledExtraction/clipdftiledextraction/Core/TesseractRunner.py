@@ -25,10 +25,18 @@ def _extract_tags_tesseract(
     tile_img: Any,
     min_conf: int = 60,
     upscale: int = 3,
-) -> tuple[List[str], str]:
-    """Run Tesseract on a PIL tile image and return (tags, raw_text)."""
+) -> tuple[List[str], str, dict]:
+    """Run Tesseract on a PIL tile image; return (tags, raw_text, tag_bboxes).
+
+    tag_bboxes maps each recognised tag to a list of {x,y,w,h} dicts in
+    tile-local pixel coordinates (pre-upscale).
+    """
     import pytesseract
     from PIL import Image, ImageFilter, ImageEnhance
+    from clipdftiledextraction.Core.TagMerger import (
+        parse_tags_from_response, _parse_compound_tags,
+        _looks_like_tag, _COMPOUND_TAG_PATTERN,
+    )
 
     img = tile_img.convert("L")
     w, h = img.size
@@ -41,18 +49,32 @@ def _extract_tags_tesseract(
         config="--psm 11 --oem 1",
         output_type=pytesseract.Output.DICT,
     )
-    words = [
-        w.strip()
-        for w, c in zip(data["text"], data["conf"])
-        if w.strip() and int(c) >= min_conf
-    ]
-    raw = "\n".join(words)
 
-    from clipdftiledextraction.Core.TagMerger import parse_tags_from_response, _parse_compound_tags
-    tags = list(dict.fromkeys(
-        parse_tags_from_response(raw) + _parse_compound_tags(words)
-    ))
-    return tags, raw
+    words_with_pos: list[tuple[str, int, int, int, int]] = []
+    for word, conf, left, top, width, height in zip(
+        data["text"], data["conf"],
+        data["left"], data["top"], data["width"], data["height"],
+    ):
+        word = word.strip()
+        if word and int(conf) >= min_conf:
+            words_with_pos.append((word, left, top, width, height))
+
+    words = [wp[0] for wp in words_with_pos]
+    raw = "\n".join(words)
+    tags = list(dict.fromkeys(parse_tags_from_response(raw) + _parse_compound_tags(words)))
+
+    tag_bboxes: dict[str, list[dict]] = {}
+    for word, left, top, width, height in words_with_pos:
+        token = word.upper()
+        if _looks_like_tag(token) or bool(_COMPOUND_TAG_PATTERN.match(token)):
+            tag_bboxes.setdefault(token, []).append({
+                "x": round(left / upscale),
+                "y": round(top / upscale),
+                "w": max(1, round(width / upscale)),
+                "h": max(1, round(height / upscale)),
+            })
+
+    return tags, raw, tag_bboxes
 
 
 class TesseractRunner:
@@ -214,6 +236,7 @@ class TesseractRunner:
 
     def _process_image(self, img: Any, page_num: int) -> dict:
         """Run tiled Tesseract extraction on a pre-loaded PIL image."""
+        page_w, page_h = img.size
         tiles = generate_tiles(
             img,
             grid_cols=self._cfg.grid_cols,
@@ -226,7 +249,7 @@ class TesseractRunner:
 
         for tile in tiles:
             t0 = time.time()
-            tags, raw = _extract_tags_tesseract(tile.image)
+            tags, raw, tag_bboxes = _extract_tags_tesseract(tile.image)
             tile_seconds = time.time() - t0
             tile_responses.append("\n".join(tags))
             tile_records.append({
@@ -235,6 +258,7 @@ class TesseractRunner:
                 "bbox": list(tile.bbox),
                 "response": raw,
                 "tags": tags,
+                "tag_bboxes": tag_bboxes,
                 "seconds": tile_seconds,
                 "backend": "tesseract",
             })
@@ -242,6 +266,8 @@ class TesseractRunner:
         merged = merge_tile_tags(tile_responses)
         return {
             "page": page_num,
+            "page_w": page_w,
+            "page_h": page_h,
             "dpi": self._cfg.pdf_dpi,
             "backend": "tesseract",
             "grid": {

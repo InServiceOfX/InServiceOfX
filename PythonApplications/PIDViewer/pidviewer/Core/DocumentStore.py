@@ -191,6 +191,56 @@ class DocumentStore:
         except Exception:
             return None
 
+    def get_page_tesseract_tag_bboxes(self, doc_id: str, page: int) -> Optional[Dict]:
+        """Aggregate per-tile Tesseract bboxes into page-normalised (0–1) coordinates.
+
+        Returns None if no Tesseract data exists, or a dict with keys:
+          has_bboxes, page_w, page_h, tags: {tag: [{x,y,w,h}]}
+        """
+        data = self.get_page_tesseract(doc_id, page)
+        if not data:
+            return None
+
+        page_w = data.get("page_w")
+        page_h = data.get("page_h")
+        if not page_w or not page_h:
+            # Fallback: infer from last tile bbox (right, bottom of last tile ≈ page edge)
+            tiles = data.get("tiles", [])
+            if tiles:
+                last_bbox = tiles[-1].get("bbox", [0, 0, 0, 0])
+                page_w, page_h = last_bbox[2], last_bbox[3]
+        if not page_w or not page_h:
+            return None
+
+        result: Dict[str, list] = {}
+        seen: set = set()
+
+        for tile in data.get("tiles", []):
+            tile_bbox = tile.get("bbox", [0, 0, 0, 0])
+            tile_left, tile_top = tile_bbox[0], tile_bbox[1]
+            for tag, bboxes in tile.get("tag_bboxes", {}).items():
+                for bb in bboxes:
+                    px = tile_left + bb["x"]
+                    py = tile_top + bb["y"]
+                    # Deduplicate detections from overlapping tiles (20px tolerance)
+                    key = (tag, round(px / 20), round(py / 20))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    result.setdefault(tag, []).append({
+                        "x": round(px / page_w, 5),
+                        "y": round(py / page_h, 5),
+                        "w": round(bb["w"] / page_w, 5),
+                        "h": round(bb["h"] / page_h, 5),
+                    })
+
+        return {
+            "has_bboxes": bool(result),
+            "page_w": page_w,
+            "page_h": page_h,
+            "tags": result,
+        }
+
     def get_colqwen_index_for_document(self, doc_id: str) -> Optional[Path]:
         """Returns manifest.json path for a ColQwen-indexed document, if present."""
         if not self._cfg.colqwen_index_path:

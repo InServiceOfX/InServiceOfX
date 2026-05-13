@@ -31,6 +31,7 @@ def main() -> None:
     parser.add_argument("--mineru-output", required=True, help="CLIPDFExtraction output directory")
     parser.add_argument("--output-path", required=True, help="Tesseract output directory")
     parser.add_argument("--doc", default=None, help="Process only this document ID (subdir name)")
+    parser.add_argument("--no-skip", action="store_true", help="Re-process pages that already have output (forces bbox data refresh)")
     args = parser.parse_args()
 
     cfg = PDFTiledConfiguration.from_yaml(Path(args.pdf_config))
@@ -39,6 +40,7 @@ def main() -> None:
         mineru_output_path=Path(args.mineru_output),
         output_path=Path(args.output_path),
         doc_filter=args.doc,
+        skip_existing=not args.no_skip,
     )
 
 
