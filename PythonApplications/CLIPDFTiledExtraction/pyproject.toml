@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "clipdftiledextraction"
+version = "0.1.0"
+description = "CLI: tile PDF pages and run per-tile Qwen3-VL tag OCR for P&ID component extraction"
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

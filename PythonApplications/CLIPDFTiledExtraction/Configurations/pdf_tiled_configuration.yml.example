@@ -1,0 +1,23 @@
+# Input PDF file or directory (container-visible path).
+input_path: "/Workspace/Data/PIDs/my-pid-document.pdf"
+
+# Output directory. Per-page JSON + optional images land here.
+output_path: /Workspace/Generated/CLIPDFTiledExtraction
+
+# Rasterisation DPI. P&IDs need 300+ DPI to keep tag text legible in tiles.
+pdf_dpi: 300
+
+image_format: PNG
+save_intermediate_images: true
+skip_existing: true
+
+# Tiling grid: 3×3 = 9 tiles with 15% overlap on each side.
+# Dense pages (full piping diagram): try 4×4 for finer resolution.
+grid_cols: 3
+grid_rows: 3
+overlap_fraction: 0.15
+
+# Override sampling for tag OCR: greedy to reduce hallucination.
+sampling_overrides:
+  temperature: 0.0
+  max_tokens: 512

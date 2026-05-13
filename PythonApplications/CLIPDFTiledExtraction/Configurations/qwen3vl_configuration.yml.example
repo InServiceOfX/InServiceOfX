@@ -1,0 +1,27 @@
+# Path to AWQ-8bit Qwen3-VL-4B model (container path).
+model_path: /Data/Models/Multimodal/cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit
+
+# system_prompt is optional. For strict tag OCR, leave it null and let the
+# per-tile prompt carry the instructions.
+system_prompt: null
+
+# AWQ-8bit fits comfortably on a 12 GB RTX 3060.
+vllm_engine_kwargs:
+  dtype: auto
+  max_model_len: 8192
+  gpu_memory_utilization: 0.95
+  enforce_eager: true
+  quantization: compressed-tensors
+  trust_remote_code: true
+
+# Pixel caps keep tile inference under max_model_len.
+# A 300-DPI tile at 3x3 is ~(2400/3)×(3300/3) = 800×1100 = 880,000 px —
+# comfortably below the 1,003,520 default cap.
+image_max_pixels: 1003520
+image_min_pixels: 200704
+
+# Greedy sampling for tile OCR (sampling_overrides in pdf_tiled_configuration.yml
+# will override these per-call; set defaults conservatively).
+default_sampling_params:
+  temperature: 0.0
+  max_tokens: 512
