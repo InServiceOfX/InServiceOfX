@@ -21,3 +21,8 @@ overlap_fraction: 0.15
 sampling_overrides:
   temperature: 0.0
   max_tokens: 512
+
+# Optional: CLIPDFExtraction output root for MinerU tag cross-check.
+# When set, tags extracted from MinerU text/table elements on the same page
+# are compared against tiled tags; confirmed matches land in 'crossed'.
+# mineru_output_path: /Workspace/Generated/CLIPDFExtraction

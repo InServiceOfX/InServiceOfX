@@ -65,6 +65,25 @@ class TiledRunner:
         for pdf_path in pdf_paths:
             self._process_pdf(pdf_path)
 
+    def _load_mineru_page_tags(self, pdf_stem: str, page_num: int) -> list[str]:
+        """Extract tag-like tokens from the MinerU output for one page."""
+        if not self._cfg.mineru_output_path:
+            return []
+        md_path = self._cfg.mineru_output_path / pdf_stem / f"page_{page_num}.md"
+        if not md_path.exists():
+            return []
+        try:
+            elements = json.loads(md_path.read_text())
+        except Exception:
+            return []
+        from clipdftiledextraction.Core.TagMerger import parse_tags_from_response
+        tags: list[str] = []
+        for el in (elements if isinstance(elements, list) else []):
+            content = el.get("content", "")
+            if isinstance(content, str) and content.strip():
+                tags.extend(parse_tags_from_response(content))
+        return sorted(set(tags))
+
     def _process_pdf(self, pdf_path: Path) -> None:
         doc_dir = self._cfg.output_path / pdf_path.stem
         doc_dir.mkdir(parents=True, exist_ok=True)
@@ -82,14 +101,17 @@ class TiledRunner:
                 manifest_entries.append({"page": page_num, "status": "skipped"})
                 continue
 
+            reference_tags = self._load_mineru_page_tags(pdf_path.stem, page_num)
             start = time.time()
-            result = self._process_page(doc, page_index, page_num, doc_dir)
+            result = self._process_page(doc, page_index, page_num, doc_dir, reference_tags)
             elapsed = time.time() - start
 
             out_path.write_text(json.dumps(result, indent=2))
             n_tags = len(result["merged_tags"])
+            n_crossed = len(result.get("crossed", []))
+            cross_note = f" ({n_crossed} crossed MinerU)" if n_crossed else ""
             print(
-                f"  page {page_num}: {n_tags} tags, "
+                f"  page {page_num}: {n_tags} tags{cross_note}, "
                 f"{len(result['tiles'])} tiles in {elapsed:.1f}s"
             )
             manifest_entries.append({
@@ -97,6 +119,7 @@ class TiledRunner:
                 "status": "ok",
                 "seconds": elapsed,
                 "merged_tag_count": n_tags,
+                "crossed_count": n_crossed,
                 "output": out_path.name,
             })
 
@@ -124,6 +147,7 @@ class TiledRunner:
         page_index: int,
         page_num: int,
         doc_dir: Path,
+        reference_tags: list[str] | None = None,
     ) -> dict:
         from PIL import Image
 
@@ -174,9 +198,9 @@ class TiledRunner:
                 "seconds": tile_seconds,
             })
 
-        merged = merge_tile_tags(tile_responses)
+        merged = merge_tile_tags(tile_responses, reference_tags=reference_tags or None)
 
-        return {
+        result: dict = {
             "page": page_num,
             "dpi": self._cfg.pdf_dpi,
             "grid": {
@@ -189,3 +213,8 @@ class TiledRunner:
             "tile_coverage": merged.tile_coverage,
             "seconds_total": sum(t["seconds"] for t in tile_records),
         }
+        if reference_tags is not None:
+            result["crossed"] = merged.crossed
+            result["uncrossed"] = merged.uncrossed
+            result["reference_tag_count"] = len(reference_tags)
+        return result

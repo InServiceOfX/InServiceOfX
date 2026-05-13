@@ -8,8 +8,8 @@ system_prompt: null
 # AWQ-8bit fits comfortably on a 12 GB RTX 3060.
 vllm_engine_kwargs:
   dtype: auto
-  max_model_len: 8192
-  gpu_memory_utilization: 0.95
+  max_model_len: 4096
+  gpu_memory_utilization: 0.90
   enforce_eager: true
   quantization: compressed-tensors
   trust_remote_code: true

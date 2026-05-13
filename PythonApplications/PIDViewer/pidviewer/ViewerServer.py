@@ -1,4 +1,7 @@
 """FastAPI application for the P&ID extraction viewer."""
+import json
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -117,6 +120,44 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         hits = store.search(q.strip(), doc_filter=doc, max_results=max_results)
         return {"query": q, "hit_count": len(hits), "hits": hits}
 
+    class ColQwenQueryRequest(BaseModel):
+        query: str
+        top_k: int = 5
+
+    @app.post("/api/colqwen/query")
+    async def colqwen_query(req: ColQwenQueryRequest):
+        if not configuration.colqwen_server_url:
+            raise HTTPException(503, "colqwen_server_url not configured")
+        url = configuration.colqwen_server_url.rstrip("/") + "/query"
+        payload = json.dumps({"query": req.query, "top_k": req.top_k}).encode()
+        http_req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(http_req, timeout=30) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors="replace")
+            raise HTTPException(exc.code, detail=detail) from exc
+        except Exception as exc:
+            raise HTTPException(502, f"ColQwen server error: {exc}") from exc
+
+    @app.get("/api/colqwen/health")
+    async def colqwen_health():
+        if not configuration.colqwen_server_url:
+            return {"available": False, "reason": "colqwen_server_url not configured"}
+        url = configuration.colqwen_server_url.rstrip("/") + "/health"
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                data = json.loads(resp.read())
+                data["available"] = True
+                return data
+        except Exception as exc:
+            return {"available": False, "reason": str(exc)}
+
     @app.get("/api/status")
     async def status():
         docs = store.list_documents()
@@ -128,6 +169,7 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             "colqwen_index_path": str(configuration.colqwen_index_path)
             if configuration.colqwen_index_path
             else None,
+            "colqwen_server_url": configuration.colqwen_server_url,
             "document_count": len(docs),
             "documents": docs,
         }

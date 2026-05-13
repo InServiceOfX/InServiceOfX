@@ -75,6 +75,18 @@ class PDFTiledConfiguration(BaseModel):
         ),
     )
 
+    # Optional MinerU output directory for cross-checking extracted tags.
+    # When set, tags from MinerU table/text elements on the same page are passed
+    # as reference_tags to TagMerger, populating the 'crossed' field in results.
+    mineru_output_path: Optional[Path] = Field(
+        None,
+        description=(
+            "Optional CLIPDFExtraction output root. "
+            "Enables MinerU tag cross-check: tags also seen in MinerU tables/text "
+            "land in merged_tags.crossed; tiles-only tags land in merged_tags.uncrossed."
+        ),
+    )
+
     def list_input_pdfs(self) -> List[Path]:
         if self.input_path.is_file():
             if self.input_path.suffix.lower() == ".pdf":

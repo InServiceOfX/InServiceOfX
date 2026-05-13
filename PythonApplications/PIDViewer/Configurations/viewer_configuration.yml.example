@@ -16,6 +16,16 @@ qwen3vl_output_path: /Workspace/Generated/CLIPDFQwen3VLChat
 # Set this once you have run the indexer; enables the "has ColQwen" indicator.
 # colqwen_index_path: /Workspace/Generated/CLIPDFColQwenIndexer
 
+# Optional: URL of main_ColQwenQueryServer (runs inside Docker on port 8001).
+# When set, the "Semantic Search" panel in the viewer becomes active.
+# Run the server first:
+#   docker exec -d vllm-multimodal-work bash -c "
+#     cd /InServiceOfX/PythonApplications/CLIPDFColQwenQuery &&
+#     PYTHONPATH=/InServiceOfX/PythonLibraries/HuggingFace/MoreMinerU \
+#     python3 Executables/main_ColQwenQueryServer.py --currentpath
+#   "
+# colqwen_server_url: http://localhost:8001
+
 # Server binding.
 host: 0.0.0.0
 port: 8888

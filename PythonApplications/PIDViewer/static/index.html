@@ -88,6 +88,34 @@
   /* Empty states */
   .empty-state { color: var(--muted); font-size: 0.82rem; padding: 20px; text-align: center; }
 
+  /* Semantic search */
+  :root { --colqwen: #a78bfa; }
+  #semantic-wrap { display: flex; gap: 4px; flex: 1; max-width: 360px; }
+  #semantic-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 0.85rem; }
+  #semantic-input::placeholder { color: var(--muted); }
+  #semantic-input:disabled { opacity: 0.4; }
+  #semantic-btn { background: #5b21b6; color: #e9d5ff; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+  #semantic-btn:hover:not(:disabled) { opacity: 0.85; }
+  #semantic-btn:disabled { opacity: 0.35; cursor: default; }
+  #colqwen-dot { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; }
+  #colqwen-dot.ready { color: var(--colqwen); }
+
+  #semantic-results { position: fixed; top: 42px; left: 50%; transform: translateX(-50%); width: 660px; max-height: 70vh; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow-y: auto; z-index: 101; box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; }
+  #semantic-results-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+  #semantic-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+  .sem-hit-row { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .sem-hit-row:hover { background: var(--surface2); }
+  .sem-rank { font-size: 1.1rem; font-weight: 700; color: var(--colqwen); width: 22px; text-align: right; flex-shrink: 0; }
+  .sem-thumb { width: 60px; height: 60px; object-fit: contain; background: var(--bg); border-radius: 3px; flex-shrink: 0; }
+  .sem-no-thumb { width: 60px; height: 60px; background: var(--surface2); border-radius: 3px; flex-shrink: 0; }
+  .sem-info { flex: 1; min-width: 0; }
+  .sem-doc { font-size: 0.72rem; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sem-page { font-size: 0.8rem; color: var(--text); margin: 2px 0; }
+  .sem-score-wrap { display: flex; align-items: center; gap: 6px; }
+  .sem-score-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+  .sem-score-bar { height: 4px; background: var(--colqwen); border-radius: 2px; }
+  .sem-score-val { font-size: 0.7rem; color: var(--colqwen); width: 36px; text-align: right; flex-shrink: 0; }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -102,6 +130,11 @@
     <input id="search-input" type="text" placeholder="Search extracted text…" autocomplete="off">
     <button id="search-btn">Search</button>
   </div>
+  <div id="semantic-wrap">
+    <input id="semantic-input" type="text" placeholder="Semantic search (ColQwen)…" autocomplete="off" disabled>
+    <button id="semantic-btn" disabled>↗ Semantic</button>
+  </div>
+  <span id="colqwen-dot" title="ColQwen server">◉</span>
   <span id="status-badge">loading…</span>
 </div>
 
@@ -111,6 +144,14 @@
     <button id="search-close">✕</button>
   </div>
   <div id="search-results-body"></div>
+</div>
+
+<div id="semantic-results">
+  <div id="semantic-results-header">
+    <span id="semantic-results-label">ColQwen results</span>
+    <button id="semantic-close">✕</button>
+  </div>
+  <div id="semantic-results-body"></div>
 </div>
 
 <div id="layout">
@@ -345,15 +386,40 @@ async function renderTiled(docId, pageNum, container) {
   html += `${(data.seconds_total||0).toFixed(1)}s total</div>`;
 
   if (merged.length > 0) {
-    html += `<div style="margin-bottom:10px">`;
-    html += `<div style="font-size:0.72rem;color:var(--accent);margin-bottom:4px;font-weight:600">Merged Tags (${merged.length})</div>`;
-    html += `<div style="display:flex;flex-wrap:wrap;gap:3px">`;
-    for (const tag of merged) {
-      const count = (data.tile_coverage || {})[tag]?.length || 0;
-      const style = count > 1 ? 'style="background:#1a3a2a;border-color:#3fb950;color:#3fb950"' : '';
-      html += `<span class="type-chip" title="${count} tile(s)" ${style}>${escapeHtml(tag)}</span>`;
+    const crossed = data.crossed || [];
+    const uncrossed = data.uncrossed || [];
+    const hasCrossCheck = data.reference_tag_count !== undefined;
+
+    if (hasCrossCheck && crossed.length > 0) {
+      html += `<div style="margin-bottom:10px">`;
+      html += `<div style="font-size:0.72rem;color:var(--ok);margin-bottom:4px;font-weight:600">`;
+      html += `✓ Confirmed by MinerU (${crossed.length})</div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:3px">`;
+      for (const tag of crossed) {
+        const count = (data.tile_coverage || {})[tag]?.length || 0;
+        html += `<span class="type-chip" style="background:#1a3a2a;border-color:#3fb950;color:#3fb950" title="${count} tile(s) + MinerU">${escapeHtml(tag)}</span>`;
+      }
+      html += `</div></div>`;
     }
-    html += `</div></div>`;
+
+    const tilesOnlyTags = hasCrossCheck ? uncrossed : merged;
+    const tilesOnlyLabel = hasCrossCheck ? `Tiles only (${tilesOnlyTags.length})` : `Merged Tags (${merged.length})`;
+    if (tilesOnlyTags.length > 0) {
+      html += `<div style="margin-bottom:10px">`;
+      html += `<div style="font-size:0.72rem;color:var(--accent);margin-bottom:4px;font-weight:600">${tilesOnlyLabel}</div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:3px">`;
+      for (const tag of tilesOnlyTags) {
+        const count = (data.tile_coverage || {})[tag]?.length || 0;
+        const style = count > 1 ? 'style="background:#1a3a2a;border-color:#3fb950;color:#3fb950"' : '';
+        html += `<span class="type-chip" title="${count} tile(s)" ${style}>${escapeHtml(tag)}</span>`;
+      }
+      html += `</div></div>`;
+    }
+    if (hasCrossCheck) {
+      html += `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">`;
+      html += `MinerU reference: ${data.reference_tag_count} tags · `;
+      html += `${crossed.length} confirmed · ${uncrossed.length} tiles-only</div>`;
+    }
   } else {
     html += `<p class="empty-state">No tags extracted</p>`;
   }
@@ -472,7 +538,110 @@ document.getElementById('search-close').addEventListener('click', () => {
   document.getElementById('search-results').style.display = 'none';
 });
 
-init().catch(console.error);
+// --- ColQwen semantic search ---
+
+let colqwenAvailable = false;
+let colqwenMaxScore = 1.0;
+
+async function checkColQwenHealth() {
+  try {
+    const data = await fetchJSON('/api/colqwen/health');
+    colqwenAvailable = !!data.available;
+  } catch (e) {
+    colqwenAvailable = false;
+  }
+  const dot = document.getElementById('colqwen-dot');
+  const btn = document.getElementById('semantic-btn');
+  const inp = document.getElementById('semantic-input');
+  if (colqwenAvailable) {
+    dot.classList.add('ready');
+    dot.title = 'ColQwen server: ready';
+    btn.disabled = false;
+    inp.disabled = false;
+    inp.placeholder = 'Semantic search (ColQwen)…';
+  } else {
+    dot.classList.remove('ready');
+    dot.title = 'ColQwen server: not available';
+    btn.disabled = true;
+    inp.disabled = true;
+    inp.placeholder = 'ColQwen server not running';
+  }
+}
+
+async function runSemanticSearch() {
+  const q = document.getElementById('semantic-input').value.trim();
+  if (!q || !colqwenAvailable) return;
+  const panel = document.getElementById('semantic-results');
+  const body = document.getElementById('semantic-results-body');
+  const label = document.getElementById('semantic-results-label');
+  body.innerHTML = '<p class="empty-state">Querying ColQwen…</p>';
+  panel.style.display = 'block';
+  document.getElementById('search-results').style.display = 'none';
+
+  try {
+    const data = await fetch('/api/colqwen/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, top_k: 9 }),
+    }).then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); });
+
+    label.textContent = `Top ${data.hits.length} pages for "${q}"`;
+    if (data.hits.length === 0) {
+      body.innerHTML = '<p class="empty-state">No results</p>';
+      return;
+    }
+
+    const maxScore = Math.max(...data.hits.map(h => h.score), 0.001);
+    let html = '';
+    for (const hit of data.hits) {
+      const pct = Math.min(100, (hit.score / maxScore) * 100).toFixed(1);
+      const imgSrc = hit.image_path ? `/api/documents/${encodeURIComponent(hit.pdf)}/pages/${hit.page}/image` : null;
+      const thumbHtml = imgSrc
+        ? `<img class="sem-thumb" src="${imgSrc}" alt="p${hit.page}" loading="lazy">`
+        : `<div class="sem-no-thumb"></div>`;
+      html += `
+        <div class="sem-hit-row" data-doc="${escapeHtml(hit.pdf)}" data-page="${hit.page}">
+          <div class="sem-rank">#${hit.rank}</div>
+          ${thumbHtml}
+          <div class="sem-info">
+            <div class="sem-doc">${escapeHtml(hit.pdf)}</div>
+            <div class="sem-page">Page ${hit.page}</div>
+            <div class="sem-score-wrap">
+              <div class="sem-score-bar-bg"><div class="sem-score-bar" style="width:${pct}%"></div></div>
+              <div class="sem-score-val">${hit.score.toFixed(3)}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+    body.innerHTML = html;
+
+    body.querySelectorAll('.sem-hit-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const docId = row.dataset.doc;
+        const pageNum = parseInt(row.dataset.page);
+        panel.style.display = 'none';
+        if (docId !== currentDoc) {
+          document.getElementById('doc-select').value = docId;
+          await loadDocument(docId);
+        }
+        selectPage(docId, pageNum);
+      });
+    });
+  } catch (e) {
+    body.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
+  }
+}
+
+document.getElementById('semantic-btn').addEventListener('click', runSemanticSearch);
+document.getElementById('semantic-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runSemanticSearch();
+  if (e.key === 'Escape') document.getElementById('semantic-results').style.display = 'none';
+});
+document.getElementById('semantic-close').addEventListener('click', () => {
+  document.getElementById('semantic-results').style.display = 'none';
+});
+
+init().then(checkColQwenHealth).catch(console.error);
 </script>
 </body>
 </html>
