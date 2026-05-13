@@ -37,6 +37,8 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         mineru_element_types: List[str]
         tiled_tag_count: int = 0
         tiled_hallucinated_tiles: int = 0
+        has_tesseract: bool = False
+        tesseract_tag_count: int = 0
 
     class DocumentSummary(BaseModel):
         doc_id: str
@@ -82,6 +84,8 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
                     mineru_element_types=p.mineru_element_types,
                     tiled_tag_count=p.tiled_tag_count,
                     tiled_hallucinated_tiles=p.tiled_hallucinated_tiles,
+                    has_tesseract=p.has_tesseract,
+                    tesseract_tag_count=p.tesseract_tag_count,
                 )
                 for p in doc.pages
             ],
@@ -120,6 +124,13 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         data = store.get_page_tiled(doc_id, page)
         if data is None:
             raise HTTPException(404, f"Tiled output not found for {doc_id} page {page}")
+        return data
+
+    @app.get("/api/documents/{doc_id}/pages/{page}/tesseract")
+    async def get_page_tesseract(doc_id: str, page: int):
+        data = store.get_page_tesseract(doc_id, page)
+        if data is None:
+            raise HTTPException(404, f"Tesseract output not found for {doc_id} page {page}")
         return data
 
     @app.get("/api/search")
@@ -224,6 +235,27 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         return PlainTextResponse(content=buf.getvalue(), media_type="text/csv",
                                  headers={"Content-Disposition": f'attachment; filename="{doc_id}_tags.csv"'})
 
+    @app.get("/api/documents/{doc_id}/tesseract-tags.json")
+    async def export_tesseract_tags_json(doc_id: str):
+        """Export all Tesseract-extracted tags for a document as JSON."""
+        doc = store.get_document(doc_id)
+        if doc is None:
+            raise HTTPException(404, f"Document not found: {doc_id}")
+        tag_pages: dict[str, list[int]] = {}
+        for p in doc.pages:
+            if not p.has_tesseract:
+                continue
+            data = store.get_page_tesseract(doc_id, p.page)
+            if not data:
+                continue
+            for tag in data.get("merged_tags", []):
+                tag_pages.setdefault(tag, []).append(p.page)
+        result = sorted(
+            [{"tag": t, "pages": tag_pages[t]} for t in tag_pages],
+            key=lambda x: x["tag"],
+        )
+        return {"doc_id": doc_id, "unique_tags": len(result), "tags": result}
+
     @app.get("/api/documents/{doc_id}/quality")
     async def get_document_quality(doc_id: str):
         """Per-page tiled extraction quality summary for a document."""
@@ -275,6 +307,12 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             "mineru_output_path": str(configuration.mineru_output_path),
             "qwen3vl_output_path": str(configuration.qwen3vl_output_path)
             if configuration.qwen3vl_output_path
+            else None,
+            "tiled_output_path": str(configuration.tiled_output_path)
+            if configuration.tiled_output_path
+            else None,
+            "tesseract_output_path": str(configuration.tesseract_output_path)
+            if configuration.tesseract_output_path
             else None,
             "colqwen_index_path": str(configuration.colqwen_index_path)
             if configuration.colqwen_index_path

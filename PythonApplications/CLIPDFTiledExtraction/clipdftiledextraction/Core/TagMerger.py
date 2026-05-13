@@ -46,7 +46,7 @@ def _looks_like_tag(token: str) -> bool:
     # Must contain at least one digit (filters bare letter codes like "NONE")
     if not any(c.isdigit() for c in token):
         return False
-    return bool(_TAG_PATTERN.match(token))
+    return bool(_TAG_PATTERN.match(token)) or bool(_COMPOUND_TAG_PATTERN.match(token))
 
 
 def is_sequential_run(tags: List[str]) -> bool:

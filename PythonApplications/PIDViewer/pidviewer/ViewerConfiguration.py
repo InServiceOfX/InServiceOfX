@@ -24,6 +24,10 @@ class ViewerConfiguration(BaseModel):
         None,
         description="Directory written by CLIPDFColQwenIndexer; used for future query support.",
     )
+    tesseract_output_path: Optional[Path] = Field(
+        None,
+        description="Directory written by CLIPDFTesseractExtraction; same JSON schema as tiled_output_path.",
+    )
     colqwen_server_url: Optional[str] = Field(
         None,
         description="Base URL of main_ColQwenQueryServer (e.g. http://localhost:8001). "

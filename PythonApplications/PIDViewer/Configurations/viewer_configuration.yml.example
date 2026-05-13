@@ -12,6 +12,11 @@ qwen3vl_output_path: /Workspace/Generated/CLIPDFQwen3VLChat
 # Set this after running CLIPDFTiledExtraction; enables the Tiled tab.
 # tiled_output_path: /Workspace/Generated/CLIPDFTiledExtraction
 
+# Optional: CLIPDFTesseractExtraction output directory.
+# CPU-only Tesseract OCR backend; faster than VLM and no GPU required.
+# Enables the "Tesseract" tab and per-page tag counts in the viewer.
+# tesseract_output_path: /Workspace/Generated/CLIPDFTesseractExtraction
+
 # Optional: CLIPDFColQwenIndexer output directory.
 # Set this once you have run the indexer; enables the "has ColQwen" indicator.
 # colqwen_index_path: /Workspace/Generated/CLIPDFColQwenIndexer

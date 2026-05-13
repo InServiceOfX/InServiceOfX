@@ -17,10 +17,12 @@ class PageRecord:
     has_qwen3vl: bool
     has_colqwen: bool
     has_tiled: bool = False
+    has_tesseract: bool = False
     mineru_element_count: int = 0
     mineru_element_types: List[str] = field(default_factory=list)
     tiled_tag_count: int = 0
     tiled_hallucinated_tiles: int = 0
+    tesseract_tag_count: int = 0
 
 
 @dataclass
@@ -69,6 +71,11 @@ class DocumentStore:
                 tiled_dir = self._cfg.tiled_output_path / doc_id
                 tiled_path = tiled_dir / f"page_{page_num}.json"
 
+            tesseract_path = None
+            if self._cfg.tesseract_output_path:
+                tess_dir = self._cfg.tesseract_output_path / doc_id
+                tesseract_path = tess_dir / f"page_{page_num}.json"
+
             colqwen_path = None
             if self._cfg.colqwen_index_path:
                 cq_dir = self._cfg.colqwen_index_path / doc_id
@@ -102,6 +109,14 @@ class DocumentStore:
                 except Exception:
                     pass
 
+            tesseract_tag_count = 0
+            if tesseract_path and tesseract_path.exists():
+                try:
+                    tess_data = json.loads(tesseract_path.read_text())
+                    tesseract_tag_count = len(tess_data.get("merged_tags", []))
+                except Exception:
+                    pass
+
             pages.append(
                 PageRecord(
                     page=page_num,
@@ -112,10 +127,12 @@ class DocumentStore:
                     has_qwen3vl=bool(qwen_path and qwen_path.exists()),
                     has_colqwen=bool(colqwen_path and colqwen_path.exists()),
                     has_tiled=bool(tiled_path and tiled_path.exists()),
+                    has_tesseract=bool(tesseract_path and tesseract_path.exists()),
                     mineru_element_count=element_count,
                     mineru_element_types=element_types,
                     tiled_tag_count=tiled_tag_count,
                     tiled_hallucinated_tiles=tiled_hallucinated_tiles,
+                    tesseract_tag_count=tesseract_tag_count,
                 )
             )
 
@@ -156,6 +173,17 @@ class DocumentStore:
         if not self._cfg.tiled_output_path:
             return None
         p = self._cfg.tiled_output_path / doc_id / f"page_{page}.json"
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            return None
+
+    def get_page_tesseract(self, doc_id: str, page: int) -> Optional[Any]:
+        if not self._cfg.tesseract_output_path:
+            return None
+        p = self._cfg.tesseract_output_path / doc_id / f"page_{page}.json"
         if not p.exists():
             return None
         try:
