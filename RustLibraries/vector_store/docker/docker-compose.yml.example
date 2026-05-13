@@ -1,0 +1,32 @@
+# Docker Compose for a local Postgres + pgvector instance used by vector_store
+# integration tests and development.
+#
+# Usage:
+#   cd docker/
+#   cp docker-compose.yml.example docker-compose.yml   # only once
+#   docker compose up -d
+#   # run integration tests:
+#   VECTOR_STORE_DATABASE_URL="postgres://vector_store:vector_store@localhost:5433/vector_store_db" \
+#     cargo test
+#   # stop:
+#   docker compose down
+
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: vector-store-postgres
+    environment:
+      POSTGRES_USER: vector_store
+      POSTGRES_PASSWORD: vector_store
+      POSTGRES_DB: vector_store_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vector_store -d vector_store_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

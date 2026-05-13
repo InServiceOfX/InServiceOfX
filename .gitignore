@@ -158,6 +158,8 @@ PythonApplications/PIDViewer/Configurations/viewer_configuration.yml
 PythonLibraries/Tools/tests/TestSetup/postgresql_setup_configuration.yml
 PythonLibraries/Tools/tests/TestSetup/postgresql_test_configuration.yml
 Scripts/DockerBuilds/Builds/LLM/LocalLLMFull/Databases/docker-compose.yml
+RustLibraries/vector_store/docker/docker-compose.yml
+RustLibraries/vector_store/docker/data/
 Scripts/DockerBuilds/LangchainLocal/mount_paths.txt
 Scripts/DockerBuilds/LangchainLocal/nvidia_compute_capabilities.txt
 Scripts/DockerBuilds/MinimalCUDA/nvidia_compute_capabilities.txt
