@@ -26,6 +26,10 @@ _TAG_PATTERN = re.compile(
     r"^[A-Z]{1,8}(?:[-_][A-Z0-9]{1,6})+$"
 )
 
+# No-dash compound tag pattern: letter + digit + 2-8 letters + optional digits.
+# Matches tags like S2SVT, S2TCV3, S2NCV12, S2SVNTP used in some P&ID systems.
+_COMPOUND_TAG_PATTERN = re.compile(r"^[A-Z]\d[A-Z]{2,8}\d{0,4}$")
+
 # Matches PREFIX-NNN or PREFIX-NNNA for sequential-run detection.
 _SEQUENTIAL_TAG_PATTERN = re.compile(r"^([A-Z]{1,8})-(\d{1,5})$")
 # Also matches PREFIX-NNNx where x is an optional constant letter suffix.
@@ -56,36 +60,35 @@ def is_sequential_run(tags: List[str]) -> bool:
     if len(tags) < 5:
         return False
 
-    # Case 1: all tags are plain PREFIX-NNN — check for simple consecutive run.
-    nums_by_prefix: dict[str, list[int]] = {}
-    all_simple = True
-    for tag in tags:
-        m = _SEQUENTIAL_TAG_PATTERN.match(tag)
-        if not m:
-            all_simple = False
-            break
-        nums_by_prefix.setdefault(m.group(1), []).append(int(m.group(2)))
-    if all_simple:
-        for nums in nums_by_prefix.values():
-            if len(nums) >= 5:
-                s = sorted(nums)
-                if s == list(range(s[0], s[0] + len(s))):
-                    return True
+    def _dense_sequential(nums: list[int], min_count: int = 5, density: float = 0.85) -> bool:
+        """Return True if nums form a dense near-consecutive run."""
+        if len(nums) < min_count:
+            return False
+        s = sorted(nums)
+        span = s[-1] - s[0] + 1
+        # Exact consecutive or near-consecutive (≥85% density, no gaps ≥3)
+        if s == list(range(s[0], s[0] + len(s))):
+            return True
+        if span > 0 and len(s) / span >= density:
+            # Check that no single gap is absurdly large (< 5× average gap)
+            avg_gap = span / len(s)
+            max_gap = max(s[i+1] - s[i] for i in range(len(s)-1))
+            return max_gap <= max(3, avg_gap * 3)
+        return False
 
-    # Case 2: PREFIX-NNNx pattern with constant letter suffix (e.g. FCV-10A…FCV-20A).
-    # Group by (prefix, letter_suffix) and check numeric part for consecutive run.
+    # Attempt to parse all tags via the alphanumeric suffix pattern.
     groups: dict[tuple, list[int]] = {}
     for tag in tags:
         m = _SEQUENTIAL_TAG_PATTERN2.match(tag)
         if not m:
-            return False  # Truly mixed format — let it pass
+            return False  # Mixed format — let it pass
         key = (m.group(1), m.group(3))  # (prefix, letter_suffix)
         groups.setdefault(key, []).append(int(m.group(2)))
+
+    # Flag if ANY group forms a dense sequential run of ≥5 numbers.
     for nums in groups.values():
-        if len(nums) >= 5:
-            s = sorted(nums)
-            if s == list(range(s[0], s[0] + len(s))):
-                return True
+        if _dense_sequential(nums):
+            return True
     return False
 
 
@@ -110,6 +113,20 @@ def is_repeat_loop(raw_response: str, tags: List[str]) -> bool:
         if len(unique) < len(tags) / 2:
             return True
     return False
+
+
+def _parse_compound_tags(words: List[str]) -> List[str]:
+    """Extract no-dash compound tags (e.g. S2TCV3, S2SVNTP) from a word list.
+
+    Used by TesseractRunner where individual confident words are already
+    separated; we apply the compound pattern directly to each word.
+    """
+    tags = []
+    for w in words:
+        token = w.strip().upper()
+        if len(token) >= 4 and _COMPOUND_TAG_PATTERN.match(token):
+            tags.append(token)
+    return tags
 
 
 def parse_tags_from_response(text: str) -> List[str]:
