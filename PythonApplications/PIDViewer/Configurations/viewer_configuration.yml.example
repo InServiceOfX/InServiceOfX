@@ -1,0 +1,17 @@
+# Path to CLIPDFExtraction output directory.
+# Must contain subdirectories, each with manifest.json + page_N.md + page_N.png.
+# Container path: /Workspace/Generated/CLIPDFExtraction
+mineru_output_path: /Workspace/Generated/CLIPDFExtraction
+
+# Optional: CLIPDFQwen3VLChat output directory.
+# Same subdir layout, but page_N.txt holds the Qwen3VL response.
+# Remove or comment out if you have not run CLIPDFQwen3VLChat.
+qwen3vl_output_path: /Workspace/Generated/CLIPDFQwen3VLChat
+
+# Optional: CLIPDFColQwenIndexer output directory.
+# Set this once you have run the indexer; enables the "has ColQwen" indicator.
+# colqwen_index_path: /Workspace/Generated/CLIPDFColQwenIndexer
+
+# Server binding.
+host: 0.0.0.0
+port: 8888

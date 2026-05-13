@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "pidviewer"
+version = "0.1.0"
+description = "Web viewer for P&ID extraction output (MinerU + Qwen3VL + ColQwen)"
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = ">=0.100"
+uvicorn = {extras = ["standard"], version = ">=0.20"}
+aiofiles = ">=23.0"
+pydantic = ">=2.0"
+pyyaml = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

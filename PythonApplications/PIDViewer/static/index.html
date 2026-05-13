@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P&amp;ID Extraction Viewer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a;
+    --border: #2e3350; --text: #c9d1d9; --muted: #6e7891;
+    --accent: #58a6ff; --ok: #3fb950; --warn: #e3b341; --err: #f85149;
+    --tag-text: #7ec8e3; --tag-image: #b392f0; --tag-header: #56d364;
+    --tag-aside: #ffa657; --tag-table: #f2a1c0; --tag-equation: #d2a8ff;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Top bar */
+  #topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  #topbar h1 { font-size: 1rem; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  #doc-select { flex: 1; max-width: 360px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 0.85rem; }
+  #search-wrap { display: flex; gap: 4px; flex: 1; max-width: 380px; }
+  #search-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 0.85rem; }
+  #search-input::placeholder { color: var(--muted); }
+  #search-btn { background: var(--accent); color: #0f1117; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+  #search-btn:hover { opacity: 0.85; }
+  #status-badge { font-size: 0.75rem; color: var(--muted); margin-left: auto; }
+
+  /* Search results overlay */
+  #search-results { position: fixed; top: 42px; left: 50%; transform: translateX(-50%); width: 700px; max-height: 70vh; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; }
+  #search-results-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+  #search-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+  .hit-row { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .hit-row:hover { background: var(--surface2); }
+  .hit-doc { font-size: 0.72rem; color: var(--accent); margin-bottom: 2px; }
+  .hit-page { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .hit-snippet { font-size: 0.78rem; line-height: 1.4; background: var(--surface2); border-radius: 3px; padding: 4px 6px; white-space: pre-wrap; word-break: break-word; }
+  .hit-source { display: inline-block; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; margin-bottom: 3px; }
+  .hit-source-mineru { background: #1f3a5f; color: var(--accent); }
+  .hit-source-qwen3vl { background: #3a2a5f; color: #d2a8ff; }
+
+  /* Main layout */
+  #layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left: page strip */
+  #page-strip { width: 160px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 8px; }
+  .page-thumb { cursor: pointer; border: 2px solid transparent; border-radius: 4px; overflow: hidden; background: var(--surface2); }
+  .page-thumb:hover { border-color: var(--accent); }
+  .page-thumb.active { border-color: var(--accent); }
+  .page-thumb img { width: 100%; display: block; }
+  .page-thumb-label { font-size: 0.7rem; color: var(--muted); text-align: center; padding: 2px 0 4px; }
+  .page-thumb-stats { font-size: 0.65rem; color: var(--muted); text-align: center; padding-bottom: 4px; display: flex; gap: 4px; justify-content: center; }
+  .dot-ok { color: var(--ok); } .dot-warn { color: var(--warn); } .dot-err { color: var(--err); }
+
+  /* Center: page image */
+  #page-image-panel { flex: 1; overflow: auto; background: var(--bg); display: flex; align-items: flex-start; justify-content: center; padding: 12px; }
+  #page-image-wrap { position: relative; }
+  #page-img { max-width: 100%; border: 1px solid var(--border); border-radius: 4px; display: block; }
+  #no-image { color: var(--muted); font-size: 0.85rem; padding: 40px; }
+
+  /* Right: extraction panel */
+  #extraction-panel { width: 420px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  #extraction-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tab-btn { flex: 1; padding: 8px 4px; background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  #extraction-content { flex: 1; overflow-y: auto; padding: 12px; }
+
+  /* MinerU elements */
+  .el-block { margin-bottom: 8px; border-left: 3px solid var(--border); padding: 6px 8px; background: var(--surface2); border-radius: 0 4px 4px 0; }
+  .el-type { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 3px; }
+  .el-type-text { color: var(--tag-text); } .el-type-header { color: var(--tag-header); }
+  .el-type-image { color: var(--tag-image); } .el-type-aside_text { color: var(--tag-aside); }
+  .el-type-table { color: var(--tag-table); } .el-type-equation { color: var(--tag-equation); }
+  .el-type-unknown { color: var(--muted); }
+  .el-content { font-size: 0.8rem; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+  .el-bbox { font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
+  .el-image-note { font-size: 0.75rem; color: var(--tag-image); font-style: italic; }
+
+  /* Qwen3VL text */
+  #qwen-text { font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+  /* Stats tab */
+  .stat-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .stat-label { color: var(--muted); } .stat-value { color: var(--text); font-weight: 500; }
+  .type-chip { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin: 2px; background: var(--surface2); }
+
+  /* Empty states */
+  .empty-state { color: var(--muted); font-size: 0.82rem; padding: 20px; text-align: center; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>P&amp;ID Viewer</h1>
+  <select id="doc-select"><option value="">— select document —</option></select>
+  <div id="search-wrap">
+    <input id="search-input" type="text" placeholder="Search extracted text…" autocomplete="off">
+    <button id="search-btn">Search</button>
+  </div>
+  <span id="status-badge">loading…</span>
+</div>
+
+<div id="search-results">
+  <div id="search-results-header">
+    <span id="search-results-label">Results</span>
+    <button id="search-close">✕</button>
+  </div>
+  <div id="search-results-body"></div>
+</div>
+
+<div id="layout">
+  <div id="page-strip"></div>
+  <div id="page-image-panel">
+    <div id="no-image" class="empty-state">Select a document and page</div>
+    <div id="page-image-wrap" style="display:none">
+      <img id="page-img" src="" alt="P&amp;ID page">
+    </div>
+  </div>
+  <div id="extraction-panel">
+    <div id="extraction-tabs">
+      <button class="tab-btn active" data-tab="mineru">MinerU</button>
+      <button class="tab-btn" data-tab="qwen3vl">Qwen3VL</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
+    </div>
+    <div id="extraction-content"><p class="empty-state">Select a page</p></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentDoc = null;
+let currentPage = null;
+let currentTab = 'mineru';
+let pageCache = {};
+let docData = {};
+
+const TYPE_COLORS = {
+  text: 'el-type-text', header: 'el-type-header', image: 'el-type-image',
+  aside_text: 'el-type-aside_text', table: 'el-type-table',
+  equation: 'el-type-equation'
+};
+
+async function init() {
+  const status = await fetchJSON('/api/status');
+  document.getElementById('status-badge').textContent =
+    `${status.document_count} document${status.document_count !== 1 ? 's' : ''}`;
+
+  const sel = document.getElementById('doc-select');
+  for (const doc of status.documents) {
+    const opt = document.createElement('option');
+    opt.value = doc;
+    opt.textContent = doc;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => loadDocument(sel.value));
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      if (currentPage !== null) renderExtractionPanel(currentDoc, currentPage);
+    });
+  });
+}
+
+async function fetchJSON(url) {
+  const res = await fetch(API + url);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function loadDocument(docId) {
+  if (!docId) return;
+  currentDoc = docId;
+  currentPage = null;
+  pageCache = {};
+
+  const doc = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}`);
+  docData[docId] = doc;
+
+  renderPageStrip(doc);
+  document.getElementById('no-image').style.display = 'block';
+  document.getElementById('page-image-wrap').style.display = 'none';
+  document.getElementById('extraction-content').innerHTML = '<p class="empty-state">Select a page</p>';
+}
+
+function renderPageStrip(doc) {
+  const strip = document.getElementById('page-strip');
+  strip.innerHTML = '';
+  for (const page of doc.pages) {
+    const thumb = document.createElement('div');
+    thumb.className = 'page-thumb';
+    thumb.dataset.page = page.page;
+
+    let imgHtml = '';
+    if (page.has_image) {
+      const src = `/api/documents/${encodeURIComponent(doc.doc_id)}/pages/${page.page}/image`;
+      imgHtml = `<img src="${src}" loading="lazy" alt="page ${page.page}">`;
+    } else {
+      imgHtml = `<div style="height:100px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.7rem">no image</div>`;
+    }
+
+    const secs = page.seconds.toFixed(1);
+    const statusDot = page.status === 'ok' ? '●' : page.status === 'error' ? '●' : '○';
+    const dotClass = page.status === 'ok' ? 'dot-ok' : page.status === 'error' ? 'dot-err' : 'dot-warn';
+    const tags = [
+      page.has_mineru ? 'M' : '',
+      page.has_qwen3vl ? 'Q' : '',
+      page.has_colqwen ? 'C' : '',
+    ].filter(Boolean).join(' ');
+
+    thumb.innerHTML = `
+      ${imgHtml}
+      <div class="page-thumb-label">Page ${page.page} <span class="${dotClass}">${statusDot}</span></div>
+      <div class="page-thumb-stats"><span>${secs}s</span>${tags ? `<span style="color:var(--accent)">${tags}</span>` : ''}</div>
+    `;
+    thumb.addEventListener('click', () => selectPage(doc.doc_id, page.page));
+    strip.appendChild(thumb);
+  }
+}
+
+async function selectPage(docId, pageNum) {
+  currentPage = pageNum;
+
+  // Update active thumb
+  document.querySelectorAll('.page-thumb').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
+  });
+
+  // Show image
+  const imgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/image`;
+  const img = document.getElementById('page-img');
+  document.getElementById('no-image').style.display = 'none';
+  document.getElementById('page-image-wrap').style.display = 'block';
+  img.src = imgUrl;
+
+  renderExtractionPanel(docId, pageNum);
+}
+
+async function renderExtractionPanel(docId, pageNum) {
+  const content = document.getElementById('extraction-content');
+  content.innerHTML = '<p class="empty-state">Loading…</p>';
+
+  try {
+    if (currentTab === 'mineru') {
+      await renderMinerU(docId, pageNum, content);
+    } else if (currentTab === 'qwen3vl') {
+      await renderQwen3VL(docId, pageNum, content);
+    } else if (currentTab === 'stats') {
+      renderStats(docId, pageNum, content);
+    }
+  } catch (e) {
+    content.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
+  }
+}
+
+async function renderMinerU(docId, pageNum, container) {
+  const cacheKey = `mineru-${docId}-${pageNum}`;
+  if (!pageCache[cacheKey]) {
+    try {
+      pageCache[cacheKey] = await fetchJSON(
+        `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/mineru`
+      );
+    } catch (e) {
+      container.innerHTML = `<p class="empty-state">MinerU output not available</p>`;
+      return;
+    }
+  }
+  const elements = pageCache[cacheKey];
+  if (!Array.isArray(elements) || elements.length === 0) {
+    container.innerHTML = `<p class="empty-state">No elements extracted</p>`;
+    return;
+  }
+
+  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">${elements.length} elements</div>`;
+  for (const el of elements) {
+    const type = el.type || 'unknown';
+    const colorClass = TYPE_COLORS[type] || 'el-type-unknown';
+    const bbox = el.bbox ? el.bbox.map(v => (v * 100).toFixed(1) + '%').join(', ') : '';
+    let contentHtml = '';
+    if (type === 'image') {
+      const desc = el.content || el.img_path || '';
+      contentHtml = `<div class="el-image-note">🖼 ${escapeHtml(String(desc).slice(0, 120)) || '(image region)'}</div>`;
+    } else if (el.content) {
+      const text = typeof el.content === 'string' ? el.content : JSON.stringify(el.content);
+      contentHtml = `<div class="el-content">${escapeHtml(text)}</div>`;
+    }
+    html += `
+      <div class="el-block">
+        <div class="el-type ${colorClass}">${type}</div>
+        ${contentHtml}
+        ${bbox ? `<div class="el-bbox">bbox: ${bbox}</div>` : ''}
+      </div>`;
+  }
+  container.innerHTML = html;
+}
+
+async function renderQwen3VL(docId, pageNum, container) {
+  const cacheKey = `qwen-${docId}-${pageNum}`;
+  if (!pageCache[cacheKey]) {
+    try {
+      const data = await fetchJSON(
+        `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/qwen3vl`
+      );
+      pageCache[cacheKey] = data.text;
+    } catch (e) {
+      container.innerHTML = `<p class="empty-state">Qwen3VL output not available</p>`;
+      return;
+    }
+  }
+  const text = pageCache[cacheKey];
+  container.innerHTML = `<div id="qwen-text">${escapeHtml(text)}</div>`;
+}
+
+function renderStats(docId, pageNum, container) {
+  const doc = docData[docId];
+  if (!doc) { container.innerHTML = '<p class="empty-state">No data</p>'; return; }
+  const page = doc.pages.find(p => p.page === pageNum);
+  if (!page) { container.innerHTML = '<p class="empty-state">Page not found</p>'; return; }
+
+  const rows = [
+    ['Page', page.page],
+    ['Status', page.status],
+    ['Extraction time', page.seconds.toFixed(2) + 's'],
+    ['MinerU elements', page.mineru_element_count],
+    ['Has image', page.has_image ? '✓' : '✗'],
+    ['Has MinerU', page.has_mineru ? '✓' : '✗'],
+    ['Has Qwen3VL', page.has_qwen3vl ? '✓' : '✗'],
+    ['Has ColQwen', page.has_colqwen ? '✓' : '✗'],
+    ['DPI', doc.dpi],
+  ];
+
+  let html = rows.map(([l, v]) =>
+    `<div class="stat-row"><span class="stat-label">${l}</span><span class="stat-value">${v}</span></div>`
+  ).join('');
+
+  if (page.mineru_element_types.length > 0) {
+    html += `<div style="margin-top:10px;font-size:0.75rem;color:var(--muted)">Element types:</div>`;
+    html += `<div style="margin-top:4px">`;
+    for (const t of page.mineru_element_types) {
+      const colorClass = TYPE_COLORS[t] ? `color:${getComputedStyle(document.documentElement).getPropertyValue('--tag-' + t.replace('_', '-')) || 'inherit'}` : '';
+      html += `<span class="type-chip">${t}</span>`;
+    }
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// --- Search ---
+
+async function runSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const panel = document.getElementById('search-results');
+  const body = document.getElementById('search-results-body');
+  const label = document.getElementById('search-results-label');
+  body.innerHTML = '<p class="empty-state">Searching…</p>';
+  panel.style.display = 'block';
+  try {
+    const params = new URLSearchParams({ q, max_results: 50 });
+    const data = await fetchJSON('/api/search?' + params.toString());
+    label.textContent = `${data.hit_count} hit${data.hit_count !== 1 ? 's' : ''} for "${q}"`;
+    if (data.hits.length === 0) {
+      body.innerHTML = '<p class="empty-state">No results found</p>';
+      return;
+    }
+    let html = '';
+    for (const hit of data.hits) {
+      for (const snippet of hit.snippets) {
+        const srcClass = `hit-source-${snippet.source}`;
+        html += `
+          <div class="hit-row" data-doc="${escapeHtml(hit.doc_id)}" data-page="${hit.page}">
+            <div class="hit-doc">${escapeHtml(hit.doc_id)}</div>
+            <div class="hit-page">Page ${hit.page} &nbsp;
+              <span class="hit-source ${srcClass}">${snippet.source}</span>
+              <span class="hit-source" style="background:var(--surface2);color:var(--muted)">${snippet.type}</span>
+            </div>
+            <div class="hit-snippet">${escapeHtml(snippet.snippet)}</div>
+          </div>`;
+      }
+    }
+    body.innerHTML = html;
+
+    body.querySelectorAll('.hit-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const docId = row.dataset.doc;
+        const pageNum = parseInt(row.dataset.page);
+        panel.style.display = 'none';
+        if (docId !== currentDoc) {
+          document.getElementById('doc-select').value = docId;
+          await loadDocument(docId);
+        }
+        selectPage(docId, pageNum);
+      });
+    });
+  } catch (e) {
+    body.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
+  }
+}
+
+document.getElementById('search-btn').addEventListener('click', runSearch);
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runSearch();
+  if (e.key === 'Escape') document.getElementById('search-results').style.display = 'none';
+});
+document.getElementById('search-close').addEventListener('click', () => {
+  document.getElementById('search-results').style.display = 'none';
+});
+
+init().catch(console.error);
+</script>
+</body>
+</html>
