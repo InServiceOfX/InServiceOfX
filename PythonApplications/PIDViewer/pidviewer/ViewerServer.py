@@ -92,6 +92,13 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             raise HTTPException(404, f"Image not found for {doc_id} page {page}")
         return FileResponse(str(image_path), media_type="image/png")
 
+    @app.get("/api/documents/{doc_id}/pages/{page}/tiles/{col}/{row}/image")
+    async def get_tile_image(doc_id: str, page: int, col: int, row: int):
+        tile_path = store.get_tile_image_path(doc_id, page, col, row)
+        if tile_path is None:
+            raise HTTPException(404, f"Tile image not found for {doc_id} page {page} tile ({col},{row})")
+        return FileResponse(str(tile_path), media_type="image/png")
+
     @app.get("/api/documents/{doc_id}/pages/{page}/mineru")
     async def get_page_mineru(doc_id: str, page: int):
         data = store.get_page_mineru(doc_id, page)

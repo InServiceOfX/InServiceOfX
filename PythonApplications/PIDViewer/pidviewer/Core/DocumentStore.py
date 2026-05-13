@@ -131,6 +131,12 @@ class DocumentStore:
         p = self._cfg.mineru_output_path / doc_id / f"page_{page}.png"
         return p if p.exists() else None
 
+    def get_tile_image_path(self, doc_id: str, page: int, col: int, row: int) -> Optional[Path]:
+        if not self._cfg.tiled_output_path:
+            return None
+        p = self._cfg.tiled_output_path / doc_id / f"page_{page}_tile_{col}x{row}.png"
+        return p if p.exists() else None
+
     def get_page_mineru(self, doc_id: str, page: int) -> Optional[Any]:
         p = self._cfg.mineru_output_path / doc_id / f"page_{page}.md"
         if not p.exists():

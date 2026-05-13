@@ -442,12 +442,16 @@ async function renderTiled(docId, pageNum, container) {
     const isHallucinated = !!tile.hallucination_suspected;
     const borderColor = isHallucinated ? 'var(--err)' : 'var(--accent)';
     const titleColor = isHallucinated ? 'var(--err)' : 'var(--accent)';
-    const hallTag = isHallucinated ? ' <span style="font-size:0.65rem;background:#3a1a1a;color:var(--err);padding:1px 5px;border-radius:8px">⚠ hallucination filtered</span>' : '';
+    const hallTag = isHallucinated ? ' <span style="font-size:0.65rem;background:#3a1a1a;color:var(--err);padding:1px 5px;border-radius:8px">⚠ filtered</span>' : '';
+    const tileImgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/tiles/${tile.col}/${tile.row}/image`;
     html += `<div class="el-block" style="border-left-color:${borderColor}">`;
     html += `<div class="el-type" style="color:${titleColor}">Tile (${tile.col},${tile.row}) · ${tile.seconds.toFixed(1)}s · ${tagCount} tag${tagCount!==1?'s':''}${hallTag}</div>`;
+    html += `<div style="display:flex;gap:8px;margin-top:4px">`;
+    html += `<img src="${tileImgUrl}" alt="tile ${tile.col}x${tile.row}" style="width:120px;height:auto;border:1px solid var(--border);border-radius:2px;flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`;
     if (tile.response) {
-      html += `<div class="el-content">${escapeHtml(tile.response.slice(0, 400))}${tile.response.length>400?'…':''}</div>`;
+      html += `<div class="el-content" style="flex:1">${escapeHtml(tile.response.slice(0, 400))}${tile.response.length>400?'…':''}</div>`;
     }
+    html += `</div>`;
     html += `</div>`;
   }
   html += `</div>`;
