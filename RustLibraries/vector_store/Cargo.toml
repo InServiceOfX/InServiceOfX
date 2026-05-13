@@ -11,5 +11,9 @@ sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chron
 tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread"] }
 uuid = { version = "1.10", features = ["v4", "serde"] }
 
+[[bin]]
+name = "ingest"
+path = "src/bin/ingest.rs"
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
