@@ -185,9 +185,21 @@ class TiledRunner:
             )
             tile_seconds = time.time() - t0
 
-            from clipdftiledextraction.Core.TagMerger import parse_tags_from_response
+            from clipdftiledextraction.Core.TagMerger import (
+                parse_tags_from_response,
+                is_sequential_run,
+            )
             tags = parse_tags_from_response(response)
-            tile_responses.append(response)
+            suspected = is_sequential_run(tags)
+            if suspected:
+                print(
+                    f"    tile {tile.col}x{tile.row}: sequential-run hallucination "
+                    f"suspected ({len(tags)} tags) — excluded from merge"
+                )
+                merge_response = ""  # don't feed hallucinated tags to merger
+            else:
+                merge_response = response
+            tile_responses.append(merge_response)
 
             tile_records.append({
                 "col": tile.col,
@@ -195,6 +207,7 @@ class TiledRunner:
                 "bbox": list(tile.bbox),
                 "response": response,
                 "tags": tags,
+                "hallucination_suspected": suspected,
                 "seconds": tile_seconds,
             })
 

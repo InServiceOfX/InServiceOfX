@@ -26,6 +26,9 @@ _TAG_PATTERN = re.compile(
     r"^[A-Z]{1,8}(?:[-_][A-Z0-9]{1,6})+$"
 )
 
+# Matches simple PREFIX-NNN tags (no letter suffixes) used for sequential-run detection.
+_SEQUENTIAL_TAG_PATTERN = re.compile(r"^([A-Z]{1,8})-(\d{1,5})$")
+
 
 def _looks_like_tag(token: str) -> bool:
     """True for all-caps alphanumeric tokens that look like P&ID component tags."""
@@ -38,6 +41,30 @@ def _looks_like_tag(token: str) -> bool:
     if not any(c.isdigit() for c in token):
         return False
     return bool(_TAG_PATTERN.match(token))
+
+
+def is_sequential_run(tags: List[str]) -> bool:
+    """Return True when tags appear to be a hallucinated sequential number series.
+
+    A tile whose entire output is FCV-001, FCV-002, ..., FCV-073 is almost
+    certainly fabricated: real P&ID tiles never contain one prefix numbered
+    contiguously from 001.  Threshold: ≥5 tags, all matching PREFIX-NNN, with
+    at least one prefix whose numbers form a gapless consecutive run.
+    """
+    if len(tags) < 5:
+        return False
+    nums_by_prefix: dict[str, list[int]] = {}
+    for tag in tags:
+        m = _SEQUENTIAL_TAG_PATTERN.match(tag)
+        if not m:
+            return False  # Mixed-format response — let it pass
+        nums_by_prefix.setdefault(m.group(1), []).append(int(m.group(2)))
+    for nums in nums_by_prefix.values():
+        if len(nums) >= 5:
+            s = sorted(nums)
+            if s == list(range(s[0], s[0] + len(s))):
+                return True
+    return False
 
 
 def parse_tags_from_response(text: str) -> List[str]:

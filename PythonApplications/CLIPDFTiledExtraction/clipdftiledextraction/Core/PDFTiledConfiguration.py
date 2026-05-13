@@ -63,6 +63,8 @@ class PDFTiledConfiguration(BaseModel):
             "- Copy the exact characters you see — do not invent or extrapolate.\n"
             "- Do NOT output tags you cannot directly read in the image.\n"
             "- Do NOT include pipe labels, line numbers, notes, or descriptions.\n"
+            "- Do NOT generate sequential lists such as TAG-001, TAG-002, TAG-003 "
+            "unless you can individually read each number in the image.\n"
             "- If you cannot read any tags in this region, output only: NONE"
         ),
         description="Prompt sent to the VLM for every tile.",
