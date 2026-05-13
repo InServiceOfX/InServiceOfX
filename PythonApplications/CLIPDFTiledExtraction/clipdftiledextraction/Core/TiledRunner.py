@@ -188,12 +188,14 @@ class TiledRunner:
             from clipdftiledextraction.Core.TagMerger import (
                 parse_tags_from_response,
                 is_sequential_run,
+                is_repeat_loop,
             )
             tags = parse_tags_from_response(response)
-            suspected = is_sequential_run(tags)
+            suspected = is_sequential_run(tags) or is_repeat_loop(response, tags)
             if suspected:
+                reason = "sequential-run" if is_sequential_run(tags) else "repeat-loop"
                 print(
-                    f"    tile {tile.col}x{tile.row}: sequential-run hallucination "
+                    f"    tile {tile.col}x{tile.row}: {reason} hallucination "
                     f"suspected ({len(tags)} tags) — excluded from merge"
                 )
                 merge_response = ""  # don't feed hallucinated tags to merger

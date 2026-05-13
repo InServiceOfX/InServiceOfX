@@ -26,8 +26,10 @@ _TAG_PATTERN = re.compile(
     r"^[A-Z]{1,8}(?:[-_][A-Z0-9]{1,6})+$"
 )
 
-# Matches simple PREFIX-NNN tags (no letter suffixes) used for sequential-run detection.
+# Matches PREFIX-NNN or PREFIX-NNNA for sequential-run detection.
 _SEQUENTIAL_TAG_PATTERN = re.compile(r"^([A-Z]{1,8})-(\d{1,5})$")
+# Also matches PREFIX-NNNx where x is an optional constant letter suffix.
+_SEQUENTIAL_TAG_PATTERN2 = re.compile(r"^([A-Z]{1,8})-(\d{1,4})([A-Z]*)$")
 
 
 def _looks_like_tag(token: str) -> bool:
@@ -53,17 +55,60 @@ def is_sequential_run(tags: List[str]) -> bool:
     """
     if len(tags) < 5:
         return False
+
+    # Case 1: all tags are plain PREFIX-NNN — check for simple consecutive run.
     nums_by_prefix: dict[str, list[int]] = {}
+    all_simple = True
     for tag in tags:
         m = _SEQUENTIAL_TAG_PATTERN.match(tag)
         if not m:
-            return False  # Mixed-format response — let it pass
+            all_simple = False
+            break
         nums_by_prefix.setdefault(m.group(1), []).append(int(m.group(2)))
-    for nums in nums_by_prefix.values():
+    if all_simple:
+        for nums in nums_by_prefix.values():
+            if len(nums) >= 5:
+                s = sorted(nums)
+                if s == list(range(s[0], s[0] + len(s))):
+                    return True
+
+    # Case 2: PREFIX-NNNx pattern with constant letter suffix (e.g. FCV-10A…FCV-20A).
+    # Group by (prefix, letter_suffix) and check numeric part for consecutive run.
+    groups: dict[tuple, list[int]] = {}
+    for tag in tags:
+        m = _SEQUENTIAL_TAG_PATTERN2.match(tag)
+        if not m:
+            return False  # Truly mixed format — let it pass
+        key = (m.group(1), m.group(3))  # (prefix, letter_suffix)
+        groups.setdefault(key, []).append(int(m.group(2)))
+    for nums in groups.values():
         if len(nums) >= 5:
             s = sorted(nums)
             if s == list(range(s[0], s[0] + len(s))):
                 return True
+    return False
+
+
+def is_repeat_loop(raw_response: str, tags: List[str]) -> bool:
+    """Return True when a tile response looks like a hallucinated repeat loop.
+
+    Two signatures:
+    1. The raw response contains any line repeated 3+ times — the model looped.
+    2. Every unique tag appears more than once AND there are ≥4 tags total —
+       the model cycled through the same short set of tags many times.
+    """
+    if not raw_response.strip():
+        return False
+    lines = [l.strip() for l in raw_response.splitlines() if l.strip()]
+    if len(lines) >= 6:
+        from collections import Counter
+        line_counts = Counter(lines)
+        if line_counts.most_common(1)[0][1] >= 3:
+            return True
+    if len(tags) >= 4:
+        unique = set(tags)
+        if len(unique) < len(tags) / 2:
+            return True
     return False
 
 

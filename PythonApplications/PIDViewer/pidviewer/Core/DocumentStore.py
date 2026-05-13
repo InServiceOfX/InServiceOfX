@@ -19,6 +19,8 @@ class PageRecord:
     has_tiled: bool = False
     mineru_element_count: int = 0
     mineru_element_types: List[str] = field(default_factory=list)
+    tiled_tag_count: int = 0
+    tiled_hallucinated_tiles: int = 0
 
 
 @dataclass
@@ -87,6 +89,19 @@ class DocumentStore:
                 except Exception:
                     pass
 
+            tiled_tag_count = 0
+            tiled_hallucinated_tiles = 0
+            if tiled_path and tiled_path.exists():
+                try:
+                    tiled_data = json.loads(tiled_path.read_text())
+                    tiled_tag_count = len(tiled_data.get("merged_tags", []))
+                    tiled_hallucinated_tiles = sum(
+                        1 for t in tiled_data.get("tiles", [])
+                        if t.get("hallucination_suspected")
+                    )
+                except Exception:
+                    pass
+
             pages.append(
                 PageRecord(
                     page=page_num,
@@ -99,6 +114,8 @@ class DocumentStore:
                     has_tiled=bool(tiled_path and tiled_path.exists()),
                     mineru_element_count=element_count,
                     mineru_element_types=element_types,
+                    tiled_tag_count=tiled_tag_count,
+                    tiled_hallucinated_tiles=tiled_hallucinated_tiles,
                 )
             )
 
@@ -199,6 +216,24 @@ class DocumentStore:
                                 "type": "text",
                                 "snippet": text[start:end],
                             })
+
+                if self._cfg.tiled_output_path:
+                    tp = self._cfg.tiled_output_path / doc_id / f"page_{page_num}.json"
+                    if tp.exists():
+                        try:
+                            tiled = json.loads(tp.read_text())
+                            matched = [
+                                t for t in tiled.get("merged_tags", [])
+                                if q in t.lower()
+                            ]
+                            if matched:
+                                snippets.append({
+                                    "source": "tiled",
+                                    "type": "tags",
+                                    "snippet": " ".join(matched[:20]),
+                                })
+                        except Exception:
+                            pass
 
                 if snippets:
                     hits.append({

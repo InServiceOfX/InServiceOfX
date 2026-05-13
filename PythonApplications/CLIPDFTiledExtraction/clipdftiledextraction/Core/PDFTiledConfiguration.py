@@ -53,19 +53,16 @@ class PDFTiledConfiguration(BaseModel):
         default=(
             "You are reading a cropped region from an engineering P&ID "
             "(Piping and Instrumentation Diagram).\n\n"
-            "List ONLY the component and instrument tag numbers you can actually "
-            "see and read in THIS image region.\n\n"
-            "Tag format: letters followed by a dash and alphanumeric code, "
-            "e.g. PT-123, SV-4A, FCV-7B, TT-001A. Different systems use "
-            "different tag prefixes and numbering.\n\n"
+            "List ONLY the instrument and component tag numbers you can directly "
+            "read in THIS image. Tags consist of an uppercase letter prefix, "
+            "a dash, and an alphanumeric suffix (e.g. the format is PREFIX-SUFFIX).\n\n"
             "Rules:\n"
-            "- Output ONE tag per line.\n"
-            "- Copy the exact characters you see — do not invent or extrapolate.\n"
-            "- Do NOT output tags you cannot directly read in the image.\n"
-            "- Do NOT include pipe labels, line numbers, notes, or descriptions.\n"
-            "- Do NOT generate sequential lists such as TAG-001, TAG-002, TAG-003 "
-            "unless you can individually read each number in the image.\n"
-            "- If you cannot read any tags in this region, output only: NONE"
+            "- Output ONE tag per line. No other text.\n"
+            "- ONLY output tags whose characters you can clearly see in the image.\n"
+            "- Do NOT invent, guess, or continue a numbered series.\n"
+            "- Do NOT repeat the same tag more than once.\n"
+            "- Do NOT include pipe numbers, line labels, revision marks, or notes.\n"
+            "- If no tags are clearly readable, output exactly: NONE"
         ),
         description="Prompt sent to the VLM for every tile.",
     )

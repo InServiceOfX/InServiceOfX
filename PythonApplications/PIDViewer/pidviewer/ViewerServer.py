@@ -33,6 +33,8 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         has_colqwen: bool
         mineru_element_count: int
         mineru_element_types: List[str]
+        tiled_tag_count: int = 0
+        tiled_hallucinated_tiles: int = 0
 
     class DocumentSummary(BaseModel):
         doc_id: str
@@ -76,6 +78,8 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
                     has_colqwen=p.has_colqwen,
                     mineru_element_count=p.mineru_element_count,
                     mineru_element_types=p.mineru_element_types,
+                    tiled_tag_count=p.tiled_tag_count,
+                    tiled_hallucinated_tiles=p.tiled_hallucinated_tiles,
                 )
                 for p in doc.pages
             ],

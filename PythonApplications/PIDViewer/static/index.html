@@ -38,6 +38,7 @@
   .hit-source { display: inline-block; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; margin-bottom: 3px; }
   .hit-source-mineru { background: #1f3a5f; color: var(--accent); }
   .hit-source-qwen3vl { background: #3a2a5f; color: #d2a8ff; }
+  .hit-source-tiled { background: #1a3a3a; color: #56d364; }
 
   /* Main layout */
   #layout { display: flex; flex: 1; overflow: hidden; }
@@ -254,7 +255,7 @@ function renderPageStrip(doc) {
     const tags = [
       page.has_mineru ? 'M' : '',
       page.has_qwen3vl ? 'Q' : '',
-      page.has_tiled ? 'T' : '',
+      page.has_tiled ? `T${page.tiled_tag_count > 0 ? page.tiled_tag_count : ''}${page.tiled_hallucinated_tiles > 0 ? '⚠' : ''}` : '',
       page.has_colqwen ? 'C' : '',
     ].filter(Boolean).join(' ');
 
@@ -424,11 +425,22 @@ async function renderTiled(docId, pageNum, container) {
     html += `<p class="empty-state">No tags extracted</p>`;
   }
 
+  // hallucination summary
+  const hallucinatedTiles = tiles.filter(t => t.hallucination_suspected);
+  if (hallucinatedTiles.length > 0) {
+    html += `<div style="font-size:0.72rem;color:var(--err);margin-bottom:8px;padding:4px 8px;background:#2a1a1a;border-radius:4px">`;
+    html += `⚠ ${hallucinatedTiles.length} tile${hallucinatedTiles.length>1?'s':''} flagged as sequential-run hallucination (excluded from merged tags)</div>`;
+  }
+
   html += `<div style="margin-top:8px"><div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">Per-tile responses</div>`;
   for (const tile of tiles) {
     const tagCount = (tile.tags || []).length;
-    html += `<div class="el-block" style="border-left-color:var(--accent)">`;
-    html += `<div class="el-type" style="color:var(--accent)">Tile (${tile.col},${tile.row}) · ${tile.seconds.toFixed(1)}s · ${tagCount} tag${tagCount!==1?'s':''}</div>`;
+    const isHallucinated = !!tile.hallucination_suspected;
+    const borderColor = isHallucinated ? 'var(--err)' : 'var(--accent)';
+    const titleColor = isHallucinated ? 'var(--err)' : 'var(--accent)';
+    const hallTag = isHallucinated ? ' <span style="font-size:0.65rem;background:#3a1a1a;color:var(--err);padding:1px 5px;border-radius:8px">⚠ hallucination filtered</span>' : '';
+    html += `<div class="el-block" style="border-left-color:${borderColor}">`;
+    html += `<div class="el-type" style="color:${titleColor}">Tile (${tile.col},${tile.row}) · ${tile.seconds.toFixed(1)}s · ${tagCount} tag${tagCount!==1?'s':''}${hallTag}</div>`;
     if (tile.response) {
       html += `<div class="el-content">${escapeHtml(tile.response.slice(0, 400))}${tile.response.length>400?'…':''}</div>`;
     }
@@ -444,17 +456,23 @@ function renderStats(docId, pageNum, container) {
   const page = doc.pages.find(p => p.page === pageNum);
   if (!page) { container.innerHTML = '<p class="empty-state">Page not found</p>'; return; }
 
+  const tiledHallRow = page.has_tiled && page.tiled_hallucinated_tiles > 0
+    ? [`Tiled hallucinated tiles`, `${page.tiled_hallucinated_tiles} ⚠`]
+    : null;
   const rows = [
     ['Page', page.page],
     ['Status', page.status],
-    ['Extraction time', page.seconds.toFixed(2) + 's'],
+    ['Extraction time (MinerU)', page.seconds.toFixed(2) + 's'],
     ['MinerU elements', page.mineru_element_count],
+    ['Tiled merged tags', page.has_tiled ? page.tiled_tag_count : '—'],
+    tiledHallRow,
     ['Has image', page.has_image ? '✓' : '✗'],
     ['Has MinerU', page.has_mineru ? '✓' : '✗'],
     ['Has Qwen3VL', page.has_qwen3vl ? '✓' : '✗'],
+    ['Has Tiled', page.has_tiled ? '✓' : '✗'],
     ['Has ColQwen', page.has_colqwen ? '✓' : '✗'],
     ['DPI', doc.dpi],
-  ];
+  ].filter(Boolean);
 
   let html = rows.map(([l, v]) =>
     `<div class="stat-row"><span class="stat-label">${l}</span><span class="stat-value">${v}</span></div>`
