@@ -162,6 +162,50 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         except Exception as exc:
             return {"available": False, "reason": str(exc)}
 
+    @app.get("/api/documents/{doc_id}/quality")
+    async def get_document_quality(doc_id: str):
+        """Per-page tiled extraction quality summary for a document."""
+        doc = store.get_document(doc_id)
+        if doc is None:
+            raise HTTPException(404, f"Document not found: {doc_id}")
+        pages_summary = []
+        total_tags = 0
+        total_hallucinated_tiles = 0
+        total_tiles = 0
+        for p in doc.pages:
+            if not p.has_tiled:
+                continue
+            data = store.get_page_tiled(doc_id, p.page)
+            if not data:
+                continue
+            tiles = data.get("tiles", [])
+            hall_tiles = [t for t in tiles if t.get("hallucination_suspected")]
+            clean_tiles = [t for t in tiles if not t.get("hallucination_suspected")]
+            clean_tag_count = sum(len(t.get("tags", [])) for t in clean_tiles)
+            total_tags += len(data.get("merged_tags", []))
+            total_hallucinated_tiles += len(hall_tiles)
+            total_tiles += len(tiles)
+            pages_summary.append({
+                "page": p.page,
+                "merged_tags": len(data.get("merged_tags", [])),
+                "crossed": len(data.get("crossed", [])),
+                "uncrossed": len(data.get("uncrossed", [])),
+                "tiles_total": len(tiles),
+                "tiles_hallucinated": len(hall_tiles),
+                "tiles_clean": len(clean_tiles),
+                "clean_tile_tags": clean_tag_count,
+                "seconds_total": data.get("seconds_total", 0),
+            })
+        return {
+            "doc_id": doc_id,
+            "pages_with_tiled": len(pages_summary),
+            "total_merged_tags": total_tags,
+            "total_tiles": total_tiles,
+            "total_hallucinated_tiles": total_hallucinated_tiles,
+            "hallucination_rate": round(total_hallucinated_tiles / total_tiles, 3) if total_tiles else 0,
+            "pages": pages_summary,
+        }
+
     @app.get("/api/status")
     async def status():
         docs = store.list_documents()

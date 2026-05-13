@@ -169,6 +169,7 @@
       <button class="tab-btn" data-tab="qwen3vl">Qwen3VL</button>
       <button class="tab-btn" data-tab="tiled">Tiled</button>
       <button class="tab-btn" data-tab="stats">Stats</button>
+      <button class="tab-btn" data-tab="quality">Quality</button>
     </div>
     <div id="extraction-content"><p class="empty-state">Select a page</p></div>
   </div>
@@ -223,6 +224,7 @@ async function loadDocument(docId) {
   currentDoc = docId;
   currentPage = null;
   pageCache = {};
+  delete qualityCache[docId];
 
   const doc = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}`);
   docData[docId] = doc;
@@ -300,6 +302,8 @@ async function renderExtractionPanel(docId, pageNum) {
       await renderTiled(docId, pageNum, content);
     } else if (currentTab === 'stats') {
       renderStats(docId, pageNum, content);
+    } else if (currentTab === 'quality') {
+      await renderQuality(docId, content);
     }
   } catch (e) {
     content.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
@@ -489,6 +493,53 @@ function renderStats(docId, pageNum, container) {
   }
 
   container.innerHTML = html;
+}
+
+let qualityCache = {};
+
+async function renderQuality(docId, container) {
+  container.innerHTML = '<p class="empty-state">Loading quality report…</p>';
+  try {
+    if (!qualityCache[docId]) {
+      qualityCache[docId] = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/quality`);
+    }
+    const q = qualityCache[docId];
+    if (!q.pages || q.pages.length === 0) {
+      container.innerHTML = '<p class="empty-state">No tiled extraction data available</p>';
+      return;
+    }
+    const hallPct = (q.hallucination_rate * 100).toFixed(1);
+    let html = `
+      <div style="margin-bottom:12px;padding:8px;background:var(--surface2);border-radius:4px">
+        <div class="stat-row"><span class="stat-label">Total merged tags</span><span class="stat-value">${q.total_merged_tags}</span></div>
+        <div class="stat-row"><span class="stat-label">Pages processed</span><span class="stat-value">${q.pages_with_tiled}</span></div>
+        <div class="stat-row"><span class="stat-label">Total tiles</span><span class="stat-value">${q.total_tiles}</span></div>
+        <div class="stat-row"><span class="stat-label">Hallucinated tiles</span>
+          <span class="stat-value" style="color:${q.total_hallucinated_tiles > 0 ? 'var(--err)' : 'var(--ok)'}">
+            ${q.total_hallucinated_tiles} (${hallPct}%)
+          </span>
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">Per-page breakdown</div>`;
+
+    for (const p of q.pages) {
+      const cleanPct = p.tiles_total > 0 ? ((p.tiles_clean / p.tiles_total) * 100).toFixed(0) : 0;
+      const hallColor = p.tiles_hallucinated > 0 ? 'var(--err)' : 'var(--ok)';
+      html += `
+        <div class="el-block" style="border-left-color:${p.tiles_hallucinated > 0 ? 'var(--err)' : 'var(--ok)'}">
+          <div class="el-type" style="color:var(--accent)">Page ${p.page}</div>
+          <div style="display:flex;gap:16px;font-size:0.78rem;margin-top:4px">
+            <span><span style="color:var(--ok)">${p.merged_tags}</span> tags</span>
+            <span><span style="color:${hallColor}">${p.tiles_hallucinated}/${p.tiles_total}</span> tiles filtered</span>
+            <span style="color:var(--muted)">${p.seconds_total.toFixed(1)}s</span>
+          </div>
+          ${p.crossed > 0 ? `<div style="font-size:0.7rem;color:var(--ok);margin-top:2px">✓ ${p.crossed} MinerU-confirmed</div>` : ''}
+        </div>`;
+    }
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
+  }
 }
 
 function escapeHtml(text) {
