@@ -1,4 +1,6 @@
 """FastAPI application for the P&ID extraction viewer."""
+import csv
+import io
 import json
 import urllib.error
 import urllib.request
@@ -6,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -168,6 +170,59 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
                 return data
         except Exception as exc:
             return {"available": False, "reason": str(exc)}
+
+    @app.get("/api/documents/{doc_id}/tags.json")
+    async def export_tags_json(doc_id: str):
+        """Export all tiled-extracted tags for a document as JSON."""
+        doc = store.get_document(doc_id)
+        if doc is None:
+            raise HTTPException(404, f"Document not found: {doc_id}")
+        tag_pages: dict[str, list[int]] = {}
+        tag_tile_counts: dict[str, int] = {}
+        for p in doc.pages:
+            if not p.has_tiled:
+                continue
+            data = store.get_page_tiled(doc_id, p.page)
+            if not data:
+                continue
+            coverage = data.get("tile_coverage", {})
+            for tag in data.get("merged_tags", []):
+                tag_pages.setdefault(tag, []).append(p.page)
+                tag_tile_counts[tag] = tag_tile_counts.get(tag, 0) + len(coverage.get(tag, []))
+        result = sorted(
+            [{"tag": t, "pages": tag_pages[t], "total_tile_occurrences": tag_tile_counts[t]}
+             for t in tag_pages],
+            key=lambda x: x["tag"],
+        )
+        return {"doc_id": doc_id, "unique_tags": len(result), "tags": result}
+
+    @app.get("/api/documents/{doc_id}/tags.csv", response_class=PlainTextResponse)
+    async def export_tags_csv(doc_id: str):
+        """Export all tiled-extracted tags for a document as CSV."""
+        doc = store.get_document(doc_id)
+        if doc is None:
+            raise HTTPException(404, f"Document not found: {doc_id}")
+        rows = []
+        for p in doc.pages:
+            if not p.has_tiled:
+                continue
+            data = store.get_page_tiled(doc_id, p.page)
+            if not data:
+                continue
+            coverage = data.get("tile_coverage", {})
+            for tag in data.get("merged_tags", []):
+                rows.append({
+                    "tag": tag,
+                    "page": p.page,
+                    "tile_occurrences": len(coverage.get(tag, [])),
+                    "hallucinated": False,
+                })
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=["tag", "page", "tile_occurrences", "hallucinated"])
+        writer.writeheader()
+        writer.writerows(sorted(rows, key=lambda r: (r["tag"], r["page"])))
+        return PlainTextResponse(content=buf.getvalue(), media_type="text/csv",
+                                 headers={"Content-Disposition": f'attachment; filename="{doc_id}_tags.csv"'})
 
     @app.get("/api/documents/{doc_id}/quality")
     async def get_document_quality(doc_id: str):

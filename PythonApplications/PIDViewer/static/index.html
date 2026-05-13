@@ -523,6 +523,12 @@ async function renderQuality(docId, container) {
             ${q.total_hallucinated_tiles} (${hallPct}%)
           </span>
         </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <a href="/api/documents/${encodeURIComponent(docId)}/tags.json" target="_blank"
+             style="font-size:0.75rem;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--accent);text-decoration:none">↓ tags.json</a>
+          <a href="/api/documents/${encodeURIComponent(docId)}/tags.csv" download
+             style="font-size:0.75rem;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--ok);text-decoration:none">↓ tags.csv</a>
+        </div>
       </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">Per-page breakdown</div>`;
 
