@@ -16,8 +16,6 @@ import time
 from pathlib import Path
 from typing import Any, List
 
-import fitz  # PyMuPDF
-
 from clipdftiledextraction.Core.PDFTiledConfiguration import PDFTiledConfiguration
 from clipdftiledextraction.Core.TagMerger import merge_tile_tags
 from clipdftiledextraction.Core.TileGenerator import generate_tiles
@@ -72,7 +70,85 @@ class TesseractRunner:
         for pdf_path in pdf_paths:
             self._process_pdf(pdf_path)
 
+    def run_from_mineru_images(
+        self,
+        mineru_output_path: Path,
+        output_path: Path,
+        doc_filter: str | None = None,
+        skip_existing: bool = True,
+    ) -> None:
+        """Run Tesseract on pre-rasterised PNG images from CLIPDFExtraction output.
+
+        Reads page_N.png files from each document subdirectory under
+        mineru_output_path and writes per-page JSON to output_path/{doc_id}/.
+        No source PDF needed — reuses MinerU's existing rasters.
+        """
+        from PIL import Image
+
+        output_path.mkdir(parents=True, exist_ok=True)
+        doc_dirs = sorted(
+            d for d in mineru_output_path.iterdir()
+            if d.is_dir() and (d / "manifest.json").exists()
+        )
+        if doc_filter:
+            doc_dirs = [d for d in doc_dirs if d.name == doc_filter]
+
+        for doc_dir in doc_dirs:
+            doc_id = doc_dir.name
+            manifest = json.loads((doc_dir / "manifest.json").read_text())
+            out_dir = output_path / doc_id
+            out_dir.mkdir(parents=True, exist_ok=True)
+            print(f"\n=== {doc_id} (Tesseract/images) ===")
+            manifest_entries = []
+
+            for page_entry in manifest.get("pages", []):
+                page_num = page_entry["page"]
+                out_path = out_dir / f"page_{page_num}.json"
+                if skip_existing and out_path.exists():
+                    print(f"  page {page_num}: skipped (exists)")
+                    manifest_entries.append({"page": page_num, "status": "skipped"})
+                    continue
+
+                img_path = doc_dir / f"page_{page_num}.png"
+                if not img_path.exists():
+                    print(f"  page {page_num}: no PNG — skipping")
+                    manifest_entries.append({"page": page_num, "status": "no_image"})
+                    continue
+
+                start = time.time()
+                img = Image.open(str(img_path)).convert("RGB")
+                result = self._process_image(img, page_num)
+                elapsed = time.time() - start
+                out_path.write_text(json.dumps(result, indent=2))
+                n_tags = len(result["merged_tags"])
+                print(f"  page {page_num}: {n_tags} tags, {len(result['tiles'])} tiles in {elapsed:.1f}s")
+                manifest_entries.append({
+                    "page": page_num,
+                    "status": "ok",
+                    "seconds": elapsed,
+                    "merged_tag_count": n_tags,
+                    "output": out_path.name,
+                })
+
+            (out_dir / "manifest.json").write_text(
+                json.dumps({
+                    "doc_id": doc_id,
+                    "num_pages": len(manifest_entries),
+                    "dpi": manifest.get("dpi", self._cfg.pdf_dpi),
+                    "backend": "tesseract",
+                    "source": "mineru_images",
+                    "grid": {
+                        "cols": self._cfg.grid_cols,
+                        "rows": self._cfg.grid_rows,
+                        "overlap_fraction": self._cfg.overlap_fraction,
+                    },
+                    "pages": manifest_entries,
+                }, indent=2)
+            )
+
     def _process_pdf(self, pdf_path: Path) -> None:
+        import fitz  # PyMuPDF — only needed for PDF-mode
+
         doc_dir = self._cfg.output_path / pdf_path.stem
         doc_dir.mkdir(parents=True, exist_ok=True)
         print(f"\n=== {pdf_path.name} (Tesseract) ===")
@@ -120,6 +196,7 @@ class TesseractRunner:
         )
 
     def _process_page(self, doc: Any, page_index: int, page_num: int, doc_dir: Path) -> dict:
+        import fitz
         from PIL import Image
 
         page = doc[page_index]
@@ -133,6 +210,10 @@ class TesseractRunner:
                 self._cfg.image_format,
             )
 
+        return self._process_image(img, page_num)
+
+    def _process_image(self, img: Any, page_num: int) -> dict:
+        """Run tiled Tesseract extraction on a pre-loaded PIL image."""
         tiles = generate_tiles(
             img,
             grid_cols=self._cfg.grid_cols,
