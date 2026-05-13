@@ -26,6 +26,7 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         has_image: bool
         has_mineru: bool
         has_qwen3vl: bool
+        has_tiled: bool
         has_colqwen: bool
         mineru_element_count: int
         mineru_element_types: List[str]
@@ -68,6 +69,7 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
                     has_image=p.has_image,
                     has_mineru=p.has_mineru,
                     has_qwen3vl=p.has_qwen3vl,
+                    has_tiled=p.has_tiled,
                     has_colqwen=p.has_colqwen,
                     mineru_element_count=p.mineru_element_count,
                     mineru_element_types=p.mineru_element_types,
@@ -96,6 +98,13 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
         if text is None:
             raise HTTPException(404, f"Qwen3VL output not found for {doc_id} page {page}")
         return {"text": text}
+
+    @app.get("/api/documents/{doc_id}/pages/{page}/tiled")
+    async def get_page_tiled(doc_id: str, page: int):
+        data = store.get_page_tiled(doc_id, page)
+        if data is None:
+            raise HTTPException(404, f"Tiled output not found for {doc_id} page {page}")
+        return data
 
     @app.get("/api/search")
     async def search(

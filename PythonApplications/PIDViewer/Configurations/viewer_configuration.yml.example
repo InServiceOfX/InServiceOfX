@@ -8,6 +8,10 @@ mineru_output_path: /Workspace/Generated/CLIPDFExtraction
 # Remove or comment out if you have not run CLIPDFQwen3VLChat.
 qwen3vl_output_path: /Workspace/Generated/CLIPDFQwen3VLChat
 
+# Optional: CLIPDFTiledExtraction output directory.
+# Set this after running CLIPDFTiledExtraction; enables the Tiled tab.
+# tiled_output_path: /Workspace/Generated/CLIPDFTiledExtraction
+
 # Optional: CLIPDFColQwenIndexer output directory.
 # Set this once you have run the indexer; enables the "has ColQwen" indicator.
 # colqwen_index_path: /Workspace/Generated/CLIPDFColQwenIndexer

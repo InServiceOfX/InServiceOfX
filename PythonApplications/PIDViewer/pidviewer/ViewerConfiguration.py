@@ -16,6 +16,10 @@ class ViewerConfiguration(BaseModel):
         None,
         description="Directory written by CLIPDFQwen3VLChat; same subdir structure with page_N.txt.",
     )
+    tiled_output_path: Optional[Path] = Field(
+        None,
+        description="Directory written by CLIPDFTiledExtraction; subdirs hold per-page JSON with merged_tags.",
+    )
     colqwen_index_path: Optional[Path] = Field(
         None,
         description="Directory written by CLIPDFColQwenIndexer; used for future query support.",

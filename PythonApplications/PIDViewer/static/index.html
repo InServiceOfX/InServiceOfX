@@ -125,6 +125,7 @@
     <div id="extraction-tabs">
       <button class="tab-btn active" data-tab="mineru">MinerU</button>
       <button class="tab-btn" data-tab="qwen3vl">Qwen3VL</button>
+      <button class="tab-btn" data-tab="tiled">Tiled</button>
       <button class="tab-btn" data-tab="stats">Stats</button>
     </div>
     <div id="extraction-content"><p class="empty-state">Select a page</p></div>
@@ -212,6 +213,7 @@ function renderPageStrip(doc) {
     const tags = [
       page.has_mineru ? 'M' : '',
       page.has_qwen3vl ? 'Q' : '',
+      page.has_tiled ? 'T' : '',
       page.has_colqwen ? 'C' : '',
     ].filter(Boolean).join(' ');
 
@@ -252,6 +254,8 @@ async function renderExtractionPanel(docId, pageNum) {
       await renderMinerU(docId, pageNum, content);
     } else if (currentTab === 'qwen3vl') {
       await renderQwen3VL(docId, pageNum, content);
+    } else if (currentTab === 'tiled') {
+      await renderTiled(docId, pageNum, content);
     } else if (currentTab === 'stats') {
       renderStats(docId, pageNum, content);
     }
@@ -316,6 +320,56 @@ async function renderQwen3VL(docId, pageNum, container) {
   }
   const text = pageCache[cacheKey];
   container.innerHTML = `<div id="qwen-text">${escapeHtml(text)}</div>`;
+}
+
+async function renderTiled(docId, pageNum, container) {
+  const cacheKey = `tiled-${docId}-${pageNum}`;
+  if (!pageCache[cacheKey]) {
+    try {
+      pageCache[cacheKey] = await fetchJSON(
+        `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/tiled`
+      );
+    } catch (e) {
+      container.innerHTML = `<p class="empty-state">Tiled output not available — run CLIPDFTiledExtraction first</p>`;
+      return;
+    }
+  }
+  const data = pageCache[cacheKey];
+  const merged = data.merged_tags || [];
+  const tiles = data.tiles || [];
+  const grid = data.grid || {};
+
+  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">`;
+  html += `${merged.length} merged tags · ${tiles.length} tiles (${grid.cols}×${grid.rows}, `;
+  html += `overlap ${((grid.overlap_fraction||0)*100).toFixed(0)}%) · `;
+  html += `${(data.seconds_total||0).toFixed(1)}s total</div>`;
+
+  if (merged.length > 0) {
+    html += `<div style="margin-bottom:10px">`;
+    html += `<div style="font-size:0.72rem;color:var(--accent);margin-bottom:4px;font-weight:600">Merged Tags (${merged.length})</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:3px">`;
+    for (const tag of merged) {
+      const count = (data.tile_coverage || {})[tag]?.length || 0;
+      const style = count > 1 ? 'style="background:#1a3a2a;border-color:#3fb950;color:#3fb950"' : '';
+      html += `<span class="type-chip" title="${count} tile(s)" ${style}>${escapeHtml(tag)}</span>`;
+    }
+    html += `</div></div>`;
+  } else {
+    html += `<p class="empty-state">No tags extracted</p>`;
+  }
+
+  html += `<div style="margin-top:8px"><div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">Per-tile responses</div>`;
+  for (const tile of tiles) {
+    const tagCount = (tile.tags || []).length;
+    html += `<div class="el-block" style="border-left-color:var(--accent)">`;
+    html += `<div class="el-type" style="color:var(--accent)">Tile (${tile.col},${tile.row}) · ${tile.seconds.toFixed(1)}s · ${tagCount} tag${tagCount!==1?'s':''}</div>`;
+    if (tile.response) {
+      html += `<div class="el-content">${escapeHtml(tile.response.slice(0, 400))}${tile.response.length>400?'…':''}</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
 }
 
 function renderStats(docId, pageNum, container) {

@@ -16,6 +16,7 @@ class PageRecord:
     has_mineru: bool
     has_qwen3vl: bool
     has_colqwen: bool
+    has_tiled: bool = False
     mineru_element_count: int = 0
     mineru_element_types: List[str] = field(default_factory=list)
 
@@ -61,6 +62,11 @@ class DocumentStore:
                 qwen_dir = self._cfg.qwen3vl_output_path / doc_id
                 qwen_path = qwen_dir / f"page_{page_num}.txt"
 
+            tiled_path = None
+            if self._cfg.tiled_output_path:
+                tiled_dir = self._cfg.tiled_output_path / doc_id
+                tiled_path = tiled_dir / f"page_{page_num}.json"
+
             colqwen_path = None
             if self._cfg.colqwen_index_path:
                 cq_dir = self._cfg.colqwen_index_path / doc_id
@@ -90,6 +96,7 @@ class DocumentStore:
                     has_mineru=mineru_path.exists(),
                     has_qwen3vl=bool(qwen_path and qwen_path.exists()),
                     has_colqwen=bool(colqwen_path and colqwen_path.exists()),
+                    has_tiled=bool(tiled_path and tiled_path.exists()),
                     mineru_element_count=element_count,
                     mineru_element_types=element_types,
                 )
@@ -121,6 +128,17 @@ class DocumentStore:
             return None
         p = self._cfg.qwen3vl_output_path / doc_id / f"page_{page}.txt"
         return p.read_text() if p.exists() else None
+
+    def get_page_tiled(self, doc_id: str, page: int) -> Optional[Any]:
+        if not self._cfg.tiled_output_path:
+            return None
+        p = self._cfg.tiled_output_path / doc_id / f"page_{page}.json"
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            return None
 
     def get_colqwen_index_for_document(self, doc_id: str) -> Optional[Path]:
         """Returns manifest.json path for a ColQwen-indexed document, if present."""
