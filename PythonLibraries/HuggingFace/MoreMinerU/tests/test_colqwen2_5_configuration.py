@@ -18,6 +18,7 @@ model_path: /tmp/does-not-exist/colqwen2.5-v0.2
 torch_dtype: bfloat16
 device_map: cuda:0
 attn_implementation: null
+local_files_only: true
 """
 
 
@@ -31,6 +32,7 @@ def test_from_yaml_loads_required_fields(tmp_path: Path):
     assert config.torch_dtype == "bfloat16"
     assert config.device_map == "cuda:0"
     assert config.attn_implementation is None
+    assert config.local_files_only is True
 
 
 def test_from_yaml_missing_required_field_raises(tmp_path: Path):
@@ -96,3 +98,4 @@ def test_default_attn_implementation_none(tmp_path: Path):
     assert config.attn_implementation is None
     assert config.torch_dtype == "bfloat16"
     assert config.device_map == "cuda:0"
+    assert config.local_files_only is False

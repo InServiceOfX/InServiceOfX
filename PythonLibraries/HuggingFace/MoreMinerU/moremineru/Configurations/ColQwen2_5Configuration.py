@@ -62,6 +62,15 @@ class ColQwen2_5Configuration(BaseModel):
         ),
     )
 
+    local_files_only: bool = Field(
+        False,
+        description=(
+            "Forwarded to from_pretrained. Set true for fully offline use; "
+            "the LoRA adapter must be local and the base model referenced by "
+            "adapter_config.json must already exist in the HuggingFace cache."
+        ),
+    )
+
     @classmethod
     def from_yaml(
         cls,

@@ -1,0 +1,20 @@
+# Path to ColQwen2.5-v0.2 LoRA adapter as visible inside the container.
+# Host:      /media/propdev/9dc1a908-7eff-4e1c-8231-ext4/home/propdev/Data/Models/Multimodal/vidore/colqwen2.5-v0.2
+# Container: /Data/Models/Multimodal/vidore/colqwen2.5-v0.2
+#
+# The adapter_config.json points at vidore/colqwen2.5-base. That base model is
+# expected in the mounted HF cache:
+#   /root/.cache/huggingface/hub/models--vidore--colqwen2.5-base
+model_path: /Data/Models/Multimodal/vidore/colqwen2.5-v0.2
+
+# Forwarded to ColQwen2_5.from_pretrained(...).
+torch_dtype: bfloat16
+device_map: cuda:0
+
+# VLLMMultimodal uninstalls flash-attn because of torch ABI conflicts; leave
+# this null so transformers uses SDPA.
+attn_implementation: null
+
+# Fail fast instead of attempting network access if the base model is not in
+# the mounted HF cache.
+local_files_only: true

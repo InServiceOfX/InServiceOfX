@@ -1,0 +1,14 @@
+# Directory produced by CLIPDFColQwenIndexer. This can be the root output dir
+# containing one subdir per PDF, or a single PDF index subdir.
+index_path: /Workspace/Generated/CLIPDFColQwenIndexer
+
+# String or list of strings. Each query gets its own top_k ranking.
+query:
+  - "P&ID page showing RP-1 and LOX flow paths with valves and sensors"
+  - "instrumentation table with pressure transducers and manufacturer part numbers"
+  - "nitrogen purge valves, check valves, and pneumatic supply lines"
+
+top_k: 5
+
+# Directory or .json file path for query results.
+output_path: /Workspace/Generated/CLIPDFColQwenQuery/query_results.json

@@ -1,0 +1,13 @@
+input_path: "/Workspace/Data/PIDs/my-pid-document.pdf"
+output_path: /Workspace/Generated/CLIPDFPaddleOCRVLChat
+
+prompt: |
+  OCR and parse this P&ID page. Extract only information visible on the page.
+  Preserve exact component tags, instrument tags, line labels, title-block
+  fields, table rows, and any visible connection relationships. Do not invent
+  sequential tags or implied flow. If connectivity is unclear, say unclear.
+
+pdf_dpi: 250
+image_format: PNG
+save_intermediate_images: true
+skip_existing: true

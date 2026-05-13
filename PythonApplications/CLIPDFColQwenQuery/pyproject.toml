@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "clipdfcolqwenquery"
+version = "0.1.0"
+description = "CLI: query ColQwen2.5 PDF page embeddings with MaxSim ranking"
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

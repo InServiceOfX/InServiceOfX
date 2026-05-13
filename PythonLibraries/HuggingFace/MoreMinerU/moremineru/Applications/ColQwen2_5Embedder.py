@@ -70,6 +70,7 @@ class ColQwen2_5Embedder:
         load_kwargs: dict = {
             "torch_dtype": torch_dtype,
             "device_map": self._configuration.device_map,
+            "local_files_only": self._configuration.local_files_only,
         }
         if self._configuration.attn_implementation is not None:
             load_kwargs["attn_implementation"] = (
@@ -82,6 +83,7 @@ class ColQwen2_5Embedder:
         ).eval()
         self._processor = ColQwen2_5_Processor.from_pretrained(
             str(self._configuration.model_path),
+            local_files_only=self._configuration.local_files_only,
         )
         self._loaded = True
 

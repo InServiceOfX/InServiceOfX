@@ -1,6 +1,6 @@
 # VLLMMultimodal
 
-> **Continuing this work?** AI agents — read [AGENTS.md](./AGENTS.md) for pickup commands, then [STATUS.md](./STATUS.md) for state + decisions, then [NEXT_STEPS.md](./NEXT_STEPS.md) for the open backlog. This README is for build/run mechanics in isolation.
+> **Continuing this work?** AI agents — read [HANDOFF_2026-05-12.md](./HANDOFF_2026-05-12.md) first, then [AGENTS.md](./AGENTS.md) for pickup commands, [STATUS.md](./STATUS.md) for state + decisions, and [NEXT_STEPS.md](./NEXT_STEPS.md) for the open backlog. This README is for build/run mechanics in isolation.
 
 Single Docker image hosting three vision-language workloads — all served on the same vLLM 0.11.2 / torch 2.9.0 / transformers 4.57.6 stack inside `vllm-multimodal:25.06-py3`:
 
@@ -8,7 +8,9 @@ Single Docker image hosting three vision-language workloads — all served on th
 | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (PDF / document extraction, vLLM) | `MoreMinerU.MinerU2_5ProVLLM` | `CLIPDFExtraction` | yes (2026-05-10) |
 | 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (general VLM, vLLM, AWQ-8bit via compressed-tensors) | `MoreMinerU.Qwen3VLVLLM` | `CLIPDFQwen3VLChat` | yes (2026-05-10) |
-| 3 | `vidore/colqwen2.5-v0.2` (multi-vector retrieval, transformers + colpali-engine) | `MoreMinerU.ColQwen2_5Embedder` | (open — see NEXT_STEPS.md) | yes (2026-05-10, wrapper-level) |
+| 3 | `vidore/colqwen2.5-v0.2` (multi-vector retrieval, transformers + colpali-engine) | `MoreMinerU.ColQwen2_5Embedder` | `CLIPDFColQwenIndexer` + `CLIPDFColQwenQuery` | yes (wrapper-level; CLI code host-checked; GPU app validation pending) |
+| OCR probe | `PaddlePaddle/PaddleOCR-VL-1.5` (OCR/document VLM, direct vLLM server) | `PaddleOCRVLVLLMClient` | `CLIPDFPaddleOCRVLChat` | yes API smoke; full-page P&ID output not trusted |
+| OCR probe | `zai-org/GLM-OCR` | none yet | none yet | current image incompatible; use separate nightly stack |
 
 Base image: `nvcr.io/nvidia/pytorch:25.06-py3` — last CUDA 12.x release (CUDA 12.9.1, Python 3.12). Newer NVIDIA containers ship CUDA 13 and currently break vLLM / nunchaku.
 

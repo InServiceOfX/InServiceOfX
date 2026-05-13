@@ -1,20 +1,25 @@
 # VLLMMultimodal — Status
 
-> **Agents: read [`AGENTS.md`](./AGENTS.md) first for pickup commands, then this file for state and decisions, then [`NEXT_STEPS.md`](./NEXT_STEPS.md) for open backlog.** This file is the source of truth for *what's been done and why*, not for *what to do next*.
+> **Agents: read [`HANDOFF_2026-05-12.md`](./HANDOFF_2026-05-12.md) first for the newest cross-harness state, then [`AGENTS.md`](./AGENTS.md) for pickup commands, then this file for state and decisions, then [`NEXT_STEPS.md`](./NEXT_STEPS.md) for open backlog.** This file is the source of truth for *what's been done and why*, not for *what to do next*.
 
-Last updated: 2026-05-10 (Phase 3 smoke-tested).
+Last updated: 2026-05-12 (ColQwen apps + PaddleOCR-VL wrapper + Rust vector store added; ColQwen GPU CLI validation pending).
 
 ---
 
 ## TL;DR for an incoming agent
 
-- **All 3 phases smoke-tested end-to-end** on the user's RTX 3060 (12 GB Ampere) as of 2026-05-10:
+- **Phases 1-2 smoke-tested end-to-end** on the user's RTX 3060 (12 GB Ampere) as of 2026-05-10, and Phase 3 wrapper-level smoke-tested:
   - **Phase 1**: MinerU2.5-Pro for structured PDF document extraction → `CLIPDFExtraction` CLI ran the full 12-PDF example P&IDs corpus.
   - **Phase 2**: Qwen3-VL-4B AWQ-8bit for general-purpose VLM Q&A → `CLIPDFQwen3VLChat` CLI ran rev11 (7 pages, ~10 s/page).
-  - **Phase 3**: ColQwen2.5-v0.2 multi-vector retrieval → wrapper smoke produced a sensible MaxSim score matrix.
+  - **Phase 3**: ColQwen2.5-v0.2 multi-vector retrieval → wrapper smoke produced a sensible MaxSim score matrix; `CLIPDFColQwenIndexer` and `CLIPDFColQwenQuery` app code now exists and host checks pass, but GPU CLI validation is still pending.
+- **Added 2026-05-12 handoff work**:
+  - Rust/sqlx Postgres persistence crate at `RustLibraries/vector_store`.
+  - Direct PaddleOCR-VL OpenAI-compatible API wrapper at `PythonLibraries/ThirdParties/APIs/PaddleOCRVL`.
+  - PaddleOCR-VL PDF page chat app at `PythonApplications/CLIPDFPaddleOCRVLChat`.
+  - `OCR_AND_VECTOR_PLAN.md` and `HANDOFF_2026-05-12.md` for continuation.
 - The current image (`vllm-multimodal:25.06-py3` sha `f96c8b89ae50`, ~37 GB) hosts all three. torch 2.9.0+cu128, vllm 0.11.2, transformers 4.57.6.
 - All design decisions below are load-bearing — don't change base image, torch reinstall, flash-attn uninstall, cudnn-frontend strip, transformers 4.x pin, colpali-engine version pin, or torchao uninstall without reading the matching "Decisions" entry.
-- Open work: indexing + query CLIs for ColQwen retrieval — see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
+- Open work: ColQwen indexing/query GPU end-to-end validation, Postgres ingestion from `.safetensors`, and tiled P&ID extraction design — see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
 
 ## Phase status
 
@@ -22,7 +27,9 @@ Last updated: 2026-05-10 (Phase 3 smoke-tested).
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `opendatalab/MinerU2.5-Pro-2604-1.2B` (1.2B, doc extraction) | yes | yes (`MoreMinerU`) | yes (`CLIPDFExtraction`) | **yes** | **yes (2026-05-10)** |
 | 2 | `cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit` (4B, AWQ-8bit, general VLM) | yes | yes (`MoreMinerU.Qwen3VLVLLM` via `qwen-vl-utils`) | yes (`CLIPDFQwen3VLChat`) | yes (`vllm-multimodal:25.06-py3` sha `ea1221c0b9c5` with `Dockerfile.qwen3vl`) | **yes (2026-05-10)** |
-| 3 | `vidore/colqwen2.5-v0.2` (LoRA on `vidore/colqwen2.5-base`, multimodal retrieval) | LoRA + base (auto-fetched to HF cache) | yes (`MoreMinerU.ColQwen2_5Embedder` via colpali-engine) | not yet — embedding-CLI is a separate Phase 4 | yes (reuses Phase 1 image + new `Dockerfile.colqwen` layer) | **yes (2026-05-10)** |
+| 3 | `vidore/colqwen2.5-v0.2` (LoRA on `vidore/colqwen2.5-base`, multimodal retrieval) | LoRA + base HF cache present | yes (`MoreMinerU.ColQwen2_5Embedder` via colpali-engine) | yes (`CLIPDFColQwenIndexer` + `CLIPDFColQwenQuery`, GPU validation pending) | yes (reuses Phase 1 image + `Dockerfile.colqwen` layer) | **yes wrapper smoke (2026-05-10); CLI host checks (2026-05-12)** |
+| OCR probe | `PaddlePaddle/PaddleOCR-VL-1.5` | yes | yes (`PaddleOCRVLVLLMClient`, direct API) | yes (`CLIPDFPaddleOCRVLChat`) | yes (direct vLLM serve works in current image) | **yes API smoke (2026-05-12); extraction quality untrusted on full P&ID page** |
+| OCR probe | `zai-org/GLM-OCR` | yes | no | no | no (current image incompatible) | **probe failed: transformers 4.57.6 lacks `glm_ocr`; needs separate nightly stack** |
 
 ### Local paths to weights (host)
 
@@ -31,6 +38,8 @@ Last updated: 2026-05-10 (Phase 3 smoke-tested).
   opendatalab/MinerU2.5-Pro-2604-1.2B/    # 2.3 GB, full model
   cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit/  # ~4 GB AWQ-8bit (replaces deleted bf16)
   vidore/colqwen2.5-v0.2/                 # 240 MB, LoRA adapter only
+  PaddlePaddle/PaddleOCR-VL-1.5/           # ~3.6 GB, direct vLLM serve works
+  zai-org/GLM-OCR/                         # ~5 GB, needs newer vLLM/transformers stack
 ```
 
 These are mounted into the container at `/Data/Models/Multimodal/...` per `run_configuration.yml.example`.

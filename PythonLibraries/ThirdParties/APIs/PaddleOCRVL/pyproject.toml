@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "paddleocrvl-api"
+version = "0.1.0"
+description = "Thin OpenAI-compatible API wrapper for PaddleOCR-VL served by vLLM"
+authors = ["Ernest Yeung <ernestyalumni@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pydantic = "^2"
+pyyaml = "^6"
+pillow = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

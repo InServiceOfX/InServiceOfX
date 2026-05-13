@@ -1,0 +1,18 @@
+# input_path may be either a single .pdf file or a directory of .pdf files.
+# Paths must be visible from inside the container.
+input_path: "/Workspace/Data/PIDs/my-pid-document.pdf"
+
+# Where per-page ColQwen embeddings + manifest land.
+output_path: /Workspace/Generated/CLIPDFColQwenIndexer
+
+# Rasterization DPI. ColQwen supports dynamic resolution but memory scales with
+# patches. 200 is a conservative retrieval default; bump to 250 if small labels
+# matter more than speed/memory.
+pdf_dpi: 200
+
+image_format: PNG
+save_intermediate_images: true
+skip_existing: true
+
+# v1 stores one safetensors file per page so variable patch counts are natural.
+embeddings_format: safetensors

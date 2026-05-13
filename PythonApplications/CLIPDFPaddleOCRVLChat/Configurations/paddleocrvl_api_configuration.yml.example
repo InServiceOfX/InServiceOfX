@@ -1,0 +1,5 @@
+server_url: http://127.0.0.1:8080/v1
+model_name: paddleocr-vl
+request_timeout_seconds: 300
+max_tokens: 4096
+temperature: 0.0

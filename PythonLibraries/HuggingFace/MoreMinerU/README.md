@@ -11,9 +11,11 @@ moremineru/
   Configurations/
     MinerUConfiguration.py     # Pydantic config for MinerU2.5-Pro
     Qwen3VLConfiguration.py    # Pydantic config for Qwen3-VL family
+    ColQwen2_5Configuration.py # Pydantic config for ColQwen2.5 retrieval
   Applications/
     MinerU2_5ProVLLM.py        # Wraps vllm.LLM + MinerUClient (two-step extraction)
     Qwen3VLVLLM.py             # Wraps vllm.LLM directly (chat with image+prompt)
+    ColQwen2_5Embedder.py      # Wraps colpali-engine multi-vector retrieval
 ```
 
 ## MinerU2.5-Pro — structured document extraction
@@ -60,12 +62,38 @@ runner.release()
 
 `generate(image, prompt)` returns natural-language text. Defaults match the Qwen3-VL model card's recommended *VL* sampling: `top_p=0.8`, `top_k=20`, `temperature=0.7`, `presence_penalty=1.5`, `repetition_penalty=1.0`, `max_tokens=1024`. Override per call via `sampling_overrides={...}` or globally via `default_sampling_params` in the YAML. For grounded structured extraction, pass `sampling_overrides={"temperature": 0.0}` to force greedy.
 
+## ColQwen2.5 — visual document retrieval
+
+Wraps `colpali_engine.models.ColQwen2_5` and
+`ColQwen2_5_Processor`. ColQwen produces ColBERT-style multi-vector
+embeddings for page images and text queries. It is for retrieval/ranking, not
+generation.
+
+```python
+from pathlib import Path
+from PIL import Image
+from moremineru.Configurations import ColQwen2_5Configuration
+from moremineru.Applications import ColQwen2_5Embedder
+
+config = ColQwen2_5Configuration.from_yaml(Path("/path/to/colqwen2_5_configuration.yml"))
+embedder = ColQwen2_5Embedder(config)
+embedder.load()
+image_embeddings = embedder.embed_images([Image.open("/path/to/page.png")])
+query_embeddings = embedder.embed_queries(["P&ID page with nitrogen purge valves"])
+scores = embedder.score(query_embeddings, image_embeddings)
+embedder.release()
+```
+
+The CLI apps in `PythonApplications/CLIPDFColQwenIndexer/` and
+`PythonApplications/CLIPDFColQwenQuery/` drive this end-to-end on PDFs.
+
 ## Memory budget notes
 
 | Model | Variant we use | Weights on disk | Fits 12 GB? | Notes |
 | --- | --- | --- | --- | --- |
 | MinerU2.5-Pro (1.2B) | bf16 (full) | ~2.4 GB | yes | `max_model_len 8192` is the model's architectural cap |
 | Qwen3-VL-4B | AWQ-8bit (`cyankiwi/Qwen3-VL-4B-Instruct-AWQ-8bit`) | ~4 GB | yes | Pass `quantization="compressed-tensors"` to vLLM — that's the AWQ-8bit packaging the cyankiwi build uses (via `llm-compressor`) |
+| ColQwen2.5-v0.2 | LoRA adapter + cached `vidore/colqwen2.5-base` | ~486 MB adapter + ~7 GB base cache | yes, smoke-tested on 12 GB | Retrieval only; memory scales with page resolution / patch count |
 
 ### Why AWQ-8bit, not bf16 or FP8
 

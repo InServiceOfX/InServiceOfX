@@ -4,16 +4,19 @@ You are an AI coding agent (Claude Code, Codex, OpenClaw, or other) pointed at t
 
 ## Read in this order
 
-1. **`STATUS.md`** (this directory) — full phase state, build artifacts, decision rationale. Source of truth for *what's been done and why*.
-2. **This file** — concrete commands for environment verification, smoke tests, rebuild, and common pitfalls.
-3. **`NEXT_STEPS.md`** (this directory) — open backlog items, each sized for a single session.
-4. **`README.md`** (this directory) — build/run mechanics in isolation.
+1. **`HANDOFF_2026-05-12.md`** (this directory) — newest cross-harness handoff for ColQwen apps, PaddleOCR-VL, GLM-OCR, and Rust/Postgres work.
+2. **`STATUS.md`** (this directory) — full phase state, build artifacts, decision rationale. Source of truth for *what's been done and why*.
+3. **This file** — concrete commands for environment verification, smoke tests, rebuild, and common pitfalls.
+4. **`NEXT_STEPS.md`** (this directory) — open backlog items, each sized for a single session.
+5. **`README.md`** (this directory) — build/run mechanics in isolation.
 
 If the user asks you to "continue Phase 2 work" or "pick up the multimodal build" or similar, start here.
 
 ## What this is, in one paragraph
 
 A single Docker image (`vllm-multimodal:25.06-py3`) hosts three vision-language workloads on the user's RTX 3060 (12 GB Ampere, sm_86): **(1)** MinerU2.5-Pro for structured PDF document extraction; **(2)** Qwen3-VL-4B AWQ-8bit for general-purpose VLM Q&A on images; **(3)** ColQwen2.5-v0.2 for multi-vector retrieval against page images. All three share the same vLLM 0.11.2 / torch 2.9.0 / transformers 4.57.6 stack. The end-use case is parsing propulsion P&IDs (example PDF corpus).
+
+As of 2026-05-12 there is also a direct PaddleOCR-VL vLLM API wrapper/app and a Rust/sqlx Postgres crate for ColQwen embedding persistence. GLM-OCR was probed and should be moved to a separate deployment if pursued because it needs nightly vLLM plus transformers main.
 
 ## Repo locations
 
@@ -23,6 +26,11 @@ A single Docker image (`vllm-multimodal:25.06-py3`) hosts three vision-language 
   PythonLibraries/HuggingFace/MoreMinerU/                          # wrappers + tests
   PythonApplications/CLIPDFExtraction/                             # MinerU CLI (Phase 1)
   PythonApplications/CLIPDFQwen3VLChat/                            # Qwen3-VL CLI (Phase 2)
+  PythonApplications/CLIPDFColQwenIndexer/                         # ColQwen page indexer
+  PythonApplications/CLIPDFColQwenQuery/                           # ColQwen query CLI
+  PythonApplications/CLIPDFPaddleOCRVLChat/                        # PaddleOCR-VL API PDF chat
+  PythonLibraries/ThirdParties/APIs/PaddleOCRVL/                   # OpenAI-compatible API client
+  RustLibraries/vector_store/                                      # Rust/sqlx Postgres persistence
   Scripts/QuickAliases/QuickDockerBuilder.py                       # build/run wrapper
 ```
 
@@ -153,6 +161,12 @@ PythonApplications/CLIPDFExtraction/Configurations/mineru_configuration.yml
 PythonApplications/CLIPDFExtraction/Configurations/pdf_extraction_configuration.yml
 PythonApplications/CLIPDFQwen3VLChat/Configurations/qwen3vl_configuration.yml
 PythonApplications/CLIPDFQwen3VLChat/Configurations/pdf_chat_configuration.yml
+PythonApplications/CLIPDFColQwenIndexer/Configurations/colqwen2_5_configuration.yml
+PythonApplications/CLIPDFColQwenIndexer/Configurations/pdf_index_configuration.yml
+PythonApplications/CLIPDFColQwenQuery/Configurations/colqwen2_5_configuration.yml
+PythonApplications/CLIPDFColQwenQuery/Configurations/pdf_query_configuration.yml
+PythonApplications/CLIPDFPaddleOCRVLChat/Configurations/paddleocrvl_api_configuration.yml
+PythonApplications/CLIPDFPaddleOCRVLChat/Configurations/pdf_chat_configuration.yml
 ```
 
 The `.example` versions ARE tracked and reflect the recommended defaults.

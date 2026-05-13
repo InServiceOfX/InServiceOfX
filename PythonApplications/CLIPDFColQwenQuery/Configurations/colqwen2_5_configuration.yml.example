@@ -1,0 +1,6 @@
+# Same ColQwen2.5-v0.2 adapter config used by CLIPDFColQwenIndexer.
+model_path: /Data/Models/Multimodal/vidore/colqwen2.5-v0.2
+torch_dtype: bfloat16
+device_map: cuda:0
+attn_implementation: null
+local_files_only: true
