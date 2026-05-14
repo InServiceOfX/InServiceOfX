@@ -140,6 +140,15 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             raise HTTPException(404, f"Tesseract output not found for {doc_id} page {page}")
         return data
 
+    @app.get("/api/documents/{doc_id}/bom")
+    async def get_document_bom(doc_id: str):
+        """Full BOM for a document, keyed by component identifier."""
+        doc = store.get_document(doc_id)
+        if doc is None:
+            raise HTTPException(404, f"Document not found: {doc_id}")
+        bom = store.get_bom(doc_id)
+        return {"doc_id": doc_id, "count": len(bom), "components": bom}
+
     @app.get("/api/search")
     async def search(
         q: str = Query(..., description="Search query (case-insensitive substring)"),

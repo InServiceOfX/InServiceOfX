@@ -241,6 +241,40 @@ class DocumentStore:
             "tags": result,
         }
 
+    def get_bom(self, doc_id: str) -> Dict[str, Dict]:
+        """Return {identifier: entry_dict} by scanning all MinerU page tables.
+
+        If the same identifier appears on multiple pages, the later page wins
+        (later BOM pages tend to be more complete for multi-page documents).
+        """
+        from pidviewer.Core.BOMExtractor import extract_bom_entries
+
+        bom: Dict[str, Dict] = {}
+        doc_dir = self._cfg.mineru_output_path / doc_id
+        manifest_path = doc_dir / "manifest.json"
+        if not manifest_path.exists():
+            return {}
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except Exception:
+            return {}
+
+        for page_entry in manifest.get("pages", []):
+            page_num = page_entry["page"]
+            md_path = doc_dir / f"page_{page_num}.md"
+            if not md_path.exists():
+                continue
+            try:
+                elements = json.loads(md_path.read_text())
+            except Exception:
+                continue
+            for entry in extract_bom_entries(elements, page_num):
+                ident = entry["identifier"]
+                existing = bom.get(ident)
+                if existing is None or existing.get("source_page", 0) < page_num:
+                    bom[ident] = entry
+        return bom
+
     def get_colqwen_index_for_document(self, doc_id: str) -> Optional[Path]:
         """Returns manifest.json path for a ColQwen-indexed document, if present."""
         if not self._cfg.colqwen_index_path:

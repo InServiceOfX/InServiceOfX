@@ -161,6 +161,27 @@
   .tess-tile-header:hover { background: #2a2e42; }
   .tess-tile-body { display: none; padding: 6px; margin-bottom: 4px; }
   .tess-tile-body.open { display: flex; gap: 8px; }
+
+  /* BOM styles */
+  #bom-peek {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 10px; margin-bottom: 10px; font-size: 0.75rem; min-height: 52px;
+  }
+  #bom-peek .bom-empty { color: var(--muted); font-style: italic; }
+  #bom-peek .bom-id { color: #7ec8e3; font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
+  #bom-peek .bom-desc { color: var(--text); margin-bottom: 3px; }
+  #bom-peek .bom-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  #bom-peek .bom-kv { font-size: 0.7rem; color: var(--muted); }
+  #bom-peek .bom-kv span { color: var(--text); }
+  .bom-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .bom-table th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border);
+    color: var(--muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; position: sticky; top: 0; background: var(--surface); }
+  .bom-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .bom-table tr:hover td { background: var(--surface2); cursor: pointer; }
+  .bom-id-cell { color: #7ec8e3; font-weight: 600; white-space: nowrap; }
+  .bom-filter { width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 5px 8px; border-radius: 4px; font-size: 0.82rem; margin-bottom: 8px; }
+  .bom-filter::placeholder { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -214,6 +235,7 @@
       <button class="tab-btn" data-tab="tesseract">Tesseract</button>
       <button class="tab-btn" data-tab="stats">Stats</button>
       <button class="tab-btn" data-tab="quality">Quality</button>
+      <button class="tab-btn" data-tab="bom">BOM</button>
     </div>
     <div id="extraction-content"><p class="empty-state">Select a page</p></div>
   </div>
@@ -275,6 +297,12 @@ async function loadDocument(docId) {
   currentPage = null;
   pageCache = {};
   delete qualityCache[docId];
+  // Prefetch BOM in background so it's ready when Tesseract tab is opened
+  if (!bomCache[docId]) {
+    fetchJSON(`/api/documents/${encodeURIComponent(docId)}/bom`)
+      .then(d => { bomCache[docId] = d.components || {}; })
+      .catch(() => { bomCache[docId] = {}; });
+  }
 
   const doc = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}`);
   docData[docId] = doc;
@@ -360,6 +388,8 @@ async function renderExtractionPanel(docId, pageNum) {
       renderStats(docId, pageNum, content);
     } else if (currentTab === 'quality') {
       await renderQuality(docId, content);
+    } else if (currentTab === 'bom') {
+      await renderBOM(docId, content);
     }
   } catch (e) {
     content.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
@@ -562,7 +592,8 @@ async function renderTesseractMain(docId, pageNum) {
   const grid = data.grid || {};
   const hasBboxData = tiles.length > 0 && tiles[0].tag_bboxes !== undefined;
 
-  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">`;
+  let html = `<div id="bom-peek"><span class="bom-empty">Hover a tag chip to see component details</span></div>`;
+  html += `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">`;
   html += `${merged.length} tags · ${tiles.length} tiles (${grid.cols||'?'}×${grid.rows||'?'}) · `;
   html += `${(data.seconds_total||0).toFixed(1)}s`;
   if (!hasBboxData) html += ` · <span style="color:var(--warn)">re-run extraction to enable bbox overlay</span>`;
@@ -602,8 +633,14 @@ async function renderTesseractMain(docId, pageNum) {
 
   // Wire chip hover → bbox highlight
   panel.querySelectorAll('.tess-tag-chip').forEach(chip => {
-    chip.addEventListener('mouseenter', () => highlightBbox(chip.dataset.tag, true));
-    chip.addEventListener('mouseleave', () => highlightBbox(chip.dataset.tag, false));
+    chip.addEventListener('mouseenter', () => {
+      highlightBbox(chip.dataset.tag, true);
+      showBOMPeek(chip.dataset.tag);
+    });
+    chip.addEventListener('mouseleave', () => {
+      highlightBbox(chip.dataset.tag, false);
+      clearBOMPeek();
+    });
     chip.addEventListener('click', () => focusBbox(chip.dataset.tag));
   });
 
@@ -718,6 +755,7 @@ function renderStats(docId, pageNum, container) {
 }
 
 let qualityCache = {};
+let bomCache = {};
 
 async function renderQuality(docId, container) {
   container.innerHTML = '<p class="empty-state">Loading quality report…</p>';
@@ -805,6 +843,88 @@ async function renderQuality(docId, container) {
   } catch (e) {
     container.innerHTML = `<p class="empty-state" style="color:var(--err)">${e.message}</p>`;
   }
+}
+
+function showBOMPeek(tag) {
+  const el = document.getElementById('bom-peek');
+  if (!el) return;
+  const bom = bomCache[currentDoc] || {};
+  const entry = bom[tag];
+  if (!entry) {
+    el.innerHTML = `<span class="bom-empty">No BOM entry for ${escapeHtml(tag)}</span>`;
+    return;
+  }
+  const desc = entry.description || '';
+  const type = entry.component_type || '';
+  const sub = entry.subsystem || entry.assembly || '';
+  const meop = entry.meop_psia ? `${entry.meop_psia} psia` : '';
+  const mfr = entry.manufacturer || '';
+  const pn = entry.part_number || '';
+  const lineSize = entry.line_size || '';
+  el.innerHTML = `
+    <div class="bom-id">${escapeHtml(tag)}</div>
+    ${desc ? `<div class="bom-desc">${escapeHtml(desc)}</div>` : ''}
+    <div class="bom-meta">
+      ${type ? `<div class="bom-kv">Type <span>${escapeHtml(type)}</span></div>` : ''}
+      ${sub ? `<div class="bom-kv">System <span>${escapeHtml(sub)}</span></div>` : ''}
+      ${meop ? `<div class="bom-kv">MEOP <span>${escapeHtml(meop)}</span></div>` : ''}
+      ${lineSize ? `<div class="bom-kv">Line <span>${escapeHtml(lineSize)}"</span></div>` : ''}
+      ${mfr ? `<div class="bom-kv">Mfr <span>${escapeHtml(mfr)}</span></div>` : ''}
+      ${pn ? `<div class="bom-kv">P/N <span>${escapeHtml(pn)}</span></div>` : ''}
+    </div>`;
+}
+
+function clearBOMPeek() {
+  const el = document.getElementById('bom-peek');
+  if (el) el.innerHTML = `<span class="bom-empty">Hover a tag chip to see component details</span>`;
+}
+
+async function renderBOM(docId, container) {
+  container.innerHTML = '<p class="empty-state">Loading BOM…</p>';
+  if (!bomCache[docId]) {
+    try {
+      const d = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/bom`);
+      bomCache[docId] = d.components || {};
+    } catch (e) {
+      container.innerHTML = `<p class="empty-state" style="color:var(--err)">BOM not available: ${e.message}</p>`;
+      return;
+    }
+  }
+  const bom = bomCache[docId];
+  const entries = Object.values(bom);
+  if (entries.length === 0) {
+    container.innerHTML = '<p class="empty-state">No BOM tables found in MinerU output for this document</p>';
+    return;
+  }
+
+  const filterId = `bom-filter-${docId.slice(0,8)}`;
+  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">${entries.length} components</div>`;
+  html += `<input class="bom-filter" id="${filterId}" placeholder="Filter by ID, description, type…" autocomplete="off">`;
+  html += `<div id="bom-table-wrap">`;
+  html += `<table class="bom-table"><thead><tr>
+    <th>ID</th><th>Description</th><th>Type</th><th>System</th><th>MEOP</th><th>Mfr</th>
+  </tr></thead><tbody id="bom-tbody">`;
+  for (const e of entries.sort((a,b) => a.identifier.localeCompare(b.identifier))) {
+    html += `<tr data-id="${escapeHtml(e.identifier)}" data-desc="${escapeHtml(e.description||'')}" data-type="${escapeHtml(e.component_type||'')}" data-sys="${escapeHtml(e.subsystem||e.assembly||'')}">
+      <td class="bom-id-cell">${escapeHtml(e.identifier)}</td>
+      <td>${escapeHtml(e.description || '—')}</td>
+      <td>${escapeHtml(e.component_type || '—')}</td>
+      <td>${escapeHtml(e.subsystem || e.assembly || '—')}</td>
+      <td>${escapeHtml(e.meop_psia || '—')}</td>
+      <td>${escapeHtml(e.manufacturer || '—')}</td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+
+  // Live filter
+  document.getElementById(filterId).addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#bom-tbody tr').forEach(row => {
+      const text = (row.dataset.id + ' ' + row.dataset.desc + ' ' + row.dataset.type + ' ' + row.dataset.sys).toLowerCase();
+      row.style.display = q && !text.includes(q) ? 'none' : '';
+    });
+  });
 }
 
 function escapeHtml(text) {
