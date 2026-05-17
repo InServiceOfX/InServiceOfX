@@ -59,13 +59,17 @@
   #page-img { max-width: 100%; border: 1px solid var(--border); border-radius: 4px; display: block; }
   #no-image { color: var(--muted); font-size: 0.85rem; padding: 40px; }
 
-  /* Right: extraction panel */
-  #extraction-panel { width: 420px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-  #extraction-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .tab-btn { flex: 1; padding: 8px 4px; background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; border-bottom: 2px solid transparent; }
+  /* Main column wraps tabs + content area */
+  #main-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #content-tabs { display: flex; flex-wrap: nowrap; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); overflow-x: auto; }
+  #content-area { display: flex; flex: 1; overflow: hidden; }
+
+  /* Right: side panel (extraction content only — tabs now above) */
+  #side-panel { width: 400px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
+  .tab-btn { flex-shrink: 0; padding: 7px 10px; background: none; border: none; color: var(--muted); font-size: 0.8rem; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-  #extraction-content { flex: 1; overflow-y: auto; padding: 12px; }
+  #extraction-content { padding: 12px; }
 
   /* MinerU elements */
   .el-block { margin-bottom: 8px; border-left: 3px solid var(--border); padding: 6px 8px; background: var(--surface2); border-radius: 0 4px 4px 0; }
@@ -182,7 +186,42 @@
   .bom-filter { width: 100%; background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); padding: 5px 8px; border-radius: 4px; font-size: 0.82rem; margin-bottom: 8px; }
   .bom-filter::placeholder { color: var(--muted); }
+
+  /* Wide topology/physics panel (takes over full content-area when shown) */
+  #topology-physics-panel { flex: 1; overflow: hidden; background: var(--bg); display: none; }
+  #topo-main-mermaid-wrap { background: #fff; border-radius: 8px; padding: 16px; overflow: auto; min-height: 300px; margin-bottom: 16px; }
+  #topo-main-mermaid-wrap svg { max-width: 100%; height: auto; }
+
+  /* Topology tab (right panel — kept for compatibility, now unused) */
+  #mermaid-wrap { background: #fff; border-radius: 6px; padding: 12px; overflow: auto; min-height: 200px; }
+  #mermaid-wrap svg { max-width: 100%; height: auto; }
+  .topo-node-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; margin-top: 12px; }
+  .topo-node-table th { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 0.65rem; text-transform: uppercase; }
+  .topo-node-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .topo-type-chip { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 0.65rem; background: var(--surface2); color: var(--muted); }
+  .topo-type-tank { background: #1a2a4a; color: #58a6ff; }
+  .topo-type-valve { background: #2a1a3a; color: #a78bfa; }
+  .topo-type-boundary { background: #1a2a1a; color: #56d364; }
+  .topo-type-tee { background: #2a2a1a; color: #e3b341; }
+  .topo-subsystem-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px; cursor: pointer; border: 1px solid transparent; }
+  .topo-subsystem-pill.active { border-color: currentColor; font-weight: 700; }
+
+  /* Physics tab */
+  .phys-section { margin-bottom: 16px; }
+  .phys-section-title { font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+  .phys-kv { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.75rem; border-bottom: 1px solid var(--border); }
+  .phys-key { color: var(--muted); flex: 1; }
+  .phys-val { color: var(--text); font-weight: 500; font-family: monospace; font-size: 0.78rem; }
+  .phys-assumption { font-size: 0.68rem; color: var(--warn); padding: 2px 0; }
+  .phys-subsystem-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text); margin-bottom: 4px; font-size: 0.78rem; text-align: left; }
+  .phys-subsystem-btn:hover { border-color: var(--accent); }
+  .phys-subsystem-btn.open { border-color: var(--accent); }
+  .phys-subsystem-body { padding: 8px; background: var(--bg); border: 1px solid var(--border); border-top: none; border-radius: 0 0 4px 4px; margin-bottom: 8px; display: none; }
+  .phys-subsystem-body.open { display: block; }
+  .phys-highlight { color: #56d364; font-size: 0.82rem; font-weight: 700; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad: false, theme: 'default', flowchart: {useMaxWidth: true}});</script>
 </head>
 <body>
 
@@ -219,16 +258,8 @@
 
 <div id="layout">
   <div id="page-strip"></div>
-  <div id="page-image-panel">
-    <div id="no-image" class="empty-state">Select a document and page</div>
-    <div id="page-image-wrap" style="display:none">
-      <img id="page-img" src="" alt="P&amp;ID page">
-      <svg id="bbox-overlay" preserveAspectRatio="none"></svg>
-    </div>
-    <div id="tess-main-panel"></div>
-  </div>
-  <div id="extraction-panel">
-    <div id="extraction-tabs">
+  <div id="main-column">
+    <div id="content-tabs">
       <button class="tab-btn active" data-tab="mineru">MinerU</button>
       <button class="tab-btn" data-tab="qwen3vl">Qwen3VL</button>
       <button class="tab-btn" data-tab="tiled">Tiled</button>
@@ -236,8 +267,23 @@
       <button class="tab-btn" data-tab="stats">Stats</button>
       <button class="tab-btn" data-tab="quality">Quality</button>
       <button class="tab-btn" data-tab="bom">BOM</button>
+      <button class="tab-btn" data-tab="topology" style="color:#a78bfa">⬡ Topology</button>
+      <button class="tab-btn" data-tab="physics" style="color:#56d364">⚛ Physics</button>
     </div>
-    <div id="extraction-content"><p class="empty-state">Select a page</p></div>
+    <div id="content-area">
+      <div id="page-image-panel">
+        <div id="no-image" class="empty-state">Select a document and page</div>
+        <div id="page-image-wrap" style="display:none">
+          <img id="page-img" src="" alt="P&amp;ID page">
+          <svg id="bbox-overlay" preserveAspectRatio="none"></svg>
+        </div>
+        <div id="tess-main-panel"></div>
+      </div>
+      <div id="side-panel">
+        <div id="extraction-content"><p class="empty-state">Select a page</p></div>
+      </div>
+      <div id="topology-physics-panel" style="display:none"></div>
+    </div>
   </div>
 </div>
 
@@ -261,12 +307,25 @@ async function init() {
     `${status.document_count} document${status.document_count !== 1 ? 's' : ''}`;
 
   const sel = document.getElementById('doc-select');
+  const docSet = new Set(status.documents);
   for (const doc of status.documents) {
     const opt = document.createElement('option');
     opt.value = doc;
     opt.textContent = doc;
     sel.appendChild(opt);
   }
+  // Add topology-only documents (e.g. PSAS PNG not in MinerU pipeline)
+  try {
+    const topoList = await fetchJSON('/api/topology/documents');
+    for (const doc of (topoList.documents || [])) {
+      if (!docSet.has(doc)) {
+        const opt = document.createElement('option');
+        opt.value = doc;
+        opt.textContent = `⬡ ${doc}`;   // ⬡ marks topology-only entry
+        sel.appendChild(opt);
+      }
+    }
+  } catch(_) {}
   sel.addEventListener('change', () => loadDocument(sel.value));
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -275,12 +334,23 @@ async function init() {
       btn.classList.add('active');
       const prevTab = currentTab;
       currentTab = btn.dataset.tab;
+      const isTopoPhysics = currentTab === 'topology' || currentTab === 'physics';
+      const wasTopoPhysics = prevTab === 'topology' || prevTab === 'physics';
       if (currentTab === 'tesseract') {
+        if (wasTopoPhysics) deactivateTopologyPhysicsMode();
         activateTesseractMode();
       } else if (prevTab === 'tesseract') {
         deactivateTesseractMode();
+        if (isTopoPhysics) activateTopologyPhysicsMode();
+      } else if (isTopoPhysics && !wasTopoPhysics) {
+        activateTopologyPhysicsMode();
+      } else if (!isTopoPhysics && wasTopoPhysics) {
+        deactivateTopologyPhysicsMode();
       }
       if (currentPage !== null) renderExtractionPanel(currentDoc, currentPage);
+      else if (isTopoPhysics && currentTab === 'physics' && currentDoc) {
+        renderPhysicsMain(currentDoc);
+      }
     });
   });
 }
@@ -304,13 +374,64 @@ async function loadDocument(docId) {
       .catch(() => { bomCache[docId] = {}; });
   }
 
-  const doc = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}`);
-  docData[docId] = doc;
+  let doc = null;
+  try {
+    doc = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}`);
+    docData[docId] = doc;
+    renderPageStrip(doc);
+  } catch (_) {
+    // Topology-only document — no MinerU output; fall back to topology page list
+    docData[docId] = null;
+    // Clear any stale page image from a previously selected document
+    const img = document.getElementById('page-img');
+    img.src = '';
+    document.getElementById('page-image-wrap').style.display = 'none';
+    document.getElementById('no-image').style.display = 'block';
+    // Auto-switch to topology tab for topology-only docs
+    if (currentTab !== 'topology' && currentTab !== 'physics') {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.tab-btn[data-tab="topology"]').classList.add('active');
+      currentTab = 'topology';
+    }
+    activateTopologyPhysicsMode();
+    await renderTopologyOnlyStrip(docId);
+    // Physics tab doesn't need a page — render immediately
+    if (currentTab === 'physics') {
+      renderPhysicsMain(docId);
+    }
+    return;
+  }
 
-  renderPageStrip(doc);
   document.getElementById('no-image').style.display = 'block';
   document.getElementById('page-image-wrap').style.display = 'none';
   document.getElementById('extraction-content').innerHTML = '<p class="empty-state">Select a page</p>';
+}
+
+async function renderTopologyOnlyStrip(docId) {
+  const strip = document.getElementById('page-strip');
+  strip.innerHTML = '';
+  try {
+    const pages = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/topology/pages`);
+    for (const pageNum of (pages.pages_with_topology || [])) {
+      const thumb = document.createElement('div');
+      thumb.className = 'page-thumb';
+      thumb.dataset.page = pageNum;
+      thumb.innerHTML = `
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+          <span style="font-size:1.4rem;color:#a78bfa">⬡</span>
+        </div>
+        <div class="page-thumb-label">Page ${pageNum}</div>
+        <div class="page-thumb-stats"><span style="color:#a78bfa">topology</span></div>`;
+      thumb.addEventListener('click', () => selectPage(docId, pageNum));
+      strip.appendChild(thumb);
+    }
+    // Auto-select first page
+    if ((pages.pages_with_topology || []).length > 0) {
+      selectPage(docId, pages.pages_with_topology[0]);
+    }
+  } catch(e) {
+    strip.innerHTML = `<p style="font-size:0.65rem;color:var(--err);padding:8px">${e.message}</p>`;
+  }
 }
 
 function renderPageStrip(doc) {
@@ -358,12 +479,17 @@ async function selectPage(docId, pageNum) {
     t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
   });
 
-  // Show image
-  const imgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/image`;
-  const img = document.getElementById('page-img');
-  document.getElementById('no-image').style.display = 'none';
-  document.getElementById('page-image-wrap').style.display = 'block';
-  img.src = imgUrl;
+  // Show image (only for docs with MinerU pages)
+  const isTopoPhysics = currentTab === 'topology' || currentTab === 'physics';
+  if (docData[docId] !== null) {
+    const imgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/image`;
+    const img = document.getElementById('page-img');
+    document.getElementById('no-image').style.display = 'none';
+    if (!isTopoPhysics) {
+      document.getElementById('page-image-wrap').style.display = 'block';
+      img.src = imgUrl;
+    }
+  }
 
   renderExtractionPanel(docId, pageNum);
 }
@@ -371,6 +497,25 @@ async function selectPage(docId, pageNum) {
 async function renderExtractionPanel(docId, pageNum) {
   if (currentTab === 'tesseract') {
     await renderTesseractMain(docId, pageNum);
+    return;
+  }
+  if (currentTab === 'topology') {
+    activateTopologyPhysicsMode();
+    await renderTopologyMain(docId, pageNum);
+    return;
+  }
+  if (currentTab === 'physics') {
+    activateTopologyPhysicsMode();
+    await renderPhysicsMain(docId);
+    return;
+  }
+
+  // Topology-only docs have no extraction data for any other tab
+  if (docData[docId] === null) {
+    deactivateTopologyPhysicsMode();
+    document.getElementById('extraction-content').innerHTML =
+      `<p class="empty-state" style="color:var(--muted)">No extraction data for this document.<br>
+       <small>Switch to <strong style="color:#a78bfa">⬡ Topology</strong> or <strong style="color:#56d364">⚛ Physics</strong> tabs.</small></p>`;
     return;
   }
 
@@ -548,13 +693,13 @@ async function renderTiled(docId, pageNum, container) {
 
 function activateTesseractMode() {
   document.getElementById('page-image-panel').classList.add('tess-split');
-  document.getElementById('extraction-panel').style.display = 'none';
+  document.getElementById('side-panel').style.display = 'none';
   document.getElementById('tess-main-panel').style.display = 'block';
 }
 
 function deactivateTesseractMode() {
   document.getElementById('page-image-panel').classList.remove('tess-split');
-  document.getElementById('extraction-panel').style.display = '';
+  document.getElementById('side-panel').style.display = '';
   document.getElementById('tess-main-panel').style.display = 'none';
   const overlay = document.getElementById('bbox-overlay');
   overlay.innerHTML = '';
@@ -1094,6 +1239,300 @@ document.getElementById('semantic-input').addEventListener('keydown', e => {
 document.getElementById('semantic-close').addEventListener('click', () => {
   document.getElementById('semantic-results').style.display = 'none';
 });
+
+// ── Topology / Physics mode helpers ──────────────────────────────────────────
+
+function activateTopologyPhysicsMode() {
+  document.getElementById('page-image-panel').style.display = 'none';
+  document.getElementById('side-panel').style.display = 'none';
+  document.getElementById('topology-physics-panel').style.display = 'block';
+  document.getElementById('topology-physics-panel').style.flex = '1';
+}
+
+function deactivateTopologyPhysicsMode() {
+  document.getElementById('page-image-panel').style.display = '';
+  document.getElementById('side-panel').style.display = '';
+  document.getElementById('topology-physics-panel').style.display = 'none';
+}
+
+// ── Topology ──────────────────────────────────────────────────────────────────
+
+const SUBSYSTEM_COLORS = {
+  tank: 'topo-type-tank',
+  manual_valve: 'topo-type-valve', solenoid_valve: 'topo-type-valve',
+  check_valve: 'topo-type-valve', regulator: 'topo-type-valve',
+  relief_valve: 'topo-type-valve',
+  tee: 'topo-type-tee',
+  boundary: 'topo-type-boundary', fill_drain: 'topo-type-boundary',
+  vent: 'topo-type-boundary',
+};
+
+const MEDIUM_COLORS = {
+  'GHe': '#7ec8e3', 'LOX': '#58a6ff', 'RP-1': '#f85149',
+  'GN2': '#56d364', 'GHe/LOX': '#a78bfa', 'GHe/RP-1': '#ffa657',
+};
+
+const MERMAID_SHAPES = {
+  tank:           (id, lbl) => `${id}[(${lbl})]`,
+  pressure_gauge: (id, lbl) => `${id}((${lbl}))`,
+  fill_drain:     (id, lbl) => `${id}[/${lbl}/]`,
+  boundary:       (id, lbl) => `${id}[/${lbl}/]`,
+  vent:           (id, lbl) => `${id}([${lbl}])`,
+  tee:            (id, lbl) => `${id}{${lbl}}`,
+};
+
+// Characters that break each Mermaid shape's delimiter
+const SHAPE_CONFLICT = {
+  tank:           /[)\]]/,       // [(lbl)] — ) or ] breaks it
+  pressure_gauge: /[()]/,        // ((lbl)) — any paren breaks it
+  fill_drain:     /\//,          // [/lbl/] — / breaks it
+  boundary:       /\//,          // [/lbl/] — / breaks it
+  vent:           /[()[\]]/,     // ([lbl]) — parens/brackets break it
+  tee:            /[{}]/,        // {lbl} — braces break it
+};
+
+function buildMermaidFromJson(nodes, edges) {
+  let mmd = 'flowchart LR\n';
+  for (const n of nodes) {
+    const lbl = (n.label || n.tag || n.id).replace(/\n/g, '\\n');
+    const fn = MERMAID_SHAPES[n.type];
+    const conflict = SHAPE_CONFLICT[n.type];
+    const useRect = !fn || (conflict && conflict.test(lbl));
+    mmd += '    ' + (!useRect ? fn(n.id, lbl) : `${n.id}["${lbl}"]`) + '\n';
+  }
+  for (const e of edges) {
+    const lbl = (e.label || e.medium || '').replace(/"/g, "'");
+    mmd += lbl ? `    ${e.from} -->|"${lbl}"| ${e.to}\n` : `    ${e.from} --> ${e.to}\n`;
+  }
+  return mmd;
+}
+
+function buildFilteredMermaid(topoJson, medium) {
+  const nodes = topoJson.nodes || [];
+  const edges = topoJson.edges || [];
+  if (medium === 'all') return buildMermaidFromJson(nodes, edges);
+  const filteredEdges = edges.filter(e => e.medium === medium);
+  const ids = new Set([...filteredEdges.map(e => e.from), ...filteredEdges.map(e => e.to)]);
+  return buildMermaidFromJson(nodes.filter(n => ids.has(n.id)), filteredEdges);
+}
+
+let _currentTopoJson = null;
+let _currentTopoDocId = null;
+let _currentTopoPage = null;
+let _currentSrcImgUrl = null;
+
+async function renderTopologyMain(docId, pageNum) {
+  const panel = document.getElementById('topology-physics-panel');
+  panel.innerHTML = '<p class="empty-state">Loading topology…</p>';
+
+  let topoJson = null;
+  let foundPage = pageNum;
+  try {
+    topoJson = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/pages/${pageNum}/topology/json`);
+  } catch (_) {
+    try {
+      const pages = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/topology/pages`);
+      if ((pages.pages_with_topology || []).length > 0) {
+        foundPage = pages.pages_with_topology[0];
+        topoJson = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/pages/${foundPage}/topology/json`);
+      }
+    } catch(_2) {}
+  }
+
+  if (!topoJson) {
+    panel.innerHTML = `<p class="empty-state">No topology data for this page.<br><small>Run <code>extract_pid_topology.py</code> or paste into Claude Code.</small></p>`;
+    return;
+  }
+
+  _currentTopoJson = topoJson;
+  _currentTopoDocId = docId;
+  _currentTopoPage = foundPage;
+
+  // Determine source image URL: MinerU page image for full docs, topology/source-image for others
+  _currentSrcImgUrl = null;
+  if (docData[docId] !== null && docData[docId]) {
+    // Regular MinerU doc — use existing page image
+    _currentSrcImgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${foundPage}/image`;
+  } else {
+    // Topology-only doc — check for source image
+    try {
+      const r = await fetch(`/api/documents/${encodeURIComponent(docId)}/pages/${foundPage}/topology/source-image`, {method: 'GET'});
+      if (r.ok) _currentSrcImgUrl = `/api/documents/${encodeURIComponent(docId)}/pages/${foundPage}/topology/source-image`;
+    } catch(_) {}
+  }
+
+  await _renderTopoContent(panel, topoJson, 'all', foundPage);
+}
+
+async function _renderTopoContent(panel, topoJson, medium, foundPage) {
+  const nodes = topoJson.nodes || [];
+  const edges = topoJson.edges || [];
+  const mediums = [...new Set(edges.map(e => e.medium).filter(Boolean))];
+
+  const mmd = buildFilteredMermaid(topoJson, medium);
+
+  const visibleIds = medium === 'all' ? new Set(nodes.map(n => n.id))
+    : new Set([...edges.filter(e => e.medium === medium).map(e => e.from),
+               ...edges.filter(e => e.medium === medium).map(e => e.to)]);
+  const visibleNodes = nodes.filter(n => visibleIds.has(n.id));
+  const visibleEdges = edges.filter(e => medium === 'all' || e.medium === medium);
+
+  // Build the right-column content (topology analysis)
+  let rightHtml = `<div style="margin-bottom:10px">`;
+  rightHtml += `<span style="font-size:1rem;font-weight:600;color:var(--accent)">P&amp;ID Topology</span> `;
+  rightHtml += `<span style="font-size:0.78rem;color:var(--muted)">Page ${foundPage} · ${visibleNodes.length}/${nodes.length} nodes · ${visibleEdges.length} edges</span>`;
+  rightHtml += `</div>`;
+
+  if (mediums.length > 1) {
+    rightHtml += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;align-items:center">`;
+    rightHtml += `<span style="font-size:0.7rem;color:var(--muted);margin-right:2px">Filter:</span>`;
+    rightHtml += `<span class="topo-subsystem-pill ${medium==='all'?'active':''}" data-medium="all" style="color:var(--text);background:var(--surface2)">All</span>`;
+    for (const m of mediums) {
+      const c = MEDIUM_COLORS[m] || '#888';
+      rightHtml += `<span class="topo-subsystem-pill ${medium===m?'active':''}" data-medium="${escapeHtml(m)}" style="color:${c};background:var(--surface2)">${escapeHtml(m)}</span>`;
+    }
+    rightHtml += `</div>`;
+  }
+
+  rightHtml += `<div id="topo-main-mermaid-wrap"><div class="mermaid">${escapeHtml(mmd)}</div></div>`;
+
+  rightHtml += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin:10px 0 5px;text-transform:uppercase;letter-spacing:0.05em">Components (${visibleNodes.length})</div>`;
+  rightHtml += `<table class="topo-node-table"><thead><tr><th>Tag</th><th>Type</th><th>Label</th></tr></thead><tbody>`;
+  for (const n of visibleNodes) {
+    const cls = SUBSYSTEM_COLORS[n.type] || '';
+    const lbl = (n.label || '').replace(/\\n|\n/g, ' ');
+    rightHtml += `<tr><td style="font-weight:600;color:#7ec8e3">${escapeHtml(n.tag||n.id||'')}</td>`;
+    rightHtml += `<td><span class="topo-type-chip ${cls}">${escapeHtml(n.type||'')}</span></td>`;
+    rightHtml += `<td>${escapeHtml(lbl)}</td></tr>`;
+  }
+  rightHtml += `</tbody></table>`;
+
+  // Build outer layout: source image (if available) + right column
+  let html;
+  if (_currentSrcImgUrl) {
+    html = `<div style="display:flex;height:100%;overflow:hidden;gap:0">`;
+    html += `<div style="flex:0 0 38%;max-width:520px;overflow:auto;border-right:1px solid var(--border);padding:10px;background:var(--surface)">`;
+    html += `<div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Source P&amp;ID</div>`;
+    html += `<img src="${_currentSrcImgUrl}" style="max-width:100%;border:1px solid var(--border);border-radius:4px;display:block">`;
+    html += `</div>`;
+    html += `<div style="flex:1;overflow-y:auto;padding:16px 20px">${rightHtml}</div>`;
+    html += `</div>`;
+  } else {
+    html = `<div style="height:100%;overflow-y:auto;padding:16px 24px">${rightHtml}</div>`;
+  }
+
+  panel.innerHTML = html;
+
+  try {
+    await mermaid.run({ querySelector: '#topo-main-mermaid-wrap .mermaid' });
+  } catch(e) {
+    const wrap = document.getElementById('topo-main-mermaid-wrap');
+    if (wrap) wrap.innerHTML =
+      `<pre style="font-size:0.72rem;white-space:pre-wrap;color:var(--text);overflow:auto;background:var(--surface2);padding:10px;border-radius:4px">${escapeHtml(mmd)}</pre>`;
+  }
+
+  panel.querySelectorAll('.topo-subsystem-pill').forEach(pill => {
+    pill.addEventListener('click', async () => {
+      const m = pill.dataset.medium;
+      await _renderTopoContent(panel, _currentTopoJson, m, _currentTopoPage);
+    });
+  });
+}
+
+// Legacy stub (was used when rendering into the right panel — now unused)
+async function renderTopology(docId, pageNum, container) {
+  // Try the page-specific topology first; fall back to adjacent pages
+  // Legacy stub — routes to the wide panel
+  await renderTopologyMain(docId, pageNum);
+}
+
+// ── Physics ───────────────────────────────────────────────────────────────────
+
+function fmtKey(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function fmtVal(val) {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'number') {
+    if (Math.abs(val) >= 1000) return val.toLocaleString();
+    if (Math.abs(val) < 0.001 && val !== 0) return val.toExponential(3);
+    return val.toString();
+  }
+  return String(val);
+}
+
+function buildPhysKV(obj) {
+  let html = '';
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === 'note') {
+      html += `<div class="phys-assumption">ℹ ${escapeHtml(String(v))}</div>`;
+    } else {
+      html += `<div class="phys-kv"><span class="phys-key">${escapeHtml(fmtKey(k))}</span><span class="phys-val">${escapeHtml(fmtVal(v))}</span></div>`;
+    }
+  }
+  return html;
+}
+
+function _buildPhysHtml(data, docId) {
+  let html = `<div style="margin-bottom:14px">`;
+  html += `<span style="font-size:1rem;font-weight:600;color:#56d364">Physics Analysis</span> `;
+  html += `<span style="font-size:0.78rem;color:var(--muted)">${escapeHtml(data.system || docId)}</span>`;
+  html += `</div>`;
+
+  if (data.assumptions && data.assumptions.length > 0) {
+    html += `<div style="background:#1a2a1a;border-radius:6px;padding:8px 12px;margin-bottom:12px">`;
+    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--warn);margin-bottom:4px">Assumptions</div>`;
+    for (const a of data.assumptions) {
+      html += `<div class="phys-assumption">⚠ ${escapeHtml(a)}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  const subsystems = data.subsystems || {};
+  for (const [name, sub] of Object.entries(subsystems)) {
+    const displayName = fmtKey(name);
+    html += `<button class="phys-subsystem-btn" onclick="togglePhysSub(this)">`;
+    html += `<span style="flex:1;font-weight:600">${escapeHtml(displayName)}</span>`;
+    if (sub.description) html += `<span style="font-size:0.7rem;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sub.description)}</span>`;
+    html += `<span style="color:var(--muted);margin-left:8px">▸</span>`;
+    html += `</button>`;
+    html += `<div class="phys-subsystem-body">`;
+    if (sub.operating_conditions) {
+      html += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Operating Conditions</div>`;
+      html += buildPhysKV(sub.operating_conditions);
+    }
+    if (sub.derived) {
+      html += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.05em">Derived Values</div>`;
+      html += buildPhysKV(sub.derived);
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+async function renderPhysicsMain(docId) {
+  const panel = document.getElementById('topology-physics-panel');
+  panel.innerHTML = '<p class="empty-state">Loading physics…</p>';
+  const cacheKey = `physics-${docId}`;
+  try {
+    if (!pageCache[cacheKey]) {
+      pageCache[cacheKey] = await fetchJSON(`/api/documents/${encodeURIComponent(docId)}/physics`);
+    }
+    // Wrap in a scrollable container since the panel itself is overflow:hidden
+    panel.innerHTML = `<div style="height:100%;overflow-y:auto;padding:20px 28px">${_buildPhysHtml(pageCache[cacheKey], docId)}</div>`;
+  } catch(e) {
+    panel.innerHTML = `<div style="padding:20px"><p class="empty-state" style="color:var(--muted)">No physics model for this document.<br><small>${escapeHtml(e.message)}</small></p></div>`;
+  }
+}
+
+function togglePhysSub(btn) {
+  btn.classList.toggle('open');
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+  const arrow = btn.querySelector('span:last-child');
+  if (arrow) arrow.textContent = body.classList.contains('open') ? '▾' : '▸';
+}
 
 init().then(checkColQwenHealth).catch(console.error);
 </script>

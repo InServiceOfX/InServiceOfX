@@ -13,6 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from pidviewer.Core.DocumentStore import DocumentStore
+from pidviewer.Core.TopologyStore import TopologyStore
+from pidviewer.Core.PhysicsEngine import analyse as physics_analyse, list_supported_documents
 from pidviewer.ViewerConfiguration import ViewerConfiguration
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -20,6 +22,7 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 def create_app(configuration: ViewerConfiguration) -> FastAPI:
     store = DocumentStore(configuration)
+    topo_store = TopologyStore(configuration.topology_output_path)
     app = FastAPI(title="P&ID Viewer", version="0.1.0")
 
     # --- Response models ---
@@ -316,6 +319,67 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             "pages": pages_summary,
         }
 
+    # ── Topology routes ───────────────────────────────────────────────────────
+
+    @app.get("/api/topology/documents")
+    async def list_topology_documents():
+        if not configuration.topology_output_path or not configuration.topology_output_path.exists():
+            return {"documents": []}
+        docs = sorted(
+            d.name for d in configuration.topology_output_path.iterdir()
+            if d.is_dir() and any(
+                (d / f).exists() for f in ["page_1/topology.json", "page_2/topology.json",
+                                            "page_3/topology.json"]
+            )
+        )
+        return {"documents": docs}
+
+    @app.get("/api/documents/{doc_id}/topology/pages")
+    async def list_topology_pages(doc_id: str):
+        pages = topo_store.list_topology_pages(doc_id)
+        return {"doc_id": doc_id, "pages_with_topology": pages}
+
+    @app.get("/api/documents/{doc_id}/pages/{page}/topology/json")
+    async def get_topology_json(doc_id: str, page: int):
+        data = topo_store.get_topology_json(doc_id, page)
+        if data is None:
+            raise HTTPException(404, f"Topology JSON not found for {doc_id} page {page}")
+        return data
+
+    @app.get("/api/documents/{doc_id}/pages/{page}/topology/source-image")
+    async def get_topology_source_image(doc_id: str, page: int):
+        img_path = topo_store.get_source_image_path(doc_id, page)
+        if img_path is None:
+            raise HTTPException(404, f"No source image for {doc_id} page {page}")
+        suffix = img_path.suffix.lower()
+        media_type = "image/jpeg" if suffix in (".jpg", ".jpeg") else "image/png"
+        return FileResponse(str(img_path), media_type=media_type)
+
+    @app.get("/api/documents/{doc_id}/pages/{page}/topology/mermaid",
+             response_class=PlainTextResponse)
+    async def get_topology_mermaid(doc_id: str, page: int):
+        text = topo_store.get_topology_mermaid(doc_id, page)
+        if text is None:
+            raise HTTPException(404, f"Topology Mermaid not found for {doc_id} page {page}")
+        return PlainTextResponse(content=text, media_type="text/plain")
+
+    # ── Physics routes ────────────────────────────────────────────────────────
+
+    @app.get("/api/documents/{doc_id}/physics")
+    async def get_physics(doc_id: str):
+        result = physics_analyse(doc_id)
+        if result is None:
+            raise HTTPException(
+                404,
+                f"No physics model for '{doc_id}'. "
+                f"Supported fragments: {list_supported_documents()}",
+            )
+        return result
+
+    @app.get("/api/physics/supported")
+    async def list_physics_supported():
+        return {"supported_document_fragments": list_supported_documents()}
+
     @app.get("/api/status")
     async def status():
         docs = store.list_documents()
@@ -334,6 +398,9 @@ def create_app(configuration: ViewerConfiguration) -> FastAPI:
             if configuration.colqwen_index_path
             else None,
             "colqwen_server_url": configuration.colqwen_server_url,
+            "topology_output_path": str(configuration.topology_output_path)
+            if configuration.topology_output_path
+            else None,
             "document_count": len(docs),
             "documents": docs,
         }

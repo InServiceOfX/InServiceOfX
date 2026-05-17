@@ -33,6 +33,10 @@ class ViewerConfiguration(BaseModel):
         description="Base URL of main_ColQwenQueryServer (e.g. http://localhost:8001). "
                     "When set, /api/colqwen/query is enabled.",
     )
+    topology_output_path: Optional[Path] = Field(
+        None,
+        description="Root of PIDTopology output; subdirs are <doc_name>/page_<n>/topology.{json,mermaid}.",
+    )
     host: str = Field("0.0.0.0", description="Bind address for uvicorn.")
     port: int = Field(8888, description="Bind port for uvicorn.")
 
