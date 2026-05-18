@@ -67,6 +67,25 @@ def find_binary() -> Path | None:
     return None
 
 
+def source_newer_than_binary(binary: Path) -> bool:
+    """Return True when Rust sources changed after the current binary."""
+    try:
+        binary_mtime = binary.stat().st_mtime
+    except OSError:
+        return True
+
+    source_paths = list((DOCKER_BUILDER_CRATE_DIR / "src").rglob("*.rs"))
+    source_paths.extend(
+        path for path in (
+            DOCKER_BUILDER_CRATE_DIR / "Cargo.toml",
+            DOCKER_BUILDER_CRATE_DIR / "Cargo.lock",
+        )
+        if path.exists()
+    )
+
+    return any(path.stat().st_mtime > binary_mtime for path in source_paths)
+
+
 def cargo_build() -> Path:
     """Build the ``docker_builder`` crate in debug mode, then re-find it."""
     if shutil.which("cargo") is None:
@@ -152,7 +171,9 @@ def main(argv: list[str]) -> int:
     if len(argv) >= 1 and argv[0] == "list":
         return list_deployments()
 
-    binary = find_binary() or cargo_build()
+    binary = find_binary()
+    if binary is None or source_newer_than_binary(binary):
+        binary = cargo_build()
 
     if len(argv) >= 2 and argv[0] in PASS_THROUGH_VERBS:
         verb = argv[0]

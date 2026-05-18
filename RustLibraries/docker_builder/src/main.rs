@@ -71,6 +71,10 @@ enum Commands {
         /// Enable audio support (PulseAudio + ALSA)
         #[arg(long)]
         audio: bool,
+
+        /// Command and arguments to run after the image name.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        command: Vec<String>,
     },
 }
 
@@ -91,6 +95,7 @@ fn main() -> Result<(), String> {
             no_gpu,
             gui,
             audio,
+            command,
         } => {
             let interactive = !no_interactive;
             run_docker_container(
@@ -102,7 +107,8 @@ fn main() -> Result<(), String> {
                 network_host,
                 no_gpu,
                 gui,
-                audio)
+                audio,
+                command)
         }
     }
 }
@@ -142,6 +148,7 @@ fn run_docker_container(
     no_gpu: bool,
     gui: bool,
     audio: bool,
+    command: Vec<String>,
 ) -> Result<(), String> {
 
     // Build args struct
@@ -155,6 +162,7 @@ fn run_docker_container(
         no_gpu,
         gui,
         audio,
+        command,
     };
 
     let (docker_cmd, docker_image_name) = build_run_command_from_args(

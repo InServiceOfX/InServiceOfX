@@ -25,6 +25,7 @@ pub struct RunDockerArgs {
     pub no_gpu: bool,
     pub gui: bool,
     pub audio: bool,
+    pub command: Vec<String>,
 }
 
 //------------------------------------------------------------------------------
@@ -107,6 +108,7 @@ pub fn build_run_command_from_args(
     if let Some(entrypoint) = &args.entrypoint {
         docker_run_config.entrypoint = Some(entrypoint.clone());
     }
+    docker_run_config.command = args.command.clone();
 
     // Handle GPU: --no-gpu takes precedence, then --gpu N, else use all GPUs
     if args.no_gpu {
@@ -231,6 +233,10 @@ volumes:
             no_gpu: false,
             gui: true,
             audio: false,
+            command: vec![
+                "-lc".to_string(),
+                "echo ok".to_string(),
+            ],
         };
 
         // Build command
@@ -275,8 +281,11 @@ volumes:
         // Verify GUI support enabled (from args.gui = true)
         assert!(cmd.iter().any(|s| s.contains("DISPLAY")));
 
-        // Verify image name at end
-        assert_eq!(cmd.last().unwrap(), "test-image:latest");
+        // Verify command after image
+        let image_idx = cmd.iter().position(|s| s == "test-image:latest")
+            .unwrap();
+        assert_eq!(cmd.get(image_idx + 1), Some(&"-lc".to_string()));
+        assert_eq!(cmd.get(image_idx + 2), Some(&"echo ok".to_string()));
     }
 
     #[test]
@@ -307,6 +316,7 @@ dockerfile_components: []
             no_gpu: true,  // Explicitly no GPU
             gui: false,
             audio: false,
+            command: vec![],
         };
 
         // Build command

@@ -42,6 +42,9 @@ pub struct BuildDockerRunCommandConfiguration {
 
     /// Additional environment variables
     pub env_vars: Vec<(String, String)>,
+
+    /// Command and arguments to append after the image name.
+    pub command: Vec<String>,
 }
 
 impl Default for BuildDockerRunCommandConfiguration {
@@ -60,6 +63,7 @@ impl Default for BuildDockerRunCommandConfiguration {
             enable_gui: false,
             enable_audio: false,
             env_vars: vec![],
+            command: vec![],
         }
     }
 }
@@ -250,6 +254,9 @@ pub fn build_docker_run_command(
     // Add image
     docker_run_cmd.push(configuration.docker_image_name.to_string());
 
+    // Add optional command after the image.
+    docker_run_cmd.extend(configuration.command.clone());
+
     Ok(docker_run_cmd)
 }
 
@@ -334,6 +341,9 @@ pub fn build_docker_run_command_with_no_gpu(
 
     // Add image
     docker_run_cmd.push(configuration.docker_image_name.to_string());
+
+    // Add optional command after the image.
+    docker_run_cmd.extend(configuration.command.clone());
 
     Ok(docker_run_cmd)
 }
