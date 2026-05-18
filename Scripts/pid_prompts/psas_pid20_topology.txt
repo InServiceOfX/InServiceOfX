@@ -1,0 +1,18 @@
+Please extract the P&ID flow topology from each of the following diagram pages.
+For each page, use the Read tool on the image file path listed and produce:
+  1. A mermaid code block -- complete flowchart LR with ALL components and connections
+  2. A json code block -- adjacency list: nodes (id, tag, type, label) and edges (from, to, medium, label)
+
+Node shape conventions for Mermaid:
+  Tanks/vessels: [(Label)]   Manual/solenoid/check valves, regulators: [Label]
+  Gauges/sensors: ((Label))  Flow in/out: [/Label/]   Vents: ([Label])   T-junctions: {Label}
+
+Include EVERY component with its tag identifier exactly as printed.
+Label edges with fluid/medium (LOX, GHe, GN2, RP-1, He, etc.).
+For multi-page P&IDs, note cross-page references as boundary nodes.
+Output one pair of code blocks per page, preceded by: ## Page N -- <doc name>
+
+---
+
+Page 1 (PSAS LFETS Pressure Panel):
+  /Workspace/Public/Space/PAndID/extracted/psas_pid-20.png

@@ -1,0 +1,59 @@
+# DeepSeek-OCR-2 vLLM inference scripts and runtime dependencies.
+#
+# The upstream repo ships a custom vLLM model class (DeepseekOCR2ForCausalLM)
+# and image pre-processor (DeepseekOCR2Processor) that are NOT distributed as
+# a pip package — they live as plain Python source in the GitHub repo and must
+# be on PYTHONPATH at runtime.  We git-clone the repo into /ThirdParty/ so the
+# path is stable and predictable across container restarts.
+#
+# Clone target:
+#   /ThirdParty/DeepSeek-OCR-2/
+#   └── DeepSeek-OCR2-master/DeepSeek-OCR2-vllm/   ← added to PYTHONPATH
+#       ├── deepseek_ocr2.py    (vLLM model class registration)
+#       ├── process/            (image pre-processor + ngram logits processor)
+#       ├── deepencoderv2/      (SAM ViT-B vision encoder, Qwen2 decoder)
+#       ├── config.py           (paths/prompts — override at test time)
+#       ├── run_dpsk_ocr2_image.py
+#       └── run_dpsk_ocr2_pdf.py
+#
+# Python packages installed here:
+#   addict    — Dict-like attribute access, used by deepseek_ocr2.py + encoder.
+#   easydict  — EasyDict, used by vision encoder helpers.
+#   einops    — tensor reshape utility (may already be present; explicit here).
+#   PyMuPDF   — PDF page rasterisation used by run_dpsk_ocr2_pdf.py; optional
+#               for image-only inference but cheap to include.
+#   img2pdf   — used by the PDF pipeline script.
+#
+# We do NOT install DeepSeek's requirements.txt: it pins transformers==4.46.3
+# and tokenizers==0.20.3 which would downgrade our 4.57.6 stack and break vLLM.
+# transformers 4.57.6 is a superset of 4.46.3 for DeepSeek-OCR-2's needs.
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir addict easydict einops PyMuPDF img2pdf
+
+RUN git clone --depth=1 \
+    https://github.com/deepseek-ai/DeepSeek-OCR-2.git \
+    /ThirdParty/DeepSeek-OCR-2/
+
+ENV DEEPSEEK_OCR2_VLLM_DIR=/ThirdParty/DeepSeek-OCR-2/DeepSeek-OCR2-master/DeepSeek-OCR2-vllm
+
+# Prepend the vLLM scripts dir so `import deepseek_ocr2` and
+# `from process.image_process import DeepseekOCR2Processor` resolve correctly.
+ENV PYTHONPATH=${DEEPSEEK_OCR2_VLLM_DIR}
+
+# Sanity check: verify the clone landed and key runtime packages are importable.
+# We avoid importing deepseek_ocr2 itself here because it registers a vLLM model
+# class that triggers CUDA initialisation — not appropriate at image-build time.
+# Note: no leading whitespace inside the -c string — Python -c treats that as
+# IndentationError (the shell collapses continuation lines, leaving the spaces).
+RUN python -c "import addict, easydict, einops; \
+from pathlib import Path; \
+p = Path('${DEEPSEEK_OCR2_VLLM_DIR}'); \
+assert (p / 'deepseek_ocr2.py').exists(), 'deepseek_ocr2.py missing — clone failed?'; \
+assert (p / 'process').is_dir(), 'process/ subdir missing'; \
+assert (p / 'deepencoderv2').is_dir(), 'deepencoderv2/ subdir missing'; \
+print(f'DeepSeek-OCR-2 clone OK at {p}'); \
+print('addict / easydict / einops importable OK')"

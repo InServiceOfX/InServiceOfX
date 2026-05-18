@@ -8,6 +8,37 @@ As of 2026-05-12, the ColQwen index/query app code, PaddleOCR-VL direct API app,
 
 ## OPEN
 
+### 0. Run first P&ID topology extraction test — READY TO RUN (added 2026-05-16)
+
+**Status: everything is set up. Just run the command below.**
+
+**Goal.** Use the existing Qwen3-VL-4B-AWQ stack to extract the topology of the PSAS LFETS Pressure Panel P&ID (public document), output a Mermaid diagram, and compare against the hand-parsed ground truth to measure VLM accuracy.
+
+**Context.** Session 2026-05-16 added:
+- Public P&ID benchmark: `lfets_osgc_nov_2017.pdf` (PSAS/Oregon State, 2017) at `/Workspace/Public/Space/PAndID/`
+- 3 pre-extracted PNGs at 300 DPI: `psas_pid-20.png` (Pressure Panel), `psas_pid-23.png` (Pressure Feed System), `psas_pid-30.png` (Igniter Testing with full component legend)
+- Two-stage extraction script: `PythonApplications/CLIPDFQwen3VLChat/Executables/main_pid_topology.py`
+- Ground-truth Mermaid (9-component Pressure Panel) is in Claude memory file `project_pid_topology_pipeline.md` and was shown to the user
+
+**Research finding:** Best open models for P&ID topology are `Qwen3-VL-30B-A3B-Instruct` (MoE, runs at 3B cost) and `Qwen2.5-VL-72B-Instruct`. Current 4B will underperform — this first run establishes the baseline. The most important technique (per BlueprintSymVL 2025) is tiled 1024×1024 overlapping crops, not yet implemented.
+
+**Run command (inside container):**
+
+```bash
+cd /InServiceOfX/PythonApplications/CLIPDFQwen3VLChat
+python Executables/main_pid_topology.py \
+    --image /Workspace/Public/Space/PAndID/extracted/psas_pid-20.png \
+    --output /Workspace/Public/Space/PAndID/extracted/psas_pid-20_topology \
+    --configpath /InServiceOfX/PythonApplications/CLIPDFQwen3VLChat
+```
+
+**Definition of done.**
+1. Script completes without error, producing `topology.mermaid` in the output dir.
+2. The Mermaid is pasted into a Claude session alongside the ground-truth Mermaid — human judges which nodes/edges are correct, missing, or hallucinated.
+3. Optionally: repeat on `psas_pid-30.png` (Igniter Testing) and score node tag recall against the printed legend.
+
+**Expected output path (host):** `/home/propdev/.openclaw/workspace/workspace2/Data/Public/Space/PAndID/extracted/psas_pid-20_topology/`
+
 ### 1. GPU-validate `CLIPDFColQwenIndexer`
 
 **Implementation note (2026-05-11):** app code and `.example` configs now exist
