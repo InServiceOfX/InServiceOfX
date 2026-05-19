@@ -20,6 +20,7 @@ class CommandHandler:
             ".generate_depth_image": \
                 "Generate single image using depth control",
             ".generate_kontext_image": "Generate single image using kontext",
+            ".status": "Summarize current model, generation, prompt, and LoRA settings",
             ".list_loras": "List configured Nunchaku LoRAs",
             ".active_loras": "List active Nunchaku LoRAs",
             ".enable_lora": "Enable a LoRA by nickname",
@@ -45,6 +46,7 @@ class CommandHandler:
             ".generate_image": self.handle_generate_image,
             ".generate_depth_image": self.handle_generate_depth_image,
             ".generate_kontext_image": self.handle_generate_kontext_image,
+            ".status": self.handle_status,
             ".list_loras": self.handle_list_loras,
             ".active_loras": self.handle_active_loras,
             ".enable_lora": self.handle_enable_lora,
@@ -244,6 +246,66 @@ class CommandHandler:
         return (
             f"  [{state:<8}] {nickname} "
             f"(strength={lora_parameters.lora_strength})")
+
+    @staticmethod
+    def _preview_text(text, max_length: int = 120) -> str:
+        if text is None:
+            return ""
+
+        normalized = " ".join(str(text).split())
+        if len(normalized) <= max_length:
+            return normalized
+
+        return f"{normalized[:max_length - 3]}..."
+
+    def handle_status(self, args: list[str] | None = None) -> bool:
+        configurations = self._app._process_configurations.configurations
+        nunchaku_configuration = configurations["nunchaku_configuration"]
+        generation_configuration = configurations[
+            "flux_generation_configuration"]
+        pipeline_inputs = configurations["pipeline_inputs"]
+        loras_configuration = configurations["nunchaku_loras_configuration"]
+        batch_processing_configuration = configurations[
+            "batch_processing_configuration"]
+
+        active_loras = loras_configuration.get_active_loras()
+        nunchaku_model_paths = nunchaku_configuration.nunchaku_model_paths
+
+        lines = [
+            "CLIImage status:",
+            f"  CUDA device: {nunchaku_configuration.cuda_device}",
+            f"  FLUX model: {nunchaku_configuration.flux_model_path}",
+            f"  Nunchaku models: {len(nunchaku_model_paths)}",
+        ]
+
+        if nunchaku_model_paths:
+            lines.append(f"  Default Nunchaku model: {nunchaku_model_paths[0]}")
+
+        lines.extend([
+            (
+                "  Generation: "
+                f"{generation_configuration.width}x"
+                f"{generation_configuration.height}, "
+                f"{generation_configuration.num_inference_steps} steps"
+            ),
+            f"  Guidance scale: {generation_configuration.guidance_scale}",
+            f"  True CFG scale: {generation_configuration.true_cfg_scale}",
+            f"  Output path: {generation_configuration.temporary_save_path}",
+            f"  Batch images: {batch_processing_configuration.number_of_images}",
+            f"  Prompt: {self._preview_text(pipeline_inputs.prompt)}",
+            (
+                "  Negative prompt: "
+                f"{self._preview_text(pipeline_inputs.negative_prompt)}"
+            ),
+            f"  Active LoRAs: {len(active_loras)}",
+        ])
+
+        for nickname, lora_parameters in active_loras.items():
+            lines.append(
+                f"    - {nickname} ({lora_parameters.lora_strength})")
+
+        self._app._terminal_ui.print_info("\n".join(lines))
+        return True
 
     def handle_list_loras(self, args: list[str] | None = None) -> bool:
         loras_configuration = self._get_loras_configuration()

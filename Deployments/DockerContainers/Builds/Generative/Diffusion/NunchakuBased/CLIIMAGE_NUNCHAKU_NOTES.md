@@ -34,7 +34,7 @@ Run a CLIImage command and exit:
 ```bash
 python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
   --gpu-id 1 \
-  --command '.active_loras'
+  --command '.status'
 ```
 
 Multiple commands run in order:
@@ -120,6 +120,7 @@ CLIImage now has dot commands that toggle `is_active` by nickname and write the
 same YAML file back:
 
 ```text
+.status
 .list_loras
 .active_loras
 .enable_lora "hero-v2.1"
@@ -135,9 +136,8 @@ A later frontend can call these backend operations instead of editing comments.
 1. Build a thin local UI now that backend commands exist. A LiteGraph UI
    could map nodes to existing YAML responsibilities: model, prompts,
    generation settings, LoRAs, control image, and batch output.
-2. Add a read-only status command that summarizes model path, output path,
-   dimensions, step count, prompt preview, active LoRAs, and batch count before
-   generation.
+2. Add command-line prompt and output overrides so one-off generations do not
+   require editing `pipeline_inputs.yml` and `flux_generation_configuration.yml`.
 
 ## Verification Notes
 

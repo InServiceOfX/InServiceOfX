@@ -53,7 +53,25 @@ def _create_handler(config_path):
             }),
         _process_configurations=SimpleNamespace(
             configurations={
+                "batch_processing_configuration": SimpleNamespace(
+                    number_of_images=3),
+                "flux_generation_configuration": SimpleNamespace(
+                    width=1024,
+                    height=768,
+                    num_inference_steps=20,
+                    guidance_scale=2.5,
+                    true_cfg_scale=1.0,
+                    temporary_save_path="/Data/Private"),
+                "nunchaku_configuration": SimpleNamespace(
+                    cuda_device="cuda:0",
+                    flux_model_path="/Data/Models/FLUX.1-dev",
+                    nunchaku_model_paths=[
+                        "/Data/Models/nunchaku-model.safetensors",
+                    ]),
                 "nunchaku_loras_configuration": configuration,
+                "pipeline_inputs": SimpleNamespace(
+                    prompt="a short test prompt",
+                    negative_prompt="ugly"),
             }),
         _terminal_ui=RecordingTerminalUI())
 
@@ -82,3 +100,22 @@ def test_CommandHandler_updates_lora_yaml_by_nickname(tmp_path):
     assert reloaded.loras["inactive style"].is_active is True
     assert reloaded.loras["inactive style"].lora_strength == 1.25
     assert reloaded.loras["hero style"].is_active is True
+
+
+def test_CommandHandler_status_reports_current_configuration(tmp_path):
+    config_path = tmp_path / "nunchaku_loras_configuration.yml"
+    _write_loras_configuration(config_path)
+    handler = _create_handler(config_path)
+
+    continue_running, handled = handler.handle_command(".status")
+
+    assert continue_running is True
+    assert handled is True
+    messages = handler._app._terminal_ui.messages
+    status_messages = [
+        message for message_type, message in messages
+        if message_type == "info" and "CLIImage status:" in message
+    ]
+    assert status_messages
+    assert "Nunchaku models: 1" in status_messages[0]
+    assert "Active LoRAs: 1" in status_messages[0]
