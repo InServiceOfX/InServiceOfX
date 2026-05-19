@@ -57,10 +57,13 @@ class CLIImage:
 
         self._command_handler = CommandHandler(self)
 
-        self._prompt_sessions_manager = PromptSessionsManager(self)
+        self._prompt_sessions_manager = None
 
     def run_iterative(self):
         try:
+            if self._prompt_sessions_manager is None:
+                self._prompt_sessions_manager = PromptSessionsManager(self)
+
             prompt = self._prompt_sessions_manager.prompt(
                 "Image generation prompt (or type .help for options): "
             )
@@ -87,6 +90,34 @@ class CLIImage:
         except Exception as e:
             self._terminal_ui.print_error(str(e))
             return True
+
+    def run_command(self, command: str) -> tuple[bool, bool]:
+        command = command.strip()
+        if not command:
+            return True, True
+
+        if not command.startswith("."):
+            command = f".{command}"
+
+        continue_running, command_handled = \
+            self._command_handler.handle_command(command)
+
+        if not command_handled:
+            self._terminal_ui.print_error(f"Unknown command: {command}")
+
+        return continue_running, command_handled
+
+    def run_commands(self, commands: list[str]) -> bool:
+        self._terminal_ui.print_header("CLIImage - Image Generation Tool")
+
+        for command in commands:
+            continue_running, command_handled = self.run_command(command)
+            if not command_handled:
+                return False
+            if not continue_running:
+                return True
+
+        return True
 
     def run(self):
         self._terminal_ui.print_header("CLIImage - Image Generation Tool")

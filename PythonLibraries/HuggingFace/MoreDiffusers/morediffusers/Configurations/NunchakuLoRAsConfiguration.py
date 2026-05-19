@@ -206,17 +206,17 @@ class NunchakuLoRAsConfiguration(BaseModel):
         )
         self.loras[nickname] = lora_params
 
-    def remove_lora(self, filename: str) -> bool:
-        """Remove a LoRA configuration by filename.
+    def remove_lora(self, nickname: str) -> bool:
+        """Remove a LoRA configuration by nickname.
         
         Returns:
             True if the LoRA was removed, False if it didn't exist
         """
-        return self.loras.pop(filename, None) is not None
+        return self.loras.pop(nickname, None) is not None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
-        data = self.model_dump()
+        data = self.model_dump(mode="json")
 
         # Convert loras dict to list format for YAML
         # The internal dict is keyed by nickname, but YAML uses a list.

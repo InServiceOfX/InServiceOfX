@@ -38,6 +38,14 @@ def main_CLIImage():
         help=(
             "Specify custom base configuration path (takes first argument if "
             "multiple provided)"))
+    parser.add_argument(
+        '--command',
+        action='append',
+        default=[],
+        metavar='COMMAND',
+        help=(
+            "Run a CLIImage dot command non-interactively. Can be passed "
+            "multiple times. Example: --command '.list_loras'"))
 
     args = parser.parse_args()
 
@@ -55,8 +63,12 @@ def main_CLIImage():
 
     cli_image = CLIImage(application_paths)
 
+    if args.command:
+        return 0 if cli_image.run_commands(args.command) else 1
+
     cli_image.run()
+    return 0
 
 if __name__ == "__main__":
 
-    main_CLIImage()
+    raise SystemExit(main_CLIImage())

@@ -9,6 +9,7 @@ still using the Rust docker_builder path underneath.
 from __future__ import annotations
 
 import argparse
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -17,7 +18,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 QUICK_DOCKER_BUILDER = SCRIPT_DIR / "QuickDockerBuilder.py"
 DEPLOYMENT = "Generative/Diffusion/NunchakuBased"
-CLIIMAGE_COMMAND = (
+BASE_CLIIMAGE_COMMAND = (
     "cd /InServiceOfX/PythonApplications/CLIImage && "
     "python3 Executables/main_CLIImage.py --dev"
 )
@@ -30,8 +31,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--gpu-id",
         type=int,
-        default=0,
-        help="Host GPU id to pass to Docker. Default: 0.",
+        default=1,
+        help="Host GPU id to pass to Docker. Default: 1.",
     )
     parser.add_argument(
         "--entrypoint",
@@ -42,6 +43,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--shell",
         action="store_true",
         help="Open a shell instead of starting CLIImage directly.",
+    )
+    parser.add_argument(
+        "--command",
+        action="append",
+        default=[],
+        metavar="COMMAND",
+        help=(
+            "Run a CLIImage dot command non-interactively. Can be passed "
+            "multiple times. Example: --command '.active_loras'"),
     )
     parser.add_argument(
         "--network-host",
@@ -83,6 +93,9 @@ def main(argv: list[str]) -> int:
     else:
         command.extend(["--gpu-id", str(args.gpu_id)])
 
+    if args.command and not args.shell:
+        command.append("--no-interactive")
+
     if args.network_host:
         command.append("--network-host")
     if args.gui:
@@ -96,7 +109,10 @@ def main(argv: list[str]) -> int:
         print("  python3 Executables/main_CLIImage.py --dev")
         print()
     else:
-        command.extend(["--", "-lc", CLIIMAGE_COMMAND])
+        cliimage_command = BASE_CLIIMAGE_COMMAND
+        for cli_command in args.command:
+            cliimage_command += f" --command {shlex.quote(cli_command)}"
+        command.extend(["--", "-lc", cliimage_command])
 
     return subprocess.call(command)
 

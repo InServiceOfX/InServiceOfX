@@ -20,13 +20,31 @@
 Preferred shortcut:
 
 ```bash
-python3 Scripts/QuickAliases/RunCLIImageNunchaku.py --gpu-id 0
+python3 Scripts/QuickAliases/RunCLIImageNunchaku.py --gpu-id 1
 ```
 
 That starts CLIImage directly. To open a shell instead:
 
 ```bash
-python3 Scripts/QuickAliases/RunCLIImageNunchaku.py --gpu-id 0 --shell
+python3 Scripts/QuickAliases/RunCLIImageNunchaku.py --gpu-id 1 --shell
+```
+
+Run a CLIImage command and exit:
+
+```bash
+python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
+  --gpu-id 1 \
+  --command '.active_loras'
+```
+
+Multiple commands run in order:
+
+```bash
+python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
+  --gpu-id 1 \
+  --command '.enable_lora "hero-v2.1"' \
+  --command '.set_lora_strength "hero-v2.1" 0.9' \
+  --command '.generate_image'
 ```
 
 Equivalent generic command:
@@ -34,7 +52,7 @@ Equivalent generic command:
 ```bash
 python3 Scripts/QuickAliases/QuickDockerBuilder.py run \
   Generative/Diffusion/NunchakuBased \
-  --gpu-id 0 \
+  --gpu-id 1 \
   --entrypoint /bin/bash \
   -- -lc 'cd /InServiceOfX/PythonApplications/CLIImage && python3 Executables/main_CLIImage.py --dev'
 ```
@@ -81,23 +99,26 @@ loras:
 `is_active` is false. The copied working config currently has 42 LoRA entries,
 with 3 active and 39 inactive.
 
-The next low-risk improvement is a small CLI command that toggles
-`is_active` by nickname and writes the YAML back. A later frontend can call the
-same backend operation instead of editing comments.
+CLIImage now has dot commands that toggle `is_active` by nickname and write the
+same YAML file back:
+
+```text
+.list_loras
+.active_loras
+.enable_lora "hero-v2.1"
+.disable_lora "hero-v2.1"
+.toggle_lora "hero-v2.1"
+.set_lora_strength "hero-v2.1" 0.9
+```
+
+A later frontend can call these backend operations instead of editing comments.
 
 ## Highest Priority Improvements
 
-1. Add a non-interactive CLIImage command path, for example:
-   `main_CLIImage.py --dev --command .generate_image`.
-   The Docker wrapper can now start CLIImage directly, but CLIImage still needs
-   an interactive command prompt for generation.
-2. Add LoRA management commands:
-   `list_loras`, `enable_lora <nickname>`, `disable_lora <nickname>`,
-   `set_lora_strength <nickname> <value>`.
-3. Create named config profiles under an ignored directory such as
+1. Create named config profiles under an ignored directory such as
    `PythonApplications/CLIImage/Configurations/profiles/`, then add a tracked
    helper to copy or select profiles.
-4. Build a thin local UI only after the backend commands exist. A LiteGraph UI
+2. Build a thin local UI now that backend commands exist. A LiteGraph UI
    could map nodes to existing YAML responsibilities: model, prompts,
    generation settings, LoRAs, control image, and batch output.
 
@@ -109,4 +130,4 @@ same backend operation instead of editing comments.
   validation should be run inside the Nunchaku container or a project virtual
   environment.
 - `nvidia-smi` was not available from the current host command environment, so
-  the shortcut defaults to `--gpu-id 0` but accepts another GPU id.
+  the shortcut defaults to `--gpu-id 1` but accepts another GPU id.
