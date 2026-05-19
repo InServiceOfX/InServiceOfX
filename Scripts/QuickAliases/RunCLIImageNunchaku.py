@@ -17,6 +17,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 QUICK_DOCKER_BUILDER = SCRIPT_DIR / "QuickDockerBuilder.py"
+CLIIMAGE_PROFILES = SCRIPT_DIR / "CLIImageProfiles.py"
 DEPLOYMENT = "Generative/Diffusion/NunchakuBased"
 BASE_CLIIMAGE_COMMAND = (
     "cd /InServiceOfX/PythonApplications/CLIImage && "
@@ -54,6 +55,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "multiple times. Example: --command '.active_loras'"),
     )
     parser.add_argument(
+        "--profile",
+        help=(
+            "Apply a saved local CLIImage config profile before launching. "
+            "Current live configs are backed up first."))
+    parser.add_argument(
         "--network-host",
         action="store_true",
         help="Use Docker host networking.",
@@ -78,6 +84,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
+
+    if args.profile:
+        result = subprocess.run([
+            sys.executable,
+            str(CLIIMAGE_PROFILES),
+            "apply",
+            args.profile,
+        ])
+        if result.returncode != 0:
+            return result.returncode
 
     command = [
         sys.executable,

@@ -33,9 +33,13 @@ Run a CLIImage command and exit:
 
 ```bash
 python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
+  --profile portrait-test \
   --gpu-id 1 \
   --command '.status'
 ```
+
+`--profile` applies the saved profile before the container starts. The profile
+helper backs up the current live YAML files before replacing them.
 
 Multiple commands run in order:
 
