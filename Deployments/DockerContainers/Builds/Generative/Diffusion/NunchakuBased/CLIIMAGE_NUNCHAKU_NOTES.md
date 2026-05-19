@@ -47,6 +47,21 @@ python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
   --command '.generate_image'
 ```
 
+One-off prompt and generation overrides do not write back to YAML:
+
+```bash
+python3 Scripts/QuickAliases/RunCLIImageNunchaku.py \
+  --prompt 'a compact service robot in a sunlit machine shop' \
+  --negative-prompt 'text, watermark, ugly' \
+  --width 832 \
+  --height 1216 \
+  --steps 26 \
+  --guidance-scale 2.4 \
+  --batch-images 2 \
+  --command '.status' \
+  --command '.generate_image'
+```
+
 Equivalent generic command:
 
 ```bash
@@ -136,8 +151,8 @@ A later frontend can call these backend operations instead of editing comments.
 1. Build a thin local UI now that backend commands exist. A LiteGraph UI
    could map nodes to existing YAML responsibilities: model, prompts,
    generation settings, LoRAs, control image, and batch output.
-2. Add command-line prompt and output overrides so one-off generations do not
-   require editing `pipeline_inputs.yml` and `flux_generation_configuration.yml`.
+2. Add a simple local UI over the same commands for prompt editing, profile
+   selection, and LoRA enable/disable.
 
 ## Verification Notes
 

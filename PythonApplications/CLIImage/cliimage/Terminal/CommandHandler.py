@@ -159,34 +159,7 @@ class CommandHandler:
 
         self._app._process_configurations.process_configurations()
 
-        self._app._flux_nunchaku_and_loras.refresh_configurations(
-            self._app._process_configurations.configurations[
-                "nunchaku_configuration"],
-            self._app._process_configurations.configurations[
-                "flux_generation_configuration"],
-            self._app._process_configurations.configurations["pipeline_inputs"],
-            self._app._process_configurations.configurations[
-                "nunchaku_loras_configuration"])
-
-        if self._app._flux_kontext_nunchaku_and_loras is not None:
-            self._app._flux_kontext_nunchaku_and_loras.refresh_configurations(
-                self._app._process_configurations.configurations[
-                    "nunchaku_configuration"],
-                self._app._process_configurations.configurations[
-                    "flux_generation_configuration"],
-                self._app._process_configurations.configurations["pipeline_inputs"],
-                self._app._process_configurations.configurations[
-                    "nunchaku_loras_configuration"])
-
-        if self._app._flux_depth_nunchaku_and_loras is not None:
-            self._app._flux_depth_nunchaku_and_loras.refresh_configurations(
-                self._app._process_configurations.configurations[
-                    "nunchaku_flux_control_configuration"],
-                self._app._process_configurations.configurations[
-                    "flux_generation_configuration"],
-                self._app._process_configurations.configurations["pipeline_inputs"],
-                self._app._process_configurations.configurations[
-                    "nunchaku_loras_configuration"])
+        self._app._refresh_generation_app_configurations()
 
         self._app._terminal_ui.print_success(
             "Configurations refreshed successfully!")

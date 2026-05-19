@@ -53,6 +53,31 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Run a CLIImage dot command non-interactively. Can be passed "
             "multiple times. Example: --command '.active_loras'"),
     )
+    parser.add_argument("--prompt", help="Override prompt for this run.")
+    parser.add_argument("--prompt-2", help="Override second prompt for this run.")
+    parser.add_argument(
+        "--negative-prompt",
+        help="Override negative prompt for this run.")
+    parser.add_argument(
+        "--negative-prompt-2",
+        help="Override second negative prompt for this run.")
+    parser.add_argument("--output-path", help="Override output path for this run.")
+    parser.add_argument("--height", type=int, help="Override image height.")
+    parser.add_argument("--width", type=int, help="Override image width.")
+    parser.add_argument("--steps", type=int, help="Override inference steps.")
+    parser.add_argument(
+        "--guidance-scale",
+        type=float,
+        help="Override guidance scale.")
+    parser.add_argument(
+        "--true-cfg-scale",
+        type=float,
+        help="Override true CFG scale.")
+    parser.add_argument("--seed", type=int, help="Override seed.")
+    parser.add_argument(
+        "--batch-images",
+        type=int,
+        help="Override number of batch images.")
     parser.add_argument(
         "--network-host",
         action="store_true",
@@ -110,6 +135,25 @@ def main(argv: list[str]) -> int:
         print()
     else:
         cliimage_command = BASE_CLIIMAGE_COMMAND
+        cliimage_overrides = {
+            "--prompt": args.prompt,
+            "--prompt-2": args.prompt_2,
+            "--negative-prompt": args.negative_prompt,
+            "--negative-prompt-2": args.negative_prompt_2,
+            "--output-path": args.output_path,
+            "--height": args.height,
+            "--width": args.width,
+            "--steps": args.steps,
+            "--guidance-scale": args.guidance_scale,
+            "--true-cfg-scale": args.true_cfg_scale,
+            "--seed": args.seed,
+            "--batch-images": args.batch_images,
+        }
+        for option_name, option_value in cliimage_overrides.items():
+            if option_value is not None:
+                cliimage_command += (
+                    f" {option_name} {shlex.quote(str(option_value))}")
+
         for cli_command in args.command:
             cliimage_command += f" --command {shlex.quote(cli_command)}"
         command.extend(["--", "-lc", cliimage_command])
