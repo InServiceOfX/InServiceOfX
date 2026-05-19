@@ -59,66 +59,6 @@ class CLIImage:
 
         self._prompt_sessions_manager = None
 
-    def apply_overrides(self, args) -> None:
-        configurations = self._process_configurations.configurations
-        pipeline_inputs = configurations["pipeline_inputs"]
-        generation_configuration = configurations[
-            "flux_generation_configuration"]
-        batch_processing_configuration = configurations[
-            "batch_processing_configuration"]
-
-        pipeline_overrides = {
-            "prompt": args.prompt,
-            "prompt_2": args.prompt_2,
-            "negative_prompt": args.negative_prompt,
-            "negative_prompt_2": args.negative_prompt_2,
-        }
-        for field_name, value in pipeline_overrides.items():
-            if value is not None:
-                setattr(pipeline_inputs, field_name, value)
-
-        generation_overrides = {
-            "temporary_save_path": args.output_path,
-            "height": args.height,
-            "width": args.width,
-            "num_inference_steps": args.steps,
-            "guidance_scale": args.guidance_scale,
-            "true_cfg_scale": args.true_cfg_scale,
-            "seed": args.seed,
-        }
-        for field_name, value in generation_overrides.items():
-            if value is not None:
-                setattr(generation_configuration, field_name, value)
-
-        if args.batch_images is not None:
-            batch_processing_configuration.number_of_images = \
-                args.batch_images
-
-        self._refresh_generation_app_configurations()
-
-    def _refresh_generation_app_configurations(self) -> None:
-        configurations = self._process_configurations.configurations
-
-        self._flux_nunchaku_and_loras.refresh_configurations(
-            configurations["nunchaku_configuration"],
-            configurations["flux_generation_configuration"],
-            configurations["pipeline_inputs"],
-            configurations["nunchaku_loras_configuration"])
-
-        if self._flux_kontext_nunchaku_and_loras is not None:
-            self._flux_kontext_nunchaku_and_loras.refresh_configurations(
-                configurations["nunchaku_configuration"],
-                configurations["flux_generation_configuration"],
-                configurations["pipeline_inputs"],
-                configurations["nunchaku_loras_configuration"])
-
-        if self._flux_depth_nunchaku_and_loras is not None:
-            self._flux_depth_nunchaku_and_loras.refresh_configurations(
-                configurations["nunchaku_flux_control_configuration"],
-                configurations["flux_generation_configuration"],
-                configurations["pipeline_inputs"],
-                configurations["nunchaku_loras_configuration"])
-
     def run_iterative(self):
         try:
             if self._prompt_sessions_manager is None:

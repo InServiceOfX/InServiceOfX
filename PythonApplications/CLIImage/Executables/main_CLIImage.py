@@ -46,42 +46,6 @@ def main_CLIImage():
         help=(
             "Run a CLIImage dot command non-interactively. Can be passed "
             "multiple times. Example: --command '.list_loras'"))
-    parser.add_argument('--prompt', type=str, help="Override prompt for this run")
-    parser.add_argument(
-        '--prompt-2',
-        type=str,
-        help="Override second prompt for this run")
-    parser.add_argument(
-        '--negative-prompt',
-        type=str,
-        help="Override negative prompt for this run")
-    parser.add_argument(
-        '--negative-prompt-2',
-        type=str,
-        help="Override second negative prompt for this run")
-    parser.add_argument(
-        '--output-path',
-        type=str,
-        help="Override temporary_save_path for this run")
-    parser.add_argument('--height', type=int, help="Override image height")
-    parser.add_argument('--width', type=int, help="Override image width")
-    parser.add_argument(
-        '--steps',
-        type=int,
-        help="Override num_inference_steps for this run")
-    parser.add_argument(
-        '--guidance-scale',
-        type=float,
-        help="Override guidance_scale for this run")
-    parser.add_argument(
-        '--true-cfg-scale',
-        type=float,
-        help="Override true_cfg_scale for this run")
-    parser.add_argument('--seed', type=int, help="Override seed for this run")
-    parser.add_argument(
-        '--batch-images',
-        type=int,
-        help="Override batch number_of_images for this run")
 
     args = parser.parse_args()
 
@@ -98,7 +62,6 @@ def main_CLIImage():
     from cliimage.CLIImage import CLIImage
 
     cli_image = CLIImage(application_paths)
-    cli_image.apply_overrides(args)
 
     if args.command:
         return 0 if cli_image.run_commands(args.command) else 1
