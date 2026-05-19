@@ -67,6 +67,23 @@ python3 Executables/main_CLIImage.py --dev
 `--dev` points CLIImage at
 `/InServiceOfX/PythonApplications/CLIImage/Configurations`.
 
+## Config Profiles
+
+Live config files stay ignored, but you can save/apply named local profiles
+under `PythonApplications/CLIImage/Configurations/profiles/`:
+
+```bash
+python3 Scripts/QuickAliases/CLIImageProfiles.py save portrait-test
+python3 Scripts/QuickAliases/CLIImageProfiles.py list
+python3 Scripts/QuickAliases/CLIImageProfiles.py show portrait-test
+python3 Scripts/QuickAliases/CLIImageProfiles.py apply portrait-test
+```
+
+`apply` backs up the current live config into
+`PythonApplications/CLIImage/Configurations/profiles/_backups/<timestamp>/`
+before overwriting it. Profiles are intentionally gitignored because they can
+contain private prompts, local model paths, or adult/private workflow variants.
+
 ## Configuration Map
 
 | CLIImage YAML | Python model |
@@ -115,12 +132,12 @@ A later frontend can call these backend operations instead of editing comments.
 
 ## Highest Priority Improvements
 
-1. Create named config profiles under an ignored directory such as
-   `PythonApplications/CLIImage/Configurations/profiles/`, then add a tracked
-   helper to copy or select profiles.
-2. Build a thin local UI now that backend commands exist. A LiteGraph UI
+1. Build a thin local UI now that backend commands exist. A LiteGraph UI
    could map nodes to existing YAML responsibilities: model, prompts,
    generation settings, LoRAs, control image, and batch output.
+2. Add a read-only status command that summarizes model path, output path,
+   dimensions, step count, prompt preview, active LoRAs, and batch count before
+   generation.
 
 ## Verification Notes
 
