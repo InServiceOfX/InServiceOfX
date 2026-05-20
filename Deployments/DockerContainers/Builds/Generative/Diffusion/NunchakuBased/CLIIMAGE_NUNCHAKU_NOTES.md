@@ -135,13 +135,36 @@ same YAML file back:
 
 A later frontend can call these backend operations instead of editing comments.
 
+## Config Studio
+
+The GUI lives in `Typescript/CLIImageConfigStudio`. It uses a TypeScript/Vite
+frontend with `litegraph.js`, and a Rust backend for local file IO.
+
+```bash
+cargo run --manifest-path Typescript/CLIImageConfigStudio/backend/Cargo.toml
+```
+
+In another terminal:
+
+```bash
+cd Typescript/CLIImageConfigStudio/frontend
+npm install
+npm run dev
+```
+
+Open the Vite URL, usually `http://127.0.0.1:5173`. The GUI only edits YAML
+before model loading and generation. It supports prompt fields, generation
+settings, LoRA active toggles, LoRA strengths, status preview, profile
+save/apply, choosing another local configuration directory, initializing a new
+configuration directory from `.yml.example` templates, and a litegraph workflow
+overview.
+
 ## Highest Priority Improvements
 
-1. Build a thin local UI now that backend commands exist. A LiteGraph UI
-   could map nodes to existing YAML responsibilities: model, prompts,
-   generation settings, LoRAs, control image, and batch output.
-2. Add command-line prompt and output overrides so one-off generations do not
-   require editing `pipeline_inputs.yml` and `flux_generation_configuration.yml`.
+1. Add launch buttons to Config Studio for `.status` and `.generate_image`,
+   while keeping YAML editing as the GUI's main responsibility.
+2. Add directory selection/import for a completely new configuration set based
+   on the tracked `.yml.example` files.
 
 ## Verification Notes
 
