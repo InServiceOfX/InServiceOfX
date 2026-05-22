@@ -74,6 +74,21 @@ class TerminalUI:
         separator = '─' * 60
         print_formatted_text(HTML(f"<separator>{separator}</separator>"))
     
+    def print_quick_commands(self):
+        """Print a cheatsheet of the most-used commands shown once on startup."""
+        lines = [
+            "  .batch_process_over_all_nunchaku_models  — sweep every model + guidance",
+            "  .batch_process_on_single_prompt          — guidance sweep, current model",
+            "  .generate_image                          — preview one image first",
+            "  .refresh_configurations                  — reload YAML after ConfigStudio",
+            "  .help                                    — all commands",
+        ]
+        print_formatted_text(HTML("\n<help>Quick commands:</help>"))
+        for line in lines:
+            escaped = escape(line)
+            print_formatted_text(HTML(f"<help>{escaped}</help>"))
+        print_formatted_text(HTML(""))
+
     def create_prompt_style(self):
         return Style.from_dict({
             # User input style

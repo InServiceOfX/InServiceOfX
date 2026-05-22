@@ -1,6 +1,8 @@
 from typing import Optional
 from warnings import warn
 
+import torch
+
 class GenerateImages:
     def __init__(self, app):
         self._app = app
@@ -153,28 +155,50 @@ class GenerateImages:
 
     def process_batch(self, prompt_index: int = 0):
         """
-        USAGE:
-        This is intended to be run *after* one runs generate_image(..) for the
-        first time because generate_image(..) will load the model pipeline.
+        Run batch image generation, sweeping guidance_scale across all images.
+
+        Self-contained: loads the model and creates prompt embeddings if they
+        are not already in memory, so this can be called directly without
+        running generate_image() first.  Running generate_image() beforehand
+        is still useful as a quick preview before committing to a longer batch.
         """
+        flux = self._app._flux_nunchaku_and_loras
+
+        # Create prompt embeddings if not already done.  This loads the text
+        # encoder, encodes the prompt, then the encoder is freed from VRAM
+        # inside create_prompt_embeds() before the transformer loads.
+        if len(flux._prompt_embeds) == 0:
+            self._app._terminal_ui.print_info(
+                "Creating prompt embeddings...")
+            flux.create_prompt_embeds()
+
+        if prompt_index >= len(flux._prompt_embeds):
+            self._app._terminal_ui.print_error(
+                "Prompt index is greater than the number of prompt embeds")
+            return False
+
+        # Load the transformer + pipeline if not already in VRAM.
+        if not flux.is_transformer_enabled():
+            self._app._terminal_ui.print_info(
+                "Loading model pipeline (first run — this takes a minute)...")
+            flux.delete_text_encoder_2_and_pipeline()
+            flux.create_transformer_and_pipeline()
+            flux.update_transformer_with_loras()
+
         batch_processing_configuration = \
             self._app._process_configurations.get_batch_processing_configuration()
 
         for index in range(batch_processing_configuration.number_of_images):
-            images = \
-                self._app._flux_nunchaku_and_loras.call_pipeline_with_prompt_embed(
-                    prompt_index)
+            images = flux.call_pipeline_with_prompt_embed(prompt_index)
             if images is not None:
                 full_hash, config_hash = \
                     batch_processing_configuration.create_and_save_image(
                         index,
                         images[0],
-                        self._app._flux_nunchaku_and_loras._generation_configuration,
+                        flux._generation_configuration,
                         self._app._process_configurations.get_model_name())
 
                 try:
-                    # Model index is assumed to be 0 because we assume we had
-                    # generate_image(..) beforehand.
                     self._log_nunchaku_generation(
                         model_index=0,
                         generation_hash=full_hash,
@@ -185,8 +209,11 @@ class GenerateImages:
                 self._app._terminal_ui.print_error(
                     "Pipeline execution failed! Images is None")
 
-            self._app._flux_nunchaku_and_loras._generation_configuration.guidance_scale += \
+            flux._generation_configuration.guidance_scale += \
                 batch_processing_configuration.guidance_scale_step
+
+            # Free cached VRAM allocations between images.
+            torch.cuda.empty_cache()
 
         self._app._terminal_ui.print_success(
             "Batch processing completed successfully!")
@@ -312,6 +339,10 @@ class GenerateImages:
 
                 self._app._flux_nunchaku_and_loras._generation_configuration.guidance_scale += \
                     batch_processing_configuration.guidance_scale_step
+
+                # Free cached VRAM allocations between images so subsequent
+                # generations don't OOM on memory-constrained GPUs (e.g. 8 GB).
+                torch.cuda.empty_cache()
 
             self._app._terminal_ui.print_info(
                 f"Completed batch processing for nunchaku model {nunchaku_model_path}")

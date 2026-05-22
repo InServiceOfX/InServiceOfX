@@ -64,9 +64,7 @@ class CLIImage:
             if self._prompt_sessions_manager is None:
                 self._prompt_sessions_manager = PromptSessionsManager(self)
 
-            prompt = self._prompt_sessions_manager.prompt(
-                "Image generation prompt (or type .help for options): "
-            )
+            prompt = self._prompt_sessions_manager.prompt("> ")
 
             if not prompt.strip():
                 return True
@@ -121,6 +119,8 @@ class CLIImage:
 
     def run(self):
         self._terminal_ui.print_header("CLIImage - Image Generation Tool")
+        self._command_handler.handle_status()
+        self._terminal_ui.print_quick_commands()
         continue_running = True
         while continue_running:
             continue_running = self.run_iterative()

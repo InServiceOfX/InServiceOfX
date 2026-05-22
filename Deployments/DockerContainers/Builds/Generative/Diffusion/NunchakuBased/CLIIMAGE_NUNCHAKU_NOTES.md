@@ -141,7 +141,7 @@ The GUI lives in `Typescript/CLIImageConfigStudio`. It uses a TypeScript/Vite
 frontend with `litegraph.js`, and a Rust backend for local file IO.
 
 ```bash
-cargo run --manifest-path Typescript/CLIImageConfigStudio/backend/Cargo.toml
+cargo run --manifest-path Typescript/CLIImageConfigStudio/backend/Cargo.toml -- --host 127.0.0.1 --port 8876
 ```
 
 In another terminal:
@@ -149,7 +149,7 @@ In another terminal:
 ```bash
 cd Typescript/CLIImageConfigStudio/frontend
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Open the Vite URL, usually `http://127.0.0.1:5173`. The GUI only edits YAML
@@ -158,6 +158,9 @@ settings, LoRA active toggles, LoRA strengths, status preview, profile
 save/apply, choosing another local configuration directory, initializing a new
 configuration directory from `.yml.example` templates, and a litegraph workflow
 overview.
+
+For handoff details, see
+`Typescript/CLIImageConfigStudio/HANDOFF.md`.
 
 ## Highest Priority Improvements
 

@@ -25,6 +25,7 @@ export interface CliImageConfig {
     num_inference_steps?: number;
     guidance_scale?: number;
     true_cfg_scale?: number;
+    seed?: number;
     temporary_save_path?: string;
   };
   nunchaku: Record<string, unknown>;

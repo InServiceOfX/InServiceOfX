@@ -149,7 +149,12 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, String> {
     let path = request_parts.next().unwrap_or("").to_string();
     let mut content_length = 0_usize;
     for line in lines {
-        if let Some(value) = line.strip_prefix("Content-Length:") {
+        // HTTP headers are case-insensitive (RFC 7230 §3.2).
+        // Node.js (used by Vite's dev-server proxy) normalises header names to
+        // lowercase, so compare case-insensitively to catch both "Content-Length:"
+        // (direct curl / production) and "content-length:" (Vite proxy).
+        let line_lower = line.to_ascii_lowercase();
+        if let Some(value) = line_lower.strip_prefix("content-length:") {
             content_length = value.trim().parse::<usize>().unwrap_or(0);
         }
     }

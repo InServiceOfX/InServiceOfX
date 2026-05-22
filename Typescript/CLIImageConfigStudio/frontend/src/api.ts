@@ -6,8 +6,9 @@ import type {
 } from "./types";
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const isWrite = init?.method === "POST" || init?.method === "PUT" || init?.method === "PATCH";
   const response = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    ...(isWrite ? { headers: { "Content-Type": "application/json" } } : {}),
     ...init
   });
   const payload = await response.json();

@@ -11,7 +11,7 @@ overview. The backend is Rust and owns all local file IO.
 From the repository root, start the Rust backend:
 
 ```bash
-cargo run --manifest-path Typescript/CLIImageConfigStudio/backend/Cargo.toml
+cargo run --manifest-path Typescript/CLIImageConfigStudio/backend/Cargo.toml -- --host 127.0.0.1 --port 8876
 ```
 
 In another terminal:
@@ -19,7 +19,7 @@ In another terminal:
 ```bash
 cd Typescript/CLIImageConfigStudio/frontend
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Open the Vite URL, usually `http://127.0.0.1:5173`.
@@ -51,3 +51,6 @@ The Location tab can point the GUI at another configuration directory. If the
 directory is new, enable "Initialize missing YAML from .example templates" and
 the Rust backend will create the six live `.yml` files from the tracked
 CLIImage `.yml.example` files before switching to that directory.
+
+See `HANDOFF.md` for current branch state, verification notes, expected ignored
+files, and next priorities.
