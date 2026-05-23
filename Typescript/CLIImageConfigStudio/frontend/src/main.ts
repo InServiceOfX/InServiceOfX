@@ -280,6 +280,13 @@ function createLoraRow(lora: LoraConfig): HTMLElement {
   path.textContent = `${lora.directory_path}/${lora.filename}`;
   main.append(name, path);
 
+  if (lora.description) {
+    const desc = document.createElement("div");
+    desc.className = "lora-description";
+    desc.textContent = lora.description;
+    main.append(desc);
+  }
+
   const active = document.createElement("label");
   active.className = "toggle";
   const checkbox = document.createElement("input");

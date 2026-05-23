@@ -227,6 +227,14 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.lora-description {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .toggle {
   display: flex;
   grid-template-columns: none;
