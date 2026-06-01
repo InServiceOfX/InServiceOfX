@@ -279,6 +279,12 @@ function createLoraRow(lora: LoraConfig): HTMLElement {
   path.className = "muted path";
   path.textContent = `${lora.directory_path}/${lora.filename}`;
   main.append(name, path);
+  if (lora.description) {
+    const desc = document.createElement("div");
+    desc.className = "muted";
+    desc.textContent = lora.description;
+    main.append(desc);
+  }
 
   if (lora.description) {
     const desc = document.createElement("div");
