@@ -1,0 +1,1127 @@
+% FlashAttention: A Mathematician's Walkthrough
+%
+% Papers covered:
+%   [1] Vaswani et al. (2017), "Attention Is All You Need", arXiv:1706.03762
+%   [2] Milakov & Gimelshein (2018), "Online normalizer calculation for softmax", arXiv:1805.02867
+%   [3] Dao et al. (2022), "FlashAttention", arXiv:2205.14135
+%   [4] Dao (2023), "FlashAttention-2", arXiv:2307.08691
+%
+% Audience: advanced pure mathematician (category theory, differential topology,
+%           abstract algebra). Derivations proceed from first principles rather
+%           than fitting into the chronological narrative of the papers.
+%
+% Author: Ernest Yeung  ernestyalumni@gmail.com
+
+\documentclass[12pt]{amsart}
+
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true, citecolor={blue!60!black}, linkcolor={blue!60!black},
+            urlcolor={blue!60!black}}
+
+% ── Theorem environments ───────────────────────────────────────────────────────
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{convention}[theorem]{Convention}
+
+% ── Notation ──────────────────────────────────────────────────────────────────
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Mat}[2]{\mathrm{M}_{#1 \times #2}(\R)}
+\newcommand{\Matn}[1]{\mathrm{M}_{#1}(\R)}
+\newcommand{\GL}[1]{\mathrm{GL}(#1, \R)}
+\newcommand{\simplex}[1]{\Delta^{#1}}   % standard (n-1)-simplex
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\logsumexp}{\operatorname{lse}}
+\newcommand{\Att}{\operatorname{Att}}
+\newcommand{\MHA}{\operatorname{MHA}}
+\newcommand{\LayerNorm}{\operatorname{LayerNorm}}
+\newcommand{\FFN}{\operatorname{FFN}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\Var}{\operatorname{Var}}
+\DeclareMathOperator{\rowmax}{rowmax}
+\DeclareMathOperator{\rowsum}{rowsum}
+\newcommand{\inner}[2]{\langle #1,\, #2 \rangle}
+% Convention: when the paper uses an informal English word, write it in
+% quotes with a section reference, then immediately give the exact math:
+%   ``projected'' (\S3.2) \precise{$Q=XW^Q$, right multiplication}
+\newcommand{\precise}[1]{%
+  $\langle$\textit{precisely:}~#1$\rangle$}
+
+% ── Title ─────────────────────────────────────────────────────────────────────
+\title{FlashAttention: A Mathematician's Walkthrough}
+\author{Ernest Yeung}
+\email{ernestyalumni@gmail.com}
+\date{2026}
+\keywords{attention mechanism, softmax, tiled matrix multiplication, IO complexity,
+          online softmax, GPU memory hierarchy}
+
+\begin{document}
+
+\begin{abstract}
+These notes develop the mathematics of the attention mechanism and its
+IO-efficient implementation (FlashAttention) from first principles, at the
+level of precision expected in pure mathematics.  We maintain a strict
+separation between two levels of description: (1) the \emph{computational level},
+where scalars are elements of $\mathbb{Z}/2^n\mathbb{Z}$ (integer types, a ring)
+or of the finite set $\mathbb{F}_{p,e}$ (floating-point types, which satisfy no
+standard algebraic axioms); and (2) the \emph{mathematical model level}, over the
+field $\mathbb{R}$, where the softmax map is a smooth surjection onto the interior
+of the standard simplex, attention is a smooth map between spaces of matrices,
+and the FlashAttention algorithm follows from an associativity identity for a
+running-maximum softmax accumulator.  All smoothness and gradient claims are
+Level-2 statements.  The audience is assumed to be comfortable with
+finite-dimensional linear algebra, basic smooth manifold theory, and the language
+of categories.
+\end{abstract}
+
+\maketitle
+
+\tableofcontents
+
+% ══════════════════════════════════════════════════════════════════════════════
+\part{Foundations: Data Types, Scalar Domains, and Layers}
+\label{part:foundations}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Scalar Domain}
+\label{sec:scalars}
+
+In pure mathematics the natural scalar domain for linear algebra is a
+\emph{field}: a commutative ring in which every non-zero element has a
+multiplicative inverse.  The reals $(\mathbb{R}, +, \cdot)$ are the prototypical
+complete ordered field.
+
+In every practical implementation of the algorithms discussed in these notes,
+however, the scalar domain is a finite-precision floating-point type such as
+IEEE~754 \texttt{float32}, \texttt{float16}, or \texttt{bfloat16}.  It is
+important to be explicit about what algebraic structure these types possess,
+because they do \emph{not} satisfy the standard axioms.
+
+\begin{definition}[IEEE 754 floating-point set]
+Let $\mathbb{F}_{p,e}$ denote the set of IEEE 754 floating-point numbers with
+$p$-bit mantissa and $e$-bit exponent.  Concretely, each element is a rational
+number of the form
+\[
+    (-1)^s \cdot m \cdot 2^E, \qquad s \in \{0,1\},\; m \in \{0,\ldots, 2^p-1\},\;
+    E \in \{E_{\min},\ldots,E_{\max}\},
+\]
+together with the special values $\pm\infty$ and $\mathrm{NaN}$.
+The set $\mathbb{F}_{p,e}$ is \emph{finite}: for \texttt{float32},
+$|\mathbb{F}_{32}| = 2^{32}$ (counting all bit patterns).
+\end{definition}
+
+\begin{proposition}[Floating-point arithmetic is not a ring]
+\label{prop:fp-not-ring}
+The set $\mathbb{F}_{p,e}$ with IEEE 754 operations $\oplus, \otimes$ defined by
+\[
+    a \oplus b \;:=\; \mathrm{round}(a + b), \qquad
+    a \otimes b \;:=\; \mathrm{round}(a \cdot b),
+\]
+(where $\mathrm{round}$ is the nearest-even rounding function and $a + b$,
+$a \cdot b$ are exact real arithmetic) does \emph{not} form a ring.
+In particular, $\oplus$ is not associative: there exist $a, b, c \in
+\mathbb{F}_{p,e}$ with $(a \oplus b) \oplus c \neq a \oplus (b \oplus c)$.
+\end{proposition}
+\begin{proof}[Counterexample for \texttt{float32}]
+Take $a = 1$, $b = 10^7$, $c = -10^7$.  Then
+$(a \oplus b) \oplus c = (10^7 + 1) \oplus (-10^7) = 0$ (the $+1$ is lost to
+rounding when added to $10^7$ in 24-bit mantissa arithmetic), whereas
+$a \oplus (b \oplus c) = a \oplus 0 = 1 \neq 0$.
+\end{proof}
+
+\begin{remark}[Integer types are rings]
+\label{rem:int-ring}
+In contrast, $n$-bit integer types with wrapping overflow are the ring
+$\mathbb{Z}/2^n\mathbb{Z}$, a commutative ring with identity.  Addition and
+multiplication satisfy all ring axioms exactly (with no rounding).  This is why
+integer arithmetic is algebraically cleaner than floating-point arithmetic.
+\end{remark}
+
+\begin{remark}[Two levels of description]
+\label{rem:two-levels}
+These notes maintain a strict separation between two levels of mathematical
+description.
+
+\medskip
+\noindent\textbf{Level~1 (what hardware computes):}
+the scalar domain is one of two finite sets.
+\begin{enumerate}[label=(\alph*)]
+    \item \textit{Integer arithmetic.} The scalars are elements of $\mathbb{Z}/2^n\mathbb{Z}$
+    (e.g.\ \texttt{int32} with wrapping overflow), a genuine commutative ring with
+    identity; all ring axioms hold exactly with no rounding.  The data container
+    $(\mathbb{Z}/2^n\mathbb{Z})^{n_1 \times \cdots \times n_k}$, whose elements are
+    matrices with entries in $\mathbb{Z}/2^n\mathbb{Z}$, is a free module over this ring
+    — an exact algebraic object.  Note: $\mathbb{Z}/2^n\mathbb{Z}$ is \emph{not} a
+    field (zero divisors exist: $2^{n/2} \cdot 2^{n/2} = 0$) and \emph{not} an
+    integral domain.
+
+    \item \textit{Floating-point arithmetic.} The scalars are elements of
+    $\mathbb{F}_{p,e}$, a \emph{finite set} whose operations $\oplus, \otimes$
+    satisfy no standard algebraic axioms (Proposition~\ref{prop:fp-not-ring}).
+    The data container $\mathbb{F}_{p,e}^{n_1 \times \cdots \times n_k}$, whose
+    elements are matrices with entries in $\mathbb{F}_{p,e}$, is merely a finite
+    set: it carries no module structure, no natural topology beyond the discrete
+    topology, and no notion of differentiability.  On a finite discrete set, every
+    map is trivially continuous; the concept of \emph{smooth map} is vacuous
+    (there are no non-constant paths, hence no derivatives to define).
+\end{enumerate}
+
+\medskip
+\noindent\textbf{Level~2 (mathematical model): where theorems are stated.}
+Theoretical analysis is conducted over the field $\mathbb{R}$.  Here:
+\begin{itemize}
+    \item data containers are real vector spaces $\mathbb{R}^{n_1 \times \cdots \times n_k}$,
+    equipped with the Euclidean topology and a natural smooth manifold structure;
+    \item layer operations are smooth maps (or piecewise smooth, for ReLU
+    activations);
+    \item gradients, Jacobians, and the backpropagation chain rule are defined in the
+    usual sense of differential calculus.
+\end{itemize}
+
+\medskip
+\noindent\textbf{The gap.} Hardware computes functions between finite sets (Level~1).
+Theory analyzes smooth maps between real vector spaces (Level~2).  These are
+genuinely different mathematical objects.  The claim that hardware arithmetic
+reliably approximates real arithmetic is a theorem of numerical analysis
+(Wilkinson's backward error analysis, floating-point error bounds) — it is
+\emph{not} an assumption embedded in our mathematical model.  We do not assume
+that $\mathbb{F}_{32}$ ``approximates'' $\mathbb{R}$; we simply note that both
+levels exist and state explicitly which level each result belongs to.
+
+When we write $f : \mathbb{R}^{n \times d} \to \mathbb{R}^{n \times d}$ and say
+$f$ is smooth, that is a Level~2 statement.  When a GPU executes $f$ using
+\texttt{float32}, that is a Level~1 computation in $\mathbb{F}_{32}^{n \times d}$.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Data Containers: Arrays, Matrices, Tensors}
+\label{sec:data-containers}
+
+\begin{definition}[Shape and the space $\mathbb{R}^{n_1 \times \cdots \times n_k}$]
+A \emph{shape} is a $k$-tuple $(n_1, \ldots, n_k) \in \mathbb{N}^k$ for some
+$k \geq 1$.  The associated \emph{array space} is
+\[
+    \mathbb{R}^{n_1 \times \cdots \times n_k}
+    \;:=\;
+    \{ A : \{0,\ldots,n_1-1\} \times \cdots \times \{0,\ldots,n_k-1\} \to \mathbb{R} \}.
+\]
+This is a real vector space of dimension $n_1 \cdots n_k$ under pointwise
+addition and scalar multiplication.
+\end{definition}
+
+\begin{remark}[Relation to tensor products]
+There is a canonical isomorphism of real vector spaces
+\[
+    \mathbb{R}^{n_1 \times \cdots \times n_k}
+    \;\cong\;
+    \mathbb{R}^{n_1} \otimes_{\mathbb{R}} \cdots \otimes_{\mathbb{R}} \mathbb{R}^{n_k},
+\]
+via the identification of the standard basis element $e_{i_1,\ldots,i_k}$ with
+$e_{i_1} \otimes \cdots \otimes e_{i_k}$.  In this sense the ML usage of the
+word ``tensor'' (a multidimensional array) coincides, after a choice of basis,
+with the algebraic tensor product.  The two notions diverge in coordinate-free
+settings (e.g.\ when discussing covariance/contravariance), but for our
+purposes the identification is exact.
+\end{remark}
+
+\begin{definition}[Matrix space $\mathrm{M}_{m \times n}(F)$]
+\label{def:matrix-space}
+Let $m, n \in \mathbb{N}$ and let $F$ be any set.
+\[
+    \mathrm{M}_{m \times n}(F)
+    \;:=\;
+    \{ A : \{1,\ldots,m\} \times \{1,\ldots,n\} \to F \},
+\]
+the set of all functions from the index set $\{1,\ldots,m\} \times \{1,\ldots,n\}$ to $F$.
+An element $A \in \mathrm{M}_{m \times n}(F)$ is an \emph{$m \times n$ matrix with
+coefficients in $F$}; we write $A_{ij} = A(i,j)$.
+
+\medskip
+\noindent The notation:
+\begin{itemize}
+    \item \textbf{$\mathrm{M}$} stands for \emph{matrix} (standard algebraic notation,
+    following Bourbaki).
+    \item \textbf{subscript $m \times n$}: $m$ rows, $n$ columns.
+    \item \textbf{$(F)$}: the \emph{coefficient set} — the set to which each
+    entry $A_{ij}$ belongs, i.e.\ $A_{ij} \in F$.  Depending on what $F$ is
+    (a field, a ring, a finite set with no algebraic structure), the matrix
+    space $\mathrm{M}_{m \times n}(F)$ inherits exactly as much algebraic
+    structure as $F$ possesses (see the table below).
+\end{itemize}
+
+\medskip
+\noindent The algebraic structure $\mathrm{M}_{m \times n}(F)$ inherits from $F$
+is exactly as rich as $F$ itself:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{5.5cm}p{7cm}}
+\hline
+\textbf{$F$ is \ldots} & \textbf{$\mathrm{M}_{m \times n}(F)$ is \ldots} \\
+\hline
+a field (e.g.\ $\mathbb{R}$, $\mathbb{Q}$) &
+    a free $F$-module of rank $mn$; equivalently, an $F$-vector space of
+    dimension $mn$. \\
+a commutative ring (e.g.\ $\mathbb{Z}$, $\mathbb{Z}/2^k\mathbb{Z}$) &
+    a free $R$-module of rank $mn$; pointwise addition and scalar
+    multiplication satisfy all module axioms. \\
+a non-commutative ring &
+    a free left (or right) $R$-module; row-by-column multiplication of
+    matrices with square $F$-entries is defined. \\
+a semiring (e.g.\ $\mathbb{N}$, tropical $\mathbb{R}$) &
+    a free $F$-semimodule (additive inverses not guaranteed). \\
+a commutative non-associative magma with identity
+(e.g.\ $\mathbb{F}_{32}$ with IEEE~754 $\oplus$) &
+    a set equipped with a binary operation $A \oplus B$
+    (coordinatewise); no module axioms hold (addition is not
+    associative, so no abelian group structure). \\
+an arbitrary set &
+    just a set; no algebraic structure at all. \\
+\hline
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{In these notes:}
+At Level~2 (mathematical model, Remark~\ref{rem:two-levels}) we always take
+$F = \mathbb{R}$, so $\mathrm{M}_{m \times n}(\mathbb{R})$ is a real vector
+space.  We use the shorthand $\Mat{m}{n} := \mathrm{M}_{m \times n}(\mathbb{R})$.
+
+At Level~1 (computation), $F = \mathbb{F}_{32}$ (float32) makes
+$\mathrm{M}_{m \times n}(\mathbb{F}_{32})$ a finite set with no
+guaranteed algebraic structure; $F = \mathbb{Z}/2^k\mathbb{Z}$ (integer)
+makes $\mathrm{M}_{m \times n}(\mathbb{Z}/2^k\mathbb{Z})$ a free
+$\mathbb{Z}/2^k\mathbb{Z}$-module.
+\end{definition}
+
+\begin{remark}[What ``vector'' means here]
+We reserve the word \emph{vector} for an element of any real vector space,
+not specifically a 1-d array.  A matrix $A \in \Mat{m}{n}$ is simultaneously:
+\begin{itemize}
+    \item a vector in the vector space $\mathbb{R}^{m \times n} \cong \Mat{m}{n}$
+    (dimension $mn$);
+    \item an $\mathbb{R}$-linear map $\mathbb{R}^n \to \mathbb{R}^m$ via $v \mapsto Av$
+    (acting on column vectors on the right);
+    \item an element of the tensor product $(\mathbb{R}^n)^* \otimes_\mathbb{R} \mathbb{R}^m$,
+    via the canonical isomorphism $L(\mathbb{R}^n, \mathbb{R}^m) \cong (\mathbb{R}^n)^* \otimes \mathbb{R}^m$
+    given by $\phi \otimes w \mapsto (v \mapsto \phi(v)\,w)$.
+\end{itemize}
+We use whichever view is most convenient, and will say explicitly which
+structure we are invoking.
+\end{remark}
+
+\begin{definition}[Standard data shapes in a Transformer]
+\label{def:shapes}
+Fix $B, n, d_{\mathrm{model}}, d_k, d_v, h \in \mathbb{N}$ where:
+\begin{itemize}
+    \item $B$ = batch size,
+    \item $n$ = sequence length (number of tokens),
+    \item $d_{\mathrm{model}}$ = model dimension (embedding dimension),
+    \item $d_k, d_v$ = key/value head dimensions,
+    \item $h$ = number of attention heads.
+\end{itemize}
+The standard data containers and their types are:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\hline
+Name & Type & Role \\
+\hline
+Input sequence (one batch) & $\mathbb{R}^{B \times n \times d_{\mathrm{model}}}$ & token embeddings + positional enc. \\
+Query / Key / Value (one head) & $\mathbb{R}^{B \times n \times d_k}$ or $\mathbb{R}^{B \times n \times d_v}$ & projected inputs \\
+Score matrix (one head) & $\mathbb{R}^{B \times n \times n}$ & $QK^\top/\sqrt{d_k}$ \\
+Attention weight matrix & $\mathbb{R}^{B \times n \times n}$ & after row-wise softmax \\
+Output (one head) & $\mathbb{R}^{B \times n \times d_v}$ & weighted sum of values \\
+Weight matrix $W^Q_\ell$ & $\mathbb{R}^{d_{\mathrm{model}} \times d_k}$ & query projection, head $\ell$ \\
+\hline
+\end{tabular}
+\end{center}
+All of these are elements of real vector spaces.  None of them is ``a vector''
+in the colloquial sense of a 1-d list; all of them are vectors in the
+mathematical sense (elements of a vector space over $\mathbb{R}$).
+\end{definition}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{What Is a Layer?}
+\label{sec:layer}
+
+We now give a precise definition of what a ``layer'' is as a mathematical
+object, separating the \emph{type of the data} from the \emph{operation}.
+
+\begin{definition}[Parameterized map (a layer)]
+\label{def:layer}
+Let $X$ and $Y$ be finite-dimensional real vector spaces, and let $\Theta$ be
+a smooth manifold (the \emph{parameter space}).
+A \emph{layer} is a smooth map
+\[
+    f \;:\; \Theta \times X \;\longrightarrow\; Y.
+\]
+For each fixed $\theta \in \Theta$, the map $f_\theta := f(\theta, \cdot) :
+X \to Y$ is the \emph{forward pass} of the layer at parameters $\theta$.
+\end{definition}
+
+\begin{remark}[Three distinct objects]
+There are three distinct mathematical objects in play:
+\begin{enumerate}[label=(\roman*)]
+    \item The \textbf{input} $x \in X$: an element of a real vector space.
+    \item The \textbf{parameters} $\theta \in \Theta$: an element of a smooth manifold (in practice $\Theta = \mathbb{R}^p$ for some $p$, so it is also a real vector space).
+    \item The \textbf{layer} $f : \Theta \times X \to Y$: a smooth map.  This is the ``operation.''  It is \emph{not} an element of $X$; it is a function.
+\end{enumerate}
+In ML code, a ``layer'' is typically an object that stores $\theta$ and
+implements the map $x \mapsto f_\theta(x)$.  Mathematically these are the
+same: the object is the pair $(\theta, f)$ where $f$ is the smooth map.
+\end{remark}
+
+\begin{remark}[Parameter spaces in practice]
+For a weight matrix $W \in \Mat{m}{n}$, the parameter space is
+$\Theta = \mathbb{R}^{m \times n}$ (a real vector space of dimension $mn$,
+hence also a smooth manifold diffeomorphic to $\mathbb{R}^{mn}$).  A linear
+layer with weight $W$ and bias $b \in \mathbb{R}^m$ has parameter space
+$\Theta = \mathbb{R}^{m \times n} \times \mathbb{R}^m$, also a vector space.
+
+The \emph{attention} operation (Section~\ref{sec:sdp-attention}) takes
+$W^Q, W^K, W^V, W^O$ as parameters and $x$ (the sequence) as input.  The
+parameter space is
+$\Theta_{\mathrm{MHA}} = \mathbb{R}^{d_{\mathrm{model}} \times d_k}
+\times \mathbb{R}^{d_{\mathrm{model}} \times d_k}
+\times \mathbb{R}^{d_{\mathrm{model}} \times d_v}
+\times \mathbb{R}^{h d_v \times d_{\mathrm{model}}}$
+(one tuple of weight matrices per head, plus the output projection).
+\end{remark}
+
+\begin{definition}[Composition of layers]
+\label{def:layer-composition}
+Let $f : \Theta_1 \times X \to Y$ and $g : \Theta_2 \times Y \to Z$ be layers.
+Their \emph{composition} is the layer
+\[
+    g \circ f \;:\; (\Theta_1 \times \Theta_2) \times X \;\longrightarrow\; Z,
+    \qquad (g \circ f)_{(\theta_1,\theta_2)}(x) \;:=\; g_{\theta_2}(f_{\theta_1}(x)).
+\]
+The parameter space of the composed layer is the product $\Theta_1 \times
+\Theta_2$.
+\end{definition}
+
+\begin{remark}[Categorical structure: Para(Smooth)]
+Definition~\ref{def:layer-composition} is exactly the composition in the
+\emph{Para} construction applied to the category $\mathbf{Smooth}$ of smooth
+manifolds.  The resulting category $\mathbf{Para}(\mathbf{Smooth})$ has:
+\begin{itemize}
+    \item \textbf{Objects}: smooth manifolds (e.g.\ $\mathbb{R}^{n \times d}$
+    for various shapes).
+    \item \textbf{Morphisms} $X \to Y$: pairs $(\Theta, f : \Theta \times X \to Y)$
+    for some smooth manifold $\Theta$.
+    \item \textbf{Composition}: as in Definition~\ref{def:layer-composition}.
+\end{itemize}
+A \emph{neural network} is a morphism in $\mathbf{Para}(\mathbf{Smooth})$: a
+composed sequence of layers.  Training (gradient descent on the loss) is
+gradient flow on $\Theta_1 \times \cdots \times \Theta_L$ with respect to the
+loss function $\mathcal{L} : \Theta_1 \times \cdots \times \Theta_L \to \mathbb{R}$.
+
+\medskip
+\noindent\textit{Reference}: Cruttwell, Gavranović, Ghani, Wilson, Zanasi,
+``Categorical Foundations of Gradient-Based Learning,'' ESOP 2022.
+\end{remark}
+
+\begin{example}[Specific layers in the Transformer]
+\label{ex:transformer-layers}
+With the above definition, each component of the Transformer is a layer in the
+sense of Definition~\ref{def:layer}:
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Linear projection}: $f_W(x) = xW$ where $\Theta = \Mat{d_{\mathrm{in}}}{d_{\mathrm{out}}}$,
+    $X = \mathbb{R}^{n \times d_{\mathrm{in}}}$, $Y = \mathbb{R}^{n \times d_{\mathrm{out}}}$.
+    This is a bilinear map in $(W, x)$, hence smooth.
+
+    \item \textbf{Scaled dot-product attention}: parameter-free for a single
+    call to $\Att(Q,K,V)$, so $\Theta = \{*\}$ (a point) and $\Att :
+    \Mat{n}{d_k}^2 \times \Mat{n}{d_v} \to \Mat{n}{d_v}$ is a smooth map on
+    the input.  The weight matrices $W^Q, W^K, W^V$ belong to the parameter
+    space of the enclosing multi-head attention layer.
+
+    \item \textbf{Layer normalisation}: $\Theta = \mathbb{R}^d \times \mathbb{R}^d$
+    (the learnable scale $\gamma$ and shift $\beta$), $X = Y = \mathbb{R}^d$.
+    The map is smooth away from the set $\{x : x = c\mathbf{1} \text{ for some }
+    c \in \mathbb{R}\}$ (zero variance).
+
+    \item \textbf{Feed-forward sublayer}: $\Theta = \Mat{d}{d_{\mathrm{ff}}}
+    \times \mathbb{R}^{d_{\mathrm{ff}}} \times \Mat{d_{\mathrm{ff}}}{d} \times
+    \mathbb{R}^d$, the map $x \mapsto \max(0, xW_1 + b_1)W_2 + b_2$ is
+    \emph{piecewise smooth} (smooth on each region of the partition defined by
+    the activation thresholds) but not globally smooth.
+
+    \item \textbf{Softmax}: parameter-free, $\Theta = \{*\}$,
+    $\softmax : \mathbb{R}^n \to \operatorname{int}(\Delta^{n-1})$ is smooth
+    (Section~\ref{sec:softmax}).
+\end{enumerate}
+\end{example}
+
+\begin{remark}[Set membership is how mathematics says what an object is]
+\label{rem:set-membership}
+In classical mathematics (ZFC set theory), the primitive notion is
+\emph{set membership}: to say what a mathematical object is, one states
+the set it belongs to, written $x \in S$.  There is no separate notion of
+``type'' — that is a construct from type theory (Martin-Löf, Curry-Howard)
+and programming languages, a different foundational framework from set
+theory.  Using ``type'' in a classical-mathematical context imports an
+unnecessary and confusing foreign concept when ``$x \in S$'' suffices
+completely.
+
+Concretely, for the objects in this document:
+\begin{itemize}
+    \item The input sequence: $x \in X$, where $X = \mathbb{R}^{B \times n \times d}$
+    is a real vector space.
+    \item The parameters: $\theta \in \Theta$, where $\Theta = \mathbb{R}^p$ is a
+    smooth manifold.
+    \item A layer: $f \in C^\infty(\Theta \times X, Y)$, i.e.\ $f$ is an element
+    of the set of smooth maps from $\Theta \times X$ to $Y$.
+\end{itemize}
+The critical observation is that $x \in X$ and $f \in C^\infty(\Theta \times X, Y)$
+are elements of \emph{different sets}: $x$ is a point in a vector space; $f$ is
+a smooth map between vector spaces.  In ML frameworks both are called
+``tensors,'' which conflates this distinction.  The mathematical statement
+$x \in X$ and $f \in C^\infty(\Theta \times X, Y)$ carries all the necessary
+information without any auxiliary notion of ``type.''
+\end{remark}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\part{Paper I: The Attention Mechanism}
+\label{part:attention}
+
+\emph{Source: Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser,
+Polosukhin. ``Attention Is All You Need.'' NeurIPS 2017. arXiv:1706.03762.}
+
+\bigskip
+
+The paper introduces the \emph{Transformer}, a sequence-to-sequence architecture
+built entirely from attention layers and pointwise feed-forward layers, with no
+recurrence or convolution.  Our treatment extracts the mathematical content —
+the definitions, the geometry of softmax, the permutation equivariance of
+attention, and the role of positional encoding — and presents it independently
+of the machine translation motivation.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Setup: Sequences as Matrix Rows}
+\label{sec:setup}
+
+Throughout, $d_{\mathrm{model}}, d_k, d_v, n \in \N$ are positive integers.
+
+\begin{definition}[Sequence]
+A \emph{sequence} of length $n$ in $\R^d$ is an element of $\R^{n \times d}$,
+viewed as a matrix whose $i$-th row is the $i$-th element of the sequence.
+\end{definition}
+
+\begin{remark}[``Projected'' and ``learned'']
+\label{rem:projection}
+No inner product on $\R^{d_{\mathrm{model}}}$ is fixed globally; attention dot
+products operate in $\R^{d_k}$.  The paper (\S3.2) says the sequence is
+``projected by learned weight matrices'' and calls $W^Q, W^K, W^V$
+``projection matrices.''
+
+``\textbf{Projected}'' (\S3.2) \precise{right-multiplied on the right:
+$Q = XW^Q$ where $X \in \Mat{n}{d_{\mathrm{model}}}$,
+$W^Q \in \Mat{d_{\mathrm{model}}}{d_k}$, $Q \in \Mat{n}{d_k}$;
+i.e.\ the $\R$-linear map $R_{W^Q}: X \mapsto XW^Q$ (matrix--matrix
+multiplication)}.
+Note: in algebra, a \emph{projection} means $P^2 = P$ (idempotent); these
+weight matrices need not satisfy this, and squaring is not even defined when
+$d_k \neq d_{\mathrm{model}}$.  The paper uses ``projection'' to mean
+``linear map.''
+
+``\textbf{Learned}'' (\S3) \precise{$W^Q \in \Theta$ is a parameter
+optimised during training, not a fixed geometric object}.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Softmax Map}
+\label{sec:softmax}
+
+\begin{definition}[Standard simplex]
+The \emph{standard $(n-1)$-simplex} is
+\[
+    \simplex{n-1} \;:=\; \bigl\{ p \in \R^n \;\big|\; p_i \geq 0,\;
+    \textstyle\sum_{i=1}^n p_i = 1 \bigr\}.
+\]
+Its \emph{interior} is
+$\operatorname{int}(\simplex{n-1}) = \{ p \in \simplex{n-1} \mid p_i > 0
+\text{ for all } i \}$.
+\end{definition}
+
+\begin{definition}[Log-sum-exp and softmax]
+\label{def:softmax}
+The \emph{log-sum-exp} function $\logsumexp : \R^n \to \R$ is
+\[
+    \logsumexp(x) \;:=\; \log \sum_{i=1}^n e^{x_i}.
+\]
+The \emph{softmax} map $\softmax : \R^n \to \operatorname{int}(\simplex{n-1})$
+is
+\[
+    \softmax(x)_i \;:=\; \frac{e^{x_i}}{\sum_{j=1}^n e^{x_j}}
+    \;=\; e^{x_i - \logsumexp(x)}, \qquad i = 1,\ldots,n.
+\]
+\end{definition}
+
+\begin{proposition}[Softmax as gradient of log-partition function]
+\label{prop:softmax-gradient}
+$\softmax = \nabla \logsumexp$, i.e.\
+$\softmax(x)_i = \frac{\partial}{\partial x_i} \logsumexp(x)$.
+\end{proposition}
+\begin{proof}
+Direct computation:
+$\frac{\partial}{\partial x_i} \log \sum_j e^{x_j}
+= \frac{e^{x_i}}{\sum_j e^{x_j}} = \softmax(x)_i$.
+\end{proof}
+
+\begin{remark}
+The function $\logsumexp$ is the \emph{log-partition function} (free energy)
+of the Gibbs measure on $\{1,\ldots,n\}$ with energy $-x$.  Its Legendre
+transform is the negative entropy $\sum_i p_i \log p_i$ on $\simplex{n-1}$.
+Proposition~\ref{prop:softmax-gradient} is the statement that $\softmax$ is
+the Legendre dual variable map.
+\end{remark}
+
+\begin{proposition}[Diffeomorphism to simplex interior]
+\label{prop:softmax-diffeo}
+$\softmax : \R^n \to \operatorname{int}(\simplex{n-1})$ is a smooth surjection.
+Its fibers are the affine lines $\{ x + t \mathbf{1} \mid t \in \R \}$, i.e.\
+$\softmax(x) = \softmax(y)$ if and only if $x - y \in \R \mathbf{1}$.
+Consequently $\softmax$ descends to a diffeomorphism
+\[
+    \widetilde{\softmax} : \R^n / \R\mathbf{1} \;\xrightarrow{\;\sim\;}
+    \operatorname{int}(\simplex{n-1}).
+\]
+\end{proposition}
+\begin{proof}
+Smoothness is clear.  The fiber condition follows from $\softmax(x) = \softmax(y)
+\Leftrightarrow e^{x_i}/e^{x_j} = e^{y_i}/e^{y_j}$ for all $i,j$, i.e.\
+$x_i - x_j = y_i - y_j$ for all $i,j$, i.e.\ $x - y \in \R\mathbf{1}$.
+The quotient $\R^n/\R\mathbf{1} \cong \R^{n-1}$ is $(n-1)$-dimensional, as is
+$\operatorname{int}(\simplex{n-1})$.  Surjectivity and the inverse map are
+explicit: given $p \in \operatorname{int}(\simplex{n-1})$, any $x$ with
+$x_i = \log p_i$ satisfies $\softmax(x) = p$.
+\end{proof}
+
+\begin{proposition}[Translation invariance]
+\label{prop:softmax-shift}
+For any $m \in \R$ and $x \in \R^n$:
+\[
+    \softmax(x)_i \;=\; \softmax(x - m\mathbf{1})_i
+    \;=\; \frac{e^{x_i - m}}{\sum_j e^{x_j - m}}.
+\]
+\end{proposition}
+
+This proposition is numerically crucial: subtracting the row-maximum $m =
+\max_j x_j$ before exponentiating prevents overflow, without changing the
+output.  This is exploited in the online softmax algorithm (Paper~II).
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Scaled Dot-Product Attention}
+\label{sec:sdp-attention}
+
+\begin{definition}[Attention inputs]
+Fix sequence length $n$, key/query dimension $d_k$, value dimension $d_v$.
+The \emph{query}, \emph{key}, and \emph{value} matrices are
+\[
+    Q \in \Mat{n}{d_k}, \quad K \in \Mat{n}{d_k}, \quad V \in \Mat{n}{d_v}.
+\]
+Row $i$ of $Q$ is the query vector for position $i$; row $j$ of $K$ (resp.\ $V$)
+is the key (resp.\ value) vector for position $j$.
+\end{definition}
+
+\begin{definition}[Scaled dot-product attention]
+\label{def:attention}
+The \emph{score matrix} is
+\[
+    S \;:=\; \frac{Q K^\top}{\sqrt{d_k}} \;\in\; \Mat{n}{n}.
+\]
+Row $i$ of $S$ is $S_i = \frac{1}{\sqrt{d_k}} K q_i^\top \in \R^n$, where $q_i \in \R^{d_k}$ is row $i$ of $Q$.
+
+The \emph{attention weight matrix} is $P \in \Mat{n}{n}$ with
+\[
+    P_i \;:=\; \softmax(S_i) \;\in\; \operatorname{int}(\simplex{n-1}),
+\]
+where $P_i$ denotes row $i$ of $P$.  Equivalently, $P_{ij} = e^{S_{ij}}/
+\sum_k e^{S_{ik}}$.
+
+The \emph{attention output} is
+\[
+    O \;:=\; P\,V \;\in\; \Mat{n}{d_v}.
+\]
+The \emph{scaled dot-product attention} map is
+\begin{align*}
+    \Att &: \Mat{n}{d_k} \times \Mat{n}{d_k} \times \Mat{n}{d_v}
+           \;\longrightarrow\; \Mat{n}{d_v} \\
+    \Att(Q,K,V) &\;:=\; \softmax\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V,
+\end{align*}
+where $\softmax$ is applied row-wise.
+\end{definition}
+
+\begin{remark}[Interpretation]
+Row $i$ of $O$ is
+\[
+    O_i \;=\; \sum_{j=1}^n P_{ij}\, v_j
+    \;\in\; \operatorname{conv}\{v_1,\ldots,v_n\} \;\subset\; \R^{d_v},
+\]
+a convex combination of the value vectors, with weights determined by the
+similarity of query $q_i$ to each key $k_j$.  Geometrically, attention is a
+\emph{soft nearest-neighbour lookup}: position $i$ retrieves a weighted average
+of values, weighted by the probability that key $k_j$ is the best match for
+query $q_i$.
+\end{remark}
+
+\begin{proposition}[Smoothness]
+$\Att$ is a smooth map.  The partial derivative with respect to $Q$ is
+\[
+    \frac{\partial \Att}{\partial Q}\bigg|_{(Q,K,V)}
+    \;=\; \frac{1}{\sqrt{d_k}}
+    \bigl(\diag(P\mathbf{1}) - P^\top P\bigr) V K^\top
+\]
+(up to appropriate reshaping), where $\diag(P\mathbf{1}) - P^\top P$ is the
+Jacobian of the row-wise softmax applied to $QK^\top/\sqrt{d_k}$.
+\end{proposition}
+
+\begin{remark}[Jacobian of softmax]
+For $\sigma = \softmax(x) \in \R^n$, the Jacobian is
+\[
+    J\softmax(x) \;=\; \diag(\sigma) - \sigma\sigma^\top \;\in\; \Mat{n}{n}.
+\]
+This is the covariance matrix of the distribution $\sigma$ restricted to
+$T_\sigma \simplex{n-1}$, i.e.\ the Fisher information matrix of the
+exponential family with sufficient statistic $x \mapsto x$.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Scaling Factor $1/\protect\sqrt{d_k}$}
+\label{sec:scaling}
+
+\begin{proposition}[Variance of dot products]
+\label{prop:variance}
+Let $q, k \in \R^{d_k}$ be random vectors whose coordinates are independent
+with mean $0$ and variance $1$.  Then
+\[
+    \mathbb{E}[\inner{q}{k}] \;=\; 0, \qquad
+    \Var[\inner{q}{k}] \;=\; d_k.
+\]
+\end{proposition}
+\begin{proof}
+$\inner{q}{k} = \sum_{i=1}^{d_k} q_i k_i$.  By independence of $q_i$ and $k_i$,
+$\mathbb{E}[q_i k_i] = \mathbb{E}[q_i]\mathbb{E}[k_i] = 0$.  The variance is
+$\Var[q_i k_i] = \mathbb{E}[q_i^2 k_i^2] - 0 = 1 \cdot 1 = 1$, so
+$\Var[\inner{q}{k}] = \sum_i 1 = d_k$.
+\end{proof}
+
+\begin{corollary}
+The scaled score $\inner{q}{k}/\sqrt{d_k}$ has mean $0$ and variance $1$.
+Dividing by $\sqrt{d_k}$ prevents the dot products from growing large in
+magnitude as $d_k$ increases, which would push the softmax output toward the
+vertices of $\simplex{n-1}$ (near-zero gradient regime).
+\end{corollary}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Permutation Equivariance of Attention}
+\label{sec:perm-equivariance}
+
+Let $S_n$ denote the symmetric group on $n$ letters.  Each $\pi \in S_n$ acts
+on $\Mat{n}{d}$ by left-permuting rows: $(\pi \cdot A)_i = A_{\pi^{-1}(i)}$.
+
+\begin{proposition}[Equivariance]
+\label{prop:equivariance}
+For any $\pi \in S_n$ and any $Q, K, V$:
+\[
+    \Att(\pi \cdot Q,\; \pi \cdot K,\; \pi \cdot V)
+    \;=\; \pi \cdot \Att(Q, K, V).
+\]
+In other words, $\Att$ is $S_n$-equivariant.
+\end{proposition}
+\begin{proof}
+Let $P_\pi \in \Mat{n}{n}$ be the permutation matrix for $\pi$.  Then
+$\pi \cdot Q = P_\pi Q$, and similarly for $K, V$.  The score matrix transforms as
+\[
+    S' \;=\; \frac{(P_\pi Q)(P_\pi K)^\top}{\sqrt{d_k}}
+        \;=\; P_\pi \frac{Q K^\top}{\sqrt{d_k}} P_\pi^\top
+        \;=\; P_\pi S P_\pi^\top.
+\]
+Row-wise softmax commutes with row-permutation:
+$\softmax(P_\pi S P_\pi^\top)_i = \softmax((P_\pi S P_\pi^\top)_i)
+= \softmax(S_{\pi^{-1}(i)} P_\pi^\top)$.
+Since $P_\pi^\top$ permutes columns, and softmax is translation-invariant
+up to a permuted normalizer, one checks that $P = \softmax(S')$ satisfies
+$P = P_\pi \softmax(S) P_\pi^\top$.  Therefore
+\[
+    O' \;=\; P\,(P_\pi V) \;=\; P_\pi \softmax(S) P_\pi^\top P_\pi V
+         \;=\; P_\pi \softmax(S) V \;=\; P_\pi O. \qedhere
+\]
+\end{proof}
+
+\begin{corollary}
+Pure attention is \emph{set-valued}: it treats the input as an unordered
+multiset of vectors.  Two sequences that are permutations of each other produce
+outputs that are the same permutation of each other.  In particular, a pure
+attention layer carries no information about the \emph{order} of the sequence.
+\end{corollary}
+
+This is the mathematical reason positional encodings must be added.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Positional Encoding}
+\label{sec:pe}
+
+To break the $S_n$-equivariance, the paper adds a fixed encoding
+$\mathrm{PE} \in \Mat{n}{d_{\mathrm{model}}}$ to the embedded input sequence
+before any attention layers.
+
+\begin{definition}[Sinusoidal positional encoding]
+\label{def:pe}
+For $\mathrm{pos} = 1, \ldots, n$ and $i = 0, \ldots, d_{\mathrm{model}}/2 - 1$:
+\begin{align*}
+    \mathrm{PE}_{\mathrm{pos},\,2i}   &\;:=\; \sin\!\left(
+        \frac{\mathrm{pos}}{10000^{2i/d_{\mathrm{model}}}}\right), \\
+    \mathrm{PE}_{\mathrm{pos},\,2i+1} &\;:=\; \cos\!\left(
+        \frac{\mathrm{pos}}{10000^{2i/d_{\mathrm{model}}}}\right).
+\end{align*}
+\end{definition}
+
+\begin{proposition}[Relative encoding via rotation]
+\label{prop:pe-rotation}
+Fix a frequency index $i$.  The pair
+$(\mathrm{PE}_{\mathrm{pos},2i},\, \mathrm{PE}_{\mathrm{pos},2i+1})
+= (\sin(\omega_i \,\mathrm{pos}),\, \cos(\omega_i \,\mathrm{pos}))$
+where $\omega_i = 10000^{-2i/d_{\mathrm{model}}}$.
+
+For any fixed offset $k \in \N$, the vector $\mathrm{PE}_{\mathrm{pos}+k}$
+in the $2i$-th and $(2i+1)$-th coordinates is obtained from $\mathrm{PE}_{\mathrm{pos}}$
+by the rotation matrix $R(\omega_i k) \in \mathrm{SO}(2)$:
+\[
+    \begin{pmatrix}
+        \mathrm{PE}_{\mathrm{pos}+k,\,2i} \\
+        \mathrm{PE}_{\mathrm{pos}+k,\,2i+1}
+    \end{pmatrix}
+    \;=\;
+    \begin{pmatrix}
+        \cos(\omega_i k) & -\sin(\omega_i k) \\
+        \sin(\omega_i k) &  \cos(\omega_i k)
+    \end{pmatrix}
+    \begin{pmatrix}
+        \mathrm{PE}_{\mathrm{pos},\,2i} \\
+        \mathrm{PE}_{\mathrm{pos},\,2i+1}
+    \end{pmatrix}.
+\]
+\end{proposition}
+\begin{proof}
+This is the angle-addition formula: $\sin(\omega_i(\mathrm{pos}+k))
+= \sin(\omega_i \,\mathrm{pos})\cos(\omega_i k)
++ \cos(\omega_i \,\mathrm{pos})\sin(\omega_i k)$, and similarly for cosine.
+\end{proof}
+
+\begin{remark}
+Proposition~\ref{prop:pe-rotation} means that \emph{relative position $k$
+can be computed linearly from absolute positions}, enabling the model to
+generalize to relative offsets.  The $d_{\mathrm{model}}/2$ different
+frequencies $\omega_i$ form a geometric progression $1, 10000^{-2/d},
+10000^{-4/d}, \ldots$, spanning wavelengths from $2\pi$ (high frequency,
+adjacent positions) to $10000 \cdot 2\pi$ (low frequency, distant positions).
+This is a discrete Fourier-like decomposition of position.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Multi-Head Attention}
+\label{sec:mha}
+
+Rather than a single attention map, Vaswani et al.\ use $h$ independent
+\emph{heads}, each operating after right-multiplying the input by a different
+learned weight matrix (in the informal language of the paper: ``in a
+lower-dimensional projected subspace''; see Remark~\ref{rem:projection}).
+
+\begin{definition}[Multi-head attention]
+\label{def:mha}
+Fix $h \in \N$ (number of heads), $d_k, d_v \in \N$ (head dimensions).
+For each head $\ell = 1, \ldots, h$, fix weight matrices
+\[
+    W^Q_\ell \in \Mat{d_{\mathrm{model}}}{d_k}, \quad
+    W^K_\ell \in \Mat{d_{\mathrm{model}}}{d_k}, \quad
+    W^V_\ell \in \Mat{d_{\mathrm{model}}}{d_v},
+\]
+and an output weight matrix $W^O \in \Mat{h d_v}{d_{\mathrm{model}}}$.
+(The paper calls these ``projection matrices''; as noted in
+Remark~\ref{rem:projection}, each defines a right-multiplication linear map,
+not an idempotent projection.)
+
+For input sequences $Q, K, V \in \Mat{n}{d_{\mathrm{model}}}$, define
+\begin{align*}
+    \mathrm{head}_\ell &\;:=\; \Att(Q W^Q_\ell,\; K W^K_\ell,\; V W^V_\ell)
+    \;\in\; \Mat{n}{d_v}, \\
+    \MHA(Q,K,V) &\;:=\;
+    \bigl[ \mathrm{head}_1 \;\|\; \cdots \;\|\; \mathrm{head}_h \bigr] W^O
+    \;\in\; \Mat{n}{d_{\mathrm{model}}},
+\end{align*}
+where $[\,\cdot\;\|\;\cdots\;\|\;\cdot\,]$ denotes column-wise concatenation
+(so the argument of $W^O$ lies in $\Mat{n}{h d_v}$).
+\end{definition}
+
+\begin{remark}[Dimension bookkeeping]
+The paper uses $d_{\mathrm{model}} = 512$, $h = 8$, $d_k = d_v = 64$.
+Then $h \cdot d_v = 8 \cdot 64 = 512 = d_{\mathrm{model}}$, so the concatenated
+output has the same dimension as the input; $W^O \in \Mat{512}{512}$.
+
+The total FLOPs of multi-head attention with these dimensions equals that of
+a single head with $d_k = d_v = d_{\mathrm{model}}$, because
+$h \cdot (n \cdot d_k) = n \cdot d_{\mathrm{model}}$ for the Q projection.
+\end{remark}
+
+\begin{remark}[Subspace decomposition]
+Multi-head attention allows the model to attend to information from $h$
+different representation subspaces simultaneously.  Concretely, the $\ell$-th
+head applies attention in the image of $W^Q_\ell$ (as a subspace of $\R^{d_k}$),
+and the final $W^O$ aggregates across heads.  With a single head, averaging
+over all $j$ produces a single convex combination, which cannot simultaneously
+encode several independent relations between positions.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Pointwise Feed-Forward Sublayers and Layer Normalisation}
+\label{sec:ffn}
+
+\begin{definition}[Position-wise fully connected feed-forward network]
+\label{def:ffn}
+Fix parameters $W_1 \in \Mat{d_{\mathrm{model}}}{d_{\mathrm{ff}}}$,
+$b_1 \in \R^{d_{\mathrm{ff}}}$,
+$W_2 \in \Mat{d_{\mathrm{ff}}}{d_{\mathrm{model}}}$,
+$b_2 \in \R^{d_{\mathrm{model}}}$.
+
+The \emph{per-position} map $f : \R^{d_{\mathrm{model}}} \to \R^{d_{\mathrm{model}}}$ is
+\[
+    f(x) \;:=\; \max(0,\; xW_1 + b_1)\,W_2 + b_2,
+\]
+where $\max(0,\,\cdot\,)$ (ReLU) is applied componentwise to
+$xW_1 + b_1 \in \R^{d_{\mathrm{ff}}}$.
+
+Applied to a full sequence $X \in \Mat{n}{d_{\mathrm{model}}}$:
+\[
+    \FFN(X)_i \;:=\; f(X_i), \qquad i = 1, \ldots, n,
+\]
+i.e.\ the same $f$ is applied to each row $X_i \in \R^{d_{\mathrm{model}}}$
+independently.
+\end{definition}
+
+\begin{remark}[``Position-wise'' and ``fully connected'']
+``\textbf{Position-wise}'' (\S3.3) \precise{the same map $f : \R^{d_{\mathrm{model}}}
+\to \R^{d_{\mathrm{model}}}$ applied to each row $X_i$ independently:
+$\FFN(X) = [f(X_1);\, \ldots\,; f(X_n)]$; row $i$ uses only $X_i$, row $j \neq i$
+plays no role}.  Contrast with MHA, where each output row depends on all input rows.
+
+``\textbf{Fully connected}'' (\S3.3) \precise{$W_1 \in \Mat{d_{\mathrm{model}}}{d_{\mathrm{ff}}}$
+is a general dense matrix: every input dimension contributes to every hidden
+dimension, no sparsity pattern imposed}.  As opposed to a convolution, where each
+output depends only on a local window of $k$ input positions.
+
+$\FFN$ is piecewise-affine: smooth on each stratum of the partition of
+$\R^{d_{\mathrm{model}}}$ defined by the sign pattern of $xW_1 + b_1$, but not
+globally smooth at the activation boundary.  The paper uses
+$d_{\mathrm{ff}} = 2048 = 4\,d_{\mathrm{model}}$.
+\end{remark}
+
+\begin{definition}[Layer normalisation]
+\label{def:layernorm}
+For $x \in \R^d$, let $\mu(x) = \frac{1}{d}\sum_i x_i$ and
+$\sigma(x) = \sqrt{\frac{1}{d}\sum_i (x_i - \mu(x))^2 + \epsilon}$
+(with $\epsilon > 0$ for numerical stability).  With learned parameters
+$\gamma, \beta \in \R^d$:
+\[
+    \LayerNorm(x)_i \;:=\; \frac{x_i - \mu(x)}{\sigma(x)}\,\gamma_i + \beta_i.
+\]
+\end{definition}
+
+\begin{remark}[Geometry of layer norm]
+The map $x \mapsto (x - \mu(x)\mathbf{1})/\sigma(x)$ first subtracts the mean
+\precise{orthogonal projection onto $\{z : \sum_i z_i = 0\}$, which IS
+idempotent ($P^2 = P$) --- this is projection in the algebraic sense},
+then normalises to unit length \precise{divides by $\|x - \mu(x)\mathbf{1}\|$,
+landing on the sphere $S^{d-1}$}, then rescales and shifts by the learned
+$(\gamma, \beta)$.  The full map is smooth on
+$\R^d \setminus \{\mu(x)\mathbf{1}\}$.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Encoder Stack}
+\label{sec:encoder}
+
+Each encoder layer applies two sublayers, each wrapped in a residual connection
+and layer normalisation.
+
+\begin{definition}[Encoder layer]
+Let $x \in \Mat{n}{d_{\mathrm{model}}}$ be the input sequence.  An
+\emph{encoder layer} produces
+\begin{align*}
+    x' &\;:=\; \LayerNorm\bigl(x + \MHA(x, x, x)\bigr), \\
+    x'' &\;:=\; \LayerNorm\bigl(x' + \FFN(x')\bigr),
+\end{align*}
+where $\MHA(x,x,x)$ is self-attention (queries, keys, and values all from the
+same sequence $x$), and $\FFN$ is applied row-wise.
+\end{definition}
+
+\begin{remark}[Why exactly two sub-layers]
+\label{rem:two-sublayers}
+The two sub-layers serve structurally distinct roles with respect to the sequence
+matrix $X \in \Mat{n}{d_{\mathrm{model}}}$:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lp{4.5cm}p{5cm}}
+\hline
+Sub-layer & What it does to rows & Information flow \\
+\hline
+MHA & mixes rows (row $i$ attends to all rows $j$) & across positions (the sequence dimension) \\
+FFN & transforms each row independently via the same $f$ & within each position (the feature dimension) \\
+\hline
+\end{tabular}
+\end{center}
+MHA is the only place where row $i$ can ``see'' row $j \neq i$.  The FFN then
+gives each position its own nonlinear transformation without exchanging
+information.  Together the two sub-layers form one complete processing unit:
+first relate tokens to each other, then transform each token.
+
+There is no mathematical necessity for exactly two; the choice $N_{\text{sub}} = 2$
+is the design decision of Vaswani et al.\ that proved empirically effective.
+\end{remark}
+
+\begin{remark}[Residual connections]
+The map $x \mapsto x + F(x)$ is a perturbation of the identity.  For the
+Jacobian: $J(x + F(x)) = I + JF(x)$, which is invertible when $\|JF(x)\| < 1$
+(by Neumann series).  Residual connections ease gradient flow during training
+by ensuring the Jacobian of the full stack has identity as its leading term.
+\end{remark}
+
+An encoder of depth $L = 6$ is the composition of $L$ such layers:
+\[
+    \mathrm{Encoder} \;:=\; \mathrm{Layer}_6 \circ \cdots \circ \mathrm{Layer}_1
+    \;:\; \Mat{n}{d_{\mathrm{model}}} \;\to\; \Mat{n}{d_{\mathrm{model}}}.
+\]
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Computational Complexity of Self-Attention}
+\label{sec:complexity}
+
+\begin{proposition}[Complexity table]
+For a sequence of length $n$ and dimension $d$:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc}
+\hline
+Layer type & FLOPs & Sequential ops \\
+\hline
+Self-attention & $O(n^2 d)$ & $O(1)$ \\
+Recurrent & $O(n d^2)$ & $O(n)$ \\
+Convolution (kernel $k$) & $O(k n d^2)$ & $O(1)$ \\
+\hline
+\end{tabular}
+\end{center}
+\end{proposition}
+
+\begin{remark}
+Self-attention is $O(n^2 d)$ because the score matrix $S = QK^\top/\sqrt{d_k}
+\in \Mat{n}{n}$ requires $O(n^2 d_k)$ operations to compute.
+When $n \ll d$ (short sequences, large model dimension), self-attention is
+cheaper than recurrence.  When $n \gg d$ (long documents), the $n^2$ factor
+dominates.  FlashAttention (Papers III--IV) addresses this by reducing the
+\emph{memory} traffic of attention from $O(n^2)$ to $O(n)$, without changing
+the FLOPs count.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Summary of Paper I}
+\label{sec:summary-1}
+
+The mathematical content of ``Attention Is All You Need'' can be summarised as:
+
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Attention} (Definition~\ref{def:attention}) is a smooth map
+    $\Att : \Mat{n}{d_k}^2 \times \Mat{n}{d_v} \to \Mat{n}{d_v}$
+    that applies row-wise softmax to the rescaled Gram matrix $QK^\top/\sqrt{d_k}$,
+    then right-multiplies by $V$.
+
+    \item \textbf{Softmax} (Definition~\ref{def:softmax}) is the gradient of
+    the log-partition function $\logsumexp$, and descends to a diffeomorphism
+    $\R^n/\R\mathbf{1} \xrightarrow{\sim} \operatorname{int}(\simplex{n-1})$
+    (Proposition~\ref{prop:softmax-diffeo}).
+
+    \item \textbf{Scaling by $1/\sqrt{d_k}$} normalises the variance of dot
+    products to $1$ (Proposition~\ref{prop:variance}), preventing softmax
+    saturation.
+
+    \item \textbf{Attention is $S_n$-equivariant}
+    (Proposition~\ref{prop:equivariance}): it treats the sequence as an
+    unordered set.  Positional encoding (Definition~\ref{def:pe}) breaks this
+    symmetry, with the rotation property
+    (Proposition~\ref{prop:pe-rotation}) enabling relative-position learning.
+
+    \item \textbf{Multi-head attention} (Definition~\ref{def:mha}) decomposes
+    the attention map into $h$ parallel maps in lower-dimensional projected
+    subspaces, concatenated and projected back.
+
+    \item The \textbf{encoder stack} (Section~\ref{sec:encoder}) is a depth-$L$
+    composition of self-attention + FFN sublayers, each wrapped in residual
+    connections and layer normalisation.
+\end{enumerate}
+
+\bigskip
+\noindent\textbf{What is missing from the paper's analysis:}
+The paper does not analyse the softmax geometry, the permutation equivariance,
+or the information-geometric structure of attention.  These are implicit in the
+construction but not made explicit.  Papers II--IV will build directly on
+Points~(1)--(2): they exploit
+Proposition~\ref{prop:softmax-shift} and the merge formula for
+$\logsumexp$ to compute attention without materialising $S$ or $P$.
+
+% ══════════════════════════════════════════════════════════════════════════════
+% Papers II, III, IV will be added in subsequent sessions.
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{thebibliography}{9}
+
+\bibitem{Vaswani2017}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+Aidan N.\ Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock In \emph{Advances in Neural Information Processing Systems 30}, 2017.
+\newblock \href{https://arxiv.org/abs/1706.03762}{arXiv:1706.03762}.
+
+\bibitem{Milakov2018}
+Maxim Milakov and Natalia Gimelshein.
+\newblock Online normalizer calculation for softmax.
+\newblock 2018.
+\newblock \href{https://arxiv.org/abs/1805.02867}{arXiv:1805.02867}.
+
+\bibitem{Dao2022}
+Tri Dao, Daniel Y.\ Fu, Stefano Ermon, Atri Rudra, and Christopher R\'{e}.
+\newblock {FlashAttention}: Fast and memory-efficient exact attention with
+  {IO}-awareness.
+\newblock In \emph{Advances in Neural Information Processing Systems 35},
+  2022.
+\newblock \href{https://arxiv.org/abs/2205.14135}{arXiv:2205.14135}.
+
+\bibitem{Dao2023}
+Tri Dao.
+\newblock {FlashAttention-2}: Faster attention with better parallelism and
+  work partitioning.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+\newblock \href{https://arxiv.org/abs/2307.08691}{arXiv:2307.08691}.
+
+\end{thebibliography}
+
+\end{document}
