@@ -1091,6 +1091,23 @@ encode several independent relations between positions.
 \section{Pointwise Feed-Forward Sublayers and Layer Normalisation}
 \label{sec:ffn}
 
+\begin{definition}[Rectified Linear Unit (ReLU)]
+\label{def:relu}
+The \emph{rectified linear unit} is the map $\mathrm{ReLU} : \R \to \R$ defined by
+\[
+    \mathrm{ReLU}(t) \;:=\; \max(0,\, t)
+    \;=\; \begin{cases} t & t > 0, \\ 0 & t \leq 0. \end{cases}
+\]
+Applied componentwise to a vector $z \in \R^m$:
+\[
+    \mathrm{ReLU}(z)_j \;:=\; \max(0,\, z_j), \qquad j = 1, \ldots, m.
+\]
+$\mathrm{ReLU}$ is continuous and piecewise linear; it is differentiable on
+$\R \setminus \{0\}$ with derivative
+$\mathrm{ReLU}'(t) = \mathbf{1}_{t > 0}$ (the indicator function of $t>0$).
+It is \emph{not} differentiable at $t = 0$.
+\end{definition}
+
 \begin{definition}[Position-wise fully connected feed-forward network]
 \label{def:ffn}
 Fix parameters $W_1 \in \Mat{d_{\mathrm{model}}}{d_{\mathrm{ff}}}$,
@@ -1100,9 +1117,9 @@ $b_2 \in \R^{d_{\mathrm{model}}}$.
 
 The \emph{per-position} map $f : \R^{d_{\mathrm{model}}} \to \R^{d_{\mathrm{model}}}$ is
 \[
-    f(x) \;:=\; \max(0,\; xW_1 + b_1)\,W_2 + b_2,
+    f(x) \;:=\; \mathrm{ReLU}(xW_1 + b_1)\,W_2 + b_2,
 \]
-where $\max(0,\,\cdot\,)$ (ReLU) is applied componentwise to
+where $\mathrm{ReLU}$ (Definition~\ref{def:relu}) is applied componentwise to
 $xW_1 + b_1 \in \R^{d_{\mathrm{ff}}}$.
 
 Applied to a full sequence $X \in \Mat{n}{d_{\mathrm{model}}}$:
@@ -1124,9 +1141,11 @@ is a general dense matrix: every input dimension contributes to every hidden
 dimension, no sparsity pattern imposed}.  As opposed to a convolution, where each
 output depends only on a local window of $k$ input positions.
 
-$\FFN$ is piecewise-affine: smooth on each stratum of the partition of
-$\R^{d_{\mathrm{model}}}$ defined by the sign pattern of $xW_1 + b_1$, but not
-globally smooth at the activation boundary.  The paper uses
+$\FFN$ is piecewise-affine: on each stratum of the partition of
+$\R^{d_{\mathrm{model}}}$ defined by the sign pattern of $xW_1+b_1$ (i.e.\ each
+region where $\mathrm{ReLU}$ is linear), $f$ is an affine map; it is not smooth
+at the activation boundary $\{x : (xW_1+b_1)_j = 0 \text{ for some } j\}$
+(since $\mathrm{ReLU}$ is not differentiable at $0$).  The paper uses
 $d_{\mathrm{ff}} = 2048 = 4\,d_{\mathrm{model}}$.
 \end{remark}
 
