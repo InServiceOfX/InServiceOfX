@@ -709,26 +709,102 @@ of values, weighted by the probability that key $k_j$ is the best match for
 query $q_i$.
 \end{remark}
 
-\begin{proposition}[Smoothness]
-$\Att$ is a smooth map.  The partial derivative with respect to $Q$ is
-\[
-    \frac{\partial \Att}{\partial Q}\bigg|_{(Q,K,V)}
-    \;=\; \frac{1}{\sqrt{d_k}}
-    \bigl(\diag(P\mathbf{1}) - P^\top P\bigr) V K^\top
-\]
-(up to appropriate reshaping), where $\diag(P\mathbf{1}) - P^\top P$ is the
-Jacobian of the row-wise softmax applied to $QK^\top/\sqrt{d_k}$.
-\end{proposition}
-
 \begin{remark}[Jacobian of softmax]
+\label{rem:jsoftmax}
 For $\sigma = \softmax(x) \in \R^n$, the Jacobian is
 \[
     J\softmax(x) \;=\; \diag(\sigma) - \sigma\sigma^\top \;\in\; \Mat{n}{n}.
 \]
-This is the covariance matrix of the distribution $\sigma$ restricted to
-$T_\sigma \simplex{n-1}$, i.e.\ the Fisher information matrix of the
-exponential family with sufficient statistic $x \mapsto x$.
+
+\textit{Derivation.}  Write $Z := \sum_{k=1}^n e^{x_k}$ and $\sigma_j = e^{x_j}/Z$.
+Differentiate $\sigma_j$ with respect to $x_l$ by the quotient rule:
+\[
+    \frac{\partial \sigma_j}{\partial x_l}
+    \;=\; \frac{\delta_{jl}\,e^{x_j}\cdot Z \;-\; e^{x_j}\cdot e^{x_l}}{Z^2}
+    \;=\; \frac{e^{x_j}}{Z}\,\delta_{jl}
+          \;-\; \frac{e^{x_j}}{Z}\cdot\frac{e^{x_l}}{Z}
+    \;=\; \sigma_j\,\delta_{jl} - \sigma_j\,\sigma_l
+    \;=\; \sigma_j(\delta_{jl} - \sigma_l).
+\]
+Entry $(j,l)$ of the Jacobian is therefore
+\[
+    \bigl(J\softmax(x)\bigr)_{jl}
+    \;=\; \begin{cases}
+        \sigma_j(1-\sigma_j) & j=l, \\
+        -\sigma_j\,\sigma_l  & j\neq l,
+    \end{cases}
+\]
+which in matrix form is $(\diag(\sigma))_{jl} - (\sigma\sigma^\top)_{jl}$, giving
+$J\softmax(x) = \diag(\sigma) - \sigma\sigma^\top$.
+
+This matrix is the Fisher information metric on
+$\operatorname{int}(\simplex{n-1})$ and equals the covariance matrix
+$\mathrm{Cov}_\sigma[\mathrm{Id}]$ of the distribution $\sigma$
+(restricted to $T_\sigma\simplex{n-1}$).
 \end{remark}
+
+\begin{proposition}[Smoothness and Jacobian w.r.t.\ $Q$]
+\label{prop:att-smoothness}
+$\Att$ is a smooth map.  The Jacobian with respect to $Q$ is block-diagonal:
+output row $O_{i,\cdot}$ depends only on query row $Q_{i,\cdot}$ (not on any
+$Q_{l,\cdot}$ with $l\neq i$), with $(d_v\times d_k)$-block
+\[
+    \frac{\partial O_{i,\cdot}}{\partial Q_{i,\cdot}}
+    \;=\; \frac{1}{\sqrt{d_k}}\,
+    V^\top\bigl(\diag(p_i) - p_i p_i^\top\bigr) K
+    \;\in\; \Mat{d_v}{d_k},
+\]
+where $p_i \in \R^n$ is row $i$ of $P$ viewed as a column vector.
+\end{proposition}
+\begin{proof}
+\textit{Smoothness.}  $\Att$ is the composition of:
+$(Q,K)\mapsto QK^\top/\sqrt{d_k}$ (bilinear, smooth);
+$S\mapsto\softmax_{\mathrm{rows}}(S)$ (smooth, each row being $\nabla\logsumexp$,
+which is $C^\infty$);
+$P\mapsto PV$ (linear, smooth).
+
+\textit{Block-diagonal structure.}  Set $s_i := Q_{i,\cdot}K^\top/\sqrt{d_k}\in\R^n$
+(row $i$ of $S$) and $p_i := \softmax(s_i)$ (row $i$ of $P$).  Because $s_i$
+depends on $Q_{i,\cdot}$ only, and $O_{i,\cdot} = V^\top p_i$ depends on $P$
+only through $p_i$, we have $\partial O_{i,\cdot}/\partial Q_{l,\cdot} = 0$ for
+$l\neq i$.
+
+\textit{Diagonal block, entry by entry.}  Fix row $i$; write $q := Q_{i,\cdot}\in\R^{d_k}$.
+Since $s_{ij} = q\cdot k_j/\sqrt{d_k}$ where $k_j$ is row $j$ of $K$:
+\[
+    \frac{\partial s_{ij}}{\partial q_b} \;=\; \frac{K_{jb}}{\sqrt{d_k}}.
+\]
+Apply the chain rule through $\softmax$ (Remark~\ref{rem:jsoftmax},
+$(J\softmax)_{jc} = p_{ij}(\delta_{jc}-p_{ic})$):
+\[
+    \frac{\partial p_{ij}}{\partial q_b}
+    \;=\; \sum_{c=1}^n \frac{\partial p_{ij}}{\partial s_{ic}}
+          \cdot\frac{\partial s_{ic}}{\partial q_b}
+    \;=\; \sum_c p_{ij}(\delta_{jc} - p_{ic})\,\frac{K_{cb}}{\sqrt{d_k}}
+    \;=\; \frac{p_{ij}}{\sqrt{d_k}}\bigl(K_{jb} - (PK)_{ib}\bigr),
+\]
+where $(PK)_{ib} = \sum_c p_{ic}K_{cb}$ is entry $(i,b)$ of $PK$.
+Now multiply by $V_{ja}$ and sum over $j$:
+\begin{align*}
+    \frac{\partial O_{ia}}{\partial q_b}
+    &\;=\; \sum_{j=1}^n \frac{\partial p_{ij}}{\partial q_b}\,V_{ja} \\
+    &\;=\; \frac{1}{\sqrt{d_k}}\sum_j p_{ij}\,V_{ja}
+            \bigl(K_{jb} - (PK)_{ib}\bigr) \\
+    &\;=\; \frac{1}{\sqrt{d_k}}\!\left[
+            \underbrace{\sum_j p_{ij}\,V_{ja}\,K_{jb}}_{(V^\top\diag(p_i)K)_{ab}}
+            \;-\;
+            \underbrace{\Bigl(\sum_j p_{ij}\,V_{ja}\Bigr)}_{O_{ia}=(V^\top p_i)_a}
+            \underbrace{(PK)_{ib}}_{(p_i^\top K)_b}
+          \right].
+\end{align*}
+The first bracket is $(V^\top\diag(p_i)K)_{ab}$; the second is
+$(V^\top p_i\,p_i^\top K)_{ab}$.  Therefore
+\[
+    \frac{\partial O_{ia}}{\partial q_b}
+    \;=\; \frac{1}{\sqrt{d_k}}\bigl[V^\top(\diag(p_i)-p_i p_i^\top)K\bigr]_{ab}.
+    \qedhere
+\]
+\end{proof}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{The Scaling Factor $1/\protect\sqrt{d_k}$}
@@ -761,8 +837,53 @@ vertices of $\simplex{n-1}$ (near-zero gradient regime).
 \section{Permutation Equivariance of Attention}
 \label{sec:perm-equivariance}
 
-Let $S_n$ denote the symmetric group on $n$ letters.  Each $\pi \in S_n$ acts
-on $\Mat{n}{d}$ by left-permuting rows: $(\pi \cdot A)_i = A_{\pi^{-1}(i)}$.
+\begin{remark}[Why we study permutation equivariance]
+Scaled dot-product attention computes scores $S_{ij} = q_i \cdot k_j/\sqrt{d_k}$
+symmetrically in the index $j$: there is no formula that says ``position 1 is
+special'' or ``position 3 comes after position 2.''  Formalising this symmetry
+tells us exactly what information attention \emph{cannot} represent, and therefore
+what must be added externally (positional encodings, \S\ref{sec:pe}) to break it.
+Permutation equivariance is also a useful sanity check on any new attention
+variant: if a proposed change breaks equivariance, that change has introduced an
+implicit positional bias.
+\end{remark}
+
+\begin{definition}[Symmetric group $S_n$]
+\label{def:sym-group}
+Let $n \in \N$.  The \emph{symmetric group} $S_n$ is the group of all bijections
+from the set $\{1,\ldots,n\}$ to itself, with group operation given by
+composition of functions:
+\[
+    (\pi \circ \tau)(i) \;:=\; \pi(\tau(i)),
+    \qquad \pi,\tau \in S_n,\quad i \in \{1,\ldots,n\}.
+\]
+Identity: $\mathrm{id}(i) = i$.  Inverse: the function inverse $\pi^{-1}$.
+Order: $|S_n| = n!$ (there are $n!$ bijections of an $n$-element set).
+
+\medskip
+\textit{An element $\pi \in S_n$ is a bijection, not a letter.}
+The set $\{1,\ldots,n\}$ is the \emph{domain and codomain} of $\pi$ — the
+$n$ objects being permuted.  An element $\pi \in S_n$ is a function
+$\pi: \{1,\ldots,n\}\to\{1,\ldots,n\}$; it is \emph{not} one of the symbols
+$1,\ldots,n$ themselves.  For $n=3$, the cyclic element
+$\pi = (1\mapsto 2, 2\mapsto 3, 3\mapsto 1)$ is one of the $6 = 3!$ bijections
+in $S_3$; the number $1 \in \{1,2,3\}$ is an element of the set on which $\pi$
+acts.
+
+\medskip
+\textit{Generalisation to any $n$-element set.}
+The choice of $\{1,\ldots,n\}$ is a labeling convention.  For any set $X$ with
+$|X| = n$ — e.g.\ $X = \{a,b,c\}$, or $X$ = the tokens of a sentence — the
+group $\mathrm{Sym}(X) := \{\text{bijections } X\to X\}$ is isomorphic to $S_n$:
+any bijection $\phi: X \xrightarrow{\sim} \{1,\ldots,n\}$ gives an isomorphism
+$\mathrm{Sym}(X) \to S_n$, $f \mapsto \phi\circ f\circ\phi^{-1}$.  So $S_n$
+describes the symmetries of \emph{any} $n$-element set.
+\end{definition}
+
+Each $\pi \in S_n$ acts on $\Mat{n}{d}$ by left-permuting rows:
+$(\pi \cdot A)_i := A_{\pi^{-1}(i)}$.  (The inverse appears so that the map
+$(\pi, A)\mapsto \pi\cdot A$ is a left group action:
+$\pi\cdot(\tau\cdot A) = (\pi\circ\tau)\cdot A$.)
 
 \begin{proposition}[Equivariance]
 \label{prop:equivariance}
