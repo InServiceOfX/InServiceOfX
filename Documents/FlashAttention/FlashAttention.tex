@@ -419,10 +419,34 @@ The parameter space of the composed layer is the product $\Theta_1 \times
 \Theta_2$.
 \end{definition}
 
+\begin{definition}[Para construction]
+\label{def:para}
+Let $(\mathcal{C}, \otimes, I)$ be a symmetric monoidal category.
+The \emph{Para construction} $\mathbf{Para}(\mathcal{C})$ is the category whose
+data are:
+\begin{itemize}
+    \item \textbf{Objects}: the same objects as $\mathcal{C}$.
+    \item \textbf{Morphisms} $X \to Y$: pairs $(\Theta, f)$ where
+    $\Theta \in \mathcal{C}$ is an object (the \emph{parameter object}) and
+    $f : \Theta \otimes X \to Y$ is a morphism in $\mathcal{C}$.
+    \item \textbf{Composition}: given
+    $(\Theta_1,\, f : \Theta_1 \otimes X \to Y)$ and
+    $(\Theta_2,\, g : \Theta_2 \otimes Y \to Z)$, their composite is
+    \[
+        \bigl(\Theta_1 \otimes \Theta_2,\;
+        h : (\Theta_1 \otimes \Theta_2) \otimes X \to Z\bigr),
+        \qquad h_{(\theta_1,\theta_2)}(x) \;:=\; g_{\theta_2}(f_{\theta_1}(x)).
+    \]
+    \item \textbf{Identity} on $X$: the pair $(I,\, \lambda_X)$ where
+    $\lambda_X : I \otimes X \xrightarrow{\;\sim\;} X$ is the left-unit
+    isomorphism of $\mathcal{C}$.
+\end{itemize}
+\end{definition}
+
 \begin{remark}[Categorical structure: Para(Smooth)]
 Definition~\ref{def:layer-composition} is exactly the composition in the
-\emph{Para} construction applied to the category $\mathbf{Smooth}$ of smooth
-manifolds.  The resulting category $\mathbf{Para}(\mathbf{Smooth})$ has:
+\emph{Para} construction (Definition~\ref{def:para}) applied to the category
+$\mathbf{Smooth}$ of smooth manifolds.  The resulting category $\mathbf{Para}(\mathbf{Smooth})$ has:
 \begin{itemize}
     \item \textbf{Objects}: smooth manifolds (e.g.\ $\mathbb{R}^{n \times d}$
     for various shapes).
