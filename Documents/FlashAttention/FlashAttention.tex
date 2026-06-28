@@ -52,6 +52,8 @@
 \newcommand{\logsumexp}{\operatorname{lse}}
 \newcommand{\Att}{\operatorname{Att}}
 \newcommand{\MHA}{\operatorname{MHA}}
+\newcommand{\MaskedMHA}{\operatorname{MaskedMHA}}
+\newcommand{\CrossMHA}{\operatorname{CrossMHA}}
 \newcommand{\LayerNorm}{\operatorname{LayerNorm}}
 \newcommand{\FFN}{\operatorname{FFN}}
 \newcommand{\diag}{\operatorname{diag}}
@@ -1224,6 +1226,149 @@ An encoder of depth $L = 6$ is the composition of $L$ such layers:
     \mathrm{Encoder} \;:=\; \mathrm{Layer}_6 \circ \cdots \circ \mathrm{Layer}_1
     \;:\; \Mat{n}{d_{\mathrm{model}}} \;\to\; \Mat{n}{d_{\mathrm{model}}}.
 \]
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Decoder Stack}
+\label{sec:decoder}
+
+The decoder has a different job from the encoder: given the encoder's output
+(a summary of the source sequence), it must \emph{generate} a target sequence
+one token at a time.  To do this it needs two capabilities the encoder does not:
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Causal self-attention}: decoder position $i$ may only attend
+    to positions $j \leq i$, not future positions $j > i$ (otherwise the model
+    could "look ahead" and trivially copy the answer).
+    \item \textbf{Cross-attention}: each decoder position must be able to read
+    from the encoder output (the encoded source sequence).
+\end{enumerate}
+Accordingly, each decoder layer has \emph{three} sub-layers instead of two.
+
+\begin{definition}[Causal mask]
+\label{def:causal-mask}
+The \emph{causal mask} (also called an \emph{autoregressive mask}) of size
+$m \times m$ is the matrix $M \in (\R \cup \{-\infty\})^{m \times m}$ defined by
+\[
+    M_{ij} \;:=\;
+    \begin{cases}
+        0      & i \geq j \quad \text{(position $i$ may attend to position $j$)}, \\
+        -\infty & i < j  \quad \text{(position $i$ is blocked from position $j$)}.
+    \end{cases}
+\]
+Adding $M$ to the score matrix before softmax forces future positions to
+receive zero attention weight:
+\[
+    P_{ij} \;=\; \frac{\exp(S_{ij} + M_{ij})}{\sum_{j'} \exp(S_{ij'} + M_{ij'})}
+    \;=\; \begin{cases}
+        \dfrac{\exp(S_{ij})}{\sum_{j'=1}^{i}\exp(S_{ij'})} & j \leq i, \\[6pt]
+        0 & j > i,
+    \end{cases}
+\]
+since $\exp(-\infty) = 0$.  Row $i$ of $P$ is therefore a probability
+distribution supported on $\{1,\ldots,i\}$ only.
+\end{definition}
+
+\begin{remark}[Why $\pi^{-1}$, and why causal masking enables training]
+During training the full target sequence is fed to the decoder simultaneously
+(``teacher forcing''), so without masking each position could attend to all
+others — including future tokens.  The causal mask simulates the
+autoregressive inference condition: position $i$ predicts token $i+1$ using
+only tokens $1,\ldots,i$.  At inference time the mask is not needed because
+generation is genuinely sequential (token $i+1$ has not been produced yet
+when predicting it), but it must be present during training to prevent
+the model from ``cheating''.
+\end{remark}
+
+\begin{definition}[Masked multi-head self-attention]
+\label{def:masked-mha}
+Let $y \in \Mat{m}{d_{\mathrm{model}}}$ be the decoder's current sequence.
+\emph{Masked MHA} is identical to Definition~\ref{def:mha} except that the
+score matrix for each head $\ell$ is shifted by the causal mask before softmax:
+\[
+    S_\ell \;:=\; \frac{(yW^Q_\ell)(yW^K_\ell)^\top}{\sqrt{d_k}} + M
+    \;\in\; \Mat{m}{m},
+\]
+\[
+    \MaskedMHA(y) \;:=\;
+    \bigl[\softmax_{\mathrm{rows}}(S_1)yW^V_1 \;\|\;
+          \cdots \;\|\;
+          \softmax_{\mathrm{rows}}(S_h)yW^V_h\bigr] W^O
+    \;\in\; \Mat{m}{d_{\mathrm{model}}}.
+\]
+\end{definition}
+
+\begin{definition}[Cross-attention]
+\label{def:cross-attention}
+Let $y \in \Mat{m}{d_{\mathrm{model}}}$ be the decoder sequence and
+$e \in \Mat{n}{d_{\mathrm{model}}}$ be the encoder output (possibly with
+$m \neq n$).
+
+\emph{Cross-attention} (\S3.1, called ``encoder-decoder attention'' in the
+paper) \precise{$\MHA$ where queries come from the decoder sequence $y$ and
+keys and values come from the encoder output $e$}:
+\[
+    \CrossMHA(y, e) \;:=\; \MHA(y, e, e).
+\]
+Expanding: for each head $\ell$,
+\[
+    Q_\ell = yW^Q_\ell \in \Mat{m}{d_k}, \quad
+    K_\ell = eW^K_\ell \in \Mat{n}{d_k}, \quad
+    V_\ell = eW^V_\ell \in \Mat{n}{d_v}.
+\]
+The score matrix $S_\ell = Q_\ell K_\ell^\top/\sqrt{d_k} \in \Mat{m}{n}$
+has one row per decoder position and one column per encoder position.  No
+causal mask is applied: each decoder position may attend to all $n$ encoder
+positions freely.
+\end{definition}
+
+\begin{remark}[Cross-attention dimensions]
+Unlike self-attention, where the score matrix is always square ($n \times n$),
+the cross-attention score matrix $S_\ell \in \Mat{m}{n}$ is rectangular when
+$m \neq n$ (e.g.\ source and target sentences of different lengths).  The
+output still has shape $\Mat{m}{d_{\mathrm{model}}}$ (same as the decoder
+sequence): each of the $m$ decoder positions produces one output row.
+\end{remark}
+
+\begin{definition}[Decoder layer]
+\label{def:decoder-layer}
+Let $y \in \Mat{m}{d_{\mathrm{model}}}$ be the decoder input and
+$e \in \Mat{n}{d_{\mathrm{model}}}$ be the (fixed) encoder output.
+A \emph{decoder layer} applies three sub-layers in sequence:
+\begin{align*}
+    y^{(1)} &\;:=\; \LayerNorm\bigl(y  + \MaskedMHA(y)\bigr),         \\
+    y^{(2)} &\;:=\; \LayerNorm\bigl(y^{(1)} + \CrossMHA(y^{(1)},e)\bigr), \\
+    y^{(3)} &\;:=\; \LayerNorm\bigl(y^{(2)} + \FFN(y^{(2)})\bigr),
+\end{align*}
+each wrapped in a residual connection and layer normalisation.
+\end{definition}
+
+\begin{remark}[Why three sub-layers in the decoder vs.\ two in the encoder]
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{clp{5.5cm}}
+\hline
+Sub-layer & Operation & Purpose \\
+\hline
+1 & $\MaskedMHA(y)$      & decoder tokens relate to each other (causally: position $i$ sees only $j \leq i$) \\
+2 & $\CrossMHA(y^{(1)},e)$ & decoder tokens read from encoder output (source context) \\
+3 & $\FFN(y^{(2)})$       & per-position nonlinear transformation \\
+\hline
+\end{tabular}
+\end{center}
+The encoder has no sub-layer 2 because there is no external context to read:
+it processes only the source sequence.  The decoder needs sub-layer 2 to
+incorporate the encoded source representation.
+\end{remark}
+
+A decoder of depth $L = 6$ is:
+\[
+    \mathrm{Decoder}(y, e)
+    \;:=\; \mathrm{Layer}^{\mathrm{dec}}_6(\,\cdot\,,e)
+           \circ \cdots \circ
+           \mathrm{Layer}^{\mathrm{dec}}_1(y, e)
+    \;:\; \Mat{m}{d_{\mathrm{model}}} \;\to\; \Mat{m}{d_{\mathrm{model}}}.
+\]
+The encoder output $e$ is computed once and passed unchanged to every decoder
+layer.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Computational Complexity of Self-Attention}
