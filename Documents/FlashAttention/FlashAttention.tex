@@ -1019,6 +1019,55 @@ where $[\,\cdot\;\|\;\cdots\;\|\;\cdot\,]$ denotes column-wise concatenation
 (so the argument of $W^O$ lies in $\Mat{n}{h d_v}$).
 \end{definition}
 
+\begin{remark}[Column-wise concatenation: explicit element definition]
+\label{rem:concat}
+``Column-wise'' means the columns of each head are placed \emph{side by side}
+(the result is \emph{wider}, not taller).  Precisely: the concatenated matrix
+\[
+    C \;:=\; [\mathrm{head}_1 \;\|\; \cdots \;\|\; \mathrm{head}_h]
+    \;\in\; \Mat{n}{hd_v}
+\]
+has entries
+\[
+    C_{i,\,(\ell-1)d_v + j}
+    \;:=\; (\mathrm{head}_\ell)_{ij},
+    \qquad i=1,\ldots,n,\quad \ell=1,\ldots,h,\quad j=1,\ldots,d_v.
+\]
+Row $i$ of $C$ is the \emph{horizontal} join of row $i$ from each head in order.
+
+\medskip
+\textbf{Explicit example.}  Take $n=2$ (two sequence positions), $h=2$ heads,
+$d_v=2$ (value dimension per head).  Each head is a $2\times 2$ matrix:
+\[
+    \mathrm{head}_1 = \begin{pmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{pmatrix},
+    \qquad
+    \mathrm{head}_2 = \begin{pmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{pmatrix}.
+\]
+Column-wise concatenation places them side by side:
+\[
+    [\mathrm{head}_1 \;\|\; \mathrm{head}_2]
+    \;=\;
+    \left(\begin{array}{cc|cc}
+        a_{11} & a_{12} & b_{11} & b_{12} \\
+        a_{21} & a_{22} & b_{21} & b_{22}
+    \end{array}\right)
+    \;\in\; \Mat{2}{4}.
+\]
+The result has the same number of \emph{rows} ($n=2$) and twice as many
+\emph{columns} ($hd_v = 4$).
+
+\medskip
+\textbf{What it is not.}  ``Row-wise'' or vertical stacking would produce a
+taller matrix:
+\[
+    \begin{pmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \\
+                    b_{11} & b_{12} \\ b_{21} & b_{22} \end{pmatrix}
+    \;\in\; \Mat{4}{2}.
+\]
+That is \emph{not} what $[\,\cdot\;\|\;\cdot\,]$ means here: we keep $n$ rows
+and grow the column count from $d_v$ to $hd_v$.
+\end{remark}
+
 \begin{remark}[Dimension bookkeeping]
 The paper uses $d_{\mathrm{model}} = 512$, $h = 8$, $d_k = d_v = 64$.
 Then $h \cdot d_v = 8 \cdot 64 = 512 = d_{\mathrm{model}}$, so the concatenated
