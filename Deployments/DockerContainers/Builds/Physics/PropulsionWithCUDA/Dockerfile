@@ -111,3 +111,13 @@ RUN git clone https://github.com/CoolProp/CoolProp.git /ThirdParty/CoolProp && \
   make -j$(nproc)
 
 
+
+
+# --- Section: Dockerfile.jax ---
+
+# https://docs.jax.dev/en/latest/installation.html
+# Use cuda13-local to link against the CUDA already installed in the NVIDIA
+# container rather than having pip download a second copy of the CUDA libs.
+RUN pip install --upgrade "jax[cuda13-local]"
+
+
