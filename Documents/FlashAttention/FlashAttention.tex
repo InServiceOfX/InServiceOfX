@@ -12,8 +12,9 @@
 %
 % Author: Ernest Yeung  ernestyalumni@gmail.com
 
-\documentclass[12pt]{amsart}
+\documentclass[11pt]{amsart}
 
+\usepackage[margin=1in]{geometry}
 \usepackage{mathtools}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -22,6 +23,8 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{matrix,arrows,backgrounds}
 
 \hypersetup{colorlinks=true, citecolor={blue!60!black}, linkcolor={blue!60!black},
             urlcolor={blue!60!black}}
@@ -1499,6 +1502,191 @@ HBM memory $O(n^2) \to O(n)$ (space becomes linear in $n$, with $d$ fixed).}
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{The Transformer as Commutative Diagrams}
+\label{sec:transformer-diagram}
+
+\paragraph{Notation.}
+Throughout this section, fix $d := d_{\mathrm{model}}$.
+\begin{description}
+  \item[$x \in \Mat{n}{d}$] is the \emph{full sequence matrix}: an $n\times d$
+  real matrix whose \emph{rows} are indexed by position and whose \emph{columns}
+  are indexed by embedding coordinate.  Row~$i$ of~$x$ is the embedding of token
+  (position)~$i$.
+  \item[$x_{i,\cdot} \in \R^{d}$] is the \emph{$i$-th row} of $x$; it is a
+  \emph{row vector} of length $d$, i.e.\ an element of $\R^{1\times d}$ (or
+  equivalently $\R^d$ when we suppress the row/column distinction).  It encodes a
+  single token's state.
+  \item[{$[\cdot]_{i,\cdot} : \Mat{n}{d} \to \R^{d}$}] denotes the row-extraction
+  map $x \mapsto x_{i,\cdot}$.
+\end{description}
+
+\paragraph{Diagram structure.}
+Each diagram below has \emph{two horizontal chains} connected by \emph{vertical
+arrows}:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Sequence level (top chain, $\to$)}: the full $n\times d$ matrix
+  at each stage, with its membership $\in\Mat{n}{d}$ written inline.
+  \item \textbf{Token level (bottom chain, $\mapsto$)}: the $i$-th row at each
+  stage, with its membership $\in\R^{d}$ written inline.
+  \item \textbf{Vertical arrows} labeled $[\cdot]_{i,\cdot}$: the row-extraction
+  maps connecting the two chains.
+\end{enumerate}
+
+\noindent Each square in the diagram \emph{genuinely commutes}:
+``apply the sequence-level map, then extract row $i$'' gives the same result as
+``extract row $i$, then apply the token-level map'':
+\[
+    [\cdot]_{i,\cdot} \circ A \;=\; [A(\,\cdot\,)]_{i,\cdot}.
+\]
+
+\paragraph{Global vs.\ local at the token level.}
+The token-level arrow labels are chosen to make the dependence explicit:
+\begin{itemize}
+  \item A label of the form $[A(x)]_{i,\cdot}$ --- with the \emph{full matrix}
+  $x$ appearing inside $A(\,\cdot\,)$ --- signals a \textbf{global} operation:
+  the image of row~$i$ depends on ALL rows of the input.  The map is NOT a
+  self-contained function $\R^d\to\R^d$; it is row~$i$ of a function
+  $\Mat{n}{d}\to\Mat{n}{d}$.  (MHA, MaskedMHA, CrossMHA.)
+  \item A label of the form $A(x_{i,\cdot})$ --- with \emph{only the
+  row vector} $x_{i,\cdot}$ appearing --- signals a \textbf{local}
+  (position-wise) operation: it IS a self-contained function
+  $\R^d\to\R^d$.  (FFN, LayerNorm.)
+\end{itemize}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\hline
+Operation & Token-level arrow label & Kind \\
+\hline
+MHA        & $[A_1(x)]_{i,\cdot}$  & global (all $j$) \\
+MaskedMHA  & $[B_1(y)]_{i,\cdot}$  & global ($j\leq i$ only) \\
+CrossMHA   & $[B_2(y')]_{i,\cdot}$ & global (all encoder positions $e_{k,\cdot}$) \\
+FFN        & $A_2(x'_{i,\cdot})$   & local (only row $i$) \\
+\hline
+\end{tabular}
+\end{center}
+
+% ── Encoder layer ────────────────────────────────────────────────────────────
+\subsection*{Encoder layer}
+
+Define the two sub-layer maps:
+\begin{align*}
+    A_1 &\;:=\; \LayerNorm\!\bigl(\,\cdot\, + \MHA(\,\cdot\,,\cdot\,,\cdot\,)\bigr)
+        : \Mat{n}{d} \to \Mat{n}{d}, \\
+    A_2 &\;:=\; \LayerNorm\!\bigl(\,\cdot\, + \FFN(\,\cdot\,)\bigr)
+        : \Mat{n}{d} \to \Mat{n}{d}.
+\end{align*}
+One encoder layer is $\mathrm{Layer}^{\mathrm{enc}} = A_2 \circ A_1$.
+
+\begin{equation}\label{eq:encoder-diagram}
+\begin{tikzpicture}[framed]
+  \matrix (m) [matrix of math nodes, row sep=4.5em, column sep=9em, minimum width=2em]
+  {
+    x \in \Mat{n}{d} & x' \in \Mat{n}{d} & x'' \in \Mat{n}{d} \\
+    x_{i,\cdot} \in \R^{d} & x'_{i,\cdot} \in \R^{d} & x''_{i,\cdot} \in \R^{d} \\
+  };
+  % Sequence-level horizontal arrows
+  \path[->]
+    (m-1-1) edge node [above] {$A_1$} (m-1-2)
+    (m-1-2) edge node [above] {$A_2$} (m-1-3)
+  ;
+  % Row-extraction vertical arrows
+  \path[->]
+    (m-1-1) edge node [left, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-1)
+    (m-1-2) edge node [left, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-2)
+    (m-1-3) edge node [right, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-3)
+  ;
+  % Token-level horizontal arrows (global label cites full x; local cites only x'_{i,·})
+  \path[|->]
+    (m-2-1) edge node [below, font=\small] {$[A_1(x)]_{i,\cdot}$} (m-2-2)
+    (m-2-2) edge node [below, font=\small] {$A_2(x'_{i,\cdot})$} (m-2-3)
+  ;
+\end{tikzpicture}
+\end{equation}
+
+The full encoder of depth $L = 6$ is the composition
+\[
+    x^{(0)}
+    \;\xrightarrow{\mathrm{Layer}^{\mathrm{enc}}_1}\;
+    x^{(1)}
+    \;\xrightarrow{\mathrm{Layer}^{\mathrm{enc}}_2}\;
+    \cdots
+    \;\xrightarrow{\mathrm{Layer}^{\mathrm{enc}}_L}\;
+    e = x^{(L)},
+    \qquad
+    x^{(0)},\, x^{(1)},\, \ldots,\, e \;\in\; \Mat{n}{d},
+\]
+where $\mathrm{Layer}^{\mathrm{enc}}_\ell = A^{(\ell)}_2 \circ A^{(\ell)}_1$ with
+independent parameters per layer.  The output $e = x^{(L)} \in \Mat{n}{d}$
+is the \emph{encoder memory}, passed (unchanged) to every decoder layer.
+
+% ── Decoder layer ────────────────────────────────────────────────────────────
+\subsection*{Decoder layer}
+
+Define the three sub-layer maps (with fixed encoder memory $e \in \Mat{n}{d}$):
+\begin{align*}
+    B_1 &\;:=\; \LayerNorm\!\bigl(\,\cdot\, + \MaskedMHA(\,\cdot\,)\bigr)
+        : \Mat{m}{d} \to \Mat{m}{d}, \\
+    B_2 &\;:=\; \LayerNorm\!\bigl(\,\cdot\, + \CrossMHA(\,\cdot\,,e)\bigr)
+        : \Mat{m}{d} \to \Mat{m}{d}, \\
+    B_3 &\;:=\; \LayerNorm\!\bigl(\,\cdot\, + \FFN(\,\cdot\,)\bigr)
+        : \Mat{m}{d} \to \Mat{m}{d}.
+\end{align*}
+One decoder layer is $\mathrm{Layer}^{\mathrm{dec}} = B_3 \circ B_2 \circ B_1 : \Mat{m}{d}\to\Mat{m}{d}$.
+
+% Types shown only at the endpoints of each chain; all intermediate nodes have the
+% same type \Mat{m}{d} (sequence) or \R^d (token), stated in the surrounding text.
+\begin{equation}\label{eq:decoder-diagram}
+\begin{tikzpicture}[framed]
+  \matrix (m) [matrix of math nodes, row sep=4.5em, column sep=5em, minimum width=2em]
+  {
+    y \in \Mat{m}{d} & y' & y'' & y''' \in \Mat{m}{d} \\
+    y_{i,\cdot} \in \R^{d} & y'_{i,\cdot} & y''_{i,\cdot} & y'''_{i,\cdot} \in \R^{d} \\
+  };
+  % Sequence-level horizontal arrows
+  \path[->]
+    (m-1-1) edge node [above] {$B_1$} (m-1-2)
+    (m-1-2) edge node [above] {$B_2$} (m-1-3)
+    (m-1-3) edge node [above] {$B_3$} (m-1-4)
+  ;
+  % Row-extraction vertical arrows
+  \path[->]
+    (m-1-1) edge node [left, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-1)
+    (m-1-2) edge node [left, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-2)
+    (m-1-3) edge node [left, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-3)
+    (m-1-4) edge node [right, font=\small] {$[\cdot]_{i,\cdot}$} (m-2-4)
+  ;
+  % Token-level horizontal arrows (global label cites full y; local cites only y''_{i,·})
+  \path[|->]
+    (m-2-1) edge node [below, font=\small] {$[B_1(y)]_{i,\cdot}$} (m-2-2)
+    (m-2-2) edge node [below, font=\small] {$[B_2(y')]_{i,\cdot}$} (m-2-3)
+    (m-2-3) edge node [below, font=\small] {$B_3(y''_{i,\cdot})$} (m-2-4)
+  ;
+\end{tikzpicture}
+\end{equation}
+
+% ── Full Transformer ─────────────────────────────────────────────────────────
+\subsection*{The complete Transformer}
+
+Source input $\to$ encoder memory $\to$ decoder output $\to$ vocabulary distribution:
+\[
+    \underbrace{x^{(0)}_{\mathrm{src}} \in \Mat{n}{d}}_{\text{source embeddings} + \mathrm{PE}}
+    \;\xrightarrow{\;\mathrm{Encoder}\;}
+    e \in \Mat{n}{d}
+\]
+\[
+    \underbrace{y^{(0)}_{\mathrm{tgt}} \in \Mat{m}{d}}_{\text{target embeddings} + \mathrm{PE}}
+    \;\xrightarrow{\;\mathrm{Decoder}(\,\cdot\,,\,e)\;}
+    y^{(L)} \in \Mat{m}{d}
+    \;\xrightarrow{\;\softmax_{\mathrm{rows}}(\,\cdot\, W_{\mathrm{out}})\;}
+    \hat{P} \in \Mat{m}{|\mathcal{V}|},
+\]
+where $W_{\mathrm{out}} \in \Mat{d}{|\mathcal{V}|}$ and each row
+$\hat{P}_{i,\cdot} \in \operatorname{int}(\simplex{|\mathcal{V}|-1})$ is the
+predicted probability distribution over the vocabulary at target position $i$.
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Summary of Paper I}
 \label{sec:summary-1}
 
@@ -1544,8 +1732,748 @@ Proposition~\ref{prop:softmax-shift} and the merge formula for
 $\logsumexp$ to compute attention without materialising $S$ or $P$.
 
 % ══════════════════════════════════════════════════════════════════════════════
-% Papers II, III, IV will be added in subsequent sessions.
+\part{Paper II: Online Normalizer Calculation for Softmax}
+\label{part:paper-ii}
 % ══════════════════════════════════════════════════════════════════════════════
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Safe-Softmax Statistics}
+\label{sec:safe-softmax}
+
+Recall from Definition~\ref{def:softmax}:
+\[
+    \softmax(x)_i = e^{x_i - \logsumexp(x)},
+    \qquad
+    \logsumexp(x) = \log\textstyle\sum_{j=1}^n e^{x_j},
+    \qquad x \in \R^n.
+\]
+The na\"ive evaluation $e^{x_i}/\sum_j e^{x_j}$ overflows in finite
+precision when $\max_j x_j$ is large.  Proposition~\ref{prop:softmax-shift}
+(translation invariance) guarantees $\softmax(x) = \softmax(x - m\mathbf{1})$
+for any $m \in \R$; choosing $m = \max_j x_j$ bounds every exponent in
+$(-\infty, 0]$, preventing overflow.
+
+\begin{definition}[Safe-softmax statistics]
+\label{def:safe-softmax-stats}
+For $x \in \R^n$, define the \emph{safe-softmax statistics}
+\begin{align*}
+    m(x) &\;:=\; \max_{i=1}^n x_i \;\in\; \R, \\
+    \ell(x) &\;:=\; \sum_{i=1}^n e^{x_i - m(x)} \;\in\; \R_{>0}.
+\end{align*}
+\end{definition}
+
+\noindent Note $\ell(x) \geq 1$ (the term at $i = \arg\max x_i$ contributes
+$e^0 = 1$), and $e^{x_i - m(x)} \in (0,1]$ for all $i$, so both quantities
+are safe for IEEE~754 arithmetic.
+
+\begin{remark}[Factored form of lse, and recovery of softmax]
+\label{rem:stats-to-lse}
+\[
+    \logsumexp(x) \;=\; m(x) + \log \ell(x).
+\]
+\begin{proof}
+$m(x) + \log\ell(x)
+ = m(x) + \log\bigl(e^{-m(x)}\sum_i e^{x_i}\bigr)
+ = \log\sum_i e^{x_i}
+ = \logsumexp(x)$.
+\end{proof}
+Consequently $\softmax(x)_i = e^{x_i - m(x)}/\ell(x)$.
+The pair $(m(x),\ell(x))$ is a \emph{numerically stable factorisation} of
+$\logsumexp(x)$: no overflow can occur in either factor.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Merge Monoid}
+\label{sec:merge-monoid}
+
+The central algebraic content of Milakov \& Gimelshein (2018) is that the
+safe-softmax statistics of a disjoint union equal the \emph{merge} of the
+partial statistics, and that this merge operation gives a commutative monoid.
+
+\begin{definition}[Monoid]
+\label{def:monoid}
+A \emph{monoid} is a triple $(M, \cdot, e)$ where $M$ is a set,
+$\cdot : M \times M \to M$ is a binary operation, and $e \in M$ is a
+distinguished element, satisfying:
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Associativity}: $(a \cdot b) \cdot c = a \cdot (b \cdot c)$
+    for all $a,b,c \in M$.
+    \item \textbf{Identity}: $e \cdot a = a \cdot e = a$ for all $a \in M$.
+\end{enumerate}
+A monoid is \emph{commutative} (or \emph{abelian}) if additionally
+$a \cdot b = b \cdot a$ for all $a, b \in M$.
+\end{definition}
+
+\begin{remark}
+A monoid is a group without the requirement of inverses.  Familiar examples:
+$(\N, +, 0)$, $(\R, \cdot, 1)$, $(M_{n\times n}(\R), \cdot, I_n)$ (the last is
+non-commutative for $n \geq 2$).  The absence of inverses is not a deficiency
+here: the merge operation $\oplus$ below need not be invertible for the
+tiling algorithm to work.
+\end{remark}
+
+\begin{definition}[Merge operation]
+\label{def:merge}
+Write $\overline{\R} := \R \cup \{-\infty\}$ and adopt the convention
+$e^{-\infty} := 0$.  Set $S := \overline{\R} \times \R_{\geq 0}$ and define
+\[
+    (m_A, \ell_A) \oplus (m_B, \ell_B)
+    \;:=\;
+    \Bigl(
+        \max(m_A,m_B),\;
+        e^{m_A - \max(m_A,m_B)}\,\ell_A
+        + e^{m_B - \max(m_A,m_B)}\,\ell_B
+    \Bigr).
+\]
+Here $(m_A, \ell_A)$ and $(m_B, \ell_B)$ are arbitrary elements of $S$;
+the subscripts $A$ and $B$ are suggestive labels --- anticipating
+Proposition~\ref{prop:merge-correct} below, where they will be instantiated
+as the safe-softmax statistics $(m(x_A), \ell(x_A))$ and
+$(m(x_B), \ell(x_B))$ of two disjoint subsequences (Definition~\ref{def:safe-softmax-stats}).
+\end{definition}
+
+\begin{proposition}[$(S,\oplus,(-\infty,0))$ is a commutative monoid]
+\label{prop:merge-monoid}
+The operation $\oplus$ is commutative and associative, with identity
+$(-\infty, 0)$.
+\end{proposition}
+\begin{proof}
+Write $m_{XY} := \max(m_X, m_Y)$ and $m_{XYZ} := \max(m_X, m_Y, m_Z)$.
+
+\textit{Identity.}  $\max(m,-\infty) = m$ and $e^{-\infty} = 0$, so
+$(m,\ell)\oplus(-\infty,0) = (m,\, e^{m-m}\ell + 0) = (m,\ell)$.
+
+\textit{Commutativity.}  Both $\max$ and addition of reals are commutative.
+
+\textit{Associativity.}  The first $\oplus$ gives the pair
+$(m_{AB},\, e^{m_A-m_{AB}}\ell_A + e^{m_B-m_{AB}}\ell_B)$.
+Applying $\oplus(m_C,\ell_C)$ and using the exponent identity
+$e^{m_{AB}-m_{ABC}}\cdot e^{m_X-m_{AB}} = e^{m_X-m_{ABC}}$:
+\[
+    \bigl((m_A,\ell_A)\oplus(m_B,\ell_B)\bigr)\oplus(m_C,\ell_C)
+    \;=\;
+    \Bigl(m_{ABC},\;
+        e^{m_A-m_{ABC}}\ell_A
+        + e^{m_B-m_{ABC}}\ell_B
+        + e^{m_C-m_{ABC}}\ell_C
+    \Bigr).
+\]
+The right-bracketed product $(m_A,\ell_A)\oplus\bigl((m_B,\ell_B)\oplus(m_C,\ell_C)\bigr)$
+yields the same triple by the same identity.
+\end{proof}
+
+\begin{proposition}[Statistics of a disjoint union]
+\label{prop:merge-correct}
+Let $A,B \subseteq \{1,\ldots,n\}$ be disjoint, $x \in \R^n$, and write
+$x_A := (x_i)_{i\in A}$ for the subsequence indexed by $A$.  Then
+\[
+    (m(x_A),\ell(x_A)) \oplus (m(x_B),\ell(x_B))
+    \;=\;
+    (m(x_{A\cup B}),\,\ell(x_{A\cup B})).
+\]
+\end{proposition}
+\begin{proof}
+Set $m := \max(m(x_A), m(x_B)) = \max_{k\in A\cup B} x_k = m(x_{A\cup B})$.
+Then
+\begin{align*}
+    e^{m(x_A)-m}\,\ell(x_A) + e^{m(x_B)-m}\,\ell(x_B)
+    &= e^{m(x_A)-m}\sum_{i\in A}e^{x_i - m(x_A)}
+     + e^{m(x_B)-m}\sum_{j\in B}e^{x_j - m(x_B)} \\
+    &= \sum_{i\in A}e^{x_i-m}
+     + \sum_{j\in B}e^{x_j-m}
+     = \sum_{k\in A\cup B}e^{x_k-m}
+     = \ell(x_{A\cup B}). \qedhere
+\end{align*}
+\end{proof}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Online Algorithm as a Left Fold}
+\label{sec:online-fold}
+
+\paragraph{What we are trying to do.}
+Given $x \in \R^n$, we want to compute $\softmax(x)$, but we cannot afford to
+hold all of $x$ in fast memory simultaneously.  Instead, we process $x$ one
+element (or one \emph{tile} of consecutive elements) at a time, maintaining a
+compact running state that is updated with each new piece of data and discarded
+nothing.  The monoid $(S,\oplus,(-\infty,0))$ is precisely the algebraic
+structure that makes this possible: because $\oplus$ is associative, any
+sequential or parallel order of combining partial statistics gives the same
+global result.
+
+\paragraph{What is a left fold?}
+Given a monoid $(M, \cdot, e)$ and a sequence $(a_1, \ldots, a_n) \in M^n$,
+the \emph{sequential left fold} is the iterated binary product starting from
+the identity, processing elements left to right:
+\[
+    \operatorname{foldl}(a_1,\ldots,a_n)
+    \;:=\;
+    \bigl(\cdots\bigl((e \cdot a_1) \cdot a_2\bigr) \cdots\bigr) \cdot a_n.
+\]
+Equivalently, initialise an accumulator $s \leftarrow e$, then for each $k$
+update $s \leftarrow s \cdot a_k$.  Associativity guarantees that the result
+equals $e \cdot a_1 \cdot a_2 \cdots a_n$ regardless of how the parentheses
+are placed, so the left fold is one concrete realisation of the monoid product
+of the entire sequence.
+
+\begin{example}[Left fold in $(S,\oplus,(-\infty,0))$ for $n=1,2,3$]
+\label{ex:foldl-small}
+Take $x = (2, 5, 1) \in \R^3$.  Each scalar $x_k$ is embedded as the pair
+$(x_k, 1) \in S$, and the left fold accumulates these one at a time
+starting from the identity $e = (-\infty, 0)$.
+
+\smallskip
+\noindent\textit{$n=1$, sequence $(2)$:}
+\begin{align*}
+    s_0 &= (-\infty,\; 0), \\
+    s_1 &= s_0 \oplus (2,1)
+         = \bigl(\max(-\infty, 2),\;
+                 e^{-\infty}\cdot 0 + e^{2-2}\cdot 1\bigr)
+         = (2,\; 1).
+\end{align*}
+Check: $m(2) = 2$ and $\ell(2) = e^{2-2} = 1$.
+
+\smallskip
+\noindent\textit{$n=2$, sequence $(2,5)$:}
+\begin{align*}
+    s_2 &= s_1 \oplus (5,1)
+         = \bigl(\max(2,5),\;
+                 e^{2-5}\cdot 1 + e^{5-5}\cdot 1\bigr)
+         = (5,\; e^{-3} + 1).
+\end{align*}
+Check: $m(2,5) = 5$ and $\ell(2,5) = e^{2-5} + e^{5-5} = e^{-3}+1$.
+
+\smallskip
+\noindent\textit{$n=3$, sequence $(2,5,1)$:}
+\begin{align*}
+    s_3 &= s_2 \oplus (1,1)
+         = \bigl(\max(5,1),\;
+                 e^{5-5}(1+e^{-3}) + e^{1-5}\cdot 1\bigr)
+         = (5,\; 1 + e^{-3} + e^{-4}).
+\end{align*}
+Check: $m(2,5,1)=5$ and $\ell(2,5,1) = e^{2-5}+e^{5-5}+e^{1-5} = e^{-3}+1+e^{-4}$.
+
+\smallskip
+In each step the accumulator $s_k$ holds the exact safe-softmax statistics
+$(m,\ell)$ of the prefix $(x_1,\ldots,x_k)$ seen so far; no past value
+needs to be retained.
+\end{example}
+
+\begin{remark}[The monoid acts on the accumulator state]
+\label{rem:monoid-action}
+The update rule $s \leftarrow s \oplus (x_k, 1)$ is an instance of a
+\emph{left monoid action}: the monoid $(S,\oplus,e)$ acts on the set $S$
+by left multiplication, $s \mapsto s \oplus t$ for a fixed $t \in S$.
+Each new data point $(x_k,1)$ is an element of $S$ that \emph{acts} on the
+current state to produce the next state.  Because $\oplus$ is associative,
+the order in which the actions are applied does not matter for the final
+result — only the multiset of elements acted upon.  The left fold is the
+canonical way to realise this iterated action sequentially.
+\end{remark}
+
+\begin{corollary}[Fold representation]
+\label{cor:online-fold}
+For any single element $x_k \in \R$: $(m(\{x_k\}), \ell(\{x_k\})) = (x_k, 1)$.
+By Proposition~\ref{prop:merge-correct} and associativity of $\oplus$:
+\[
+    (m(x),\,\ell(x))
+    \;=\;
+    \bigoplus_{k=1}^{n} (x_k, 1)
+    \;=\;
+    (-\infty, 0)
+    \oplus (x_1, 1)
+    \oplus (x_2, 1)
+    \oplus \cdots
+    \oplus (x_n, 1),
+\]
+computable as the following sequential left fold:
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l}
+\hline
+\textbf{Online softmax statistics} (single pass over $x$) \\
+\hline
+Initialise $(m,\ell) \leftarrow (-\infty, 0)$. \\
+For $k = 1, \ldots, n$: \\
+\quad $m' \leftarrow \max(m,\, x_k)$ \\
+\quad $\ell' \leftarrow e^{m - m'}\,\ell \;+\; e^{x_k - m'}$ \\
+\quad $(m, \ell) \leftarrow (m', \ell')$ \\
+After the pass: $\;\softmax(x)_i = e^{x_i - m}/\ell$ for $i = 1,\ldots,n$.\\
+\hline
+\end{tabular}
+\end{center}
+\end{corollary}
+
+\begin{remark}[Parallelism from associativity]
+Because $\oplus$ is associative, the input $x$ may be partitioned into
+\emph{any number of disjoint tiles} $x_{A_1}, \ldots, x_{A_T}$
+(not necessarily contiguous, not necessarily processed in order), their
+partial statistics merged in any binary tree of $\oplus$ applications,
+and the result equals $(m(x), \ell(x))$.  Commutativity removes even the
+ordering constraint between tiles.  This is the algebraic prerequisite for
+the GPU tiling strategy of Paper~III.
+\end{remark}
+
+\begin{remark}[Two passes vs.\ one]
+The procedure above requires a \emph{second pass} through $x$ to evaluate
+$e^{x_i - m}/\ell$ for each $i$.  In the attention context (Paper~III),
+$x = s$ is a score row of length $n$ --- too large to hold in on-chip SRAM
+--- so this second pass would require re-reading $s$ from HBM.  The
+\emph{attention output accumulator} (Section~\ref{sec:output-accumulator})
+eliminates this second pass by propagating the partial weighted sum of $V$
+alongside $(m, \ell)$.
+\end{remark}
+
+\begin{remark}[What is to be gained: the chain of ideas]
+The three sections of Paper~II form a single chain of reasoning:
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Numerical stability} (Section~\ref{sec:safe-softmax}).
+    The na\"ive evaluation of $\softmax$ overflows.  The pair $(m(x),\ell(x))$
+    is a stable, lossless representation of the same information as
+    $\logsumexp(x)$, with no intermediate value exceeding $1$ in magnitude.
+
+    \item \textbf{Algebraic structure} (Section~\ref{sec:merge-monoid}).
+    The pair $(m,\ell)$ is not just a computational trick: it is an element
+    of a \emph{commutative monoid} $(S,\oplus,(-\infty,0))$.  This means
+    partial statistics from \emph{different tiles} of $x$ can be combined in
+    any order without losing correctness.  Neither commutativity nor
+    associativity is obvious from the formula; both are verified in
+    Proposition~\ref{prop:merge-monoid}.
+
+    \item \textbf{Single-pass algorithm} (this section).
+    Monoid structure implies a left fold: process $x$ sequentially, keeping
+    only a two-number running state $(m,\ell)$, and recover $\softmax(x)$
+    at the end.  No random access to earlier elements is required.  In the
+    GPU setting, this means each tile of $x$ is read from HBM \emph{once},
+    processed in SRAM, and discarded.  The $n\times n$ attention score matrix
+    $S$ --- which standard attention materialises entirely in HBM --- never
+    needs to exist as a stored object.
+
+    \item \textbf{Setup for Paper~III} (Section~\ref{sec:output-accumulator}).
+    Extending the monoid to triples $(m,\ell,\tilde{o})$ carries the partial
+    attention \emph{output} alongside the statistics, allowing the full
+    computation $\Att(q,K,V) = \softmax(s)\,V$ to be done tile by tile.
+    This is exactly the FlashAttention inner loop.
+\end{enumerate}
+The payoff: FlashAttention achieves the \emph{same numerical output} as
+standard attention while reducing HBM memory traffic from $O(n^2)$ to $O(n)$
+(in sequence length $n$, with head dimension $d$ fixed).
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Attention Output Accumulator}
+\label{sec:output-accumulator}
+
+Fix a single query row $q \in \R^{d_k}$ and recall that
+$\Att(q,K,V)=\softmax(s)\,V \in \R^{d_v}$ where
+$s_j := q K_{j,\cdot}^{\top}/\sqrt{d_k}$.
+
+\begin{definition}[Attention accumulator]
+\label{def:attention-accumulator}
+For a subset $A\subseteq\{1,\ldots,n\}$ of key--value positions, the
+\emph{attention accumulator} is the triple
+\[
+    \alpha(A)
+    \;:=\;
+    \bigl(m(s_A),\;\ell(s_A),\;\tilde{o}(A)\bigr)
+    \;\in\; \overline{\R} \times \R_{\geq 0} \times \R^{d_v},
+\]
+where $s_A := (s_j)_{j\in A}$ and the \emph{unnormalised partial output} is
+\[
+    \tilde{o}(A)
+    \;:=\; \sum_{j\in A} e^{s_j - m(s_A)}\,V_{j,\cdot}
+    \;=\; \ell(s_A)\cdot\softmax(s_A)\,V_A
+    \;\in\; \R^{d_v}.
+\]
+The \emph{normalised partial output} is $o(A) := \tilde{o}(A)/\ell(s_A)
+\in \R^{d_v}$.
+\end{definition}
+
+\begin{proposition}[Merge of attention accumulators]
+\label{prop:accumulator-merge}
+For disjoint $A,B\subseteq\{1,\ldots,n\}$, define the merge
+\begin{align*}
+    m &:= \max(m(s_A), m(s_B)), \\
+    \ell_{A\cup B} &:= e^{m(s_A)-m}\,\ell(s_A) + e^{m(s_B)-m}\,\ell(s_B), \\
+    \tilde{o}(A\cup B) &:= e^{m(s_A)-m}\,\tilde{o}(A) + e^{m(s_B)-m}\,\tilde{o}(B).
+\end{align*}
+Then $\alpha(A\cup B) = (m, \ell_{A\cup B}, \tilde{o}(A\cup B))$.  In
+particular, the normalised output satisfies
+\[
+    o(A\cup B)
+    \;=\;
+    \underbrace{\frac{e^{m(s_A)-m}\,\ell(s_A)}{\ell_{A\cup B}}}_{\lambda_A}
+    o(A)
+    \;+\;
+    \underbrace{\frac{e^{m(s_B)-m}\,\ell(s_B)}{\ell_{A\cup B}}}_{\lambda_B}
+    o(B),
+    \qquad \lambda_A + \lambda_B = 1,\; \lambda_A, \lambda_B > 0.
+\]
+That is, $o(A\cup B)$ is a \emph{convex combination} of $o(A)$ and $o(B)$.
+\end{proposition}
+\begin{proof}
+The first two components follow from Proposition~\ref{prop:merge-correct}.
+For $\tilde{o}$:
+\begin{align*}
+    \tilde{o}(A\cup B)
+    &= \sum_{k\in A\cup B} e^{s_k - m}\,V_{k,\cdot} \\
+    &= \sum_{i\in A} e^{(s_i - m(s_A)) + (m(s_A) - m)}\,V_{i,\cdot}
+     + \sum_{j\in B} e^{(s_j - m(s_B)) + (m(s_B) - m)}\,V_{j,\cdot} \\
+    &= e^{m(s_A)-m}\sum_{i\in A} e^{s_i - m(s_A)}\,V_{i,\cdot}
+     + e^{m(s_B)-m}\sum_{j\in B} e^{s_j - m(s_B)}\,V_{j,\cdot} \\
+    &= e^{m(s_A)-m}\,\tilde{o}(A) + e^{m(s_B)-m}\,\tilde{o}(B).
+\end{align*}
+Dividing by $\ell_{A\cup B}$ yields the convex combination for $o(A\cup B)$,
+with $\lambda_A + \lambda_B = \ell_{A\cup B}/\ell_{A\cup B} = 1$.
+\end{proof}
+
+\begin{remark}[Second commutative monoid]
+The triples $(m,\ell,\tilde{o})$ form a commutative monoid under the
+componentwise extension of $\oplus$:
+\[
+    (m_A,\ell_A,\tilde{o}_A) \oplus (m_B,\ell_B,\tilde{o}_B)
+    \;:=\;
+    \Bigl(
+        \max(m_A,m_B),\;
+        e^{m_A-m}\ell_A + e^{m_B-m}\ell_B,\;
+        e^{m_A-m}\tilde{o}_A + e^{m_B-m}\tilde{o}_B
+    \Bigr)
+\]
+with identity $(-\infty, 0, \mathbf{0})$.  Associativity follows by the
+same telescoping as Proposition~\ref{prop:merge-monoid}: both $\ell$ and
+$\tilde{o}$ merge \emph{linearly} (after rescaling by $e^{m_X-m}$), so
+the three-component version inherits associativity componentwise.
+
+The FlashAttention algorithm (Paper~III) is exactly the sequential left fold
+\[
+    \bigoplus_{t=1}^{T} \alpha(A_t)
+    \;=\;
+    \alpha(\{1,\ldots,n\}),
+\]
+where $A_1,\ldots,A_T$ tile the key--value index set, each tile $A_t$ is
+computed in SRAM, and the merge accumulates $(m, \ell, \tilde{o})$ without
+ever writing the $n\times n$ score matrix $S$ to HBM.
+\end{remark}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\part{Paper III: FlashAttention --- Fast and Memory-Efficient Exact Attention with IO-Awareness}
+\label{part:paper-iii}
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The GPU Memory Hierarchy}
+\label{sec:memory-hierarchy}
+
+Modern GPU computation involves two qualitatively different storage levels.
+
+\begin{remark}[CUDA programming terminology]
+\label{rem:cuda-terms}
+GPU programmers working in CUDA use a parallel vocabulary for the same
+hardware.  The correspondence is:
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\hline
+FlashAttention paper term & CUDA / GPU-architecture term \\
+\hline
+HBM (high-bandwidth memory) & global memory \\
+SRAM (on-chip static RAM) & shared memory (per thread block) \\
+IO operation & global memory read/write \\
+\hline
+\end{tabular}
+\end{center}
+\emph{Global memory} is the CUDA programmer's name for the large, slow,
+off-chip DRAM that all threads can read and write; the standard speed
+ordering is
+\[
+    \text{registers} \;>\; \text{shared memory} \;\gg\; \text{global memory},
+\]
+where $\gg$ indicates that the gap between shared and global memory
+bandwidth is the dominant performance bottleneck.
+
+The name \emph{HBM} (High Bandwidth Memory) refers to the specific
+physical DRAM technology used in data-centre GPUs: the A100 and H100
+use HBM2e and HBM3, respectively.  Consumer GPUs (e.g.\ RTX 3060, 4090)
+use GDDR6X instead, but both are ``global memory'' in CUDA's sense.
+FlashAttention uses the hardware term because its IO-complexity analysis
+targets the A100; a CUDA programmer should read ``HBM'' as
+``global memory'' throughout.
+\end{remark}
+
+\begin{definition}[Two-level memory model]
+\label{def:memory-model}
+Fix two capacity parameters $M_H \gg M > 0$ (measured in number of
+floating-point elements).
+\begin{itemize}
+    \item \textbf{HBM} (global memory): capacity $M_H$, bandwidth $f_H$.
+    All inputs and outputs of the computation reside here initially and
+    finally.
+    \item \textbf{SRAM} (shared memory, on-chip): capacity $M$,
+    bandwidth $f_S \gg f_H$.  Arithmetic units can only operate on data
+    in SRAM.
+\end{itemize}
+An \emph{IO operation} is a transfer of one element between HBM and SRAM
+(a load $\mathrm{HBM} \to \mathrm{SRAM}$ or a store
+$\mathrm{SRAM} \to \mathrm{HBM}$).  The \emph{IO complexity} of an
+algorithm is the total number of IO operations it performs.
+\end{definition}
+
+\begin{definition}[Arithmetic intensity]
+\label{def:arithmetic-intensity}
+The \emph{arithmetic intensity} of an algorithm is the ratio
+\[
+    I \;:=\; \frac{\text{floating-point operations (FLOPs)}}{\text{bytes transferred between HBM and SRAM}}.
+\]
+An algorithm is \emph{compute-bound} if increasing FLOPs/s would reduce
+its runtime; it is \emph{memory-bandwidth-bound} (or \emph{IO-bound}) if
+increasing HBM bandwidth would reduce its runtime.  Maximising arithmetic
+intensity --- doing as much arithmetic as possible per byte moved --- is
+the central goal of GPU kernel optimisation.
+\end{definition}
+
+\begin{remark}[Why IO dominates for attention]
+\label{rem:io-dominates}
+On an NVIDIA A100 GPU: $M_H = 40\,\text{GB}$, $f_H = 1.5\,\text{TB/s}$;
+$M = 192\,\text{KB}$ per streaming multiprocessor (SM),
+$f_S \approx 19\,\text{TB/s}$.
+The Tensor Core units deliver $\approx 312\,\text{TFLOP/s}$ of arithmetic
+throughput.
+
+For standard attention at $n = 4096$, $d_k = 64$: the score matrix
+$S \in \Mat{4096}{4096}$ occupies $4096^2 \times 4\,\text{B} = 64\,\text{MB}$.
+Reading $S$ from HBM takes $64\,\text{MB} / 1.5\,\text{TB/s} \approx 43\,\mu\text{s}$;
+computing $S = QK^\top/\sqrt{d_k}$ via Tensor Cores (once $Q$ and $K$ are
+in SRAM) takes $\approx 2 \times 4096^2 \times 64\,\text{FLOPs} /
+312\,\text{TFLOP/s} \approx 0.7\,\mu\text{s}$.
+
+Standard attention is therefore memory-bandwidth-bound by a factor of
+$\approx 60\times$: Tensor Cores sit mostly idle waiting for data to
+arrive from HBM.  Arithmetic is cheap; moving data is the bottleneck.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{IO Complexity of Standard Attention}
+\label{sec:standard-attention-io}
+
+Standard attention materialises both intermediate matrices $S$ and $P$ in
+HBM because they are $n \times n$ and do not fit in SRAM for large $n$.
+
+\begin{proposition}[IO complexity of standard attention]
+\label{prop:standard-io}
+Let $Q, K \in \Mat{n}{d_k}$ and $V \in \Mat{n}{d_v}$ with $n \gg d_k, d_v$.
+Computing $O = \Att(Q,K,V)$ by the na\"ive three-step procedure
+\begin{align*}
+    S &= Q K^\top / \sqrt{d_k} \;\in\; \Mat{n}{n}, \\
+    P &= \softmax_{\mathrm{rows}}(S) \;\in\; \Mat{n}{n}, \\
+    O &= P V \;\in\; \Mat{n}{d_v},
+\end{align*}
+requires IO complexity $\Theta(nd + n^2)$ where $d := d_k = d_v$.
+\end{proposition}
+\begin{proof}
+Each step reads its inputs from HBM and writes its output to HBM (since
+$S$ and $P$ are $n\times n$ and exceed SRAM capacity $M$ for large $n$):
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llcc}
+\hline
+Step & Operation & HBM reads & HBM writes \\
+\hline
+1 & $S = QK^\top/\sqrt{d_k}$ & $2nd$ & $n^2$ \\
+2 & $P = \softmax_{\mathrm{rows}}(S)$ & $n^2$ & $n^2$ \\
+3 & $O = PV$ & $n^2 + nd$ & $nd$ \\
+\hline
+  & Total & $2n^2 + 3nd$ & $2n^2 + nd$ \\
+\hline
+\end{tabular}
+\end{center}
+Grand total: $4n^2 + 4nd = \Theta(n^2 + nd) = \Theta(nd + n^2)$.
+\end{proof}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The FlashAttention Algorithm}
+\label{sec:flashattention-alg}
+
+The key insight is that the attention accumulator $(m,\ell,\tilde{o})$ from
+Section~\ref{sec:output-accumulator} is a commutative monoid element that can
+be updated \emph{one tile at a time} entirely within SRAM, so $S$ and $P$
+never need to be stored in HBM.
+
+\paragraph{Tile parameters.}
+Choose block sizes $B_r, B_c \in \N$ such that one row block of $Q$, one
+column block of $K$, one column block of $V$, and the running accumulator
+all fit in SRAM simultaneously:
+\[
+    B_r d_k + B_c(d_k + d_v) \;\leq\; M.
+\]
+The canonical choice is $B_c = \lfloor M/(4d) \rfloor$ and
+$B_r = \min\bigl(\lfloor M/(4d) \rfloor, d\bigr)$ (with $d = d_k = d_v$
+for simplicity).  Partition:
+\[
+    Q = \begin{pmatrix} Q_1 \\ \vdots \\ Q_{T_r} \end{pmatrix},
+    \qquad
+    K = \begin{pmatrix} K_1 \\ \vdots \\ K_{T_c} \end{pmatrix},
+    \qquad
+    V = \begin{pmatrix} V_1 \\ \vdots \\ V_{T_c} \end{pmatrix},
+\]
+where $Q_i \in \Mat{B_r}{d_k}$, $K_j, V_j \in \Mat{B_c}{d_k}$ (resp.\
+$\Mat{B_c}{d_v}$), and $T_r = \lceil n/B_r \rceil$, $T_c = \lceil n/B_c \rceil$.
+
+\paragraph{Row-wise decomposition.}
+By Definition~\ref{def:attention}, output row $i$ of $O$ is
+$O_{i,\cdot} = \Att(Q_{i,\cdot}, K, V) = \softmax(s_i)\,V$
+where $s_i = Q_{i,\cdot} K^\top / \sqrt{d_k} \in \R^n$.
+By Section~\ref{sec:output-accumulator}, this equals
+$\tilde{o}(\{1,\ldots,n\}) / \ell(s_i) = o(\{1,\ldots,n\})$,
+computable as the fold
+\[
+    \alpha(\{1,\ldots,n\})
+    \;=\;
+    \bigoplus_{j=1}^{T_c} \alpha(A_j^{(i)}),
+    \qquad
+    A_j^{(i)} := \{(j-1)B_c + 1, \ldots, j B_c\},
+\]
+where $\alpha(A_j^{(i)}) = (m(s_{i,A_j}),\, \ell(s_{i,A_j}),\, \tilde{o}(A_j^{(i)}))$
+depends only on $Q_{i,\cdot}$, $K_j$, $V_j$ --- all of which fit in SRAM.
+
+\paragraph{Vectorisation over a Q block.}
+FlashAttention processes all $B_r$ rows of a Q block $Q_i$ simultaneously.
+For block pair $(i,j)$, define:
+\begin{align*}
+    S_{ij} &:= Q_i K_j^\top / \sqrt{d_k} \;\in\; \Mat{B_r}{B_c}, \\
+    \mathbf{m}_{ij} &:= \rowmax(S_{ij}) \;\in\; \R^{B_r},
+    \qquad\text{(row-wise maximum)} \\
+    \tilde{P}_{ij} &:= \exp\!\bigl(S_{ij} - \mathbf{m}_{ij}\mathbf{1}_{B_c}^\top\bigr)
+    \;\in\; \Mat{B_r}{B_c},
+    \qquad\text{(row-wise shift by } \mathbf{m}_{ij}\text{)} \\
+    \boldsymbol{\ell}_{ij} &:= \tilde{P}_{ij}\,\mathbf{1}_{B_c} \;\in\; \R^{B_r},
+    \qquad\text{(row sums)} \\
+    \tilde{O}_{ij} &:= \tilde{P}_{ij} V_j \;\in\; \Mat{B_r}{d_v}.
+    \qquad\text{(unnormalised partial output)}
+\end{align*}
+The running accumulator for Q block $i$ is the triple
+$(\mathbf{m}_i, \boldsymbol{\ell}_i, \tilde{O}_i)
+\in \R^{B_r} \times \R^{B_r} \times \Mat{B_r}{d_v}$,
+initialised to $(-\infty\,\mathbf{1}_{B_r},\, \mathbf{0}_{B_r},\, \mathbf{0})$.
+Each inner step $j$ is the \emph{row-wise} application of the merge from
+Proposition~\ref{prop:accumulator-merge}:
+\begin{align*}
+    \mathbf{m}_i^{\mathrm{new}} &:= \max(\mathbf{m}_i,\, \mathbf{m}_{ij}),
+    \qquad\text{(elementwise)} \\
+    \boldsymbol{\ell}_i^{\mathrm{new}} &:=
+        e^{\mathbf{m}_i - \mathbf{m}_i^{\mathrm{new}}} \odot \boldsymbol{\ell}_i
+        \;+\; e^{\mathbf{m}_{ij} - \mathbf{m}_i^{\mathrm{new}}} \odot \boldsymbol{\ell}_{ij}, \\
+    \tilde{O}_i^{\mathrm{new}} &:=
+        \diag\!\bigl(e^{\mathbf{m}_i - \mathbf{m}_i^{\mathrm{new}}}\bigr)\,\tilde{O}_i
+        \;+\; \diag\!\bigl(e^{\mathbf{m}_{ij} - \mathbf{m}_i^{\mathrm{new}}}\bigr)\,\tilde{O}_{ij},
+\end{align*}
+where $\odot$ denotes elementwise (Hadamard) product and
+$e^{\mathbf{v}}$ the elementwise exponential of a vector $\mathbf{v}$.
+After the inner loop: $O_i := \diag(\boldsymbol{\ell}_i)^{-1}\,\tilde{O}_i \in \Mat{B_r}{d_v}$.
+
+\begin{algorithm}[FlashAttention forward pass]
+\label{alg:flashattention}
+\textbf{Input}: $Q \in \Mat{n}{d_k}$, $K, V \in \Mat{n}{d_v}$;
+SRAM capacity $M$.
+
+\textbf{Output}: $O = \Att(Q,K,V) \in \Mat{n}{d_v}$.
+
+\begin{enumerate}
+    \item Set $B_c \leftarrow \lfloor M/(4d)\rfloor$,
+    $B_r \leftarrow \min(B_c, d)$,
+    $T_r \leftarrow \lceil n/B_r \rceil$,
+    $T_c \leftarrow \lceil n/B_c \rceil$.
+    \item Initialise $O \leftarrow \mathbf{0} \in \Mat{n}{d_v}$
+    in HBM.
+    \item \textbf{For} $i = 1, \ldots, T_r$:
+    \begin{enumerate}
+        \item Load $Q_i$ from HBM to SRAM.
+        Initialise $\mathbf{m}_i \leftarrow -\infty\,\mathbf{1}$,
+        $\boldsymbol{\ell}_i \leftarrow \mathbf{0}$,
+        $\tilde{O}_i \leftarrow \mathbf{0}$ in SRAM.
+        \item \textbf{For} $j = 1, \ldots, T_c$:
+        \begin{enumerate}
+            \item Load $K_j, V_j$ from HBM to SRAM.
+            \item Compute $S_{ij}, \mathbf{m}_{ij},
+            \tilde{P}_{ij}, \boldsymbol{\ell}_{ij}, \tilde{O}_{ij}$
+            in SRAM (no HBM writes).
+            \item Update $(\mathbf{m}_i, \boldsymbol{\ell}_i, \tilde{O}_i)$
+            by the merge formulas above.
+        \end{enumerate}
+        \item Write $O_i = \diag(\boldsymbol{\ell}_i)^{-1}\tilde{O}_i$
+        to HBM.
+    \end{enumerate}
+\end{enumerate}
+\end{algorithm}
+
+\begin{proposition}[Correctness]
+\label{prop:flashattention-correct}
+Algorithm~\ref{alg:flashattention} computes $O = \Att(Q,K,V)$ exactly.
+\end{proposition}
+\begin{proof}
+Row $i$ of $O_i$ is the normalised output of the accumulator fold
+$\bigoplus_{j=1}^{T_c} \alpha(A_j^{(i)})$.  By
+Proposition~\ref{prop:accumulator-merge} (iterated), this equals
+$\alpha(\{1,\ldots,n\})$, whose normalised output component is
+$o(\{1,\ldots,n\}) = \softmax(s_i)\,V = O_{i,\cdot}$.
+\end{proof}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{IO Complexity of FlashAttention}
+\label{sec:flashattention-io}
+
+\begin{theorem}[FlashAttention IO complexity]
+\label{thm:flashattention-io}
+Algorithm~\ref{alg:flashattention} has IO complexity $\Theta(n^2 d^2 / M)$
+with the tile sizes of Step~1, where $d = d_k = d_v$.
+\end{theorem}
+\begin{proof}
+Count HBM accesses in the double loop:
+\begin{itemize}
+    \item $Q$: block $Q_i$ is loaded once per outer iteration,
+    $B_r d$ elements each, over $T_r$ iterations: total $T_r B_r d = nd$.
+    \item $K, V$: block $K_j$ (resp.\ $V_j$) is loaded once per inner
+    iteration.  There are $T_r \times T_c$ inner iterations:
+    total $T_r T_c B_c d$ reads for each of $K$ and $V$, i.e.\ $T_r nd$
+    reads for $K$ and $T_r nd$ for $V$.
+    \item $O$: block $O_i$ is written once per outer iteration: $nd$ writes.
+    \item $S_{ij}, P_{ij}$: computed and consumed entirely in SRAM;
+    \textbf{zero} HBM accesses.
+\end{itemize}
+Total: $nd + 2T_r nd + nd = (2T_r + 2)nd = \Theta(T_r nd)$.
+
+With $B_r = \min(\lfloor M/(4d)\rfloor, d)$:
+\begin{itemize}
+    \item If $M \leq 4d^2$ (typical for large $d$): $B_r = M/(4d)$,
+    so $T_r = \lceil n/B_r \rceil = \Theta(4nd/M)$, giving
+    IO $= \Theta(nd \cdot 4nd/M) = \Theta(n^2 d^2 / M)$.
+    \item If $M > 4d^2$: $B_r = d$, so $T_r = \Theta(n/d)$, giving
+    IO $= \Theta(nd \cdot n/d) = \Theta(n^2)$.
+\end{itemize}
+In both cases the bound is $O(n^2 d^2 / M)$.
+\end{proof}
+
+\begin{corollary}[IO improvement over standard attention]
+\label{cor:io-improvement}
+Standard attention requires $\Theta(nd + n^2)$ IO
+(Proposition~\ref{prop:standard-io}); FlashAttention requires
+$O(n^2 d^2/M)$.  The ratio is
+\[
+    \frac{n^2 d^2/M}{n^2}
+    \;=\;
+    \frac{d^2}{M}.
+\]
+Since $M \gg d^2$ in practice (e.g.\ $M \approx 50000$ float32 elements
+per SM on an A100, while $d = 64$ gives $d^2 = 4096$), FlashAttention
+performs $\Theta(M/d^2)$ fewer HBM accesses than standard attention,
+reducing the dominant memory bottleneck by more than an order of magnitude.
+\end{corollary}
+
+\begin{remark}[FLOPs are unchanged]
+Both algorithms perform $\Theta(n^2 d)$ floating-point operations
+(two matrix products of size $n\times d$ and $n\times n$, plus the
+row-wise softmax).  FlashAttention does not reduce arithmetic work; it
+reduces \emph{memory traffic}.  The performance gain is entirely from
+eliminating the $\Theta(n^2)$ HBM reads and writes of $S$ and $P$.
+\end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \begin{thebibliography}{9}
