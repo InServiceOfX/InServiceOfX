@@ -21,8 +21,6 @@ TARGET_LINK_LIBRARIES(Check
   gtest_main
   )
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../../MoreCUDA/Source/)
-
 INCLUDE(GoogleTest)
 gtest_discover_tests(Check)
 
