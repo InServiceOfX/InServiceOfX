@@ -5,6 +5,7 @@ SET(TEST_CU_SOURCES
   LLM/attention_forward_tests.cu
   LLM/AttentionForward/softmax_tests.cu
   LLM/AttentionForward/flash_attention_tests.cu
+  Transformer/Softmax/softmax_warp_fold_reduce_tests.cu
   )
 
 #SET(TEST_SOURCES
