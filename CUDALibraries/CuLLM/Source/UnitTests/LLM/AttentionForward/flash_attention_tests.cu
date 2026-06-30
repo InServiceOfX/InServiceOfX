@@ -1,4 +1,6 @@
 #include "DataStructures/Array.h"
+#include "LLM/AttentionForward/FlashAttention.h"
+#include "LLM/attention_forward.h"
 #include "gtest/gtest.h"
 
 #include <cmath>
@@ -15,9 +17,6 @@ namespace LLM
 {
 namespace AttentionForward
 {
-
-#include "LLM/AttentionForward/FlashAttention.h"
-#include "LLM/attention_forward.h"
 
 using ::LLM::AttentionForward::flash_attention_forward;
 using ::LLM::attention_query_key_kernel1;

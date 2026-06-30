@@ -160,4 +160,3 @@ FetchContent_MakeAvailable(googletest)
 
 ADD_SUBDIRECTORY(UnitTests)
 ADD_SUBDIRECTORY(../../MoreCUDA/Source/Utilities MoreCUDAUtilities)
-ADD_LIBRARY(MoreCUDAUtilities ALIAS Utilities)

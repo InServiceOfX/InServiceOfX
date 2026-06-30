@@ -37,7 +37,7 @@ TARGET_LINK_LIBRARIES(Check
   Configuration
   NVIDIAToolsExtension
   StreamManagement
-  Utilities
+  MoreCUDAUtilities
   gmock_main
   gtest_main
 )

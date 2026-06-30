@@ -8,7 +8,7 @@ ADD_EXECUTABLE(IntegrationTestsCheck
 
 TARGET_LINK_LIBRARIES(IntegrationTestsCheck
   Configuration
-  Utilities
+  MoreCUDAUtilities
   gmock_main
   gtest_main
   )
