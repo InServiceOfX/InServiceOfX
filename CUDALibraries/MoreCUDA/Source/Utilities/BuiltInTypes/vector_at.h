@@ -1,3 +1,6 @@
+#ifndef UTILITIES_BUILT_IN_TYPES_VECTOR_AT_H
+#define UTILITIES_BUILT_IN_TYPES_VECTOR_AT_H
+
 namespace Utilities
 {
 namespace BuiltInTypes
@@ -35,3 +38,5 @@ __device__ inline double vector_at(const double4& input_vector, const unsigned i
 
 } // namespace BuiltInTypes
 } // namespace Utilities
+
+#endif // UTILITIES_BUILT_IN_TYPES_VECTOR_AT_H
