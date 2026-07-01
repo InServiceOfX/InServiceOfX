@@ -3,11 +3,9 @@
 
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include <cuda_fp16.h>
-#include <type_traits>
 
-#include "Numerics/MathFunctions.h"
 #include "Numerics/Constants/get_infinity.h"
+#include "Numerics/MathFunctions.h"
 
 namespace Transformer
 {
@@ -42,7 +40,17 @@ template <typename T>
 using accumulation_type_t = typename AccumulationType<T>::type;
 
 //------------------------------------------------------------------------------
-/// Element of the monoid S = R̄ × R≥0 (Definition 18.3 in FlashAttention.tex).
+/// Element of the safe-softmax accumulation monoid (S, ⊕, e) where
+///   S = R̄ × R≥0,   e = (-∞, 0),   ⊕ = the merge operation below.
+///
+/// An element (max_value, sum) encodes the statistics of a subsequence x:
+///   max_value = m(x) = max_i x_i           — running maximum
+///   sum       = ℓ(x) = Σ_i exp(x_i - m)   — sum of shifted exponentials
+///
+/// Shifting by m keeps every term exp(x_i - m) ∈ (0, 1], preventing
+/// overflow. The final softmax output is exp(x_i - m) / ℓ, which equals
+/// exp(x_i) / Σ_j exp(x_j) algebraically but is numerically stable.
+///
 /// AccT is the accumulation precision, selected by AccumulationType<T>.
 //------------------------------------------------------------------------------
 template <typename AccT>
@@ -53,11 +61,26 @@ struct SafeSoftmaxAccumulator
 };
 
 //------------------------------------------------------------------------------
-/// The merge operation ⊕ on S (Definition 18.3).
-/// Associative and commutative (Proposition 18.4), which is what makes
-/// cg::reduce valid in softmax_warp_fold_reduce below.
+/// Merges two accumulators representing disjoint subsequences A and B
+/// into a single accumulator for A ∪ B.
+///
+/// Given a = (m_A, ℓ_A) and b = (m_B, ℓ_B):
+///   m_{A∪B} = max(m_A, m_B)
+///   ℓ_{A∪B} = ℓ_A · exp(m_A − m_{A∪B}) + ℓ_B · exp(m_B − m_{A∪B})
+///
+/// The exp factors rescale each partial sum to the common maximum m_{A∪B}
+/// before adding, keeping the result numerically stable.
+///
+/// ⊕ is associative and commutative because it computes the statistics of a
+/// set union, and set union is both. This is what makes cg::reduce valid in
+/// softmax_warp_fold_reduce: the warp tree can combine partial accumulators
+/// in any order and still arrive at the correct global (m, ℓ).
+///
+/// Identity element: e = (−∞, 0) represents the empty subsequence —
+/// max(m_A, −∞) = m_A and ℓ_A + 0 · exp(…) = ℓ_A.
 //------------------------------------------------------------------------------
 template <typename AccT>
+// forceinline helps avoid function call overhead
 __device__ __forceinline__ SafeSoftmaxAccumulator<AccT> merge(
   const SafeSoftmaxAccumulator<AccT> a,
   const SafeSoftmaxAccumulator<AccT> b)
@@ -95,8 +118,8 @@ __device__ __forceinline__ SafeSoftmaxAccumulator<AccT> merge(
 /// Level 2 — parallel fold across all 32 threads (warp tree reduction):
 ///   cg::reduce combines the 32 partial accumulators into one total
 ///   in O(log 32) = 5 warp shuffle steps. Valid because merge() is
-///   commutative and associative (Proposition 18.4), so the tree can
-///   combine in any order.
+///   commutative and associative (it computes statistics of a set union),
+///   so the tree can combine partial results in any order.
 ///
 /// Then a normalization pass writes softmax(x)_i = exp(x_i - m) / ℓ.
 ///
@@ -145,8 +168,8 @@ __global__ void softmax_warp_fold_reduce(
   // Level 2: parallel fold across all 32 threads (warp tree reduction).
   // cg::reduce combines the 32 partial accumulators into one total using
   // warp shuffle instructions in O(log 32) = 5 steps. Valid because merge
-  // is commutative and associative (Proposition 18.4), so the tree can
-  // combine partial results in any order.
+  // is commutative and associative, so the tree can combine partial results in
+  // any order.
   const Accumulator total {cg::reduce(warp, partial, merge<AccT>)};
 
   // Normalization pass: softmax(x)_i = exp(x_i - m) / ℓ .

@@ -23,6 +23,8 @@ namespace Softmax
 // C < 32 is valid: threads with rank >= C hold the identity (-inf, 0) and
 // contribute nothing to the Level 2 reduction.
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 TEST(SoftmaxWarpFoldReduceTests, SingleRowBasic)
 {
   constexpr int N {1};
@@ -55,6 +57,8 @@ TEST(SoftmaxWarpFoldReduceTests, SingleRowBasic)
   EXPECT_NEAR(output[3], e3 / sum, 1e-5f);
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 TEST(SoftmaxWarpFoldReduceTests, RowSumsToOne)
 {
   // C = 64: each of the 32 threads processes 2 elements (thread coarsening).
@@ -89,6 +93,8 @@ TEST(SoftmaxWarpFoldReduceTests, RowSumsToOne)
   }
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 TEST(SoftmaxWarpFoldReduceTests, NumericalStabilityLargeValues)
 {
   // Without the safe-softmax max subtraction, exp(400) overflows to inf.
