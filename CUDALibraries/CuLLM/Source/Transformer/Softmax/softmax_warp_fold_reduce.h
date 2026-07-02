@@ -6,38 +6,12 @@
 
 #include "Numerics/Constants/get_infinity.h"
 #include "Numerics/MathFunctions.h"
+#include "Transformer/Softmax/AccumulationType.h"
 
 namespace Transformer
 {
 namespace Softmax
 {
-
-//------------------------------------------------------------------------------
-/// Maps the I/O type T to the accumulation type for SafeSoftmaxAccumulator.
-///
-/// Default (float, __half, bfloat16, ...): accumulate in float.
-///   sum = Σ exp(x_i - max_value) is bounded by C (the row length) since every
-///   term exp(x_i - max_value) ∈ [0,1]. For any realistic sequence length C,
-///   sum << FLT_MAX, so overflow is not a concern.
-///
-/// double: accumulate in double, preserving the precision T = double was chosen
-///   for. Using float here would corrupt max_value and therefore every
-///   x_i - max_value subtraction.
-//------------------------------------------------------------------------------
-template <typename T>
-struct AccumulationType
-{
-  using type = float;
-};
-
-template <>
-struct AccumulationType<double>
-{
-  using type = double;
-};
-
-template <typename T>
-using accumulation_type_t = typename AccumulationType<T>::type;
 
 //------------------------------------------------------------------------------
 /// Element of the safe-softmax accumulation monoid (S, ⊕, e) where
@@ -56,8 +30,10 @@ using accumulation_type_t = typename AccumulationType<T>::type;
 template <typename AccT>
 struct SafeSoftmaxAccumulator
 {
-  AccT max_value; // m(x) = max_i x_i
-  AccT sum;       // ℓ(x) = Σ_i exp(x_i - m(x))
+  // m(x) = max_i x_i
+  AccT max_value;
+  // ℓ(x) = Σ_i exp(x_i - m(x)) 
+  AccT sum;
 };
 
 //------------------------------------------------------------------------------
@@ -159,7 +135,9 @@ __global__ void softmax_warp_fold_reduce(
   // C/32 elements. Identity element of (S, ⊕): (-∞, 0).
   Accumulator partial {
     static_cast<AccT>(-Numerics::Constants::get_infinity<AccT>()), AccT{0}};
-  for (int i {static_cast<int>(warp.thread_rank())}; i < C;
+  for (
+    int i {static_cast<int>(warp.thread_rank())};
+    i < C;
     i += static_cast<int>(warp.size()))
   {
     partial = merge(partial, Accumulator{static_cast<AccT>(x[i]), AccT{1}});
@@ -173,7 +151,9 @@ __global__ void softmax_warp_fold_reduce(
   const Accumulator total {cg::reduce(warp, partial, merge<AccT>)};
 
   // Normalization pass: softmax(x)_i = exp(x_i - m) / ℓ .
-  for (int i {static_cast<int>(warp.thread_rank())}; i < C;
+  for (
+    int i {static_cast<int>(warp.thread_rank())};
+    i < C;
     i += static_cast<int>(warp.size()))
   {
     output[row_index * C + i] = static_cast<T>(
