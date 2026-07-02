@@ -154,6 +154,29 @@ template<> __device__ inline double get_max<double>(const double a, const double
   return fmax(a, b);
 }
 
+//------------------------------------------------------------------------------
+/// Calculate ln(x), the base e (natural) logarithm of the input argument x.
+/// Used to form the logsumexp statistic L = m + ln(ℓ) that the FlashAttention
+/// backward pass stores per row for tile-wise recomputation of the attention
+/// weights, P_ij = exp(S_ij − L_i).
+//------------------------------------------------------------------------------
+template <typename FPType>
+__device__ FPType get_natural_log(const FPType value) = delete;
+
+template<> __device__ inline float get_natural_log<float>(const float value)
+{
+  // See
+  // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__SINGLE.html#_CPPv44logff
+  return logf(value);
+}
+
+template<> __device__ inline double get_natural_log<double>(const double value)
+{
+  // See
+  // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__DOUBLE.html#_CPPv43logd
+  return log(value);
+}
+
 template <typename FPType>
 __device__ FPType get_sqrt(const FPType value) = delete;
 

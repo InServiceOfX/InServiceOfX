@@ -23,6 +23,7 @@
 
 #include "DataStructures/Array.h"
 #include "Transformer/Attention/flash_attention_forward.h"
+#include "Transformer/Attention/flash_attention_warp_cooperative.h"
 #include "Transformer/Attention/scaled_dot_product_attention.h"
 
 #include <cmath>
@@ -33,6 +34,7 @@
 using DataStructures::Array;
 using std::vector;
 using Transformer::Attention::flash_attention;
+using Transformer::Attention::flash_attention_warp_cooperative;
 using Transformer::Attention::scaled_dot_product_attention;
 
 namespace
@@ -101,16 +103,17 @@ int main()
     kRepeats);
 
   std::printf(
-    "%6s | %12s | %12s | %8s | %10s | %12s | %10s\n",
+    "%6s | %12s | %12s | %12s | %8s | %10s | %12s | %10s\n",
     "n",
     "standard ms",
     "flash ms",
+    "warp ms",
     "speedup",
     "IO model",
     "causal ms",
     "max |diff|");
   std::printf(
-    "-------+--------------+--------------+----------+------------+--------------+-----------\n");
+    "-------+--------------+--------------+--------------+----------+------------+--------------+-----------\n");
 
   for (const int n : {256, 512, 1024, 2048, 4096})
   {
@@ -153,21 +156,36 @@ int main()
           n);
       })};
 
-    const float causal_ms {time_launches(
+    // Warp-cooperative mapping: one warp per query row, 8 rows per block.
+    const float warp_ms {time_launches(
       [&]()
       {
-        flash_attention<float, kHD, kBr, kBc, true>(
+        flash_attention_warp_cooperative<float, kHD, 8>(
           d_flash_output.elements_,
+          nullptr,
           d_queries.elements_,
           d_keys.elements_,
           d_values.elements_,
           n);
       })};
 
-    // Re-run non-causal flash so the exactness check below compares
-    // standard vs. flash on identical inputs.
-    flash_attention<float, kHD, kBr, kBc>(
+    const float causal_ms {time_launches(
+      [&]()
+      {
+        flash_attention_warp_cooperative<float, kHD, 8, true>(
+          d_flash_output.elements_,
+          nullptr,
+          d_queries.elements_,
+          d_keys.elements_,
+          d_values.elements_,
+          n);
+      })};
+
+    // Re-run the non-causal warp kernel so the exactness check below
+    // compares standard vs. warp-cooperative flash on identical inputs.
+    flash_attention_warp_cooperative<float, kHD, 8>(
       d_flash_output.elements_,
+      nullptr,
       d_queries.elements_,
       d_keys.elements_,
       d_values.elements_,
@@ -196,11 +214,12 @@ int main()
     const double io_model_ratio {standard_elements / flash_elements};
 
     std::printf(
-      "%6d | %12.4f | %12.4f | %7.2fx | %9.2fx | %12.4f | %10.2e\n",
+      "%6d | %12.4f | %12.4f | %12.4f | %7.2fx | %9.2fx | %12.4f | %10.2e\n",
       n,
       standard_ms,
       flash_ms,
-      standard_ms / flash_ms,
+      warp_ms,
+      standard_ms / warp_ms,
       io_model_ratio,
       causal_ms,
       max_difference);
