@@ -14,6 +14,7 @@ ADD_EXECUTABLE(Check
   DataStructures/Array_tests.cu
   GPUPuzzles_tests.cu
   Numerics/Constants/get_infinity_tests.cu
+  Numerics/MathFunctions_tests.cu
   NVIDIAToolsExtension/NVTXRange_tests.cu
   Operations/Arithmetic_tests.cu
   Operations/Convolution1D_tests.cu
