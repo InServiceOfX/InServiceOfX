@@ -81,6 +81,16 @@ namespace Attention
 ///     masked (0 ≤ i for every row), so every row's fold still meets at
 ///     least one finite score in the first tile.
 ///
+/// Batch and multi-head support: in multi-head attention each head applies
+/// Att independently to its own (Q_h, K_h, V_h) slice (see the section on
+/// Multi-Head Attention in FlashAttention.tex) — the heads only interact in
+/// the input projections and the output concatenation, which are GEMMs
+/// outside this kernel. Independence maps directly onto the grid:
+/// blockIdx.y indexes the flattened (batch, head) pair, and Q, K, V, O are
+/// laid out as (batch·heads, n, d) with each slice contiguous — llm.c's
+/// "permuted" layout, chosen so a slice's rows stay coalesced. gridDim.y = 1
+/// recovers single-head attention unchanged.
+///
 /// kHeadDim = d_k = d_v; T is the I/O type;
 /// AccT = accumulation_type_t<T> is the accumulation precision.
 //------------------------------------------------------------------------------
@@ -100,6 +110,15 @@ __global__ void flash_attention_forward(
   using AccT = Softmax::accumulation_type_t<T>;
 
   static_assert(kBlockRows > 0 && kBlockColumns > 0 && kHeadDim > 0);
+
+  // Each (batch, head) slice is an independent attention problem; offset
+  // every pointer to this block's slice.
+  const int slice_offset {
+    static_cast<int>(blockIdx.y) * sequence_length * kHeadDim};
+  output += slice_offset;
+  queries += slice_offset;
+  keys += slice_offset;
+  values += slice_offset;
 
   // Q tile is padded by one column: thread t reads row t repeatedly, and for
   // kHeadDim a multiple of the warp size an unpadded stride would put every
@@ -271,7 +290,10 @@ __global__ void flash_attention_forward(
 }
 
 //------------------------------------------------------------------------------
-/// Host-side launcher: one thread per query row, one block per B_r rows.
+/// Host-side launcher: one thread per query row, one block per B_r rows;
+/// grid y spans the flattened (batch, head) slices, e.g.
+/// number_of_batch_heads = B·NH for batch size B and NH heads, with Q, K, V,
+/// O laid out as (B·NH, n, d).
 //------------------------------------------------------------------------------
 template <
   typename T,
@@ -284,12 +306,16 @@ void flash_attention(
   const T* queries,
   const T* keys,
   const T* values,
-  const int sequence_length)
+  const int sequence_length,
+  const int number_of_batch_heads = 1)
 {
   const int number_of_row_blocks {
     (sequence_length + kBlockRows - 1) / kBlockRows};
+  const dim3 grid {
+    static_cast<unsigned int>(number_of_row_blocks),
+    static_cast<unsigned int>(number_of_batch_heads)};
   flash_attention_forward<T, kHeadDim, kBlockRows, kBlockColumns, kCausal>
-    <<<number_of_row_blocks, kBlockRows>>>(
+    <<<grid, kBlockRows>>>(
       output,
       queries,
       keys,
