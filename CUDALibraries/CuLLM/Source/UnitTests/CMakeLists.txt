@@ -28,6 +28,7 @@ ADD_EXECUTABLE(Check
 
 TARGET_LINK_LIBRARIES(Check
   MoreCUDAUtilities
+  cuBLASWrappers
   gmock_main
   gtest_main
   )
