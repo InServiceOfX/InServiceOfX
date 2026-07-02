@@ -22,6 +22,7 @@ ADD_EXECUTABLE(Check
   StreamManagement/Stream_tests.cu
   Utilities/BuiltInTypes/vector_at_tests.cu
   Utilities/ErrorHandling/HandleUnsuccessfulCUDACall_tests.cu
+  Utilities/Memory/streaming_load_tests.cu
   Utilities/Memory/streaming_store_tests.cu
   Utilities/arange_tests.cpp
   variable_sizes_tests.cu
