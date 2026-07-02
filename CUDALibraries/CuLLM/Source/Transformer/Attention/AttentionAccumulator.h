@@ -10,7 +10,7 @@ namespace Attention
 {
 
 //------------------------------------------------------------------------------
-/// Attention output accumulator (§20 Definition 20.1 of FlashAttention.tex).
+/// Attention output accumulator.
 ///
 /// For a fixed query row q ∈ R^{d_k} and a subset A ⊆ {1,...,n} of key-value
 /// positions, the triple
@@ -56,7 +56,8 @@ struct AttentionAccumulator
 /// Returns the identity element (-∞, 0, 0_{d_v}) for the merge monoid.
 //------------------------------------------------------------------------------
 template <typename AccT, int kHeadDim>
-__device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> attention_identity()
+__device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim>
+  attention_identity()
 {
   AttentionAccumulator<AccT, kHeadDim> id;
   id.max_value = -Numerics::Constants::get_infinity<AccT>();
@@ -71,7 +72,7 @@ __device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> attention_identi
 
 //------------------------------------------------------------------------------
 /// Merges two attention accumulators for disjoint subsets A and B
-/// into one accumulator for A ∪ B (§20 Proposition 20.2 of FlashAttention.tex).
+/// into one accumulator for A ∪ B.
 ///
 /// Given α(A) = (m_A, ℓ_A, õ_A) and α(B) = (m_B, ℓ_B, õ_B):
 ///   m_{A∪B}  = max(m_A, m_B)
@@ -81,9 +82,9 @@ __device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> attention_identi
 /// where m = m_{A∪B}. The exp factors rescale both ℓ and each component of õ
 /// to the common maximum m before adding, keeping the result numerically stable.
 ///
-/// The resulting triple (m, ℓ_{A∪B}, õ_{A∪B}) also forms a commutative monoid
-/// (§20 Remark: "Second commutative monoid"). The FlashAttention algorithm is
-/// the sequential left fold ⊕_{t=1}^{T} α(A_t) over K/V tiles, which equals
+/// The resulting triple (m, ℓ_{A∪B}, õ_{A∪B}) also forms a commutative monoid.
+/// The FlashAttention algorithm is the sequential left fold ⊕_{t=1}^{T} α(A_t)
+/// over K/V tiles, which equals
 /// α({1,...,n}) — the accumulator for the full sequence — without ever
 /// materializing the N×N attention score matrix in HBM.
 //------------------------------------------------------------------------------
@@ -103,11 +104,15 @@ __device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> merge(
     return a;
   }
 
-  const AccT m {Numerics::MathFunctions::get_max<AccT>(a.max_value, b.max_value)};
-  const AccT scale_a {Numerics::MathFunctions::get_exponential<AccT>(a.max_value - m)};
-  const AccT scale_b {Numerics::MathFunctions::get_exponential<AccT>(b.max_value - m)};
+  const AccT m {Numerics::MathFunctions::get_max<AccT>(
+    a.max_value,
+    b.max_value)};
+  const AccT scale_a {Numerics::MathFunctions::get_exponential<AccT>(
+    a.max_value - m)};
+  const AccT scale_b {Numerics::MathFunctions::get_exponential<AccT>(
+    b.max_value - m)};
 
-  AttentionAccumulator<AccT, kHeadDim> result;
+  AttentionAccumulator<AccT, kHeadDim> result {};
   result.max_value = m;
   result.sum = scale_a * a.sum + scale_b * b.sum;
   #pragma unroll
