@@ -2476,6 +2476,114 @@ eliminating the $\Theta(n^2)$ HBM reads and writes of $S$ and $P$.
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{FlashAttention-2: Reducing Non-Matmul FLOPs}
+\label{sec:flash2-nonmatmul}
+
+Theorem~\ref{thm:flashattention-io} bounds one axis of performance: HBM
+traffic.  A second, independent axis is \emph{which} FLOPs are spent, since
+GPUs devote specialised silicon to matrix multiplication.
+
+\begin{remark}[Matmul vs.\ non-matmul FLOPs]
+\label{rem:nonmatmul-cost}
+On an A100 GPU, Tensor Cores deliver a peak throughput of $312$ TFLOPs/s for
+FP16/BF16 matrix multiply, versus only $19.5$ TFLOPs/s for non-matmul FP32
+arithmetic \cite{Dao2023} --- a single non-matmul FLOP costs roughly
+$16\times$ a matmul FLOP.  In Algorithm~\ref{alg:flashattention}, the matrix
+products $S_{ij} = Q_iK_j^\top/\sqrt{d_k}$ and $\tilde{P}_{ij}V_j$ run on
+Tensor Cores; the row max, the exponential, and every division by $\ell$ do
+not.  Minimising the count of the latter is therefore a distinct design goal
+from minimising HBM traffic.
+\end{remark}
+
+\begin{proposition}[Delayed normalisation]
+\label{prop:delayed-normalisation}
+Algorithm~\ref{alg:flashattention} performs $\Theta(nd_v)$ elementwise
+divisions in total.  The \emph{eagerly normalised} variant --- which
+maintains the normalised $O_i^{(j)} := \diag(\boldsymbol{\ell}_i^{(j)})^{-1}
+\tilde{O}_i^{(j)}$ after every inner-loop step $j$, rather than only after
+the loop, as in the two-block online-softmax computation of
+Section~\ref{sec:online-fold} --- performs $\Theta(T_c \cdot n d_v)$
+divisions, a factor of $T_c = \lceil n/B_c\rceil$ more.
+\end{proposition}
+\begin{proof}
+Algorithm~\ref{alg:flashattention} divides exactly once per row block, after
+the inner loop: $O_i := \diag(\boldsymbol{\ell}_i)^{-1}\tilde{O}_i$, a
+$B_r \times d_v$ elementwise division.  Over $T_r$ row blocks this is
+$T_r B_r d_v = n d_v$ divisions total.
+
+The eager variant instead renormalises at every inner-loop step, exactly as
+$O^{(2)} = \diag(\ell^{(1)}/\ell^{(2)})^{-1}O^{(1)} +
+\diag(\ell^{(2)})^{-1}\tilde{P}^{(2)}V^{(2)}$ renormalises \emph{both} terms
+of the running output at each of the two blocks \cite{Dao2023}: one
+$B_r\times d_v$ division per $(i,j)$ pair.  Over $T_r T_c$ pairs this is
+$T_r T_c B_r d_v = T_c \cdot n d_v$ divisions total.  The ratio of the two
+totals is $T_c$.
+\end{proof}
+
+\begin{remark}[Delayed normalisation was already built in]
+Algorithm~\ref{alg:flashattention} was derived directly from the attention
+accumulator (Definition~\ref{def:attention-accumulator}), whose whole
+purpose is to carry the \emph{unnormalised} partial output $\tilde{o}(A)$
+and defer division by $\ell$ to the very end (Definition~\ref{def:attention-accumulator}: $o(A) := \tilde{o}(A)/\ell(A)$).  Proposition~\ref{prop:delayed-normalisation}
+is therefore not an optimisation applied on top of
+Section~\ref{sec:flashattention-alg}'s algorithm; it is a consequence of
+building the algorithm from the monoid in the first place.  This is the
+tweak \cite{Dao2023} makes to the algorithm of \cite{Dao2022} to obtain
+FlashAttention-2.
+\end{remark}
+
+\begin{remark}[One statistic instead of two]
+A second FLOP-reduction tweak of \cite{Dao2023}: rather than carrying the
+pair $(\mathbf{m}_i,\boldsymbol{\ell}_i)$ forward for the backward pass, only
+the logsumexp $L_i = m_i + \ln \ell_i$
+(Definition~\ref{def:logsumexp-stat}) need be written to HBM at the end of
+each row block's inner loop --- half the auxiliary memory traffic, and,
+by Proposition~\ref{prop:recompute-p}, sufficient to reconstruct $P$ exactly
+during the backward pass (Section~\ref{sec:flashattention-backward}).
+\end{remark}
+
+\begin{proposition}[Causal tile skipping]
+\label{prop:causal-tile-skip}
+Under the causal mask (Definition~\ref{def:causal-mask}), fix row block $i$
+(global rows $(i-1)B_r+1,\ldots,iB_r$) and column block $j$ (global columns
+$(j-1)B_c+1,\ldots,jB_c$) in Algorithm~\ref{alg:flashattention}.
+\begin{enumerate}[label=(\roman*)]
+    \item If $(j-1)B_c + 1 > iB_r$ --- the smallest column index in block $j$
+    exceeds the largest row index in block $i$ --- every entry of $S_{ij}$
+    is masked, $\tilde{P}_{ij} = 0$, and the inner-loop step for $(i,j)$ may
+    be skipped entirely (no load of $K_j,V_j$, no computation).
+    \item Taking $B_r = B_c$, at most one column block per row block is
+    only \emph{partially} masked (straddles the diagonal); every other
+    needed block is entirely unmasked.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(i) By Definition~\ref{def:causal-mask}, $S_{i'j'}$ is masked iff $j' > i'$.
+The hypothesis $(j-1)B_c+1 > iB_r$ says the smallest $j'$ in block $j$
+already exceeds the largest $i'$ in block $i$, so $j' > i'$ for every pair
+$(i',j')$ in the block.
+
+(ii) With $B_r = B_c =: B$, row block $i$'s rows and column block $i$'s
+columns cover the same index range $((i-1)B+1,\ldots,iB)$, so the diagonal
+entries $S_{i'i'}$ all lie in block $(i,i)$: it is the unique block that is
+neither fully masked by (i) (it contains unmasked diagonal entries) nor
+fully unmasked (it contains masked entries with $j'>i'$ within the block).
+Every column block $j<i$ is fully unmasked; every $j>i$ is skipped by (i).
+\end{proof}
+
+\begin{remark}[Measured speedup]
+By Proposition~\ref{prop:causal-tile-skip}(i), roughly half of all $T_rT_c$
+block pairs are skipped for large $n$ (those with $j>i$), reducing both the
+matmul FLOPs and the HBM traffic of Theorem~\ref{thm:flashattention-io} by
+close to a factor of two.  \cite{Dao2023} report a $1.7$--$1.8\times$
+wall-clock speedup from causal masking in practice, short of the
+factor-of-two ideal because the unmasked row blocks (small $i$) finish their
+truncated inner loop faster than the fully-masked-free row blocks (large
+$i$), leaving some thread blocks idle while others still run --- a
+load-imbalance cost that a purely FLOP/IO count does not capture.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Gradients of Scaled Dot-Product Attention}
 \label{sec:attention-gradients}
 
@@ -2662,10 +2770,15 @@ accumulates the linear sums of Section~\ref{sec:attention-gradients}.  The
 algorithm below organises the work as two independent tiled passes — one
 parallel over row blocks producing $\mathrm{d}Q$, one parallel over column
 blocks producing $\mathrm{d}K, \mathrm{d}V$ — so each output block has a
-single writer.  (The original presentation \cite{Dao2022}, Appendix~B,
-uses a single pass over column blocks that updates $\mathrm{d}Q$ in HBM;
-the two-pass split trades one extra recomputation sweep for write locality
-and no atomic updates.)
+single writer.  (\cite{Dao2022}, Appendix~B, presents the same
+row-recompute/column-recompute equations as a single sequential sweep,
+outer loop over column blocks $j$, updating $\mathrm{d}Q_i$ in HBM at every
+inner step.  \cite{Dao2023} parallelises that sweep across thread blocks,
+one per column block $j$, using atomic adds to accumulate into
+$\mathrm{d}Q$ in HBM — see the remark on backward-pass parallelism in
+Section~\ref{sec:flash2-parallelism}.  The two-pass split used here instead
+trades one extra recomputation sweep for write locality: no atomics, no
+inter-block synchronisation at all.)
 
 \begin{algorithm}[FlashAttention backward pass]
 \label{alg:flashattention-backward}
@@ -2753,6 +2866,111 @@ $O$, $\mathrm{d}O$, $L$, $D$ contribute only $\Theta(nd)$.
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{Parallelism and Work Partitioning}
+\label{sec:flash2-parallelism}
+
+Theorem~\ref{thm:flashattention-io} and Proposition~\ref{prop:delayed-normalisation}
+bound work \emph{per SM}; a third, independent axis is how that work is
+spread across the GPU's many SMs and, within one thread block, across its
+warps.
+
+\begin{remark}[Thread-block parallelism over row blocks]
+\label{rem:sequence-parallelism}
+\cite{Dao2022} schedules one thread block per (batch, head) pair: with
+batch size $\beta$ and $h$ heads, $\beta h$ thread blocks in total, one per
+call to $\Att$ from Definition~\ref{def:attention}.  This is efficient when
+$\beta h$ is at least the GPU's SM count (108 on an A100), but under-uses
+the device when $\beta h$ is small --- exactly the long-sequence,
+small-batch regime attention is applied in at inference time.
+
+The outer loop of Algorithm~\ref{alg:flashattention} (over row blocks
+$i=1,\ldots,T_r$) has no data dependency between iterations: row block $i$
+reads only $Q_i, K, V$ and writes only $O_i, L_i$.  \cite{Dao2023}
+(crediting the loop-order swap and this parallelisation strategy to
+Tillet's Triton implementation \cite{tillet2019triton}) therefore schedules
+$\beta h T_r$ thread blocks --- one per row block, per head, per batch
+element --- recovering full SM occupancy even when $\beta h$ is small.
+\end{remark}
+
+\begin{remark}[The loop order that enables it]
+Algorithm~\ref{alg:flashattention}, as stated in
+Section~\ref{sec:flashattention-alg}, already has the outer loop over row
+blocks $i$ and the inner loop over column blocks $j$.  This is what makes
+Remark~\ref{rem:sequence-parallelism} possible: each thread block owns one
+triple $(\mathbf{m}_i,\boldsymbol{\ell}_i,\tilde{O}_i)$ in registers/SRAM for
+the entire inner loop and writes $O_i$ exactly once, with zero
+communication to any other thread block.  Swapping the loop order (outer
+over column blocks $j$, inner over row blocks $i$) --- the order used for
+the backward pass in Section~\ref{sec:flashattention-backward} because
+$\mathrm{d}Q$ accumulates across column blocks --- would instead force
+every column-block iteration to touch every row's accumulator, either
+serialising all $T_c$ column iterations within one thread block per row (as
+in Remark~\ref{rem:sequence-parallelism}'s original scheme) or requiring
+cross-block synchronisation to update a shared accumulator.
+\end{remark}
+
+\begin{remark}[Warp-level partitioning: split-$K$ vs.\ split-$Q$]
+\label{rem:split-q}
+Within one thread block computing row block $i$ against column block $j$,
+suppose there are $W$ warps.  Two ways to divide the $B_r\times B_c$
+computation of $S_{ij}$ among them:
+\begin{itemize}
+    \item \textbf{Split-$K$} \cite{Dao2022}: partition the $B_c$ columns of
+    $K_j,V_j$ across the $W$ warps ($B_c/W$ columns each).  Each warp
+    computes a partial $\tilde{P}_{ij}V_j$ slice using \emph{all} $B_r$
+    rows, so the $W$ partial $B_r\times d_v$ results must be summed across
+    warps --- a write to shared memory, a barrier, and a reduction, once
+    per tile.
+    \item \textbf{Split-$Q$} \cite{Dao2023}: partition the $B_r$ rows of
+    $Q_i$ across the $W$ warps instead ($B_r/W$ rows each).  Each warp
+    computes $S_{ij}$, $\tilde{P}_{ij}$, and $\tilde{P}_{ij}V_j$ for
+    \emph{only its own rows}, reading $K_j,V_j$ from shared memory as a
+    broadcast.  No cross-warp communication is needed at all.
+\end{itemize}
+Taking $B_r = W$ (one row per warp) is the finest-grained instance of
+split-$Q$: each warp owns a single row's full accumulator
+(Definition~\ref{def:attention-accumulator}) end to end, and the inner loop
+of Algorithm~\ref{alg:flashattention} runs independently per warp with zero
+inter-warp communication.
+\end{remark}
+
+\begin{remark}[Backward-pass parallelism: atomics vs.\ recomputation]
+As noted in Section~\ref{sec:flashattention-backward}, \cite{Dao2022}'s
+Appendix~B backward algorithm is a single sequential sweep, outer loop over
+column blocks $j$, that reads-modifies-writes $\mathrm{d}Q_i$ in HBM at
+every inner step $i$.  \cite{Dao2023} parallelises this sweep by
+scheduling one thread block per column block $j$ and using atomic adds to
+accumulate each block's contribution into $\mathrm{d}Q$ --- the only point
+in either pass where different thread blocks write to overlapping output.
+The two-pass Algorithm~\ref{alg:flashattention-backward} of this document
+avoids the atomics entirely, at the cost of a second full sweep that
+recomputes every $S_{ij}, P_{ij}$ tile already recomputed in the first
+pass.  By Remark~\ref{rem:nonmatmul-cost}, that extra sweep is
+$\Theta(n^2 d)$ additional \emph{matmul} FLOPs (recomputing $S_{ij}$ and
+$\tilde{P}_{ij}V_j$-shaped products) --- cheap, by the same hardware
+asymmetry that motivated Proposition~\ref{prop:delayed-normalisation} ---
+traded against atomic memory operations and inter-block synchronisation,
+which are not a FLOP cost at all but a memory-contention one.  Which
+trade wins is a hardware- and shape-dependent question outside the scope of
+the FLOP/IO counting used elsewhere in this document.
+\end{remark}
+
+\begin{remark}[Multi-query and grouped-query attention]
+Multi-query attention \cite{shazeer2019fast} and grouped-query attention
+\cite{ainslie2023gqa} modify Definition~\ref{def:mha} by sharing key/value
+weight matrices across heads: fix a group size $g \mid h$, and replace
+$W^K_\ell, W^V_\ell$ in the definition of $K_\ell, V_\ell$ by
+$W^K_{\lceil \ell/g\rceil}, W^V_{\lceil \ell/g\rceil}$, so only $h/g$
+distinct $(K,V)$ pairs are computed and stored ($g=h$ is multi-query
+attention, the single-shared-pair case; $g=1$ recovers
+Definition~\ref{def:mha} exactly).  This shrinks the key/value cache used
+at autoregressive inference time by a factor of $g$ without changing
+$\Att$'s per-head computation; in the backward pass, gradients
+$\mathrm{d}K,\mathrm{d}V$ for the $g$ heads sharing a $(K,V)$ pair must be
+summed.  We do not develop this variant further here.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \begin{thebibliography}{9}
 
 \bibitem{Vaswani2017}
@@ -2782,6 +3000,27 @@ Tri Dao.
   work partitioning.
 \newblock In \emph{International Conference on Learning Representations}, 2024.
 \newblock \href{https://arxiv.org/abs/2307.08691}{arXiv:2307.08691}.
+
+\bibitem{tillet2019triton}
+Philippe Tillet, Hsiang-Tsung Kung, and David Cox.
+\newblock Triton: an intermediate language and compiler for tiled neural
+  network computations.
+\newblock In \emph{Proceedings of the 3rd ACM SIGPLAN International Workshop
+  on Machine Learning and Programming Languages}, pages 10--19, 2019.
+
+\bibitem{shazeer2019fast}
+Noam Shazeer.
+\newblock Fast transformer decoding: One write-head is all you need.
+\newblock 2019.
+\newblock \href{https://arxiv.org/abs/1911.02150}{arXiv:1911.02150}.
+
+\bibitem{ainslie2023gqa}
+Joshua Ainslie, James Lee-Thorp, Michiel de Jong, Yury Zemlyanskiy,
+Federico Lebr\'{o}n, and Sumit Sanghai.
+\newblock {GQA}: Training generalized multi-query transformer models from
+  multi-head checkpoints.
+\newblock 2023.
+\newblock \href{https://arxiv.org/abs/2305.13245}{arXiv:2305.13245}.
 
 \end{thebibliography}
 
