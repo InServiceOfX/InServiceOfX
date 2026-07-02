@@ -2476,6 +2476,283 @@ eliminating the $\Theta(n^2)$ HBM reads and writes of $S$ and $P$.
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{Gradients of Scaled Dot-Product Attention}
+\label{sec:attention-gradients}
+
+Training requires the gradients of a scalar loss through the attention map.
+Fix a smooth loss $\phi : \Mat{n}{d_v} \to \R$ of the output
+$O = \Att(Q,K,V)$ and write, for any intermediate quantity $X$,
+\[
+    \mathrm{d}X \;:=\; \frac{\partial \phi}{\partial X},
+\]
+a matrix of the same shape as $X$ (the ``upstream gradient'' convention of
+reverse-mode automatic differentiation).  The backward pass receives
+$\mathrm{d}O \in \Mat{n}{d_v}$ and must produce $\mathrm{d}Q, \mathrm{d}K \in
+\Mat{n}{d_k}$ and $\mathrm{d}V \in \Mat{n}{d_v}$.
+
+\begin{proposition}[Gradients through $O = PV$]
+\label{prop:grad-pv}
+\[
+    \mathrm{d}V \;=\; P^\top \mathrm{d}O \;\in\; \Mat{n}{d_v},
+    \qquad
+    \mathrm{d}P \;=\; \mathrm{d}O\, V^\top \;\in\; \Mat{n}{n}.
+\]
+\end{proposition}
+\begin{proof}
+Entrywise, $O_{ia} = \sum_j P_{ij} V_{ja}$.  By the chain rule,
+\[
+    \mathrm{d}V_{ja}
+    \;=\; \sum_i \frac{\partial \phi}{\partial O_{ia}}
+          \frac{\partial O_{ia}}{\partial V_{ja}}
+    \;=\; \sum_i \mathrm{d}O_{ia}\, P_{ij}
+    \;=\; (P^\top \mathrm{d}O)_{ja},
+\]
+\[
+    \mathrm{d}P_{ij}
+    \;=\; \sum_a \mathrm{d}O_{ia}\, V_{ja}
+    \;=\; \inner{\mathrm{d}O_{i,\cdot}}{V_{j,\cdot}}
+    \;=\; (\mathrm{d}O\, V^\top)_{ij}.
+    \qedhere
+\]
+\end{proof}
+
+\begin{proposition}[Gradient through the row-wise softmax]
+\label{prop:grad-softmax}
+With $P_i = \softmax(S_i)$ row-wise, define the row scalars
+\[
+    D_i \;:=\; \sum_{k=1}^n P_{ik}\, \mathrm{d}P_{ik} \;\in\; \R.
+\]
+Then
+\[
+    \mathrm{d}S_{ij} \;=\; P_{ij}\bigl(\mathrm{d}P_{ij} - D_i\bigr).
+\]
+\end{proposition}
+\begin{proof}
+The Jacobian of the softmax (Remark~\ref{rem:jsoftmax}) is
+$J\softmax(S_i) = \diag(p_i) - p_i p_i^\top$, which is symmetric, so
+reverse-mode application coincides with forward multiplication:
+\[
+    \mathrm{d}S_{i,\cdot}
+    \;=\; \mathrm{d}P_{i,\cdot}\,\bigl(\diag(p_i) - p_i p_i^\top\bigr).
+\]
+Entry $j$:
+\[
+    \mathrm{d}S_{ij}
+    \;=\; \mathrm{d}P_{ij} P_{ij}
+      - \Bigl(\sum_k \mathrm{d}P_{ik} P_{ik}\Bigr) P_{ij}
+    \;=\; P_{ij}\bigl(\mathrm{d}P_{ij} - D_i\bigr).
+    \qedhere
+\]
+\end{proof}
+
+\begin{proposition}[The row-dot identity]
+\label{prop:row-dot}
+$D_i$ requires neither $P$ nor $\mathrm{d}P$:
+\[
+    D_i \;=\; \inner{\mathrm{d}O_{i,\cdot}}{O_{i,\cdot}},
+    \qquad\text{i.e.}\qquad
+    D \;=\; \rowsum(\mathrm{d}O \odot O) \;\in\; \R^n.
+\]
+\end{proposition}
+\begin{proof}
+Substitute $\mathrm{d}P_{ik} = \inner{\mathrm{d}O_{i,\cdot}}{V_{k,\cdot}}$
+(Proposition~\ref{prop:grad-pv}) and exchange the sums:
+\[
+    D_i
+    \;=\; \sum_k P_{ik} \inner{\mathrm{d}O_{i,\cdot}}{V_{k,\cdot}}
+    \;=\; \Bigl\langle \mathrm{d}O_{i,\cdot},\,
+          \sum_k P_{ik} V_{k,\cdot} \Bigr\rangle
+    \;=\; \inner{\mathrm{d}O_{i,\cdot}}{O_{i,\cdot}}.
+    \qedhere
+\]
+\end{proof}
+
+This identity is what makes a memory-light backward pass possible: the
+$n \times n$ matrix $\mathrm{d}P$ never needs to be materialised, because its
+only global use — the row sums $D_i$ — is computable from $\mathrm{d}O$ and
+$O$ alone, in $\Theta(nd)$ work and memory.
+
+\begin{proposition}[Gradients through $S = QK^\top/\sqrt{d_k}$]
+\label{prop:grad-scores}
+\[
+    \mathrm{d}Q \;=\; \frac{1}{\sqrt{d_k}}\, \mathrm{d}S\, K,
+    \qquad
+    \mathrm{d}K \;=\; \frac{1}{\sqrt{d_k}}\, \mathrm{d}S^\top Q.
+\]
+\end{proposition}
+\begin{proof}
+$S_{ij} = \inner{Q_{i,\cdot}}{K_{j,\cdot}}/\sqrt{d_k}$, so
+$\partial S_{ij}/\partial Q_{ib} = K_{jb}/\sqrt{d_k}$ and
+$\partial S_{ij}/\partial K_{jb} = Q_{ib}/\sqrt{d_k}$.  Chain rule:
+\[
+    \mathrm{d}Q_{ib} = \frac{1}{\sqrt{d_k}} \sum_j \mathrm{d}S_{ij} K_{jb},
+    \qquad
+    \mathrm{d}K_{jb} = \frac{1}{\sqrt{d_k}} \sum_i \mathrm{d}S_{ij} Q_{ib}.
+    \qedhere
+\]
+\end{proof}
+
+\begin{remark}[Causal masking]
+With the causal mask (Definition~\ref{def:causal-mask}), $P_{ij} = 0$ for
+$j > i$, and by Proposition~\ref{prop:grad-softmax} also
+$\mathrm{d}S_{ij} = P_{ij}(\cdots) = 0$ there.  Every sum above therefore
+restricts to $j \leq i$: masked entries contribute nothing to any gradient.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Recomputation and the Logsumexp Statistic}
+\label{sec:logsumexp-statistic}
+
+The gradient formulas of Section~\ref{sec:attention-gradients} reference $P$,
+which FlashAttention deliberately never stored.  The remedy
+\cite{Dao2022} is \emph{recomputation}: the forward pass saves one scalar per
+row from which any tile of $P$ can be regenerated in SRAM.
+
+\begin{definition}[Logsumexp statistic]
+\label{def:logsumexp-stat}
+For row $i$ with score row $s_i = S_{i,\cdot} \in \R^n$ and safe-softmax
+statistics $m(s_i)$, $\ell(s_i)$ (the accumulator of
+Section~\ref{sec:output-accumulator}), define
+\[
+    L_i \;:=\; m(s_i) + \ln \ell(s_i)
+    \;=\; \ln \sum_{j=1}^n e^{S_{ij}}
+    \;=\; \logsumexp(s_i).
+\]
+\end{definition}
+
+\begin{proposition}[Tile-wise recomputation of $P$]
+\label{prop:recompute-p}
+\[
+    P_{ij} \;=\; e^{S_{ij} - L_i} \qquad \text{for all } i, j.
+\]
+Moreover the subtraction is numerically safe: $S_{ij} - L_i \leq
+S_{ij} - m(s_i) \leq 0$, so the exponential never overflows.
+\end{proposition}
+\begin{proof}
+$e^{S_{ij} - L_i} = e^{S_{ij} - m(s_i) - \ln \ell(s_i)}
+= e^{S_{ij} - m(s_i)}/\ell(s_i) = P_{ij}$, the safe-softmax output.  For
+the safety bound: the sum $\ell(s_i) = \sum_k e^{S_{ik} - m(s_i)}$
+contains the term $k = j$, so $\ell(s_i) \geq e^{S_{ij} - m(s_i)}$; taking
+logarithms, $L_i = m(s_i) + \ln \ell(s_i) \geq S_{ij}$.
+\end{proof}
+
+\begin{remark}[One scalar instead of two]
+Storing $L_i$ replaces the pair $(m(s_i), \ell(s_i))$: $n$ scalars total,
+versus the $n^2$ entries of $P$.  Any $B_r \times B_c$ tile of $P$ is then
+recomputable from $Q_i$, $K_j$, $L$ resident in SRAM as
+$P_{ij} = \exp(Q_i K_j^\top/\sqrt{d_k} - L_i \mathbf{1}^\top)$.
+\end{remark}
+
+\begin{remark}[No merge monoid in the backward pass]
+The forward pass needed the online merge (Section~\ref{sec:merge-monoid})
+because $m$ and $\ell$ are \emph{nonlinear} statistics of a growing key set.
+In the backward pass those statistics are already global — $L_i$ is fixed —
+and every gradient formula is a plain \emph{linear} sum over $j$ (or $i$),
+which decomposes over tiles exactly.  Tiled backward accumulation is
+therefore ordinary addition, with no rescaling and no maximum tracking.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The FlashAttention Backward Pass}
+\label{sec:flashattention-backward}
+
+Assemble the pieces: the forward pass leaves $O$ and $L$ in HBM ($S$, $P$
+discarded); the backward pass recomputes score and weight tiles in SRAM and
+accumulates the linear sums of Section~\ref{sec:attention-gradients}.  The
+algorithm below organises the work as two independent tiled passes — one
+parallel over row blocks producing $\mathrm{d}Q$, one parallel over column
+blocks producing $\mathrm{d}K, \mathrm{d}V$ — so each output block has a
+single writer.  (The original presentation \cite{Dao2022}, Appendix~B,
+uses a single pass over column blocks that updates $\mathrm{d}Q$ in HBM;
+the two-pass split trades one extra recomputation sweep for write locality
+and no atomic updates.)
+
+\begin{algorithm}[FlashAttention backward pass]
+\label{alg:flashattention-backward}
+\textbf{Input}: $Q, K \in \Mat{n}{d_k}$, $V, O, \mathrm{d}O \in \Mat{n}{d_v}$,
+$L \in \R^n$; tile sizes $B_r, B_c$ as in
+Algorithm~\ref{alg:flashattention}.
+
+\textbf{Output}: $\mathrm{d}Q$, $\mathrm{d}K$, $\mathrm{d}V$.
+
+\begin{enumerate}
+    \item \textbf{Preprocess}: $D \leftarrow \rowsum(\mathrm{d}O \odot O)
+    \in \R^n$ \quad (Proposition~\ref{prop:row-dot}).
+    \item \textbf{Pass 1 ($\mathrm{d}Q$), for} each row block $i = 1, \ldots, T_r$:
+    \begin{enumerate}
+        \item Load $Q_i, \mathrm{d}O_i, L_i, D_i$ into SRAM;
+        $\mathrm{d}Q_i \leftarrow \mathbf{0}$.
+        \item \textbf{For} $j = 1, \ldots, T_c$: load $K_j, V_j$;
+        recompute in SRAM
+        \[
+            S_{ij} = Q_i K_j^\top/\sqrt{d_k}, \qquad
+            P_{ij} = \exp(S_{ij} - L_i \mathbf{1}^\top),
+        \]
+        \[
+            \mathrm{d}P_{ij} = \mathrm{d}O_i V_j^\top, \qquad
+            \mathrm{d}S_{ij} = P_{ij} \odot
+              (\mathrm{d}P_{ij} - D_i \mathbf{1}^\top),
+        \]
+        \[
+            \mathrm{d}Q_i \;\mathrel{+}=\;
+              \mathrm{d}S_{ij}\, K_j/\sqrt{d_k}.
+        \]
+        \item Write $\mathrm{d}Q_i$ to HBM.
+    \end{enumerate}
+    \item \textbf{Pass 2 ($\mathrm{d}K, \mathrm{d}V$), for} each column
+    block $j = 1, \ldots, T_c$:
+    \begin{enumerate}
+        \item Load $K_j, V_j$ into SRAM;
+        $\mathrm{d}K_j, \mathrm{d}V_j \leftarrow \mathbf{0}$.
+        \item \textbf{For} $i = 1, \ldots, T_r$: load
+        $Q_i, \mathrm{d}O_i, L_i, D_i$; recompute $S_{ij}, P_{ij},
+        \mathrm{d}P_{ij}, \mathrm{d}S_{ij}$ as in Pass 1, then
+        \[
+            \mathrm{d}V_j \;\mathrel{+}=\; P_{ij}^\top\, \mathrm{d}O_i,
+            \qquad
+            \mathrm{d}K_j \;\mathrel{+}=\;
+              \mathrm{d}S_{ij}^\top\, Q_i/\sqrt{d_k}.
+        \]
+        \item Write $\mathrm{d}K_j, \mathrm{d}V_j$ to HBM.
+    \end{enumerate}
+\end{enumerate}
+\end{algorithm}
+
+\begin{proposition}[Correctness]
+\label{prop:backward-correct}
+Algorithm~\ref{alg:flashattention-backward} computes the exact gradients of
+Section~\ref{sec:attention-gradients}.
+\end{proposition}
+\begin{proof}
+By Proposition~\ref{prop:recompute-p} each recomputed tile $P_{ij}$ is
+exact, hence so are $\mathrm{d}P_{ij}$ and $\mathrm{d}S_{ij}$
+(Propositions~\ref{prop:grad-pv}, \ref{prop:grad-softmax},
+\ref{prop:row-dot}).  The remaining sums
+$\mathrm{d}Q_i = \sum_j \mathrm{d}S_{ij} K_j/\sqrt{d_k}$,
+$\mathrm{d}V_j = \sum_i P_{ij}^\top \mathrm{d}O_i$, and
+$\mathrm{d}K_j = \sum_i \mathrm{d}S_{ij}^\top Q_i/\sqrt{d_k}$ are finite
+sums over the tile partition (Proposition~\ref{prop:grad-scores}), and
+tile-wise accumulation computes them term by term.
+\end{proof}
+
+\begin{remark}[Causal tiling]
+Under the causal mask, Pass 1 for row block $i$ needs only column tiles
+with first key index $\leq$ the block's last row (later tiles are entirely
+masked), and Pass 2 for column block $j$ needs only row tiles with last row
+index $\geq$ the block's first key — each pass skips roughly half its inner
+iterations, mirroring the forward tile skipping.
+\end{remark}
+
+\begin{remark}[IO complexity]
+Each pass has the same loop structure as the forward pass — every inner
+iteration moves $\Theta(B d)$ elements and there are $T_r T_c$ inner
+iterations — so the backward IO complexity is again
+$\Theta(n^2 d^2 / M)$ (Theorem~\ref{thm:flashattention-io}), with $S$,
+$P$, $\mathrm{d}S$, $\mathrm{d}P$ never touching HBM.  The extra inputs
+$O$, $\mathrm{d}O$, $L$, $D$ contribute only $\Theta(nd)$.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \begin{thebibliography}{9}
 
 \bibitem{Vaswani2017}
