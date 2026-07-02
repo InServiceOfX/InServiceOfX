@@ -3,8 +3,6 @@ ENABLE_TESTING()
 SET(TEST_CU_SOURCES
   Drafts/LLM/AttentionForward/softmax_tests.cu
   LLM/attention_forward_tests.cu
-  LLM/AttentionForward/softmax_tests.cu
-  LLM/AttentionForward/flash_attention_tests.cu
   Transformer/Attention/AttentionAccumulator_tests.cu
   Transformer/Attention/attention_scores_tests.cu
   Transformer/Attention/attention_weighted_values_tests.cu
@@ -17,6 +15,7 @@ SET(TEST_CU_SOURCES
   Transformer/Softmax/softmax_block_shared_reduce_tests.cu
   Transformer/Softmax/softmax_block_unrolled_fused_tests.cu
   Transformer/Softmax/softmax_warp_fold_reduce_tests.cu
+  Transformer/Softmax/softmax_warp_streaming_fused_tests.cu
   )
 
 #SET(TEST_SOURCES
