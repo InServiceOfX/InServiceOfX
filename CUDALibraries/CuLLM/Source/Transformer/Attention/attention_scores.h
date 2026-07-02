@@ -1,6 +1,7 @@
 #ifndef TRANSFORMER_ATTENTION_ATTENTION_SCORES_H
 #define TRANSFORMER_ATTENTION_ATTENTION_SCORES_H
 
+#include "Numerics/Constants/get_infinity.h"
 #include "Numerics/MathFunctions.h"
 #include "Transformer/Softmax/AccumulationType.h"
 
@@ -37,12 +38,22 @@ namespace Attention
 /// tensor cores, as llm.c uses), deferred here because FlashAttention
 /// restructures this loop entirely — it never materializes S in HBM.
 ///
+/// Causal (autoregressive) masking, kCausal = true: the causal mask
+/// M_ij = 0 for i ≥ j and −∞ for i < j is added to S before softmax
+/// (see the definition of the causal mask in the section on The Decoder
+/// Stack in FlashAttention.tex). Since exp(−∞) = 0, row i of the attention
+/// weights becomes a probability distribution supported on {1, ..., i}
+/// only: position i cannot attend to future positions. Writing S_ij = −∞
+/// directly is exact — the downstream safe softmax maps these entries to
+/// weight 0 (exp(−∞ − m) = 0), and the diagonal j = i is always unmasked,
+/// so every row keeps at least one finite score.
+///
 /// kHeadDim = d_k must be a compile-time constant so the shared-memory
 /// staging buffer is statically sized and the dot-product loop fully unrolls.
 /// T is the I/O type; AccT = accumulation_type_t<T> is the dot-product
 /// accumulation precision.
 //------------------------------------------------------------------------------
-template <typename T, int kHeadDim>
+template <typename T, int kHeadDim, bool kCausal = false>
 __global__ void attention_scores(
   T* scores,
   const T* queries,
@@ -76,6 +87,14 @@ __global__ void attention_scores(
     j < sequence_length;
     j += static_cast<int>(blockDim.x))
   {
+    // Causal mask M_ij: position i is blocked from future positions j > i.
+    if (kCausal && j > query_index)
+    {
+      scores[query_index * sequence_length + j] = static_cast<T>(
+        -Numerics::Constants::get_infinity<AccT>());
+      continue;
+    }
+
     const T* key_row {keys + j * kHeadDim};
 
     AccT dot {0};

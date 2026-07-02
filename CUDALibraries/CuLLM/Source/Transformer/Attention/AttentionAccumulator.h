@@ -93,13 +93,16 @@ __device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> merge(
   const AttentionAccumulator<AccT, kHeadDim> a,
   const AttentionAccumulator<AccT, kHeadDim> b)
 {
-  // Guard: a zero sum means the accumulator is the identity element (-∞, 0, 0).
-  // Without this, exp(-∞ − (-∞)) = exp(NaN) propagates through ℓ and õ.
-  if (a.sum == AccT{0})
+  // Guard: max_value = -∞ means the accumulator contributes nothing — either
+  // the identity element (-∞, 0, 0) or an accumulator built solely from
+  // causally masked scores (-∞ score ⇒ exp(-∞ − m) = 0 weight, an empty
+  // element of the monoid). Without this, merging two such accumulators
+  // produces exp(-∞ − (-∞)) = exp(NaN), which propagates through ℓ and õ.
+  if (a.max_value == -Numerics::Constants::get_infinity<AccT>())
   {
     return b;
   }
-  if (b.sum == AccT{0})
+  if (b.max_value == -Numerics::Constants::get_infinity<AccT>())
   {
     return a;
   }

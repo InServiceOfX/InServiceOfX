@@ -40,10 +40,17 @@ namespace Attention
 /// attention_scores, attention_weighted_values, and
 /// AttentionAccumulator<AccT, kHeadDim>).
 ///
+/// kCausal = true adds the causal mask M_ij (0 for i ≥ j, −∞ for i < j) to
+/// S before the softmax (see the definition of the causal mask in the
+/// section on The Decoder Stack in FlashAttention.tex): each weight row
+/// becomes a distribution supported on {1, ..., i}. The −∞ entries flow
+/// through the safe softmax unchanged — exp(−∞ − m) = 0 — so only the
+/// scores stage needs to know about the mask.
+///
 /// block_size must be a multiple of the warp size (32) for the softmax
 /// stage's warp partitioning.
 //------------------------------------------------------------------------------
-template <typename T, int kHeadDim>
+template <typename T, int kHeadDim, bool kCausal = false>
 void scaled_dot_product_attention(
   T* output,
   T* scores_workspace,
@@ -54,8 +61,8 @@ void scaled_dot_product_attention(
   const int sequence_length,
   const int block_size = 128)
 {
-  // 1. S = Q K^⊤ / √d_k — one block per query row.
-  attention_scores<T, kHeadDim><<<sequence_length, block_size>>>(
+  // 1. S = Q K^⊤ / √d_k (+ M if causal) — one block per query row.
+  attention_scores<T, kHeadDim, kCausal><<<sequence_length, block_size>>>(
     scores_workspace,
     queries,
     keys,

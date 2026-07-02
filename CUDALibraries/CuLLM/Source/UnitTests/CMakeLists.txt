@@ -8,6 +8,7 @@ SET(TEST_CU_SOURCES
   Transformer/Attention/AttentionAccumulator_tests.cu
   Transformer/Attention/attention_scores_tests.cu
   Transformer/Attention/attention_weighted_values_tests.cu
+  Transformer/Attention/causal_attention_tests.cu
   Transformer/Attention/flash_attention_forward_tests.cu
   Transformer/Attention/scaled_dot_product_attention_tests.cu
   Transformer/Softmax/softmax_block_shared_reduce_tests.cu

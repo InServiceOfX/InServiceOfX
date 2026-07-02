@@ -64,12 +64,17 @@ __device__ __forceinline__ SafeSoftmaxAccumulator<AccT> merge(
   const bool a_is_larger {a.max_value > b.max_value};
   const SafeSoftmaxAccumulator<AccT> larger {a_is_larger ? a : b};
   const SafeSoftmaxAccumulator<AccT> smaller {a_is_larger ? b : a};
-  // Guard: if smaller holds the identity {-inf, 0}, skip the exponent entirely.
-  // Without this, two identity accumulators produce -inf - (-inf) = NaN in the
-  // exponent, and 0 * NaN = NaN by IEEE 754 — corrupting the reduction.
-  // This arises in the Level 2 warp reduction when C < 32 and some threads own
-  // no elements (their partial stays at identity throughout Level 1).
-  if (smaller.sum == AccT{0})
+  // Guard: if smaller has max_value = -inf, skip the exponent entirely.
+  // Without this, -inf - (-inf) = NaN in the exponent when both maxes are
+  // -inf, and 0 * NaN = NaN by IEEE 754 — corrupting the reduction.
+  // max_value = -inf covers two cases with one comparison:
+  //   1. The identity {-inf, 0}: threads that own no elements (C < 32 in the
+  //      Level 2 warp reduction) keep their Level 1 partial at identity.
+  //   2. Accumulators of causally masked elements {-inf, k}: a score of -inf
+  //      (exp(-inf - m) = 0 weight) is an empty element of the monoid, so a
+  //      subsequence of only masked elements must merge as the identity —
+  //      folding two of them via the exponent path would produce NaN.
+  if (smaller.max_value == -Numerics::Constants::get_infinity<AccT>())
   {
     return larger;
   }

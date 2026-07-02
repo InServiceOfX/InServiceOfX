@@ -65,10 +65,31 @@ namespace Attention
 /// Epilogue: O_i = õ/ℓ (the normalized output o(A) of the accumulator),
 /// written to HBM once — the only n×d_v write of the whole kernel.
 ///
+/// Causal (autoregressive) masking, kCausal = true: the causal mask
+/// M_ij = 0 for i ≥ j, −∞ for i < j restricts row i's attention weights to
+/// a distribution supported on {1, ..., i} (see the definition of the
+/// causal mask in the section on The Decoder Stack in FlashAttention.tex).
+/// In tiled form the mask acts at two granularities:
+///   - Tile level: a K/V tile whose first key index exceeds the block's
+///     last query row is masked for *every* row of the Q block, so the
+///     inner loop simply stops early — about half the tiles (and half the
+///     K/V HBM reads) are skipped. The bound depends only on blockIdx, so
+///     all threads of the block exit the loop together (barrier-safe).
+///   - Element level: within a straddling diagonal tile, keys with
+///     tile_start + j > query_index get score −∞ — identical to the
+///     partial-tile padding, p_j = 0, the monoid identity. Key 0 is never
+///     masked (0 ≤ i for every row), so every row's fold still meets at
+///     least one finite score in the first tile.
+///
 /// kHeadDim = d_k = d_v; T is the I/O type;
 /// AccT = accumulation_type_t<T> is the accumulation precision.
 //------------------------------------------------------------------------------
-template <typename T, int kHeadDim, int kBlockRows, int kBlockColumns>
+template <
+  typename T,
+  int kHeadDim,
+  int kBlockRows,
+  int kBlockColumns,
+  bool kCausal = false>
 __global__ void flash_attention_forward(
   T* output,
   const T* queries,
@@ -122,8 +143,20 @@ __global__ void flash_attention_forward(
   AttentionAccumulator<AccT, kHeadDim> accumulator {
     attention_identity<AccT, kHeadDim>()};
 
-  const int number_of_tiles {
+  int number_of_tiles {
     (sequence_length + kBlockColumns - 1) / kBlockColumns};
+  if (kCausal)
+  {
+    // Tiles whose first key index exceeds the block's last query row are
+    // fully masked for every row of this Q block — skip them. Uniform
+    // across the block (depends only on blockIdx), so the __syncthreads()
+    // calls below stay aligned.
+    const int last_query_in_block {
+      static_cast<int>(blockIdx.x) * kBlockRows + kBlockRows - 1};
+    const int last_needed_tile {last_query_in_block / kBlockColumns};
+    number_of_tiles = (last_needed_tile + 1 < number_of_tiles) ?
+      last_needed_tile + 1 : number_of_tiles;
+  }
 
   for (int tile {0}; tile < number_of_tiles; ++tile)
   {
@@ -168,7 +201,10 @@ __global__ void flash_attention_forward(
     #pragma unroll
     for (int j {0}; j < kBlockColumns; ++j)
     {
-      if (j < tile_size)
+      // Out-of-sequence keys and causally masked keys (M_ij = −∞ for
+      // j > i) both take the −∞ score path: p_j = 0, the monoid identity.
+      const bool masked {kCausal && (tile_start + j > query_index)};
+      if (j < tile_size && !masked)
       {
         AccT dot {0};
         #pragma unroll
@@ -237,7 +273,12 @@ __global__ void flash_attention_forward(
 //------------------------------------------------------------------------------
 /// Host-side launcher: one thread per query row, one block per B_r rows.
 //------------------------------------------------------------------------------
-template <typename T, int kHeadDim, int kBlockRows, int kBlockColumns>
+template <
+  typename T,
+  int kHeadDim,
+  int kBlockRows,
+  int kBlockColumns,
+  bool kCausal = false>
 void flash_attention(
   T* output,
   const T* queries,
@@ -247,7 +288,7 @@ void flash_attention(
 {
   const int number_of_row_blocks {
     (sequence_length + kBlockRows - 1) / kBlockRows};
-  flash_attention_forward<T, kHeadDim, kBlockRows, kBlockColumns>
+  flash_attention_forward<T, kHeadDim, kBlockRows, kBlockColumns, kCausal>
     <<<number_of_row_blocks, kBlockRows>>>(
       output,
       queries,
