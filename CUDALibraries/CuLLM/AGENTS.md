@@ -110,7 +110,7 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **69 tests, 22 suites, all passing** (plus
+As of this file's writing: **74 tests, 23 suites, all passing** (plus
 MoreCUDA's 123), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
@@ -261,10 +261,13 @@ measurements). What they became:
 
 Remaining (new) backlog:
 
-1. **GQA/MQA backward.** For group size g > 1 the dK/dV of the g heads
-   sharing a (K, V) pair must be summed (see the tex remark) — the
-   per-slice backward kernels don't do this reduction. Training with GQA
-   needs it; `grouped_query_attention.h`'s doc comment marks the gap.
+1. ~~GQA/MQA backward~~ DONE 2026-07-02:
+   `grouped_query_attention_backward.h`. The backward gradient kernels take
+   the same (num_heads, kv_group_size) slice map as the forward; Pass 2
+   writes dK/dV as per-query-head partials (single-writer, no atomics) and
+   `reduce_grouped_kv_gradients` performs the tex remark's group sum;
+   `merge_grouped_qkv_heads` is the grouped split's adjoint. Verified by
+   finite-difference gradient checks at g=2, causal g=2, and g=NH (MQA).
 2. ~~bfloat16~~ DONE 2026-07-02: `__nv_bfloat16` runs the MHA pipeline
    end-to-end (`multi_head_attention_bfloat16_tests.cu`). Key wrinkle: no
    `CUBLAS_COMPUTE_16BF` exists — bf16 GEMMs are R_16BF data under

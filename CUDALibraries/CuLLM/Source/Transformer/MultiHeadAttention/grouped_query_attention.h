@@ -48,11 +48,9 @@ namespace MultiHeadAttention
 ///   qkv_weight_matrix   — (d_model, (NH + 2·NKV)·kHeadDim)
 ///   output_weight_matrix— (d_model, d_model)
 ///
-/// The backward pass is NOT implemented for g > 1: the gradients dK, dV of
-/// the g heads sharing a (K, V) pair must be summed (see the tex remark),
-/// which multi_head_attention_backward's per-slice kernels do not do. Use
-/// g = 1 (i.e. multi_head_attention) for training paths until that
-/// reduction exists.
+/// For training, pass a non-null logsumexp (a (B·NH, T) buffer) and use
+/// grouped_query_attention_backward, which performs the group summation of
+/// dK/dV that the tex remark requires.
 ///
 /// num_heads must be divisible by kv_group_size.
 //------------------------------------------------------------------------------
