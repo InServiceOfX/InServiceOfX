@@ -122,7 +122,7 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **88 tests, 25 suites, all passing** (CuTe tests require the gitignored CUTLASS clone at CUDALibraries/ThirdParty/cutlass — see Source/CMakeLists.txt for the one-line clone command) (plus
+As of this file's writing: **89 tests, 25 suites, all passing** (CuTe tests require the gitignored CUTLASS clone at CUDALibraries/ThirdParty/cutlass — see Source/CMakeLists.txt for the one-line clone command) (plus
 MoreCUDA's 123), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
@@ -201,6 +201,13 @@ CuTe coordinate tensors, double-buffers K/V with cp.async, and persists Q
 fragments — 2.7–3× over WMMA (N=2048 non-causal 52.1→19.0 ms), beats
 XLA's fused standard attention, 2.3× from cuDNN (1.14× at N=1024). Report
 Section 6 lists the remaining rungs (bigger tiles, LDSM, swizzles).
+`Attention/flash_attention_forward_dispatch.h` now exposes that CuTe kernel
+behind ordinary `multi_head_attention()` for eligible inference/training
+forward shapes: `__half`, `kHeadDim == 64`, `kWarpsPerBlock == 4`, sm_80+,
+and ungrouped per-head K/V layout. Other shapes fall back to the
+warp-cooperative kernel. Grouped-query/multi-query attention deliberately
+stays on `flash_attention_warp_cooperative` until the CuTe kernel learns the
+shared K/V slice map.
 
 MoreCUDA has its own standalone build (`MoreCUDA/BuildGcc`, same
 `cmake ../Source && make Check`); **re-run it after touching any file under
@@ -279,6 +286,10 @@ standalone build if done carelessly (see gotcha below).
 - [x] Output linear map (merge-heads kernel + cuBLASLt GEMM)
 - [x] Full `multi_head_attention()` composition, end-to-end tested against an
       independent CPU MHA reference (causal + non-causal)
+- [x] CUTLASS/CuTe dispatch layer for ordinary MHA:
+      `Attention/flash_attention_forward_dispatch.h` selects the CuTe
+      forward kernel for the supported `__half`, head-dim 64, 4-warps/block,
+      sm_80+ path and otherwise falls back to warp-cooperative attention.
 - [x] IO-complexity benchmark (`AttentionIOBenchmark`)
 - [x] Direct JAX reference path:
       `Python/jax_attention_reference.py` implements standard attention,

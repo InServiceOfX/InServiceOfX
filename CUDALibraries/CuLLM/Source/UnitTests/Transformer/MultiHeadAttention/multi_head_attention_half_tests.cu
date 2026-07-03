@@ -1,6 +1,7 @@
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "DataStructures/Array.h"
 #include "StreamManagement/Stream.h"
+#include "Transformer/Attention/flash_attention_forward_dispatch.h"
 #include "Transformer/MultiHeadAttention/multi_head_attention.h"
 #include "gtest/gtest.h"
 
@@ -151,15 +152,10 @@ vector<float> multi_head_attention_cpu_reference(
   return output;
 }
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-TEST(MultiHeadAttentionHalfTests, HalfPipelineMatchesCpuReference)
+template <int kHD, int batch_size, int num_heads, int sequence_length>
+void run_half_pipeline_matches_cpu_reference()
 {
-  constexpr int kHD {32};
   constexpr int kWarps {4};
-  constexpr int batch_size {2};
-  constexpr int num_heads {2};
-  constexpr int sequence_length {32};
   constexpr int d_model {num_heads * kHD};
   const int num_tokens {batch_size * sequence_length};
   const int per_head_elements {batch_size * num_heads * sequence_length * kHD};
@@ -254,6 +250,46 @@ TEST(MultiHeadAttentionHalfTests, HalfPipelineMatchesCpuReference)
   // Guard against a silently loosened comparison: the observed error must
   // stay in a genuinely half-precision band, not a float one.
   EXPECT_GT(max_error, 1e-6);
+}
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+TEST(MultiHeadAttentionHalfTests, HalfPipelineMatchesCpuReference)
+{
+  run_half_pipeline_matches_cpu_reference<
+    /* kHD = */ 32,
+    /* batch_size = */ 2,
+    /* num_heads = */ 2,
+    /* sequence_length = */ 32>();
+}
+
+//------------------------------------------------------------------------------
+// This shape is the production-eligible CuTe dispatch path when CUTLASS is
+// present on sm_80+: __half, head_dim 64, 4 warps/block. The test still
+// passes on builds without CUTLASS because the dispatcher falls back to the
+// warp-cooperative kernel.
+//------------------------------------------------------------------------------
+TEST(MultiHeadAttentionHalfTests, HeadDim64DispatchMatchesCpuReference)
+{
+#if defined(CULLM_HAS_CUTLASS)
+  int device {};
+  ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+  cudaDeviceProp properties {};
+  ASSERT_EQ(cudaGetDeviceProperties(&properties, device), cudaSuccess);
+  if (properties.major >= 8)
+  {
+    EXPECT_TRUE((
+      ::Transformer::Attention::flash_attention_forward_dispatch_uses_cute<
+        __half,
+        64,
+        4>()));
+  }
+#endif
+  run_half_pipeline_matches_cpu_reference<
+    /* kHD = */ 64,
+    /* batch_size = */ 1,
+    /* num_heads = */ 1,
+    /* sequence_length = */ 32>();
 }
 
 } // namespace MultiHeadAttention

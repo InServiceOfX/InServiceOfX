@@ -3,7 +3,7 @@
 
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "StreamManagement/Stream.h"
-#include "Transformer/Attention/flash_attention_warp_cooperative.h"
+#include "Transformer/Attention/flash_attention_forward_dispatch.h"
 #include "Transformer/MultiHeadAttention/output_linear_map.h"
 #include "Transformer/MultiHeadAttention/qkv_linear_maps.h"
 
@@ -26,10 +26,11 @@ namespace MultiHeadAttention
 ///      right-multiplication linear maps for every head at once
 ///      (y W_qkv), then split_qkv_heads gathers the result into
 ///      per-head-contiguous tensors.
-///   2. flash_attention_warp_cooperative — the attention core, run once per
-///      (batch, head) slice via its existing blockIdx.y batching (see the
-///      section on The FlashAttention Algorithm); this is exactly the
-///      independence multihead_flash_attention_tests.cu verifies.
+///   2. flash_attention_forward_dispatch — the attention core, run once per
+///      (batch, head) slice via blockIdx.y batching. The dispatcher selects
+///      the CUTLASS/CuTe tensor-core kernel for its supported fast path
+///      (__half, head_dim 64, 4 warps/block, sm_80+) and otherwise falls
+///      back to the warp-cooperative kernel.
 ///   3. output_linear_map — merge_heads concatenates the per-head outputs
 ///      back to (B·T, d_model), then one cuBLASLt GEMM applies the learned
 ///      right-multiplication linear map defined by W^O.
@@ -109,7 +110,11 @@ bool multi_head_attention(
   }
 
   // head_ℓ = Att(Q_ℓ, K_ℓ, V_ℓ) for every (batch, head) slice at once.
-  Attention::flash_attention_warp_cooperative<T, kHeadDim, kWarpsPerBlock, kCausal>(
+  Attention::flash_attention_forward_dispatch<
+    T,
+    kHeadDim,
+    kWarpsPerBlock,
+    kCausal>(
     attention_output,
     logsumexp,
     queries,
