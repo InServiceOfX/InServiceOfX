@@ -40,26 +40,23 @@ namespace Attention
 /// computes its row of S_ij = Q_i K_j^⊤/√d_k and folds the tile's
 /// contribution into the running accumulator.
 ///
-/// The tile update below is the row-wise merge of the running accumulator
-/// with the tile accumulator α(A_j) = (m_ij, ℓ_ij, õ_ij)
-/// (see the section on The Attention Output Accumulator in
-/// FlashAttention.tex), fused so õ_ij never needs its own registers:
+/// The tile update below is the left fold written literally: each tile's
+/// accumulator α(A_j) = (m_ij, ℓ_ij, õ_ij) is built from the tile's scores
+/// and V rows, then folded into the running accumulator with
+/// AttentionAccumulator's merge() — the same binary operation the unit
+/// tests verify against and the backward-pass math assumes (see the section
+/// on The Attention Output Accumulator in FlashAttention.tex). Reusing
+/// merge() instead of hand-fusing its algebra costs one extra register
+/// array (õ_ij) and one extra rescale pass per tile; this kernel is the
+/// pedagogical thread-per-row mapping, so readability wins (the
+/// performance kernels, warp-cooperative and tensor-core, distribute the
+/// accumulator across lanes/shared memory where a single merge() call
+/// cannot apply — that constraint is documented in AttentionAccumulator.h).
 ///
-///   m_new = max(m, m_ij)
-///   ℓ_new = e^{m − m_new}·ℓ + e^{m_ij − m_new}·ℓ_ij
-///   õ_new = e^{m − m_new}·õ + e^{m_ij − m_new}·õ_ij
-///
-/// Because e^{s − m_ij}·e^{m_ij − m_new} = e^{s − m_new}, the tile's terms
-/// can be exponentiated against m_new directly and FMA'd straight into
-/// (ℓ, õ): rescale the running accumulator once by e^{m − m_new}, then for
-/// each key j in the tile add p_j = e^{s_j − m_new} to ℓ and p_j·V_j to õ.
-/// One rescale per tile instead of one per key — algebraically identical to
-/// iterated merge() (which the unit tests verify against).
-///
-/// Identity handling: m is initialized to −∞ (attention_identity), and on
-/// the first tile e^{−∞ − m_new} = 0 rescales the empty accumulator away —
-/// no NaN, since m_new is finite once the tile holds ≥ 1 key. Keys past the
-/// end of the sequence in a partial last tile are padded with score −∞, i.e.
+/// Identity handling: the running accumulator starts at
+/// attention_identity() = (−∞, 0, 0), and merge()'s −∞ guards make folding
+/// with a fully-masked tile (also the identity) a no-op. Keys past the end
+/// of the sequence in a partial last tile are padded with score −∞, i.e.
 /// p_j = 0: the monoid identity contributes nothing.
 ///
 /// Epilogue: O_i = õ/ℓ (the normalized output o(A) of the accumulator),
@@ -242,37 +239,32 @@ __global__ void flash_attention_forward(
       }
     }
 
-    // Row-wise merge with the tile accumulator, fused (see header comment):
-    // rescale the running (ℓ, õ) once by e^{m − m_new}, then accumulate the
-    // tile's p_j = e^{s_j − m_new} terms directly.
-    const AccT new_max {Numerics::MathFunctions::get_max<AccT>(
-      accumulator.max_value,
-      tile_max)};
-    // e^{−∞ − m_new} = 0 on the first tile: the identity rescales away.
-    const AccT rescale {Numerics::MathFunctions::get_exponential<AccT>(
-      accumulator.max_value - new_max)};
-
-    accumulator.max_value = new_max;
-    accumulator.sum *= rescale;
-    #pragma unroll
-    for (int d {0}; d < kHeadDim; ++d)
+    // Build the tile accumulator α(A_j) = (m_ij, ℓ_ij, õ_ij) against its
+    // own maximum, then fold it in with the monoid operation — the left
+    // fold ⊕_t α(A_t) written literally. A fully masked tile (tile_max
+    // still −∞: every score took the −∞ path) stays the identity, and
+    // merge()'s −∞ guard makes folding it a no-op.
+    AttentionAccumulator<AccT, kHeadDim> tile_accumulator {
+      attention_identity<AccT, kHeadDim>()};
+    if (tile_max != negative_infinity)
     {
-      accumulator.output[d] *= rescale;
-    }
-
-    #pragma unroll
-    for (int j {0}; j < kBlockColumns; ++j)
-    {
-      // p_j = e^{s_j − m_new}; 0 for −∞-padded keys.
-      const AccT p {Numerics::MathFunctions::get_exponential<AccT>(
-        scores[j] - new_max)};
-      accumulator.sum += p;
+      tile_accumulator.max_value = tile_max;
       #pragma unroll
-      for (int d {0}; d < kHeadDim; ++d)
+      for (int j {0}; j < kBlockColumns; ++j)
       {
-        accumulator.output[d] += p * shared_values[j][d];
+        // p_j = e^{s_j − m_ij}; 0 for −∞-padded keys.
+        const AccT p {Numerics::MathFunctions::get_exponential<AccT>(
+          scores[j] - tile_max)};
+        tile_accumulator.sum += p;
+        #pragma unroll
+        for (int d {0}; d < kHeadDim; ++d)
+        {
+          tile_accumulator.output[d] += p * shared_values[j][d];
+        }
       }
     }
+
+    accumulator = merge(accumulator, tile_accumulator);
   }
 
   // Epilogue: O_i = õ/ℓ, the normalized output of the folded accumulator —
