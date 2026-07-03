@@ -15,6 +15,7 @@ SET(TEST_CU_SOURCES
   Transformer/MultiHeadAttention/qkv_linear_maps_tests.cu
   Transformer/MultiHeadAttention/output_linear_map_tests.cu
   Transformer/MultiHeadAttention/multi_head_attention_backward_tests.cu
+  Transformer/MultiHeadAttention/multi_head_attention_half_tests.cu
   Transformer/MultiHeadAttention/multi_head_attention_tests.cu
   Transformer/MultiHeadAttention/tiled_gemm_tests.cu
   Transformer/Softmax/softmax_block_shared_reduce_tests.cu

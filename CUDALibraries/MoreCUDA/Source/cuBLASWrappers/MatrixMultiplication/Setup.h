@@ -134,8 +134,15 @@ class Setup
           bias_pointer);
       }
 
+      // Scale (alpha/beta) type must match the compute mode: CUDA_R_16F for
+      // CUBLAS_COMPUTE_16F, CUDA_R_64F for CUBLAS_COMPUTE_64F. The previous
+      // unconditional CUDA_R_32F default made the heuristic return zero
+      // algorithms for __half and double ("requestedAlgoCount less or equal
+      // to 0"). LtMatrixMultiplication<T> already passes &alpha_/&beta_ of
+      // type T, consistent with this per-type scale type.
       is_success = is_success && set_descriptor_attributes_.set_scale_type(
-        descriptor_.descriptor_);
+        descriptor_.descriptor_,
+        get_compute_parameters<T>().data_type_);
 
       is_success = is_success && heuristic_.get_heuristic(
         handle,
@@ -208,8 +215,15 @@ class Setup
           bias_pointer);
       }
 
+      // Scale (alpha/beta) type must match the compute mode: CUDA_R_16F for
+      // CUBLAS_COMPUTE_16F, CUDA_R_64F for CUBLAS_COMPUTE_64F. The previous
+      // unconditional CUDA_R_32F default made the heuristic return zero
+      // algorithms for __half and double ("requestedAlgoCount less or equal
+      // to 0"). LtMatrixMultiplication<T> already passes &alpha_/&beta_ of
+      // type T, consistent with this per-type scale type.
       is_success = is_success && set_descriptor_attributes_.set_scale_type(
-        descriptor_.descriptor_);
+        descriptor_.descriptor_,
+        get_compute_parameters<T>().data_type_);
 
       is_success = is_success && heuristic_.get_heuristic(
         handle,
