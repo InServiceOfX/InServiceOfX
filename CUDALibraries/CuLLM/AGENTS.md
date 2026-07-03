@@ -122,7 +122,7 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **74 tests, 23 suites, all passing** (plus
+As of this file's writing: **82 tests, 24 suites, all passing** (plus
 MoreCUDA's 123), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
@@ -185,10 +185,17 @@ skipping), but loses raw throughput to every tensor-core-backed
 implementation — XLA fused standard ~6.6× faster at fp32, cuDNN flash ~16×
 at fp16; (3) CuLLM's fp16 path is *slower* than its fp32 path (float
 conversion cost, no half2 math, float4 loads are fp32-only). The measured
-next milestone: tensor-core (WMMA/mma.sync) tile matmuls inside the FA-2
-loop — the FA-2-lax-loop reference beating our kernel non-causally is the
-existence proof that the algorithm is fine and the inner-product engine is
-the gap.
+next milestone — tensor-core tile matmuls inside the FA-2 loop — was
+implemented the same day as `Attention/flash_attention_tensor_core.h`
+(nvcuda::wmma 16×16×16 half fragments, float accumulators, one warp per
+16-row query tile; 8 unit tests vs double CPU reference incl.
+ragged/causal/multi-slice/head dims 32–64). Measured: 2.6–3× over the
+scalar kernel (N=2048 causal 79.8→27.0 ms), now beats the JAX FA-2
+lax-loop reference; remaining ~6–10× gap to cuDNN = cp.async double
+buffering, swizzled layouts, and avoiding the per-tile shared round trip
+of S and P·V (WMMA fragments are opaque, so the rescale merge stages
+through shared memory) — the ladder CUTLASS/CuTe packages. See report
+Section 5.
 
 MoreCUDA has its own standalone build (`MoreCUDA/BuildGcc`, same
 `cmake ../Source && make Check`); **re-run it after touching any file under
