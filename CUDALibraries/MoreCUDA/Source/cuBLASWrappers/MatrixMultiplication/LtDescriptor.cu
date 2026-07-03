@@ -37,7 +37,7 @@ bool LtDescriptor::create_descriptor(
     cublasLtMatmulDescCreate(
       &descriptor_,
       compute_parameters.compute_precision_mode_,
-      compute_parameters.data_type_)};
+      compute_parameters.scale_type_)};
 
   if (status != CUBLAS_STATUS_SUCCESS)
   {

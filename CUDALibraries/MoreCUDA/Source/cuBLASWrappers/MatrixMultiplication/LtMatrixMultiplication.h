@@ -10,6 +10,7 @@
 #include "DataStructures/Array.h"
 #include "StreamManagement/Stream.h"
 
+#include <cuda_bf16.h>
 #include <iostream>
 
 namespace cuBLASWrappers
@@ -17,18 +18,44 @@ namespace cuBLASWrappers
 namespace MatrixMultiplication
 {
 
+//------------------------------------------------------------------------------
+/// Host-side type of the matmul scale factors alpha/beta. Must agree with
+/// ComputeParameters::scale_type_ (the descriptor's CUDA scale type):
+/// cublasLtMatmul reads *alpha/*beta as the scale type, so a mistyped
+/// pointer silently misreads the scalar. Equal to T for float, double, and
+/// __half; float for __nv_bfloat16, whose GEMMs run under
+/// CUBLAS_COMPUTE_32F with CUDA_R_32F scale (no CUBLAS_COMPUTE_16BF
+/// exists).
+//------------------------------------------------------------------------------
+template <typename T>
+struct HostScaleType
+{
+  using type = T;
+};
+
+template <>
+struct HostScaleType<__nv_bfloat16>
+{
+  using type = float;
+};
+
+template <typename T>
+using host_scale_type_t = typename HostScaleType<T>::type;
+
 template<typename T>
 class LtMatrixMultiplication
 {
   public:
 
+    using ScaleType = host_scale_type_t<T>;
+
     LtMatrixMultiplication(
-      const T alpha=1.0,
+      const ScaleType alpha=1.0,
       // If beta is anything but 0 and the bias is not setup, such as the
       // CUBLAS_MATMUL_DESC_BIAS_DATA_TYPE, or if a nullptr was passed into the
       // bias parameter (i.e. matrix C), then matrix multiplication will fail.
       // This was non-obvious to me, so I'll repeat below.
-      const T beta=0.0):
+      const ScaleType beta=0.0):
       alpha_{alpha},
       beta_{beta}
     {}
@@ -86,12 +113,12 @@ class LtMatrixMultiplication
           stream.stream_));
     }
 
-    inline void set_alpha(const T alpha)
+    inline void set_alpha(const ScaleType alpha)
     {
       alpha_ = alpha;
     }
 
-    inline void set_beta(const T beta)
+    inline void set_beta(const ScaleType beta)
     {
       beta_ = beta;
     }
@@ -146,12 +173,12 @@ class LtMatrixMultiplication
       return false;
     }
 
-    T alpha_;
+    ScaleType alpha_;
     // If beta is anything but 0 and the bias is not setup, such as the
     // CUBLAS_MATMUL_DESC_BIAS_DATA_TYPE, or if a nullptr was passed into the
     // bias parameter (i.e. matrix C), then matrix multiplication will fail.
     // This was non-obvious to me.
-    T beta_;
+    ScaleType beta_;
 };
 
 template <typename T>

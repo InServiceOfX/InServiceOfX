@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include <cmath>
+#include <cuda_bf16.h>
 #include <cuda_fp16.h>
 #include <limits>
 #include <vector>
@@ -182,6 +183,41 @@ TEST(GetExponentialTests, Half2EachLaneMatchesExpf)
 }
 
 //------------------------------------------------------------------------------
+// bfloat16: 1 sign + 8 exponent + 7 mantissa bits — float's exponent range
+// at ~2^-8 relative precision. Inputs {0, ±1, ±2} are exactly representable;
+// hexp's bf16 result carries a few ULP, so tolerance is 2e-2·(1 + |ref|).
+// Requires sm_80+ (this build targets sm_86 only).
+//------------------------------------------------------------------------------
+TEST(GetExponentialTests, Bfloat16MatchesExpfWithinBf16Precision)
+{
+  const vector<float> float_inputs {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
+  const int N {static_cast<int>(float_inputs.size())};
+
+  vector<__nv_bfloat16> h_input(N);
+  for (int i {0}; i < N; ++i)
+  {
+    h_input[i] = __float2bfloat16(float_inputs[i]);
+  }
+
+  Array<__nv_bfloat16> d_input(N), d_output(N);
+  d_input.copy_host_input_to_device(h_input);
+  apply_get_exponential<__nv_bfloat16><<<1, 32>>>(
+    d_output.elements_, d_input.elements_, N);
+  cudaDeviceSynchronize();
+
+  vector<__nv_bfloat16> h_output(N);
+  d_output.copy_device_output_to_host(h_output);
+
+  for (int i {0}; i < N; ++i)
+  {
+    const float got {__bfloat162float(h_output[i])};
+    const float ref {expf(float_inputs[i])};
+    EXPECT_NEAR(got, ref, 2e-2f * (1.0f + std::abs(ref)))
+      << "input=" << float_inputs[i];
+  }
+}
+
+//------------------------------------------------------------------------------
 // get_approximate_exponential tests
 //------------------------------------------------------------------------------
 
@@ -301,6 +337,39 @@ TEST(GetApproximateExponentialTests, Half2IdenticalToGetExponentialHalf2)
   {
     EXPECT_EQ(__low2float(h_approx[i]),  __low2float(h_exact[i]))  << "lane0 i=" << i;
     EXPECT_EQ(__high2float(h_approx[i]), __high2float(h_exact[i])) << "lane1 i=" << i;
+  }
+}
+
+//------------------------------------------------------------------------------
+// Both bf16 exponentials call the same hexp overload — bitwise identical.
+//------------------------------------------------------------------------------
+TEST(GetApproximateExponentialTests, Bfloat16IdenticalToGetExponential)
+{
+  const vector<float> float_inputs {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
+  const int N {static_cast<int>(float_inputs.size())};
+
+  vector<__nv_bfloat16> h_input(N);
+  for (int i {0}; i < N; ++i)
+  {
+    h_input[i] = __float2bfloat16(float_inputs[i]);
+  }
+
+  Array<__nv_bfloat16> d_input(N), d_approx(N), d_exact(N);
+  d_input.copy_host_input_to_device(h_input);
+  apply_get_approximate_exponential<__nv_bfloat16><<<1, 32>>>(
+    d_approx.elements_, d_input.elements_, N);
+  apply_get_exponential<__nv_bfloat16><<<1, 32>>>(
+    d_exact.elements_, d_input.elements_, N);
+  cudaDeviceSynchronize();
+
+  vector<__nv_bfloat16> h_approx(N), h_exact(N);
+  d_approx.copy_device_output_to_host(h_approx);
+  d_exact.copy_device_output_to_host(h_exact);
+
+  for (int i {0}; i < N; ++i)
+  {
+    EXPECT_EQ(__bfloat162float(h_approx[i]), __bfloat162float(h_exact[i]))
+      << "input=" << float_inputs[i];
   }
 }
 
@@ -486,6 +555,39 @@ TEST(GetSqrtTests, HalfPerfectSquaresExact)
   for (int i {0}; i < N; ++i)
   {
     EXPECT_EQ(__half2float(h_output[i]), expected[i]) << "input=" << float_inputs[i];
+  }
+}
+
+//------------------------------------------------------------------------------
+// Small perfect squares are exactly representable in bfloat16 (7 mantissa
+// bits cover integers to 256), and hsqrt is correctly rounded, so integer
+// square roots must be exact.
+//------------------------------------------------------------------------------
+TEST(GetSqrtTests, Bfloat16PerfectSquaresExact)
+{
+  const vector<float> float_inputs {0.0f, 1.0f, 4.0f, 9.0f};
+  const vector<float> expected     {0.0f, 1.0f, 2.0f, 3.0f};
+  const int N {static_cast<int>(float_inputs.size())};
+
+  vector<__nv_bfloat16> h_input(N);
+  for (int i {0}; i < N; ++i)
+  {
+    h_input[i] = __float2bfloat16(float_inputs[i]);
+  }
+
+  Array<__nv_bfloat16> d_input(N), d_output(N);
+  d_input.copy_host_input_to_device(h_input);
+  apply_get_sqrt<__nv_bfloat16><<<1, 32>>>(
+    d_output.elements_, d_input.elements_, N);
+  cudaDeviceSynchronize();
+
+  vector<__nv_bfloat16> h_output(N);
+  d_output.copy_device_output_to_host(h_output);
+
+  for (int i {0}; i < N; ++i)
+  {
+    EXPECT_EQ(__bfloat162float(h_output[i]), expected[i])
+      << "input=" << float_inputs[i];
   }
 }
 

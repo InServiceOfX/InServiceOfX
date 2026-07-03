@@ -1,6 +1,7 @@
 #ifndef NUMERICS_MATH_FUNCTIONS_H
 #define NUMERICS_MATH_FUNCTIONS_H
 
+#include <cuda_bf16.h>  // For bfloat16 support
 #include <cuda_fp16.h>  // For half precision support
 
 namespace Numerics
@@ -67,6 +68,23 @@ template<> __device__ inline __half2 get_exponential<__half2>(const __half2 valu
 
 #endif // !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 530
 
+// __nv_bfloat16 native math requires sm_80+ (Ampere). bfloat16 is 1 sign +
+// 8 exponent + 7 mantissa bits: float's full exponent range at ~2^-8
+// relative precision (vs __half's 5 exponent + 10 mantissa).
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
+
+template<> __device__ inline __nv_bfloat16 get_exponential<__nv_bfloat16>(
+  const __nv_bfloat16 value)
+{
+  // hexp (bfloat16 overload): declared in /usr/local/cuda/include/cuda_bf16.h
+  // line 3910:
+  //   __CUDA_BF16_DECL__ __nv_bfloat16 hexp(const __nv_bfloat16 a)
+  // See https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____BFLOAT16__FUNCTIONS.html
+  return hexp(value);
+}
+
+#endif // !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
+
 //------------------------------------------------------------------------------
 /// Calculate the fast approximate base e exponential of the input argument x,
 /// e^x. Returns an approximation to e^x.
@@ -132,6 +150,19 @@ template<> __device__ inline __half2 get_approximate_exponential<__half2>(const 
 }
 
 #endif // !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 530
+
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
+
+template<> __device__ inline __nv_bfloat16 get_approximate_exponential<
+  __nv_bfloat16>(const __nv_bfloat16 value)
+{
+  // Same hexp bfloat16 overload as get_exponential<__nv_bfloat16>
+  // (cuda_bf16.h line 3910) — at 7 mantissa bits there is no approximate vs
+  // exact distinction.
+  return hexp(value);
+}
+
+#endif // !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
 
 template <typename FPType>
 __device__ FPType get_max(const FPType a, const FPType b) = delete;
@@ -200,6 +231,19 @@ template<> __device__ inline __half get_sqrt<__half>(const __half value)
   // https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH____HALF__FUNCTIONS.html
   return hsqrt(value);
 }
+
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
+
+template<> __device__ inline __nv_bfloat16 get_sqrt<__nv_bfloat16>(
+  const __nv_bfloat16 value)
+{
+  // hsqrt (bfloat16 overload): declared in /usr/local/cuda/include/
+  // cuda_bf16.h line 3813:
+  //   __CUDA_BF16_DECL__ __nv_bfloat16 hsqrt(const __nv_bfloat16 a)
+  return hsqrt(value);
+}
+
+#endif // !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
 
 } // namespace MathFunctions
 } // namespace Numerics

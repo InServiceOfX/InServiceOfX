@@ -142,7 +142,7 @@ class Setup
       // type T, consistent with this per-type scale type.
       is_success = is_success && set_descriptor_attributes_.set_scale_type(
         descriptor_.descriptor_,
-        get_compute_parameters<T>().data_type_);
+        get_compute_parameters<T>().scale_type_);
 
       is_success = is_success && heuristic_.get_heuristic(
         handle,
@@ -223,7 +223,7 @@ class Setup
       // type T, consistent with this per-type scale type.
       is_success = is_success && set_descriptor_attributes_.set_scale_type(
         descriptor_.descriptor_,
-        get_compute_parameters<T>().data_type_);
+        get_compute_parameters<T>().scale_type_);
 
       is_success = is_success && heuristic_.get_heuristic(
         handle,
