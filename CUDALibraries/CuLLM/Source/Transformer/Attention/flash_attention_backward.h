@@ -151,8 +151,17 @@ __global__ void flash_attention_backward_query_gradient(
   logsumexp += slice_row_offset;
   row_dots += slice_row_offset;
 
-  const int query_index {
-    static_cast<int>(blockIdx.x) * kWarpsPerBlock + warp_rank};
+  // Causal work rebalancing, as in the forward warp-cooperative kernel:
+  // query row block i runs ~i K/V tiles under the mask, so reverse the
+  // block order to schedule the longest row blocks in the first wave.
+  // (Pass 2 needs no remap: its per-key-block work *decreases* with
+  // blockIdx.x under the mask, so the natural order already starts the
+  // expensive blocks first.)
+  const int row_block {kCausal ?
+    static_cast<int>(gridDim.x) - 1 - static_cast<int>(blockIdx.x) :
+    static_cast<int>(blockIdx.x)};
+
+  const int query_index {row_block * kWarpsPerBlock + warp_rank};
 
   __shared__ AccT shared_queries[kWarpsPerBlock][kHeadDim];
   __shared__ AccT shared_gradient_output[kWarpsPerBlock][kHeadDim];
@@ -167,8 +176,7 @@ __global__ void flash_attention_backward_query_gradient(
   {
     const int row {index / kHeadDim};
     const int d {index % kHeadDim};
-    const int global_row {
-      static_cast<int>(blockIdx.x) * kWarpsPerBlock + row};
+    const int global_row {row_block * kWarpsPerBlock + row};
     const bool in_range {global_row < sequence_length};
     shared_queries[row][d] = in_range ?
       static_cast<AccT>(queries[global_row * kHeadDim + d]) : AccT{0};
@@ -198,7 +206,7 @@ __global__ void flash_attention_backward_query_gradient(
   if (kCausal)
   {
     const int last_query_in_block {
-      static_cast<int>(blockIdx.x) * kWarpsPerBlock + kWarpsPerBlock - 1};
+      row_block * kWarpsPerBlock + kWarpsPerBlock - 1};
     const int last_needed_tile {last_query_in_block / kTileColumns};
     number_of_tiles = (last_needed_tile + 1 < number_of_tiles) ?
       last_needed_tile + 1 : number_of_tiles;

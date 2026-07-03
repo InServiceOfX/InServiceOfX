@@ -101,8 +101,21 @@ __global__ void flash_attention_forward_warp_cooperative(
     logsumexp += static_cast<int>(blockIdx.y) * sequence_length;
   }
 
-  const int query_index {
-    static_cast<int>(blockIdx.x) * kWarpsPerBlock + warp_rank};
+  // Causal work rebalancing (see the load-imbalance remark after the
+  // Causal Tile Skipping proposition in FlashAttention.tex): row block i
+  // runs ~i K/V tiles under the mask, so the natural blockIdx order starts
+  // the cheapest blocks first and leaves the most expensive for the final
+  // scheduling wave, where they run with the GPU otherwise idle. Reversing
+  // the mapping launches the longest row blocks in the first wave and lets
+  // the short ones pack the residual. Uniform per block — every warp of a
+  // block uses the same remapped index — so the __syncthreads() alignment
+  // is unaffected. Unmasked attention keeps the identity mapping (all
+  // blocks do equal work).
+  const int row_block {kCausal ?
+    static_cast<int>(gridDim.x) - 1 - static_cast<int>(blockIdx.x) :
+    static_cast<int>(blockIdx.x)};
+
+  const int query_index {row_block * kWarpsPerBlock + warp_rank};
 
   __shared__ AccT shared_queries[kWarpsPerBlock][kHeadDim];
   __shared__ AccT shared_keys[kTileColumns][kHeadDim + 1];
@@ -116,8 +129,7 @@ __global__ void flash_attention_forward_warp_cooperative(
   {
     const int row {index / kHeadDim};
     const int d {index % kHeadDim};
-    const int global_row {
-      static_cast<int>(blockIdx.x) * kWarpsPerBlock + row};
+    const int global_row {row_block * kWarpsPerBlock + row};
     shared_queries[row][d] = (global_row < sequence_length) ?
       static_cast<AccT>(queries[global_row * kHeadDim + d]) : AccT{0};
   }
@@ -146,7 +158,7 @@ __global__ void flash_attention_forward_warp_cooperative(
     // Skip tiles past the block's last query row (uniform per block, so the
     // __syncthreads() below stay aligned).
     const int last_query_in_block {
-      static_cast<int>(blockIdx.x) * kWarpsPerBlock + kWarpsPerBlock - 1};
+      row_block * kWarpsPerBlock + kWarpsPerBlock - 1};
     const int last_needed_tile {last_query_in_block / kTileColumns};
     number_of_tiles = (last_needed_tile + 1 < number_of_tiles) ?
       last_needed_tile + 1 : number_of_tiles;
