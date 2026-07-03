@@ -63,7 +63,6 @@ InServiceOfX/
           MultiHeadAttention/   # QKV/output projections + full MHA composition
           Softmax/              # standalone softmax kernels (design-space exploration)
         LLM/                   # legacy llm.c-style prototypes; currently empty after cleanup
-        Drafts/                # explicitly scratch; see Drafts/README.md
         Benchmarks/            # AttentionIOBenchmark executable
         UnitTests/              # mirrors Source/ tree; gtest
       BuildGcc/                 # out-of-tree cmake build dir (gitignored)
@@ -191,10 +190,11 @@ standalone build if done carelessly (see gotcha below).
   streaming" softmax kernels: the *first* touch of an address that will be
   read again should use an ordinary load (keeps it warm in L1/L2); only the
   *last* touch should stream.
-- **Row `Drafts/`** is a real, intentional convention in this repo (see
-  `Drafts/README.md`, itself modeled on llm.c's `dev/cuda`) — scratch kernel
-  iterations that didn't get promoted. Don't delete `Drafts/` content without
-  checking whether something there hasn't yet been superseded.
+- **Draft cleanup:** the old `Drafts/LLM/AttentionForward/softmax.h` scratch
+  kernels were deleted after confirming the useful ideas had either been
+  promoted into `Transformer/Softmax/` (online reduction, recompute instead of
+  caching, streaming cache hints) or captured in the backlog as profiling work
+  (vectorized loads and attention-specific softmax variants).
 
 ## What's done (checklist)
 
@@ -214,6 +214,9 @@ standalone build if done carelessly (see gotcha below).
       remaining idea (packed fused-QKV input convention) had been promoted into
       `MultiHeadAttention/split_qkv_heads.h` and the Transformer attention
       kernels
+- [x] Legacy `Drafts/LLM/AttentionForward/softmax.h` deleted after confirming
+      its remaining useful tricks are either implemented in `Transformer/Softmax`
+      or tracked as profiling/backlog items
 - [x] Repo cleanup: `LLM/AttentionForward/FlashAttention.h` deleted (it
       silently renormalized every tile despite a comment claiming otherwise
       — an active anti-pattern, not just outdated); `LLM/AttentionForward/softmax.h`'s
