@@ -326,9 +326,10 @@ GitHub.*
 
 URL: https://github.com/karpathy/llm.c
 
-Reference implementation of the naive CUDA attention kernels (what
-`attention_forward.h` in this repo follows for kernel1–kernel5). Useful for
-understanding the baseline before FlashAttention optimisations are applied.
+Reference implementation of the naive CUDA attention kernels. Useful for
+understanding the baseline before FlashAttention optimisations are applied;
+CuLLM's old `LLM/attention_forward.h` clone of `attention_query_key_kernel1`
+has since been deleted after the Transformer attention path superseded it.
 
 ---
 

@@ -62,7 +62,7 @@ InServiceOfX/
           Attention/           # the FlashAttention core (this file's focus)
           MultiHeadAttention/   # QKV/output projections + full MHA composition
           Softmax/              # standalone softmax kernels (design-space exploration)
-        LLM/                   # OLDER, PARTIALLY SUPERSEDED prototype code — see below
+        LLM/                   # legacy llm.c-style prototypes; currently empty after cleanup
         Drafts/                # explicitly scratch; see Drafts/README.md
         Benchmarks/            # AttentionIOBenchmark executable
         UnitTests/              # mirrors Source/ tree; gtest
@@ -210,6 +210,10 @@ standalone build if done carelessly (see gotcha below).
 - [x] Tex extended with FlashAttention-2 material (non-matmul FLOPs
       proposition, causal tile-skipping proposition, parallelism/warp-
       partitioning remarks) — not just FlashAttention v1
+- [x] Legacy `LLM/attention_forward.h` deleted after confirming its only
+      remaining idea (packed fused-QKV input convention) had been promoted into
+      `MultiHeadAttention/split_qkv_heads.h` and the Transformer attention
+      kernels
 - [x] Repo cleanup: `LLM/AttentionForward/FlashAttention.h` deleted (it
       silently renormalized every tile despite a comment claiming otherwise
       — an active anti-pattern, not just outdated); `LLM/AttentionForward/softmax.h`'s
@@ -233,14 +237,7 @@ Roughly in the order a next session would want to tackle them:
    (these are pure permutations, so their adjoints are just the *inverse*
    permutation applied to the gradient — should be near-trivial given
    `merge_heads` is already `split_qkv_heads`'s documented inverse).
-2. **`LLM/attention_forward.h` still exists, untouched.** Its kernel
-   (`attention_query_key_kernel1`) is a naive, zero-reuse, one-thread-per-
-   score-entry kernel — strictly inferior to `attention_scores.h` — but it
-   demonstrated the fused-QKV-input convention that informed
-   `split_qkv_heads.h`'s design. It's safe to delete once you've confirmed
-   nothing else references it (`UnitTests/LLM/attention_forward_tests.cu`
-   is its only consumer).
-3. **cuBLASLt-projection vs. hand-written-GEMM benchmark never happened.**
+2. **cuBLASLt-projection vs. hand-written-GEMM benchmark never happened.**
    The original ask that led to `MultiHeadAttention/` was "should we use
    cuBLASLt or write our own GEMM, or benchmark both" — only the cuBLASLt
    path got built. A tiled shared-memory GEMM reference implementation (the
@@ -248,13 +245,13 @@ Roughly in the order a next session would want to tackle them:
    Given cuBLASLt's tensor-core backing, expect it to win by a wide margin
    at realistic `d_model` sizes — but this is an assumption, not a measured
    result.
-4. **`kHeadDim` not a multiple of 32** has no path through
+3. **`kHeadDim` not a multiple of 32** has no path through
    `MultiHeadAttention/` (it hard-requires `flash_attention_warp_cooperative`).
    Real transformer head dims are almost always 32/64/128 so this is low
    priority, but worth a `static_assert` with a clear message at the
    `multi_head_attention()` call site rather than a deep template error, if
    this becomes a real blocker.
-5. **No vectorized (float4-style) loads anywhere.** `llm.c`'s
+4. **No vectorized (float4-style) loads anywhere.** `llm.c`'s
    `softmax_forward_kernel7`-derived `softmax_block_unrolled_fused.h`
    partially covers this via register-array unrolling
    (`kUnrollFactor`), but nothing in `Attention/` vectorizes its Q/K/V
@@ -262,12 +259,12 @@ Roughly in the order a next session would want to tackle them:
    warp-cooperative kernel's speedup over thread-per-row (3–4x measured)
    suggests occupancy, not per-thread memory throughput, was the bottleneck
    being addressed so far.
-6. **Causal tail-block load imbalance** (documented in the tex's Causal
+5. **Causal tail-block load imbalance** (documented in the tex's Causal
    Tile Skipping remark) is unaddressed — no work-rebalancing scheme
    (e.g. scheduling long/unmasked row-blocks first) exists yet.
-7. **MQA/GQA** (multi-query / grouped-query attention) is sketched as a
+6. **MQA/GQA** (multi-query / grouped-query attention) is sketched as a
    tex remark (Parallelism and Work Partitioning section) but has zero code.
-8. **No `__half`/`bfloat16` path exercised end-to-end.** `MathFunctions.h`
+7. **No `__half`/`bfloat16` path exercised end-to-end.** `MathFunctions.h`
    and `AccumulationType.h` support `__half`, and individual kernels are
    templated on `T`, but no test instantiates the MHA pipeline at anything
    but `float`.
