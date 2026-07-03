@@ -110,8 +110,8 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **68 tests, 21 suites, all passing** (plus
-MoreCUDA's 120), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
+As of this file's writing: **69 tests, 22 suites, all passing** (plus
+MoreCUDA's 123), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
 Benchmark: `make AttentionIOBenchmark -j4 && ./AttentionIOBenchmark` (from
@@ -265,8 +265,12 @@ Remaining (new) backlog:
    sharing a (K, V) pair must be summed (see the tex remark) — the
    per-slice backward kernels don't do this reduction. Training with GQA
    needs it; `grouped_query_attention.h`'s doc comment marks the gap.
-2. **bfloat16.** `__half` runs end-to-end, but `__nv_bfloat16` has no
-   `MathFunctions.h`/`AccumulationType.h`/`get_data_precision` entries.
+2. ~~bfloat16~~ DONE 2026-07-02: `__nv_bfloat16` runs the MHA pipeline
+   end-to-end (`multi_head_attention_bfloat16_tests.cu`). Key wrinkle: no
+   `CUBLAS_COMPUTE_16BF` exists — bf16 GEMMs are R_16BF data under
+   COMPUTE_32F with *float* alpha/beta, hence `ComputeParameters::scale_type_`
+   and `host_scale_type_t<T>` in the cuBLASWrappers. bf16 math intrinsics
+   are guarded `__CUDA_ARCH__ >= 800`; conversions work on all archs.
 3. **AttentionAccumulator::merge is not exercised by the production
    kernels** (the warp-cooperative kernel distributes the accumulator
    across lanes instead). It now uses `get_approximate_exponential`; if a
