@@ -48,3 +48,18 @@ SET_TARGET_PROPERTIES(LinearMapGemmBenchmark
 SET_TARGET_PROPERTIES(LinearMapGemmBenchmark
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
+
+ADD_EXECUTABLE(WarpAttentionBenchmark
+  Transformer/Attention/warp_attention_benchmark.cu
+  )
+
+TARGET_LINK_LIBRARIES(WarpAttentionBenchmark
+  MoreCUDAUtilities
+  )
+
+SET_TARGET_PROPERTIES(WarpAttentionBenchmark
+  PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+SET_TARGET_PROPERTIES(WarpAttentionBenchmark
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
