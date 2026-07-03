@@ -27,6 +27,13 @@ SET(TEST_CU_SOURCES
   Transformer/Softmax/softmax_warp_streaming_fused_tests.cu
   )
 
+# CuTe tests compile only when the CUTLASS clone is present (see the
+# CUTLASS section of Source/CMakeLists.txt).
+IF(CULLM_HAS_CUTLASS)
+  LIST(APPEND TEST_CU_SOURCES
+    Transformer/Attention/flash_attention_cute_tests.cu)
+ENDIF()
+
 #SET(TEST_SOURCES
 #  )
 

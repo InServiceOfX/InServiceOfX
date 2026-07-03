@@ -33,6 +33,32 @@ PROJECT(CULLM LANGUAGES CXX CUDA)
 # cf. https://cmake.org/cmake/help/v3.0/command/include_directories.html
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_SOURCE_DIR})
 
+################################################################################
+## CUTLASS / CuTe (header-only, optional)
+##
+## Expected as a shallow clone at CUDALibraries/ThirdParty/cutlass:
+##   cd CUDALibraries/ThirdParty
+##   git clone --depth 1 --branch v4.5.2 https://github.com/NVIDIA/cutlass.git
+## The clone is gitignored (204 MB). When absent, the CuTe kernel and its
+## tests are simply skipped; everything else builds unchanged.
+################################################################################
+SET(CUTLASS_INCLUDE_DIR
+  "${CMAKE_SOURCE_DIR}/../../ThirdParty/cutlass/include"
+  CACHE PATH "CUTLASS/CuTe include directory (header-only)")
+IF(EXISTS "${CUTLASS_INCLUDE_DIR}/cute/tensor.hpp")
+  SET(CULLM_HAS_CUTLASS TRUE)
+  # SYSTEM: CUTLASS headers produce warnings under our warning flags.
+  INCLUDE_DIRECTORIES(SYSTEM ${CUTLASS_INCLUDE_DIR})
+  ADD_COMPILE_DEFINITIONS(CULLM_HAS_CUTLASS=1)
+  MESSAGE(STATUS "CUTLASS found: ${CUTLASS_INCLUDE_DIR}")
+ELSE()
+  SET(CULLM_HAS_CUTLASS FALSE)
+  MESSAGE(WARNING
+    "CUTLASS not found at ${CUTLASS_INCLUDE_DIR} - CuTe kernel and tests "
+    "will be skipped. Clone it with: git clone --depth 1 --branch v4.5.2 "
+    "https://github.com/NVIDIA/cutlass.git into CUDALibraries/ThirdParty/")
+ENDIF()
+
 # Include will load and run CMake code of this module, "CheckCXXCompilerFlag."
 # Without this, you'll get CMake Error, Unknown CMake command
 # "CHECK_CXX_COMPILER_FLAG"

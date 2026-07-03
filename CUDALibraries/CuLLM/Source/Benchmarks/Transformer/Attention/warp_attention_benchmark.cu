@@ -18,6 +18,9 @@
 //------------------------------------------------------------------------------
 
 #include "DataStructures/Array.h"
+#if defined(CULLM_HAS_CUTLASS)
+#include "Transformer/Attention/flash_attention_cute.h"
+#endif
 #include "Transformer/Attention/flash_attention_tensor_core.h"
 #include "Transformer/Attention/flash_attention_warp_cooperative.h"
 
@@ -189,6 +192,58 @@ void benchmark_tensor_core(const int sequence_length)
     "CSV wmma16,%d,%d,1,%.4f\n", sequence_length, kBatchHeads, causal_ms);
 }
 
+#if defined(CULLM_HAS_CUTLASS)
+void benchmark_cute(const int sequence_length)
+{
+  const long long elements {
+    static_cast<long long>(kBatchHeads) * sequence_length * kHD};
+
+  Array<__half> d_queries(elements);
+  Array<__half> d_keys(elements);
+  Array<__half> d_values(elements);
+  Array<__half> d_output(elements);
+
+  {
+    const vector<float> host_values {
+      make_inputs(static_cast<int>(elements), 3)};
+    vector<__half> converted {convert<__half>(host_values)};
+    d_queries.copy_host_input_to_device(converted);
+    d_keys.copy_host_input_to_device(converted);
+    d_values.copy_host_input_to_device(converted);
+  }
+
+  const float plain_ms {time_launches([&]()
+  {
+    Transformer::Attention::flash_attention_cute<
+      __half, kHD, kWarpsPerBlock, false>(
+        d_output.elements_,
+        nullptr,
+        d_queries.elements_,
+        d_keys.elements_,
+        d_values.elements_,
+        sequence_length,
+        kBatchHeads);
+  })};
+  const float causal_ms {time_launches([&]()
+  {
+    Transformer::Attention::flash_attention_cute<
+      __half, kHD, kWarpsPerBlock, true>(
+        d_output.elements_,
+        nullptr,
+        d_queries.elements_,
+        d_keys.elements_,
+        d_values.elements_,
+        sequence_length,
+        kBatchHeads);
+  })};
+
+  std::printf(
+    "CSV cute,%d,%d,0,%.4f\n", sequence_length, kBatchHeads, plain_ms);
+  std::printf(
+    "CSV cute,%d,%d,1,%.4f\n", sequence_length, kBatchHeads, causal_ms);
+}
+#endif // CULLM_HAS_CUTLASS
+
 } // namespace
 
 int main()
@@ -205,6 +260,9 @@ int main()
     benchmark_type<float>("float32", sequence_length);
     benchmark_type<__half>("float16", sequence_length);
     benchmark_tensor_core(sequence_length);
+#if defined(CULLM_HAS_CUTLASS)
+    benchmark_cute(sequence_length);
+#endif
   }
   return 0;
 }
