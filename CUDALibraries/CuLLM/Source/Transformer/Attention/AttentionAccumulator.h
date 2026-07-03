@@ -110,9 +110,12 @@ __device__ __forceinline__ AttentionAccumulator<AccT, kHeadDim> merge(
   const AccT m {Numerics::MathFunctions::get_max<AccT>(
     a.max_value,
     b.max_value)};
-  const AccT scale_a {Numerics::MathFunctions::get_exponential<AccT>(
+  // Fast approximate exp (≤2 ULP for float via __expf) is sufficient here:
+  // scale factors rescale already-shifted sums, and attention weights are
+  // normalized by ℓ at the end, so sub-ULP accuracy buys nothing.
+  const AccT scale_a {Numerics::MathFunctions::get_approximate_exponential<AccT>(
     a.max_value - m)};
-  const AccT scale_b {Numerics::MathFunctions::get_exponential<AccT>(
+  const AccT scale_b {Numerics::MathFunctions::get_approximate_exponential<AccT>(
     b.max_value - m)};
 
   AttentionAccumulator<AccT, kHeadDim> result {};
