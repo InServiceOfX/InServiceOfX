@@ -17,6 +17,21 @@ SET_TARGET_PROPERTIES(AttentionIOBenchmark
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
 
+ADD_EXECUTABLE(AttentionReferenceDump
+  Transformer/Attention/attention_reference_dump.cu
+  )
+
+TARGET_LINK_LIBRARIES(AttentionReferenceDump
+  MoreCUDAUtilities
+  )
+
+SET_TARGET_PROPERTIES(AttentionReferenceDump
+  PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+SET_TARGET_PROPERTIES(AttentionReferenceDump
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
+
 ADD_EXECUTABLE(LinearMapGemmBenchmark
   Transformer/MultiHeadAttention/linear_map_gemm_benchmark.cu
   )

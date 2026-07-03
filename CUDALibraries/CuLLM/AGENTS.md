@@ -29,10 +29,11 @@ forward AND backward passes — dense QKV/output linear maps via cuBLASLt
 (with weight gradients dW_qkv, dW^O through transposed GEMMs), IO-aware
 FlashAttention core (two execution-mapping variants, float4-vectorized K/V
 loads, causal tail rebalancing), causal masking, batch/head parallelism,
-grouped-query/multi-query attention (forward), and an end-to-end __half
-path — all unit-tested against independent CPU references and
-finite-difference gradient checks. See "What's NOT done" for the remaining
-gaps (GQA backward, bfloat16).
+grouped-query/multi-query attention forward AND backward, and end-to-end
+`__half` / `__nv_bfloat16` paths — all unit-tested against independent CPU
+references, finite-difference gradient checks, and now JAX reference
+implementations for standard attention, online softmax, FlashAttention, and
+FlashAttention-2.
 
 ## Read in this order
 
@@ -45,7 +46,12 @@ gaps (GQA backward, bfloat16).
 3. **The code itself** — `CUDALibraries/CuLLM/Source/Transformer/`. Every
    header has a long doc comment deriving its kernel from the tex; read the
    comment before the code.
-4. **Git log** on `feature/scaled-dot-product-attention` (or `master`, which
+4. **JAX comparison path** — `CUDALibraries/CuLLM/Python/`, especially
+   `jax_attention_reference.py`, `test_jax_attention_reference.py`, and
+   `compare_cullm_jax_attention.py`. These are not production kernels; they
+   are reference implementations and benchmark wrappers for validating CuLLM
+   against JAX inside the `propulsion-with-cuda:26.02-py3` container.
+5. **Git log** on `feature/scaled-dot-product-attention` (or `master`, which
    was fast-forwarded to include it as of this writing) — each commit is a
    complete, tested increment; commit messages explain *why*, not just
    *what*.
@@ -68,6 +74,10 @@ InServiceOfX/
         LLM/                   # legacy llm.c-style prototypes; currently empty after cleanup
         Benchmarks/            # AttentionIOBenchmark executable
         UnitTests/              # mirrors Source/ tree; gtest
+      Python/
+        jax_attention_reference.py        # standard/online/FA/FA-2 JAX refs
+        test_jax_attention_reference.py   # pytest accuracy tests
+        compare_cullm_jax_attention.py    # CuLLM-vs-JAX accuracy/perf harness
       BuildGcc/                 # out-of-tree cmake build dir (gitignored)
     MoreCUDA/
       Source/
@@ -96,9 +106,11 @@ direct code; Paper I is architecture background.
 | The Safe-Softmax Statistics, The Merge Monoid, The Online Algorithm as a Left Fold | `Softmax/softmax_warp_fold_reduce.h`'s `SafeSoftmaxAccumulator` + `merge()` |
 | The Attention Output Accumulator | `Attention/AttentionAccumulator.h` — the `(m, ℓ, õ)` triple + `merge()`, the core abstraction everything else is built from |
 | The FlashAttention Algorithm | `Attention/flash_attention_forward.h` (one thread per query row) |
+| What Becomes Linear, and What Does Not | `Python/jax_attention_reference.py` + `Benchmarks/Transformer/Attention/attention_reference_dump.cu` make the distinction executable: JAX references show exact dense attention remains quadratic in work while CuLLM avoids materializing S/P |
 | FlashAttention-2: Reducing Non-Matmul FLOPs | `Attention/flash_attention_warp_cooperative.h` (one **warp** per query row — the higher-performance variant; also the one `MultiHeadAttention` uses) |
 | Gradients of Scaled Dot-Product Attention, Recomputation and the Logsumexp Statistic, The FlashAttention Backward Pass | `Attention/flash_attention_backward.h` |
 | Parallelism and Work Partitioning | `flash_attention_forward.h`'s / `flash_attention_warp_cooperative.h`'s `gridDim.y` batch/head dimension; split-Q is literally what "one warp per row" *is* |
+| FlashAttention-2 from First Principles | `Python/jax_attention_reference.py` implements the same representative/schedule distinctions at the JAX level; `compare_cullm_jax_attention.py` cross-checks CuLLM output against the JAX FA-2 reference |
 
 ## Build & test
 
@@ -131,6 +143,32 @@ granularity (matches Dao 2023's reported 1.7–1.8x). At thread-per-row
 granularity it only gave ~5% because a single tail row-block dominates wall
 time with too few blocks in flight — this is exactly the "load imbalance"
 remark in the tex's Causal Tile Skipping section.
+
+JAX reference tests and comparison:
+
+```bash
+# Run inside the PropulsionWithCUDA Docker container.
+cd /InServiceOfX
+python3 -m pytest CUDALibraries/CuLLM/Python/test_jax_attention_reference.py -q
+
+mkdir -p CUDALibraries/CuLLM/BuildDocker
+cd CUDALibraries/CuLLM/BuildDocker
+cmake ../Source
+make AttentionReferenceDump AttentionIOBenchmark -j4
+
+cd /InServiceOfX
+python3 CUDALibraries/CuLLM/Python/compare_cullm_jax_attention.py \
+  --build-dir CUDALibraries/CuLLM/BuildDocker
+```
+
+As of 2026-07-03, `propulsion-with-cuda:26.02-py3` already has JAX installed
+(`jax 0.10.2`) and sees GPU 1 through the QuickDockerBuilder run wrapper, so
+no Dockerfile change or image rebuild was needed. Verification results:
+`test_jax_attention_reference.py` passed 5/5; direct CuLLM
+warp-cooperative-vs-JAX-FA-2 max errors were ~`5e-5` to `3.25e-4` in
+float32 (expected schedule/association differences); on RTX 3060, CuLLM
+warp-cooperative attention at `d=64` measured about 0.043/0.121/0.386/1.44/5.45
+ms for `n=256/512/1024/2048/4096`.
 
 MoreCUDA has its own standalone build (`MoreCUDA/BuildGcc`, same
 `cmake ../Source && make Check`); **re-run it after touching any file under
@@ -210,9 +248,17 @@ standalone build if done carelessly (see gotcha below).
 - [x] Full `multi_head_attention()` composition, end-to-end tested against an
       independent CPU MHA reference (causal + non-causal)
 - [x] IO-complexity benchmark (`AttentionIOBenchmark`)
+- [x] Direct JAX reference path:
+      `Python/jax_attention_reference.py` implements standard attention,
+      online softmax, tiled FlashAttention, and FA-2 delayed normalisation;
+      `AttentionReferenceDump` + `compare_cullm_jax_attention.py` compare
+      CuLLM CUDA output and timings against JAX inside Docker.
 - [x] Tex extended with FlashAttention-2 material (non-matmul FLOPs
       proposition, causal tile-skipping proposition, parallelism/warp-
       partitioning remarks) — not just FlashAttention v1
+- [x] Tex clarified what becomes linear: FlashAttention makes peak auxiliary
+      storage linear by not materialising S/P, but exact dense attention keeps
+      quadratic query-key work.
 - [x] Legacy `LLM/attention_forward.h` deleted after confirming its only
       remaining idea (packed fused-QKV input convention) had been promoted into
       `MultiHeadAttention/split_qkv_heads.h` and the Transformer attention

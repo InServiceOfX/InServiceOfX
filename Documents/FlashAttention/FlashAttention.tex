@@ -2476,6 +2476,110 @@ eliminating the $\Theta(n^2)$ HBM reads and writes of $S$ and $P$.
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{What Becomes Linear, and What Does Not}
+\label{sec:what-becomes-linear}
+
+The phrase ``reduce memory usage from quadratic to linear in sequence length''
+in \cite{Dao2023} is easy to misread.  It does not mean that exact dense
+attention has become a linear-time algorithm, nor that arbitrarily long context
+windows are suddenly free.  It means a specific thing: the $n\times n$ score
+and probability matrices no longer have to be \emph{materialised and stored}.
+
+\begin{definition}[Peak auxiliary memory]
+\label{def:peak-auxiliary-memory}
+Fix $Q,K,V\in\Mat{n}{d}$ and output $O\in\Mat{n}{d}$.  The \emph{peak
+auxiliary memory} of an attention algorithm is the maximum number of additional
+floating-point elements resident in HBM during the computation, excluding the
+input matrices and the final output.  For training, we include quantities saved
+for the backward pass.
+\end{definition}
+
+\begin{proposition}[Standard attention has quadratic auxiliary memory]
+\label{prop:standard-quadratic-aux-memory}
+The na\"ive realisation
+\[
+    S=QK^\top/\sqrt{d},\qquad P=\softmax(S),\qquad O=PV
+\]
+has peak auxiliary memory $\Theta(n^2)$.
+\end{proposition}
+\begin{proof}
+The matrices $S$ and $P$ both have shape $n\times n$.  A standard
+implementation materialises at least one of them in HBM, and often both,
+because softmax consumes $S$ and the final matrix product consumes $P$.
+Thus the auxiliary footprint is bounded below and above by constant multiples
+of $n^2$ elements, ignoring the lower-order $O(nd)$ input/output terms.
+\end{proof}
+
+\begin{proposition}[FlashAttention has linear auxiliary memory]
+\label{prop:flash-linear-aux-memory}
+Algorithm~\ref{alg:flashattention} has peak auxiliary HBM memory
+$\Theta(n)$ for the saved logsumexp statistic in the single-head case, and
+$\Theta(nd)$ if one counts input/output-shaped workspaces.  In either
+convention it is linear in $n$ for fixed head dimension $d$.
+\end{proposition}
+\begin{proof}
+The tiles $S_{ij}$ and $\tilde{P}_{ij}$ are computed on chip and never
+written to HBM.  The forward pass writes the output $O$ and, for training,
+one scalar $L_i$ per query row (Definition~\ref{def:logsumexp-stat}).  The
+remaining live quantities are tile-local accumulators in registers/shared
+memory and input/output-shaped buffers.  Therefore no $n\times n$ HBM object
+is required.
+\end{proof}
+
+\begin{remark}[The word ``linear'' has a scope]
+Proposition~\ref{prop:flash-linear-aux-memory} is the precise sense in which
+memory becomes linear.  It is a statement about \emph{peak storage} of
+intermediate attention matrices, not about the number of pairwise interactions.
+Every query still attends to every key in dense attention.
+\end{remark}
+
+\begin{proposition}[Exact dense attention remains quadratic in work]
+\label{prop:exact-attention-quadratic-work}
+For generic dense attention, computing $O=\softmax(QK^\top/\sqrt{d})V$
+requires evaluating $\Theta(n^2)$ query-key interactions and performs
+$\Theta(n^2d)$ arithmetic operations.
+\end{proposition}
+\begin{proof}
+The score matrix has one entry $S_{ij}=\inner{Q_i}{K_j}/\sqrt{d}$ for every
+ordered pair $(i,j)\in\{1,\ldots,n\}^2$.  Each score is a length-$d$ dot
+product, hence $\Theta(d)$ arithmetic.  Multiplying the resulting attention
+weights by $V$ is another dense weighted sum over the same $n^2$ row-column
+pairs, again with $d$ output components.  FlashAttention changes the order and
+location of these computations; it does not remove the pair set.
+\end{proof}
+
+\begin{remark}[IO is also not literally linear]
+Theorem~\ref{thm:flashattention-io} gives FlashAttention IO complexity
+$\Theta(n^2d^2/M)$ in the two-level memory model, not $\Theta(n)$.
+The improvement is that $S$ and $P$ are not written to and read from HBM as
+full $n\times n$ matrices.  The kernel still streams through the
+quadratically many query-key tiles.
+\end{remark}
+
+\begin{remark}[What limits context length in practice]
+FlashAttention and FlashAttention-2 enable \emph{larger} context windows by
+removing the quadratic activation-memory wall and by making the remaining
+quadratic work run closer to the machine's efficient matmul path.  They do not
+remove all context-length limits.  In training and prompt prefill, the dominant
+exact-attention cost is still the $\Theta(n^2d)$ pairwise work of
+Proposition~\ref{prop:exact-attention-quadratic-work}.  In autoregressive
+decoding with a KV cache, generating one new token attends to the existing
+$n$ cached keys and values, so the per-token attention work is $\Theta(nd)$
+and the KV-cache memory per layer is $\Theta(nhd)$ for $h$ heads; generating
+$n$ tokens still accumulates a quadratic total attention cost.  Outside the
+kernel itself, usable context is also limited by GPU memory capacity, memory
+bandwidth, batch size, number of layers, positional encoding/training length,
+and whether the model has learned to use information at that distance.
+
+Thus the honest answer to ``what keeps us from larger and larger context
+windows?'' is: FlashAttention removes the need to store the full attention
+matrix, but exact dense attention still asks the model to process all relevant
+query-key pairs.  The wall moves from quadratic \emph{storage} toward
+quadratic \emph{compute}, linear KV-cache storage, bandwidth, and model-quality
+limits.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{FlashAttention-2: Reducing Non-Matmul FLOPs}
 \label{sec:flash2-nonmatmul}
 
@@ -2968,6 +3072,270 @@ at autoregressive inference time by a factor of $g$ without changing
 $\Att$'s per-head computation; in the backward pass, gradients
 $\mathrm{d}K,\mathrm{d}V$ for the $g$ heads sharing a $(K,V)$ pair must be
 summed.  We do not develop this variant further here.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{FlashAttention-2 from First Principles}
+\label{sec:flash2-first-principles}
+
+We now reinterpret the claims of \cite{Dao2023} in the language developed
+above.  The point is not to restate the paper's engineering narrative, but to
+identify the mathematical invariants that make the algorithmic changes legal.
+From this perspective FlashAttention-2 is not a new attention map.  It is a
+different \emph{representative} and a different \emph{schedule} for computing
+the same smooth map $\Att$ of Definition~\ref{def:attention}, together with a
+resource-sensitive preference order on schedules induced by the GPU memory
+hierarchy and by the relative cost of matmul and non-matmul operations.
+
+\begin{definition}[Resource-annotated realisation]
+\label{def:resource-realisation}
+Fix input and output spaces $X,Y$ over $\R$.  A \emph{realisation} of a map
+$f : X \to Y$ is a finite directed acyclic graph whose vertices are elementary
+operations over $\R$ and whose composite map is $f$.  A \emph{resource
+annotation} assigns to each vertex and edge a cost vector, e.g.
+\[
+    (\text{matmul FLOPs},\ \text{non-matmul FLOPs},\
+      \text{HBM reads},\ \text{HBM writes},\ \text{barriers/atomics}).
+\]
+Two realisations are \emph{extensionally equal} if their composites as maps
+$X \to Y$ are equal; they may still be different computational objects because
+their annotations differ.
+\end{definition}
+
+\begin{remark}[What FlashAttention-2 changes]
+At Level~2, standard attention, FlashAttention, and FlashAttention-2 all
+realise the same map
+\[
+    (Q,K,V) \longmapsto \softmax(QK^\top/\sqrt{d_k})V.
+\]
+The claims of \cite{Dao2023} live in Definition~\ref{def:resource-realisation}:
+they replace one resource-annotated realisation by an extensionally equal one
+with fewer expensive non-matmul operations, more independent thread blocks,
+and less cross-warp communication.  Correctness is a statement about equality
+of composites; speed is a statement about the annotation.
+\end{remark}
+
+\begin{proposition}[Delayed normalisation is choice of representative]
+\label{prop:delayed-normalisation-representative}
+For a non-empty key set $A$, the attention accumulator
+$(m(A),\ell(A),\tilde{o}(A))$ of Definition~\ref{def:attention-accumulator}
+represents the output only through the quotient
+\[
+    o(A) = \frac{\tilde{o}(A)}{\ell(A)}.
+\]
+Thus replacing the normalised representative $o(A)$ by the unnormalised pair
+$(\tilde{o}(A),\ell(A))$ throughout the inner loop preserves the represented
+attention output, provided the final normalisation by $\ell(A)$ is performed.
+\end{proposition}
+\begin{proof}
+The equality is exactly the definition of $o(A)$.  For a tile partition
+$A=A_1\sqcup\cdots\sqcup A_t$, Proposition~\ref{prop:accumulator-merge}
+computes $(m(A),\ell(A),\tilde{o}(A))$ by repeated merges.  No intermediate
+normalised vector $o(A_1\sqcup\cdots\sqcup A_j)$ is needed to form the next
+merge; the merge formulas use only $m$, $\ell$, and $\tilde{o}$.  Therefore
+normalising after every tile and normalising once at the end yield the same
+$o(A)$.
+\end{proof}
+
+\begin{corollary}[The non-matmul-FLOP claim]
+\label{cor:nonmatmul-first-principles}
+The first algorithmic claim of \cite{Dao2023} follows from
+Proposition~\ref{prop:delayed-normalisation-representative}: divisions by
+$\ell$ are not semantic operations of the fold, but only changes of
+representative from $(\tilde{o},\ell)$ to $o$.  Moving them to the epilogue
+cannot change $\Att$ and removes all inner-loop normalisations.
+\end{corollary}
+
+\begin{proposition}[Logsumexp is a sufficient statistic for the backward pass]
+\label{prop:lse-sufficient-first-principles}
+For the backward formulas of Section~\ref{sec:attention-gradients}, the single
+scalar
+\[
+    L_i=\log\sum_j e^{S_{ij}}
+\]
+is a sufficient row statistic for reconstructing every tile of the softmax
+matrix $P$.
+\end{proposition}
+\begin{proof}
+This is Proposition~\ref{prop:recompute-p}: $P_{ij}=e^{S_{ij}-L_i}$.
+The reverse-mode formulas use $P$ only through tile-local expressions
+$P_{ij}$, $P_{ij}\mathrm{d}O_i$, and
+$P_{ij}(\mathrm{d}P_{ij}-D_i)$.  Once $Q_i$, $K_j$, and $L_i$ are resident
+on chip, each such term is determined.  Neither $m_i$ nor $\ell_i$ is needed
+separately.
+\end{proof}
+
+\begin{theorem}[FlashAttention-2 forward correctness]
+\label{thm:flash2-forward-correct-first-principles}
+The FlashAttention-2 forward algorithm of \cite{Dao2023}, viewed as
+Algorithm~\ref{alg:flashattention} with the delayed-normalisation
+representative of Proposition~\ref{prop:delayed-normalisation-representative}
+and the stored statistic of Proposition~\ref{prop:lse-sufficient-first-principles},
+computes exactly the attention map $\Att(Q,K,V)$ over $\R$.
+\end{theorem}
+\begin{proof}
+Algorithm~\ref{alg:flashattention} is correct by
+Proposition~\ref{prop:flashattention-correct}.  Delayed normalisation changes
+only the representative of the accumulator, not the represented output, by
+Proposition~\ref{prop:delayed-normalisation-representative}.  Storing $L$ is
+an auxiliary output for training and does not feed back into the forward output
+$O$.  Therefore the composite map from $(Q,K,V)$ to $O$ is unchanged.
+\end{proof}
+
+\begin{proposition}[Row-block parallelism is independence of product factors]
+\label{prop:row-block-independence}
+Let $F_i(Q,K,V)$ denote row block $O_i$ of the attention output produced by
+Algorithm~\ref{alg:flashattention}.  Then
+\[
+    \Att(Q,K,V) = (F_1(Q,K,V),\ldots,F_{T_r}(Q,K,V))
+\]
+as a product map into
+$\Mat{B_r}{d_v}^{T_r}$, and the maps $F_i$ have no write-write dependency.
+\end{proposition}
+\begin{proof}
+The $i$-th output block depends on $Q_i$ and on the read-only matrices
+$K,V$.  It writes only $O_i$ and, for training, $L_i$.  For $i\neq i'$ the
+write sets $\{O_i,L_i\}$ and $\{O_{i'},L_{i'}\}$ are disjoint.  The product
+decomposition is therefore literal: the row-block computations are the
+coordinate maps of $\Att$ with respect to the row-block decomposition of the
+codomain.
+\end{proof}
+
+\begin{corollary}[The sequence-parallelism claim]
+\label{cor:sequence-parallelism-first-principles}
+Scheduling one thread block per row block, batch element, and head is a legal
+parallel schedule because it evaluates independent product factors of
+Proposition~\ref{prop:row-block-independence}.  It changes occupancy, not the
+mathematical map.
+\end{corollary}
+
+\begin{definition}[Reduction index of a tile computation]
+\label{def:reduction-index}
+For a tile product $\tilde{P}_{ij}V_j$, call an index a \emph{reduction
+index} if partial results over different values of that index must be summed
+to obtain a single output row.  In $\sum_{a \in A_j} \tilde{P}_{ia}V_{a}$,
+the key index $a$ is a reduction index; the query row index $i$ is not.
+\end{definition}
+
+\begin{proposition}[Split-$Q$ removes cross-warp reductions]
+\label{prop:split-q-first-principles}
+For the forward tile computation, a partition of work across warps along a
+non-reduction index requires no cross-warp summation of output rows.  A
+partition along a reduction index does require such a summation unless one
+warp owns the whole reduction.
+\end{proposition}
+\begin{proof}
+If warp $w$ owns a set of query rows, it computes complete sums
+$\sum_{a\in A_j}\tilde{P}_{ia}V_a$ for those rows; no other warp contributes
+to the same output row.  This is split-$Q$.  If instead warp $w$ owns a
+proper subset $A_{j,w}$ of keys, it computes only
+$\sum_{a\in A_{j,w}}\tilde{P}_{ia}V_a$.  The complete output row is the sum
+over $w$ of these partial results, so cross-warp communication is forced by
+linearity of the reduction itself.  This is split-$K$.
+\end{proof}
+
+\begin{corollary}[The warp-partitioning claim]
+\label{cor:warp-partition-first-principles}
+The split-$Q$ work partition of \cite{Dao2023} is preferable, all else equal,
+because it partitions a product index rather than a reduction index.  Its
+advantage is not a new algebraic identity; it is the absence of an otherwise
+necessary reduction edge in the resource-annotated realisation.
+\end{corollary}
+
+\begin{proposition}[The causal mask is a lower set]
+\label{prop:causal-lower-set}
+Let $[n]\times[n]$ carry the product order and define
+\[
+    C := \{(i,j) : j \leq i\}.
+\]
+Then $C$ is a lower set in the second coordinate relative to each fixed row:
+if $(i,j)\in C$ and $j'\leq j$, then $(i,j')\in C$.  For rectangular tiles
+$R\times A$, a tile is entirely skipped precisely when
+\[
+    \min A > \max R.
+\]
+\end{proposition}
+\begin{proof}
+The lower-set statement is immediate from $j'\leq j\leq i$.  The tile
+$R\times A$ is entirely outside $C$ exactly when every $(i,j)\in R\times A$
+satisfies $j>i$, which is equivalent to the smallest column index exceeding
+the largest row index: $\min A>\max R$.
+\end{proof}
+
+\begin{remark}[Load imbalance as non-uniform fibre size]
+For square causal tiles, the number of live column tiles in row block $i$ is
+approximately $i$.  Thus the projection from live tile pairs
+$\{(i,j):j\leq i\}$ to row blocks has fibres of different cardinalities.
+The causal speedup is therefore bounded by the triangular count of live
+tiles, but the realised wall time also depends on how these unequal fibres
+are scheduled across SMs.  This is the mathematical content behind the
+load-imbalance remark following Proposition~\ref{prop:causal-tile-skip}.
+\end{remark}
+
+\begin{theorem}[Backward correctness from the differential]
+\label{thm:flash2-backward-first-principles}
+Any tiled backward algorithm that, for every tile $(i,j)$, recomputes
+$P_{ij}$ from $Q_i,K_j,L_i$ and accumulates the three bilinear expressions
+\[
+    \mathrm{d}Q_i \mathrel{+}= \mathrm{d}S_{ij}K_j/\sqrt{d_k},\qquad
+    \mathrm{d}K_j \mathrel{+}= \mathrm{d}S_{ij}^{\top}Q_i/\sqrt{d_k},\qquad
+    \mathrm{d}V_j \mathrel{+}= P_{ij}^{\top}\mathrm{d}O_i
+\]
+with $\mathrm{d}S_{ij}=P_{ij}\odot(\mathrm{d}O_iV_j^\top-D_i\mathbf{1}^\top)$
+and $D_i=\inner{\mathrm{d}O_i}{O_i}$ computes the reverse-mode derivative of
+$\Att$.
+\end{theorem}
+\begin{proof}
+The displayed expressions are exactly the block restrictions of
+Propositions~\ref{prop:grad-pv}, \ref{prop:grad-softmax},
+\ref{prop:row-dot}, and \ref{prop:grad-scores}.  By
+Proposition~\ref{prop:lse-sufficient-first-principles}, the recomputed
+$P_{ij}$ equals the corresponding tile of the full softmax matrix.  Summing
+over all tiles is summing over a partition of the finite index set
+$[n]\times[n]$, so the result is the same finite sum as the untiled
+reverse-mode derivative.
+\end{proof}
+
+\begin{remark}[Atomics are scheduling, not calculus]
+\cite{Dao2023} accumulates $\mathrm{d}Q$ contributions from multiple column
+blocks using atomics.  Algorithm~\ref{alg:flashattention-backward} instead
+uses a two-pass schedule with a single writer for each output block.
+Theorem~\ref{thm:flash2-backward-first-principles} explains why both schedules are
+mathematically valid: they differ only in how the finite sums are associated
+and where write conflicts are resolved.  The choice belongs to the resource
+annotation, not to the differential formula.
+\end{remark}
+
+\begin{proposition}[Grouped-query attention as a quotient on heads]
+\label{prop:gqa-quotient}
+Let $\pi:\{1,\ldots,h\}\to\{1,\ldots,h/g\}$ be
+$\pi(\ell)=\lceil \ell/g\rceil$.  Grouped-query attention replaces the
+independent key/value head index $\ell$ by the quotient index $\pi(\ell)$.
+In the backward pass, the gradient with respect to a shared key/value head is
+the sum over the fibre of $\pi$:
+\[
+    \mathrm{d}K_r^{\mathrm{shared}}
+      = \sum_{\ell\in\pi^{-1}(r)} \mathrm{d}K_\ell,\qquad
+    \mathrm{d}V_r^{\mathrm{shared}}
+      = \sum_{\ell\in\pi^{-1}(r)} \mathrm{d}V_\ell.
+\]
+\end{proposition}
+\begin{proof}
+The forward map duplicates the shared variables $K_r,V_r$ into each head
+$\ell$ lying over $r$.  The derivative of the diagonal duplication map
+$x\mapsto(x,\ldots,x)$ is the same diagonal map, and its adjoint under the
+Euclidean pairing is summation over components.  Hence reverse-mode
+differentiation sums the per-query-head gradients over each fibre.
+\end{proof}
+
+\begin{remark}[What is, and is not, proved by these notes]
+The results above prove equality of real-valued maps and identify the
+resource terms affected by FlashAttention-2's transformations.  They do not
+prove a universal wall-clock speedup.  Wall-clock claims depend on the Level~1
+realisation: Tensor Core use, register pressure, shared-memory bank conflicts,
+occupancy, cache behaviour, atomics, compiler choices, and the particular GPU.
+Those are engineering theorems about a concrete machine, not consequences of
+smoothness, associativity, or finite-dimensional linear algebra alone.
 \end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
