@@ -24,12 +24,15 @@ already established in `CUDALibraries/CuLLM/Source/Transformer/`, not
 Karpathy's C style. Code comments reference tex **section names**, never
 section/equation numbers (numbers drift; names don't).
 
-The end state as of this file's writing: a complete multi-head attention
-forward pass — dense QKV/output linear maps via cuBLASLt, IO-aware
-FlashAttention core (two execution-mapping variants), causal masking,
-batch/head parallelism — all unit-tested against independent CPU references,
-plus the FlashAttention backward pass (currently single-head only — see
-"What's NOT done" below).
+The end state as of this file's writing: complete multi-head attention
+forward AND backward passes — dense QKV/output linear maps via cuBLASLt
+(with weight gradients dW_qkv, dW^O through transposed GEMMs), IO-aware
+FlashAttention core (two execution-mapping variants, float4-vectorized K/V
+loads, causal tail rebalancing), causal masking, batch/head parallelism,
+grouped-query/multi-query attention (forward), and an end-to-end __half
+path — all unit-tested against independent CPU references and
+finite-difference gradient checks. See "What's NOT done" for the remaining
+gaps (GQA backward, bfloat16).
 
 ## Read in this order
 
@@ -107,8 +110,8 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **62 tests, 20 suites, all passing**, on an RTX
-3070 Laptop (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
+As of this file's writing: **68 tests, 21 suites, all passing** (plus
+MoreCUDA's 120), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
 Benchmark: `make AttentionIOBenchmark -j4 && ./AttentionIOBenchmark` (from
@@ -226,51 +229,48 @@ standalone build if done carelessly (see gotcha below).
 
 ## What's NOT done (the actual backlog)
 
-Roughly in the order a next session would want to tackle them:
+All seven items of the original backlog were completed 2026-07-02 (branch
+`feat/mha-backward-and-backlog`; see that branch's commit messages for the
+measurements). What they became:
 
-1. **Backward pass has no multi-head wiring.** `flash_attention_backward.h`
-   exists and is tested (including batched-slice independence — see
-   `flash_attention_backward_tests.cu`'s `BatchedMatchesPerSlice`), but
-   there is no `multi_head_attention_backward()` tying it to
-   `MultiHeadAttention/`'s linear-map weight matrices (i.e., no `dW^Q`,
-   `dW^K`, `dW^V`, `dW^O` — gradients w.r.t. the learned weights, not just
-   Q/K/V). This needs: (a) backward through the two linear-map GEMMs (another
-   cuBLASLt call per weight matrix, transposed appropriately — reuse the
-   row-major trick above), (b) `merge_heads`/`split_qkv_heads`'s adjoints
-   (these are pure permutations, so their adjoints are just the *inverse*
-   permutation applied to the gradient — should be near-trivial given
-   `merge_heads` is already `split_qkv_heads`'s documented inverse).
-2. **cuBLASLt linear-map GEMM vs. hand-written GEMM benchmark never happened.**
-   The original ask that led to `MultiHeadAttention/` was "should we use
-   cuBLASLt or write our own GEMM, or benchmark both" — only the cuBLASLt
-   path got built. A tiled shared-memory GEMM reference implementation (the
-   pedagogical/correctness-baseline half of that plan) doesn't exist yet.
-   Given cuBLASLt's tensor-core backing, expect it to win by a wide margin
-   at realistic `d_model` sizes — but this is an assumption, not a measured
-   result.
-3. **`kHeadDim` not a multiple of 32** has no path through
-   `MultiHeadAttention/` (it hard-requires `flash_attention_warp_cooperative`).
-   Real transformer head dims are almost always 32/64/128 so this is low
-   priority, but worth a `static_assert` with a clear message at the
-   `multi_head_attention()` call site rather than a deep template error, if
-   this becomes a real blocker.
-4. **No vectorized (float4-style) loads anywhere.** `llm.c`'s
-   `softmax_forward_kernel7`-derived `softmax_block_unrolled_fused.h`
-   partially covers this via register-array unrolling
-   (`kUnrollFactor`), but nothing in `Attention/` vectorizes its Q/K/V
-   shared-memory loads. Worth profiling before investing here — the
-   warp-cooperative kernel's speedup over thread-per-row (3–4x measured)
-   suggests occupancy, not per-thread memory throughput, was the bottleneck
-   being addressed so far.
-5. **Causal tail-block load imbalance** (documented in the tex's Causal
-   Tile Skipping remark) is unaddressed — no work-rebalancing scheme
-   (e.g. scheduling long/unmasked row-blocks first) exists yet.
-6. **MQA/GQA** (multi-query / grouped-query attention) is sketched as a
-   tex remark (Parallelism and Work Partitioning section) but has zero code.
-7. **No `__half`/`bfloat16` path exercised end-to-end.** `MathFunctions.h`
-   and `AccumulationType.h` support `__half`, and individual kernels are
-   templated on `T`, but no test instantiates the MHA pipeline at anything
-   but `float`.
+1. Multi-head backward → `MultiHeadAttention/multi_head_attention_backward.h`
+   (`linear_map_backward` uses `Setup`'s `is_transpose_on_A/B`;
+   `split_heads`/`merge_qkv_heads` are the permutation adjoints; verified by
+   central-difference gradient checks of dX, dW_qkv, dW^O, causal and not).
+2. GEMM benchmark → `MultiHeadAttention/tiled_gemm.h` +
+   `Benchmarks/Transformer/MultiHeadAttention/linear_map_gemm_benchmark.cu`.
+   **Measured (RTX 3060): cuBLASLt wins 10–12x** (~8 TFLOP/s vs ~0.68) at
+   d_model 256–1024 — keep cuBLASLt for the linear maps.
+3. `kHeadDim % 32` → clear `static_assert` at the `multi_head_attention()`
+   / `grouped_query_attention()` API boundaries.
+4. float4 loads → K/V tile loads in the warp-cooperative forward, behind
+   `if constexpr` (float only). **Measured ~1–1.5%** — confirming the
+   occupancy hypothesis — so NOT propagated to the backward kernels.
+5. Causal rebalancing → longest-row-block-first remap under `kCausal`
+   (forward + backward Pass 1; Pass 2's natural order is already correct).
+   **Measured: −8% at n=2048, −5.4% at n=4096**; ~10 µs slower at n≤1024
+   where the grid fits in one or two waves.
+6. MQA/GQA → `MultiHeadAttention/grouped_query_attention.h` +
+   `split_grouped_qkv_heads`; the attention kernel's
+   `(num_heads, kv_group_size)` params map query slice b·NH+h to K/V slice
+   b·NKV+h/g (defaults = identity). Forward only.
+7. `__half` end-to-end → `multi_head_attention_half_tests.cu`. Exposed and
+   fixed a real MoreCUDA bug: `Setup<T>::setup()` forced CUDA_R_32F scale
+   type for every T; COMPUTE_16F/64F need CUDA_R_16F/64F or the heuristic
+   returns zero algorithms.
+
+Remaining (new) backlog:
+
+1. **GQA/MQA backward.** For group size g > 1 the dK/dV of the g heads
+   sharing a (K, V) pair must be summed (see the tex remark) — the
+   per-slice backward kernels don't do this reduction. Training with GQA
+   needs it; `grouped_query_attention.h`'s doc comment marks the gap.
+2. **bfloat16.** `__half` runs end-to-end, but `__nv_bfloat16` has no
+   `MathFunctions.h`/`AccumulationType.h`/`get_data_precision` entries.
+3. **AttentionAccumulator::merge is not exercised by the production
+   kernels** (the warp-cooperative kernel distributes the accumulator
+   across lanes instead). It now uses `get_approximate_exponential`; if a
+   sequential-tile kernel is ever built on it, benchmark that choice.
 
 ## Known gotchas
 
