@@ -23,6 +23,7 @@ If the user points you at one of these, read its `AGENTS.md` (which is more conc
 | Area | Path | Status |
 |---|---|---|
 | **Multimodal vLLM image** (MinerU2.5-Pro + Qwen3-VL-4B AWQ-8bit + ColQwen2.5-v0.2) | `Deployments/DockerContainers/Builds/Multimodal/VLLMMultimodal/AGENTS.md` | Phases 1-3 smoke-tested 2026-05-10; Phase 4 (retrieval CLIs) open — see its `NEXT_STEPS.md` |
+| **CuLLM FlashAttention-from-first-principles** (CUDA, forward+backward, causal, multi-head via cuBLASLt) | `CUDALibraries/CuLLM/AGENTS.md` | Forward MHA (projections + FlashAttention core) complete and end-to-end tested as of 2026-07-02; backward pass exists single-head only, no multi-head wiring yet — see its "What's NOT done" |
 
 If you're asked about something not in this table, check:
 - `Deployments/DockerContainers/Builds/*/STATUS.md` for build-specific status
