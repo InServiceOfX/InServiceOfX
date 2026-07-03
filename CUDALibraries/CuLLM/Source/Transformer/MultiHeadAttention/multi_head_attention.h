@@ -72,6 +72,20 @@ bool multi_head_attention(
   const int num_heads,
   const int sequence_length)
 {
+  // Surface the constraint here, at the API boundary, rather than as a deep
+  // template error inside the attention core. The warp-cooperative kernel
+  // shards each õ row across the 32 lanes of a warp (kFragment components
+  // per lane), so kHeadDim must divide evenly. Real transformer head dims
+  // (32/64/128) all satisfy this; for other sizes use
+  // scaled_dot_product_attention (the non-flash baseline) or pad the head
+  // dimension.
+  static_assert(
+    kHeadDim % 32 == 0,
+    "multi_head_attention requires kHeadDim to be a multiple of 32 (warp "
+    "size): flash_attention_warp_cooperative shards each output row across "
+    "the lanes of one warp. Use kHeadDim of 32/64/128, pad the head "
+    "dimension, or call scaled_dot_product_attention instead.");
+
   if (!qkv_linear_maps<T, kHeadDim>(
     handle,
     stream,
