@@ -165,7 +165,37 @@ Three consequences:
   per 16 rows instead of warpgroup-wide tiles. Each is a named, measurable
   next step — CUTLASS/CuTe is the library that packages exactly these.
 
-## 6. Methodology fine print
+## 6. Second follow-up: the CuTe (CUTLASS) kernel
+
+`Transformer/Attention/flash_attention_cute.h` (CUTLASS v4.5.2, vendored
+header-only at `CUDALibraries/ThirdParty/cutlass`, gitignored). Three
+engine upgrades over the WMMA kernel, same FA-2 math: (1) the output
+accumulator stays in registers across all tiles — CuTe's coordinate
+tensors expose each lane's fragment (row, col), so the per-row rescale
+applies to the live fragment and P·V mma-accumulates into it, deleting the
+WMMA kernel's per-tile shared round trip; (2) cp.async double-buffered K/V
+tiles overlap the next copy with the current tile's math; (3) Q fragments
+load once and persist. Correctness: 6 unit tests incl. the ragged
+scalar-fallback path and long multi-buffer runs.
+
+| N | causal | scalar fp16 | WMMA | CuTe | cuDNN | CuTe vs cuDNN |
+|---|---|---|---|---|---|---|
+| 1024 | no | 37.8 | 13.7 | 4.79 | 4.19 | 1.14× |
+| 2048 | no | 151.1 | 52.1 | 19.0 | 8.43 | 2.3× |
+| 4096 | no | 606.3 | 228.2 | 76.0 | 21.8 | 3.5× |
+| 2048 | yes | 79.8 | 27.0 | 9.94 | 4.58 | 2.2× |
+| 4096 | yes | 312.4 | 105.1 | 38.8 | 13.5 | 2.9× |
+
+The ladder, cumulative at N = 2048 non-causal: scalar 151 → WMMA 52 →
+CuTe 19.0 vs cuDNN 8.4 — from 18× behind to 2.3×. The CuTe kernel now
+beats XLA's fused standard attention outright (19.0 vs 20.7 ms, and 9.9 vs
+20.7 causal) while still never materializing N². At N = 1024 it is within
+14% of cuDNN. The growing gap at N = 4096 points at the remaining rungs:
+larger K/V tiles per stage (more math per sync), LDSM shared→register
+copies, swizzled shared layouts, and splitting softmax work across all 32
+lanes.
+
+## 7. Methodology fine print
 
 - 20 timed launches after 3 warmups, mean reported. CUDA: cudaEvent around
   the launch loop. JAX: `time.perf_counter` around `block_until_ready`

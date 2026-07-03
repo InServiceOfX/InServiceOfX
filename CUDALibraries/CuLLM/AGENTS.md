@@ -122,7 +122,7 @@ make Check -j4
 ./Check --gtest_filter='FlashAttention*'   # or any substring
 ```
 
-As of this file's writing: **82 tests, 24 suites, all passing** (plus
+As of this file's writing: **88 tests, 25 suites, all passing** (CuTe tests require the gitignored CUTLASS clone at CUDALibraries/ThirdParty/cutlass — see Source/CMakeLists.txt for the one-line clone command) (plus
 MoreCUDA's 123), on RTX 30xx-class hardware (sm_86). `CMAKE_CUDA_ARCHITECTURES` is hardcoded to `75 86` in
 `Source/CMakeLists.txt` — add your arch if different.
 
@@ -195,7 +195,12 @@ lax-loop reference; remaining ~6–10× gap to cuDNN = cp.async double
 buffering, swizzled layouts, and avoiding the per-tile shared round trip
 of S and P·V (WMMA fragments are opaque, so the rescale merge stages
 through shared memory) — the ladder CUTLASS/CuTe packages. See report
-Section 5.
+Section 5. **Climbed the same day**: `Attention/flash_attention_cute.h`
+(CUTLASS v4.5.2, vendored) keeps the output accumulator in registers via
+CuTe coordinate tensors, double-buffers K/V with cp.async, and persists Q
+fragments — 2.7–3× over WMMA (N=2048 non-causal 52.1→19.0 ms), beats
+XLA's fused standard attention, 2.3× from cuDNN (1.14× at N=1024). Report
+Section 6 lists the remaining rungs (bigger tiles, LDSM, swizzles).
 
 MoreCUDA has its own standalone build (`MoreCUDA/BuildGcc`, same
 `cmake ../Source && make Check`); **re-run it after touching any file under
