@@ -3,6 +3,7 @@
 
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
+#include <type_traits>
 
 #include "Numerics/Constants/get_infinity.h"
 #include "Numerics/MathFunctions.h"
@@ -159,19 +160,61 @@ __global__ void flash_attention_forward_warp_cooperative(
         sequence_length - tile_start : kTileColumns};
 
     __syncthreads();
-    for (
-      int index {static_cast<int>(threadIdx.x)};
-      index < kTileColumns * kHeadDim;
-      index += static_cast<int>(blockDim.x))
+    if constexpr (
+      std::is_same_v<T, float> && std::is_same_v<AccT, float>)
     {
-      const int row {index / kHeadDim};
-      const int d {index % kHeadDim};
-      const int global_row {tile_start + row};
-      const bool in_range {global_row < sequence_length};
-      shared_keys[row][d] = in_range ?
-        static_cast<AccT>(keys[global_row * kHeadDim + d]) : AccT{0};
-      shared_values[row][d] = in_range ?
-        static_cast<AccT>(values[global_row * kHeadDim + d]) : AccT{0};
+      // Vectorized tile load: one 128-bit ld.global.v4 per thread per step —
+      // 4x fewer load instructions than the scalar path for the same bytes,
+      // raising per-thread memory-level parallelism at low occupancy. Legal
+      // because kHeadDim is a multiple of 32 floats, so every K/V row starts
+      // 16-byte aligned (cudaMalloc bases are 256-byte aligned and every
+      // offset applied is a multiple of kHeadDim).
+      constexpr int kVector {4};
+      constexpr int kVectorsPerRow {kHeadDim / kVector};
+      for (
+        int index {static_cast<int>(threadIdx.x)};
+        index < kTileColumns * kVectorsPerRow;
+        index += static_cast<int>(blockDim.x))
+      {
+        const int row {index / kVectorsPerRow};
+        const int vector_index {index % kVectorsPerRow};
+        const int global_row {tile_start + row};
+        const bool in_range {global_row < sequence_length};
+        const float4 key_vector {in_range ?
+          reinterpret_cast<const float4*>(
+            keys + global_row * kHeadDim)[vector_index] :
+          float4{0.0f, 0.0f, 0.0f, 0.0f}};
+        const float4 value_vector {in_range ?
+          reinterpret_cast<const float4*>(
+            values + global_row * kHeadDim)[vector_index] :
+          float4{0.0f, 0.0f, 0.0f, 0.0f}};
+        const int d {vector_index * kVector};
+        shared_keys[row][d] = key_vector.x;
+        shared_keys[row][d + 1] = key_vector.y;
+        shared_keys[row][d + 2] = key_vector.z;
+        shared_keys[row][d + 3] = key_vector.w;
+        shared_values[row][d] = value_vector.x;
+        shared_values[row][d + 1] = value_vector.y;
+        shared_values[row][d + 2] = value_vector.z;
+        shared_values[row][d + 3] = value_vector.w;
+      }
+    }
+    else
+    {
+      for (
+        int index {static_cast<int>(threadIdx.x)};
+        index < kTileColumns * kHeadDim;
+        index += static_cast<int>(blockDim.x))
+      {
+        const int row {index / kHeadDim};
+        const int d {index % kHeadDim};
+        const int global_row {tile_start + row};
+        const bool in_range {global_row < sequence_length};
+        shared_keys[row][d] = in_range ?
+          static_cast<AccT>(keys[global_row * kHeadDim + d]) : AccT{0};
+        shared_values[row][d] = in_range ?
+          static_cast<AccT>(values[global_row * kHeadDim + d]) : AccT{0};
+      }
     }
     __syncthreads();
 
