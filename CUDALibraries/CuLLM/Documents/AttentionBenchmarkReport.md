@@ -128,7 +128,44 @@ change engines. The FA-2-lax-loop-beats-CuLLM-non-causal result is the
 existence proof: same algorithm, tensor-core tiles, ~2× faster — and cuDNN
 shows ~16× headroom at fp16.
 
-## 5. Methodology fine print
+## 5. Follow-up (same day): the WMMA tensor-core kernel
+
+Section 4's milestone was implemented as
+`Transformer/Attention/flash_attention_tensor_core.h`: the same FA-2 loop
+with the two inner products moved onto tensor cores via nvcuda::wmma
+16×16×16 half fragments with float accumulators (one warp per 16-row query
+tile; online softmax stays scalar; P rounded to half before P·V, the same
+choice cuDNN makes). Correctness: 8 unit tests vs a double CPU reference,
+fp16-scale tolerances, including ragged lengths, causal, multi-slice, and
+head dims 32/48/64.
+
+Measured at the same B·H = 96, d = 64 shapes (mean ms):
+
+| N | causal | scalar fp16 | WMMA fp16 | speedup | cuDNN fp16 | remaining gap |
+|---|---|---|---|---|---|---|
+| 1024 | no | 37.8 | 13.7 | 2.8× | 4.19 | 3.3× |
+| 2048 | no | 151.1 | 52.1 | 2.9× | 8.43 | 6.2× |
+| 4096 | no | 606.3 | 229.3 | 2.6× | 21.8 | 10.5× |
+| 2048 | yes | 79.8 | 27.0 | 3.0× | 4.58 | 5.9× |
+| 4096 | yes | 312.4 | 105.2 | 3.0× | 13.5 | 7.8× |
+
+Three consequences:
+
+- The engine hypothesis is confirmed experimentally: changing only the
+  inner-product engine (identical algorithm, masking, scheduling) bought
+  2.6–3×, and the WMMA kernel now beats the JAX FA-2 lax-loop reference
+  (52.1 vs 74.4 ms at N = 2048 non-causal).
+- fp16 I/O finally pays for itself: the WMMA fp16 kernel is ~2.6× faster
+  than our fp32 scalar kernel, where the scalar fp16 path had been *slower*
+  than fp32.
+- The remaining ~6–10× to cuDNN is the classic optimization ladder above
+  naive WMMA: per-tile shared-memory round trips of S and P·V (our rescale
+  merge goes through shared because WMMA fragments are opaque), no
+  cp.async double buffering of K/V tiles, no swizzled layouts, one warp
+  per 16 rows instead of warpgroup-wide tiles. Each is a named, measurable
+  next step — CUTLASS/CuTe is the library that packages exactly these.
+
+## 6. Methodology fine print
 
 - 20 timed launches after 3 warmups, mean reported. CUDA: cudaEvent around
   the launch loop. JAX: `time.perf_counter` around `block_until_ready`

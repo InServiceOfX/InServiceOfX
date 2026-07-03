@@ -7,6 +7,7 @@ SET(TEST_CU_SOURCES
   Transformer/Attention/causal_attention_tests.cu
   Transformer/Attention/flash_attention_backward_tests.cu
   Transformer/Attention/flash_attention_forward_tests.cu
+  Transformer/Attention/flash_attention_tensor_core_tests.cu
   Transformer/Attention/flash_attention_warp_cooperative_tests.cu
   Transformer/Attention/multihead_flash_attention_tests.cu
   Transformer/Attention/scaled_dot_product_attention_tests.cu
