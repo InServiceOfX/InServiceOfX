@@ -140,6 +140,83 @@ __global__ void merge_heads(
 }
 
 //------------------------------------------------------------------------------
+/// Grouped-query variant of split_qkv_heads (see the remark on Multi-query
+/// and grouped-query attention in FlashAttention.tex): the fused GEMM output
+/// has row layout
+///
+///   qkv[r, :] = [Q_0(r) ... Q_{NH-1}(r) | K_0(r) ... K_{NKV-1}(r)
+///                | V_0(r) ... V_{NKV-1}(r)],
+///
+/// where NKV = num_heads / kv_group_size is the number of *distinct* K/V
+/// heads — the fused weight matrix is (d_model, (NH + 2·NKV)·kHeadDim),
+/// shrinking the K/V projection (and the inference-time K/V cache) by the
+/// group factor. Queries gather to (B·NH, T, kHeadDim) exactly as
+/// split_qkv_heads; keys and values gather to (B·NKV, T, kHeadDim).
+/// kv_group_size = 1 reproduces split_qkv_heads' layout bit for bit;
+/// kv_group_size = num_heads is multi-query attention (one shared pair).
+//------------------------------------------------------------------------------
+template <typename T, int kHeadDim>
+__global__ void split_grouped_qkv_heads(
+  T* queries,
+  T* keys,
+  T* values,
+  const T* qkv,
+  const int batch_size,
+  const int num_heads,
+  const int kv_group_size,
+  const int sequence_length)
+{
+  const int num_kv_heads {num_heads / kv_group_size};
+  const int d_model {num_heads * kHeadDim};
+  const int row_width {(num_heads + 2 * num_kv_heads) * kHeadDim};
+  // One thread per query element; K/V elements (a subset of head indices)
+  // are written by the thread whose h is that group's first head.
+  const long long total_elements {
+    static_cast<long long>(batch_size) * num_heads * sequence_length *
+      kHeadDim};
+
+  for (
+    long long index {
+      static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x};
+    index < total_elements;
+    index += static_cast<long long>(gridDim.x) * blockDim.x)
+  {
+    const int d {static_cast<int>(index % kHeadDim)};
+    const int t {static_cast<int>((index / kHeadDim) % sequence_length)};
+    const int h {
+      static_cast<int>(
+        (index / (static_cast<long long>(kHeadDim) * sequence_length)) %
+          num_heads)};
+    const int b {
+      static_cast<int>(
+        index / (static_cast<long long>(kHeadDim) * sequence_length *
+          num_heads))};
+
+    const long long qkv_row {
+      (static_cast<long long>(b) * sequence_length + t) * row_width};
+
+    const long long query_out_index {
+      ((static_cast<long long>(b) * num_heads + h) * sequence_length + t) *
+        kHeadDim + d};
+    queries[query_out_index] = qkv[qkv_row + h * kHeadDim + d];
+
+    // The group's first head also gathers the group's shared K/V head.
+    if (h % kv_group_size == 0)
+    {
+      const int kv_head {h / kv_group_size};
+      const long long kv_out_index {
+        ((static_cast<long long>(b) * num_kv_heads + kv_head) *
+          sequence_length + t) * kHeadDim + d};
+      keys[kv_out_index] =
+        qkv[qkv_row + d_model + kv_head * kHeadDim + d];
+      values[kv_out_index] =
+        qkv[qkv_row + d_model + num_kv_heads * kHeadDim +
+          kv_head * kHeadDim + d];
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
 /// Adjoint (= inverse) of merge_heads, for the backward pass.
 ///
 /// merge_heads is a permutation matrix acting on the flattened tensor, and

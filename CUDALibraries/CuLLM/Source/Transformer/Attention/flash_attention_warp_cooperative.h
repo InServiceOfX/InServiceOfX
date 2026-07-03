@@ -62,6 +62,14 @@ namespace Attention
 /// kHeadDim must be a multiple of the warp size (32) for the lane sharding.
 /// kWarpsPerBlock = query rows per block (blockDim.x = 32·kWarpsPerBlock).
 //------------------------------------------------------------------------------
+/// num_heads and kv_group_size support grouped-query attention (see the
+/// remark on Multi-query and grouped-query attention in FlashAttention.tex):
+/// blockIdx.y flattens (batch, query head) as b·num_heads + h, and the g
+/// query heads of a group share one K/V slice, so the K/V slice index is
+///   (b · num_heads + h) ↦ b · (num_heads/g) + h/g.
+/// The defaults (1, 1) make the map the identity for every blockIdx.y,
+/// recovering standard multi-head attention where Q, K, V, O are all
+/// indexed by the same slice.
 template <typename T, int kHeadDim, int kWarpsPerBlock, bool kCausal = false>
 __global__ void flash_attention_forward_warp_cooperative(
   T* output,
@@ -69,7 +77,9 @@ __global__ void flash_attention_forward_warp_cooperative(
   const T* queries,
   const T* keys,
   const T* values,
-  const int sequence_length)
+  const int sequence_length,
+  const int num_heads = 1,
+  const int kv_group_size = 1)
 {
   using AccT = Softmax::accumulation_type_t<T>;
 
@@ -89,16 +99,23 @@ __global__ void flash_attention_forward_warp_cooperative(
   const int warp_rank {static_cast<int>(warp.meta_group_rank())};
   const int lane {static_cast<int>(warp.thread_rank())};
 
-  // Each (batch, head) slice is an independent attention problem.
-  const int slice_offset {
-    static_cast<int>(blockIdx.y) * sequence_length * kHeadDim};
+  // Each (batch, query head) slice is an independent attention problem;
+  // its K/V slice is shared across the kv_group_size heads of its group.
+  const int query_slice {static_cast<int>(blockIdx.y)};
+  const int num_kv_heads {num_heads / kv_group_size};
+  const int kv_slice {
+    (query_slice / num_heads) * num_kv_heads +
+      (query_slice % num_heads) / kv_group_size};
+
+  const int slice_offset {query_slice * sequence_length * kHeadDim};
+  const int kv_slice_offset {kv_slice * sequence_length * kHeadDim};
   output += slice_offset;
   queries += slice_offset;
-  keys += slice_offset;
-  values += slice_offset;
+  keys += kv_slice_offset;
+  values += kv_slice_offset;
   if (logsumexp != nullptr)
   {
-    logsumexp += static_cast<int>(blockIdx.y) * sequence_length;
+    logsumexp += query_slice * sequence_length;
   }
 
   // Causal work rebalancing (see the load-imbalance remark after the
@@ -320,7 +337,9 @@ void flash_attention_warp_cooperative(
   const T* keys,
   const T* values,
   const int sequence_length,
-  const int number_of_batch_heads = 1)
+  const int number_of_batch_heads = 1,
+  const int num_heads = 1,
+  const int kv_group_size = 1)
 {
   constexpr int WARP_SIZE {32};
   const int number_of_row_blocks {
@@ -338,7 +357,9 @@ void flash_attention_warp_cooperative(
       queries,
       keys,
       values,
-      sequence_length);
+      sequence_length,
+      num_heads,
+      kv_group_size);
 }
 
 } // namespace Attention

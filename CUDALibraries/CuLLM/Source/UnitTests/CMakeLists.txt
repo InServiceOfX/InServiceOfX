@@ -10,6 +10,7 @@ SET(TEST_CU_SOURCES
   Transformer/Attention/flash_attention_warp_cooperative_tests.cu
   Transformer/Attention/multihead_flash_attention_tests.cu
   Transformer/Attention/scaled_dot_product_attention_tests.cu
+  Transformer/MultiHeadAttention/grouped_query_attention_tests.cu
   Transformer/MultiHeadAttention/split_qkv_heads_tests.cu
   Transformer/MultiHeadAttention/qkv_linear_maps_tests.cu
   Transformer/MultiHeadAttention/output_linear_map_tests.cu
