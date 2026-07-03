@@ -139,6 +139,122 @@ __global__ void merge_heads(
   }
 }
 
+//------------------------------------------------------------------------------
+/// Adjoint (= inverse) of merge_heads, for the backward pass.
+///
+/// merge_heads is a permutation matrix acting on the flattened tensor, and
+/// the adjoint of a permutation is its inverse permutation: the gradient
+/// flowing into merge_heads' output (row-major (B·T, d_model)) is scattered
+/// back to merge_heads' input layout (row-major (B·NH, T, kHeadDim)) by
+/// reading each element from where merge_heads would have written it. No
+/// arithmetic — gradients pass through a permutation unchanged.
+///
+/// gradient_concatenated is row-major (B·T, d_model) — dH, the gradient
+/// w.r.t. the concatenated heads. gradient_per_head is row-major
+/// (B·NH, T, kHeadDim) — dO per (batch, head) slice, the layout
+/// flash_attention_backward expects for its gradient_output argument.
+//------------------------------------------------------------------------------
+template <typename T, int kHeadDim>
+__global__ void split_heads(
+  T* gradient_per_head,
+  const T* gradient_concatenated,
+  const int batch_size,
+  const int num_heads,
+  const int sequence_length)
+{
+  const int d_model {num_heads * kHeadDim};
+  const long long total_elements {
+    static_cast<long long>(batch_size) * num_heads * sequence_length *
+      kHeadDim};
+
+  for (
+    long long index {
+      static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x};
+    index < total_elements;
+    index += static_cast<long long>(gridDim.x) * blockDim.x)
+  {
+    const int d {static_cast<int>(index % kHeadDim)};
+    const int t {static_cast<int>((index / kHeadDim) % sequence_length)};
+    const int h {
+      static_cast<int>(
+        (index / (static_cast<long long>(kHeadDim) * sequence_length)) %
+          num_heads)};
+    const int b {
+      static_cast<int>(
+        index / (static_cast<long long>(kHeadDim) * sequence_length *
+          num_heads))};
+
+    const long long per_head_index {
+      ((static_cast<long long>(b) * num_heads + h) * sequence_length + t) *
+        kHeadDim + d};
+    const long long concat_index {
+      (static_cast<long long>(b) * sequence_length + t) * d_model +
+        h * kHeadDim + d};
+
+    gradient_per_head[per_head_index] = gradient_concatenated[concat_index];
+  }
+}
+
+//------------------------------------------------------------------------------
+/// Adjoint (= inverse) of split_qkv_heads, for the backward pass.
+///
+/// split_qkv_heads is a permutation from the fused GEMM's row-major
+/// (B·T, 3·d_model) layout to three per-head-contiguous (B·NH, T, kHeadDim)
+/// tensors; its adjoint scatters the three gradient tensors dQ, dK, dV back
+/// into the fused layout, producing the gradient w.r.t. the fused GEMM's
+/// output — the d(qkv) that the weight-gradient and input-gradient GEMMs of
+/// the backward pass consume. Same index arithmetic as split_qkv_heads with
+/// reads and writes exchanged.
+//------------------------------------------------------------------------------
+template <typename T, int kHeadDim>
+__global__ void merge_qkv_heads(
+  T* gradient_qkv,
+  const T* gradient_queries,
+  const T* gradient_keys,
+  const T* gradient_values,
+  const int batch_size,
+  const int num_heads,
+  const int sequence_length)
+{
+  const int d_model {num_heads * kHeadDim};
+  const long long total_elements {
+    static_cast<long long>(batch_size) * num_heads * sequence_length *
+      kHeadDim};
+
+  for (
+    long long index {
+      static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x};
+    index < total_elements;
+    index += static_cast<long long>(gridDim.x) * blockDim.x)
+  {
+    const int d {static_cast<int>(index % kHeadDim)};
+    const int t {static_cast<int>((index / kHeadDim) % sequence_length)};
+    const int h {
+      static_cast<int>(
+        (index / (static_cast<long long>(kHeadDim) * sequence_length)) %
+          num_heads)};
+    const int b {
+      static_cast<int>(
+        index / (static_cast<long long>(kHeadDim) * sequence_length *
+          num_heads))};
+
+    const long long qkv_row {
+      (static_cast<long long>(b) * sequence_length + t) * 3 * d_model};
+    const long long head_offset {
+      static_cast<long long>(h) * kHeadDim + d};
+
+    const long long per_head_index {
+      ((static_cast<long long>(b) * num_heads + h) * sequence_length + t) *
+        kHeadDim + d};
+
+    gradient_qkv[qkv_row + head_offset] = gradient_queries[per_head_index];
+    gradient_qkv[qkv_row + d_model + head_offset] =
+      gradient_keys[per_head_index];
+    gradient_qkv[qkv_row + 2 * d_model + head_offset] =
+      gradient_values[per_head_index];
+  }
+}
+
 } // namespace MultiHeadAttention
 } // namespace Transformer
 

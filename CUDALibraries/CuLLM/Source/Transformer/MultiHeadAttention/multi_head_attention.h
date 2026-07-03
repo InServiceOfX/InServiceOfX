@@ -53,6 +53,11 @@ namespace MultiHeadAttention
 /// kWarpsPerBlock is flash_attention_warp_cooperative's tile parameter (one
 /// warp per query row, kWarpsPerBlock rows per thread block); kCausal
 /// selects masked (decoder self-attention) vs. unmasked attention.
+///
+/// logsumexp: pass nullptr for inference. For training, pass a
+/// (B·NH, T) device buffer — the attention core writes the per-row
+/// logsumexp statistic L_i = m + ln ℓ that multi_head_attention_backward
+/// requires for tile-wise recomputation of the attention weights.
 //------------------------------------------------------------------------------
 template <typename T, int kHeadDim, int kWarpsPerBlock, bool kCausal = false>
 bool multi_head_attention(
@@ -70,7 +75,8 @@ bool multi_head_attention(
   const T* output_weight_matrix,
   const int batch_size,
   const int num_heads,
-  const int sequence_length)
+  const int sequence_length,
+  T* logsumexp = nullptr)
 {
   // Surface the constraint here, at the API boundary, rather than as a deep
   // template error inside the attention core. The warp-cooperative kernel
@@ -105,7 +111,7 @@ bool multi_head_attention(
   // head_ℓ = Att(Q_ℓ, K_ℓ, V_ℓ) for every (batch, head) slice at once.
   Attention::flash_attention_warp_cooperative<T, kHeadDim, kWarpsPerBlock, kCausal>(
     attention_output,
-    nullptr,
+    logsumexp,
     queries,
     keys,
     values,
