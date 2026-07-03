@@ -332,6 +332,77 @@ __global__ void merge_qkv_heads(
   }
 }
 
+//------------------------------------------------------------------------------
+/// Adjoint (= inverse) of split_grouped_qkv_heads, for the grouped-query
+/// backward pass. Scatters dQ (per query head, B·NH slices) and the
+/// group-summed dK/dV (per KV head, B·NKV slices — the output of
+/// reduce_grouped_kv_gradients, NOT the per-query-head partials) back into
+/// the fused row-major (B·T, (NH + 2·NKV)·kHeadDim) layout the QKV
+/// linear-map weight-gradient GEMMs consume. split_grouped_qkv_heads reads
+/// each fused element exactly once, so its adjoint is the pure inverse
+/// gather — the group summation already happened upstream in the
+/// reduction. kv_group_size = 1 is the adjoint of the ungrouped split with
+/// the [Q | K | V] layout intact.
+//------------------------------------------------------------------------------
+template <typename T, int kHeadDim>
+__global__ void merge_grouped_qkv_heads(
+  T* gradient_qkv,
+  const T* gradient_queries,
+  const T* gradient_keys,
+  const T* gradient_values,
+  const int batch_size,
+  const int num_heads,
+  const int kv_group_size,
+  const int sequence_length)
+{
+  const int num_kv_heads {num_heads / kv_group_size};
+  const int d_model {num_heads * kHeadDim};
+  const int row_width {(num_heads + 2 * num_kv_heads) * kHeadDim};
+  const long long total_elements {
+    static_cast<long long>(batch_size) * num_heads * sequence_length *
+      kHeadDim};
+
+  for (
+    long long index {
+      static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x};
+    index < total_elements;
+    index += static_cast<long long>(gridDim.x) * blockDim.x)
+  {
+    const int d {static_cast<int>(index % kHeadDim)};
+    const int t {static_cast<int>((index / kHeadDim) % sequence_length)};
+    const int h {
+      static_cast<int>(
+        (index / (static_cast<long long>(kHeadDim) * sequence_length)) %
+          num_heads)};
+    const int b {
+      static_cast<int>(
+        index / (static_cast<long long>(kHeadDim) * sequence_length *
+          num_heads))};
+
+    const long long qkv_row {
+      (static_cast<long long>(b) * sequence_length + t) * row_width};
+
+    const long long query_in_index {
+      ((static_cast<long long>(b) * num_heads + h) * sequence_length + t) *
+        kHeadDim + d};
+    gradient_qkv[qkv_row + h * kHeadDim + d] =
+      gradient_queries[query_in_index];
+
+    // The group's first head also scatters the group's shared dK/dV column.
+    if (h % kv_group_size == 0)
+    {
+      const int kv_head {h / kv_group_size};
+      const long long kv_in_index {
+        ((static_cast<long long>(b) * num_kv_heads + kv_head) *
+          sequence_length + t) * kHeadDim + d};
+      gradient_qkv[qkv_row + d_model + kv_head * kHeadDim + d] =
+        gradient_keys[kv_in_index];
+      gradient_qkv[qkv_row + d_model + num_kv_heads * kHeadDim +
+        kv_head * kHeadDim + d] = gradient_values[kv_in_index];
+    }
+  }
+}
+
 } // namespace MultiHeadAttention
 } // namespace Transformer
 

@@ -116,6 +116,12 @@ __global__ void attention_backward_row_dots(
 /// K and V rows are both lane-walked (dot products) and lane-striped
 /// (fragment accumulation), so both are padded by one column.
 //------------------------------------------------------------------------------
+/// num_heads and kv_group_size support grouped-query attention, mirroring
+/// the forward warp-cooperative kernel: blockIdx.y flattens
+/// (batch, query head) as b·num_heads + h, and the g query heads of a group
+/// read the same shared K/V slice b·(num_heads/g) + h/g. The defaults
+/// (1, 1) make the map the identity, recovering standard multi-head
+/// attention.
 template <typename T, int kHeadDim, int kWarpsPerBlock, bool kCausal = false>
 __global__ void flash_attention_backward_query_gradient(
   T* gradient_queries,
@@ -125,7 +131,9 @@ __global__ void flash_attention_backward_query_gradient(
   const T* gradient_output,
   const T* logsumexp,
   const T* row_dots,
-  const int sequence_length)
+  const int sequence_length,
+  const int num_heads = 1,
+  const int kv_group_size = 1)
 {
   using AccT = Softmax::accumulation_type_t<T>;
   constexpr int WARP_SIZE {32};
@@ -139,14 +147,19 @@ __global__ void flash_attention_backward_query_gradient(
   const int warp_rank {static_cast<int>(warp.meta_group_rank())};
   const int lane {static_cast<int>(warp.thread_rank())};
 
-  const int slice_matrix_offset {
-    static_cast<int>(blockIdx.y) * sequence_length * kHeadDim};
-  const int slice_row_offset {
-    static_cast<int>(blockIdx.y) * sequence_length};
+  const int query_slice {static_cast<int>(blockIdx.y)};
+  const int num_kv_heads {num_heads / kv_group_size};
+  const int kv_slice {
+    (query_slice / num_heads) * num_kv_heads +
+      (query_slice % num_heads) / kv_group_size};
+
+  const int slice_matrix_offset {query_slice * sequence_length * kHeadDim};
+  const int kv_slice_offset {kv_slice * sequence_length * kHeadDim};
+  const int slice_row_offset {query_slice * sequence_length};
   gradient_queries += slice_matrix_offset;
   queries += slice_matrix_offset;
-  keys += slice_matrix_offset;
-  values += slice_matrix_offset;
+  keys += kv_slice_offset;
+  values += kv_slice_offset;
   gradient_output += slice_matrix_offset;
   logsumexp += slice_row_offset;
   row_dots += slice_row_offset;
@@ -301,6 +314,17 @@ __global__ void flash_attention_backward_query_gradient(
 /// the tiles. K and V rows of the block are warp-uniform (broadcast,
 /// unpadded); Q and dO tile rows are lane-walked and lane-striped (padded).
 //------------------------------------------------------------------------------
+/// num_heads and kv_group_size support grouped-query attention. Under
+/// g = kv_group_size > 1 the K/V rows are read from the group's shared
+/// slice, but gradient_keys/gradient_values are still written at the
+/// *query* slice index (blockIdx.y) — i.e. as per-query-head partials in
+/// (B·NH, T, kHeadDim) buffers. Each of the g heads sharing a (K, V) pair
+/// contributes an independent dK/dV term that must be summed (see the
+/// remark on Multi-query and grouped-query attention in
+/// FlashAttention.tex); writing partials keeps every output block
+/// single-writer (no atomics), and the group sum is a separate reduction
+/// kernel (reduce_grouped_kv_gradients). Defaults (1, 1) recover standard
+/// multi-head attention, where the partials ARE the gradients.
 template <typename T, int kHeadDim, int kWarpsPerBlock, bool kCausal = false>
 __global__ void flash_attention_backward_key_value_gradient(
   T* gradient_keys,
@@ -311,7 +335,9 @@ __global__ void flash_attention_backward_key_value_gradient(
   const T* gradient_output,
   const T* logsumexp,
   const T* row_dots,
-  const int sequence_length)
+  const int sequence_length,
+  const int num_heads = 1,
+  const int kv_group_size = 1)
 {
   using AccT = Softmax::accumulation_type_t<T>;
   constexpr int WARP_SIZE {32};
@@ -325,15 +351,20 @@ __global__ void flash_attention_backward_key_value_gradient(
   const int warp_rank {static_cast<int>(warp.meta_group_rank())};
   const int lane {static_cast<int>(warp.thread_rank())};
 
-  const int slice_matrix_offset {
-    static_cast<int>(blockIdx.y) * sequence_length * kHeadDim};
-  const int slice_row_offset {
-    static_cast<int>(blockIdx.y) * sequence_length};
+  const int query_slice {static_cast<int>(blockIdx.y)};
+  const int num_kv_heads {num_heads / kv_group_size};
+  const int kv_slice {
+    (query_slice / num_heads) * num_kv_heads +
+      (query_slice % num_heads) / kv_group_size};
+
+  const int slice_matrix_offset {query_slice * sequence_length * kHeadDim};
+  const int kv_slice_offset {kv_slice * sequence_length * kHeadDim};
+  const int slice_row_offset {query_slice * sequence_length};
   gradient_keys += slice_matrix_offset;
   gradient_values += slice_matrix_offset;
   queries += slice_matrix_offset;
-  keys += slice_matrix_offset;
-  values += slice_matrix_offset;
+  keys += kv_slice_offset;
+  values += kv_slice_offset;
   gradient_output += slice_matrix_offset;
   logsumexp += slice_row_offset;
   row_dots += slice_row_offset;
@@ -474,6 +505,12 @@ __global__ void flash_attention_backward_key_value_gradient(
 /// buffer of number_of_batch_heads · sequence_length elements. logsumexp
 /// must come from the forward pass (flash_attention_warp_cooperative with a
 /// non-null logsumexp argument).
+///
+/// For grouped-query attention (kv_group_size > 1): keys/values are the
+/// shared (B·NKV, T, kHeadDim) tensors, but gradient_keys/gradient_values
+/// must be sized (B·NH, T, kHeadDim) — they receive per-query-head
+/// PARTIALS that the caller must group-sum with
+/// reduce_grouped_kv_gradients before use.
 //------------------------------------------------------------------------------
 template <typename T, int kHeadDim, int kWarpsPerBlock, bool kCausal = false>
 void flash_attention_backward(
@@ -488,7 +525,9 @@ void flash_attention_backward(
   const T* gradient_output,
   const T* logsumexp,
   const int sequence_length,
-  const int number_of_batch_heads = 1)
+  const int number_of_batch_heads = 1,
+  const int num_heads = 1,
+  const int kv_group_size = 1)
 {
   constexpr int WARP_SIZE {32};
   const int number_of_row_blocks {
@@ -517,7 +556,9 @@ void flash_attention_backward(
       gradient_output,
       logsumexp,
       row_dots_workspace,
-      sequence_length);
+      sequence_length,
+      num_heads,
+      kv_group_size);
 
   flash_attention_backward_key_value_gradient<
     T,
@@ -532,7 +573,73 @@ void flash_attention_backward(
       gradient_output,
       logsumexp,
       row_dots_workspace,
-      sequence_length);
+      sequence_length,
+      num_heads,
+      kv_group_size);
+}
+
+//------------------------------------------------------------------------------
+/// Group-sum of per-query-head dK/dV partials, the reduction required by
+/// the remark on Multi-query and grouped-query attention in
+/// FlashAttention.tex: the g query heads sharing a (K, V) pair each
+/// contribute an independent gradient term, and
+///
+///   dK_{kv head} = Σ_{j=0}^{g-1} dK_{query head kv·g + j}   (same for dV).
+///
+/// Input partials are (B·NH, T, kHeadDim) as written by
+/// flash_attention_backward_key_value_gradient under kv_group_size = g;
+/// outputs are the true gradients, (B·NKV, T, kHeadDim), NKV = NH/g. One
+/// thread per output element accumulates its g inputs in AccT, keeping the
+/// sum in float even for 16-bit T.
+//------------------------------------------------------------------------------
+template <typename T, int kHeadDim>
+__global__ void reduce_grouped_kv_gradients(
+  T* gradient_keys,
+  T* gradient_values,
+  const T* per_query_head_gradient_keys,
+  const T* per_query_head_gradient_values,
+  const int batch_size,
+  const int num_heads,
+  const int kv_group_size,
+  const int sequence_length)
+{
+  using AccT = Softmax::accumulation_type_t<T>;
+  const int num_kv_heads {num_heads / kv_group_size};
+  const long long total_elements {
+    static_cast<long long>(batch_size) * num_kv_heads * sequence_length *
+      kHeadDim};
+  const long long slice_stride {
+    static_cast<long long>(sequence_length) * kHeadDim};
+
+  for (
+    long long index {
+      static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x};
+    index < total_elements;
+    index += static_cast<long long>(gridDim.x) * blockDim.x)
+  {
+    const long long within_slice {index % slice_stride};
+    const int kv_head {static_cast<int>((index / slice_stride) % num_kv_heads)};
+    const int b {static_cast<int>(index / (slice_stride * num_kv_heads))};
+
+    // Partials of the group live at query slices b·NH + kv_head·g + j.
+    const long long first_partial_slice {
+      (static_cast<long long>(b) * num_heads + kv_head * kv_group_size) *
+        slice_stride};
+
+    AccT key_sum {0};
+    AccT value_sum {0};
+    for (int j {0}; j < kv_group_size; ++j)
+    {
+      const long long partial_index {
+        first_partial_slice + j * slice_stride + within_slice};
+      key_sum += static_cast<AccT>(
+        per_query_head_gradient_keys[partial_index]);
+      value_sum += static_cast<AccT>(
+        per_query_head_gradient_values[partial_index]);
+    }
+    gradient_keys[index] = static_cast<T>(key_sum);
+    gradient_values[index] = static_cast<T>(value_sum);
+  }
 }
 
 } // namespace Attention
