@@ -11,8 +11,8 @@ SET(TEST_CU_SOURCES
   Transformer/Attention/multihead_flash_attention_tests.cu
   Transformer/Attention/scaled_dot_product_attention_tests.cu
   Transformer/MultiHeadAttention/split_qkv_heads_tests.cu
-  Transformer/MultiHeadAttention/qkv_projection_tests.cu
-  Transformer/MultiHeadAttention/output_projection_tests.cu
+  Transformer/MultiHeadAttention/qkv_linear_maps_tests.cu
+  Transformer/MultiHeadAttention/output_linear_map_tests.cu
   Transformer/MultiHeadAttention/multi_head_attention_tests.cu
   Transformer/Softmax/softmax_block_shared_reduce_tests.cu
   Transformer/Softmax/softmax_block_unrolled_fused_tests.cu

@@ -37,17 +37,17 @@ vector<float> make_mha_inputs(const int count, const int seed)
 
 //------------------------------------------------------------------------------
 // Full double-precision CPU reference implementing the definition of MHA in
-// FlashAttention.tex directly from the projection weights:
+// FlashAttention.tex directly from the learned weight matrices:
 //   MHA(y) = [head_1 | ... | head_h] W^O,  head_l = Att(yW^Q_l, yW^K_l, yW^V_l).
 // Independently derived from the GPU pipeline's stages (fused QKV GEMM,
-// per-head safe-softmax attention, concatenation, output GEMM) rather than
-// reusing any of this library's device kernels, so the comparison is a
-// genuine end-to-end check of the whole composition.
+// per-head safe-softmax attention, concatenation, output linear-map GEMM)
+// rather than reusing any of this library's device kernels, so the comparison
+// is a genuine end-to-end check of the whole composition.
 //------------------------------------------------------------------------------
 vector<float> multi_head_attention_cpu(
   const vector<float>& input,
-  const vector<float>& qkv_weights,
-  const vector<float>& output_weights,
+  const vector<float>& qkv_weight_matrix,
+  const vector<float>& output_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int head_dim,
@@ -58,7 +58,7 @@ vector<float> multi_head_attention_cpu(
   const int num_tokens {batch_size * sequence_length};
   const double scale {1.0 / std::sqrt(static_cast<double>(head_dim))};
 
-  // qkv = input @ qkv_weights.
+  // qkv = input @ qkv_weight_matrix.
   vector<double> qkv(static_cast<size_t>(num_tokens) * 3 * d_model, 0.0);
   for (int row {0}; row < num_tokens; ++row)
   {
@@ -68,14 +68,14 @@ vector<float> multi_head_attention_cpu(
       for (int k {0}; k < d_model; ++k)
       {
         accumulated += static_cast<double>(input[row * d_model + k]) *
-          static_cast<double>(qkv_weights[k * 3 * d_model + col]);
+          static_cast<double>(qkv_weight_matrix[k * 3 * d_model + col]);
       }
       qkv[static_cast<size_t>(row) * 3 * d_model + col] = accumulated;
     }
   }
 
   // Per-head safe-softmax attention, writing directly into the
-  // (num_tokens, d_model) concatenated layout output_weights expects.
+  // (num_tokens, d_model) concatenated layout output_weight_matrix expects.
   vector<double> concatenated(static_cast<size_t>(num_tokens) * d_model, 0.0);
   for (int b {0}; b < batch_size; ++b)
   {
@@ -130,7 +130,7 @@ vector<float> multi_head_attention_cpu(
     }
   }
 
-  // output = concatenated @ output_weights.
+  // output = concatenated @ output_weight_matrix.
   vector<float> output(static_cast<size_t>(num_tokens) * d_model);
   for (int row {0}; row < num_tokens; ++row)
   {
@@ -140,7 +140,7 @@ vector<float> multi_head_attention_cpu(
       for (int k {0}; k < d_model; ++k)
       {
         accumulated += concatenated[static_cast<size_t>(row) * d_model + k] *
-          static_cast<double>(output_weights[k * d_model + col]);
+          static_cast<double>(output_weight_matrix[k * d_model + col]);
       }
       output[static_cast<size_t>(row) * d_model + col] =
         static_cast<float>(accumulated);
@@ -157,8 +157,8 @@ vector<float> multi_head_attention_cpu(
 template <int kHD, int kWarps, bool kCausal>
 vector<float> run_multi_head_attention(
   const vector<float>& input,
-  const vector<float>& qkv_weights,
-  const vector<float>& output_weights,
+  const vector<float>& qkv_weight_matrix,
+  const vector<float>& output_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int sequence_length)
@@ -179,8 +179,8 @@ vector<float> run_multi_head_attention(
   Array<float> d_output(num_tokens * d_model);
 
   d_input.copy_host_input_to_device(input);
-  d_qkv_weights.copy_host_input_to_device(qkv_weights);
-  d_output_weights.copy_host_input_to_device(output_weights);
+  d_qkv_weights.copy_host_input_to_device(qkv_weight_matrix);
+  d_output_weights.copy_host_input_to_device(output_weight_matrix);
 
   LibraryContextHandle handle {};
   Stream stream {};
@@ -210,9 +210,9 @@ vector<float> run_multi_head_attention(
 }
 
 //------------------------------------------------------------------------------
-// Full pipeline (fused QKV GEMM -> per-head flash attention -> merge ->
-// output GEMM) against the from-scratch CPU reference. Sizes chosen for
-// multiple flash-attention tiles and multiple warps per block.
+// Full pipeline (fused QKV linear-map GEMM -> per-head flash attention ->
+// merge -> output linear-map GEMM) against the from-scratch CPU reference.
+// Sizes chosen for multiple flash-attention tiles and multiple warps per block.
 //------------------------------------------------------------------------------
 TEST(MultiHeadAttentionTests, MatchesCpuReference)
 {
@@ -225,17 +225,17 @@ TEST(MultiHeadAttentionTests, MatchesCpuReference)
   const int num_tokens {batch_size * sequence_length};
 
   const vector<float> input {make_mha_inputs(num_tokens * d_model, 3)};
-  const vector<float> qkv_weights {
+  const vector<float> qkv_weight_matrix {
     make_mha_inputs(d_model * 3 * d_model, 5)};
-  const vector<float> output_weights {
+  const vector<float> output_weight_matrix {
     make_mha_inputs(d_model * d_model, 11)};
 
   const vector<float> output {run_multi_head_attention<kHD, kWarps, false>(
-    input, qkv_weights, output_weights, batch_size, num_heads,
+    input, qkv_weight_matrix, output_weight_matrix, batch_size, num_heads,
     sequence_length)};
 
   const vector<float> expected {multi_head_attention_cpu(
-    input, qkv_weights, output_weights, batch_size, num_heads, kHD,
+    input, qkv_weight_matrix, output_weight_matrix, batch_size, num_heads, kHD,
     sequence_length, false)};
 
   ASSERT_EQ(output.size(), expected.size());
@@ -246,7 +246,7 @@ TEST(MultiHeadAttentionTests, MatchesCpuReference)
 }
 
 //------------------------------------------------------------------------------
-// Causal variant: masking flows through qkv_projection unchanged (it knows
+// Causal variant: masking flows through qkv_linear_maps unchanged (it knows
 // nothing about masking) into flash_attention_warp_cooperative's kCausal.
 //------------------------------------------------------------------------------
 TEST(MultiHeadAttentionTests, CausalMatchesCpuReference)
@@ -260,17 +260,17 @@ TEST(MultiHeadAttentionTests, CausalMatchesCpuReference)
   const int num_tokens {batch_size * sequence_length};
 
   const vector<float> input {make_mha_inputs(num_tokens * d_model, 13)};
-  const vector<float> qkv_weights {
+  const vector<float> qkv_weight_matrix {
     make_mha_inputs(d_model * 3 * d_model, 17)};
-  const vector<float> output_weights {
+  const vector<float> output_weight_matrix {
     make_mha_inputs(d_model * d_model, 19)};
 
   const vector<float> output {run_multi_head_attention<kHD, kWarps, true>(
-    input, qkv_weights, output_weights, batch_size, num_heads,
+    input, qkv_weight_matrix, output_weight_matrix, batch_size, num_heads,
     sequence_length)};
 
   const vector<float> expected {multi_head_attention_cpu(
-    input, qkv_weights, output_weights, batch_size, num_heads, kHD,
+    input, qkv_weight_matrix, output_weight_matrix, batch_size, num_heads, kHD,
     sequence_length, true)};
 
   ASSERT_EQ(output.size(), expected.size());

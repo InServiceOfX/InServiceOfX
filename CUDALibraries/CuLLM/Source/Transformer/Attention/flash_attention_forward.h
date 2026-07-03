@@ -84,7 +84,7 @@ namespace Attention
 /// Batch and multi-head support: in multi-head attention each head applies
 /// Att independently to its own (Q_h, K_h, V_h) slice (see the section on
 /// Multi-Head Attention in FlashAttention.tex) — the heads only interact in
-/// the input projections and the output concatenation, which are GEMMs
+/// the input linear maps and the output concatenation, which are GEMMs
 /// outside this kernel. Independence maps directly onto the grid:
 /// blockIdx.y indexes the flattened (batch, head) pair, and Q, K, V, O are
 /// laid out as (batch·heads, n, d) with each slice contiguous — llm.c's

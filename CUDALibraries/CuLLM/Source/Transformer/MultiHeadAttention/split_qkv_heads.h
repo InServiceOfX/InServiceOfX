@@ -7,12 +7,12 @@ namespace MultiHeadAttention
 {
 
 //------------------------------------------------------------------------------
-/// Splits the output of the fused QKV projection GEMM into three
+/// Splits the output of the fused QKV linear-map GEMM into three
 /// per-head-contiguous tensors, ready for the attention core (see the
 /// section on Multi-Head Attention in FlashAttention.tex).
 ///
-/// The fused projection computes, in one GEMM, Q, K, V for every head at
-/// once: qkv := X W_qkv, where X ∈ R^{(B·T)×d_model} stacks all tokens of
+/// The fused GEMM applies all learned Q/K/V right-multiplication linear maps
+/// at once: qkv := X W_qkv, where X ∈ R^{(B·T)×d_model} stacks all tokens of
 /// all batch elements as rows, and
 ///
 ///   W_qkv := [ W^Q | W^K | W^V ] ∈ R^{d_model × 3·d_model},
@@ -90,7 +90,7 @@ __global__ void split_qkv_heads(
 
 //------------------------------------------------------------------------------
 /// Inverse of split_qkv_heads: concatenates per-head attention output back
-/// into the row-major (B·T, d_model) layout the output projection GEMM
+/// into the row-major (B·T, d_model) layout the output linear-map GEMM
 /// expects (see the concatenation in the section on Multi-Head Attention:
 /// MHA(y) := [head_1 | ... | head_h] W^O).
 ///

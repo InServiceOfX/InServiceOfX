@@ -153,7 +153,8 @@ dot-product attention operator:
 Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V
 ```
 
-Multi-head attention applies this h times in parallel with learned projections.
+Multi-head attention applies this h times in parallel with learned
+right-multiplication linear maps.
 This is the algorithm FlashAttention accelerates — the math here is unchanged,
 only the memory access pattern is optimised.
 

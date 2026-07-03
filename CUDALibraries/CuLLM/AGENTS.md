@@ -25,7 +25,7 @@ Karpathy's C style. Code comments reference tex **section names**, never
 section/equation numbers (numbers drift; names don't).
 
 The end state as of this file's writing: a complete multi-head attention
-forward pass — dense QKV/output projections via cuBLASLt, IO-aware
+forward pass — dense QKV/output linear maps via cuBLASLt, IO-aware
 FlashAttention core (two execution-mapping variants), causal masking,
 batch/head parallelism — all unit-tested against independent CPU references,
 plus the FlashAttention backward pass (currently single-head only — see
@@ -60,7 +60,7 @@ InServiceOfX/
       Source/
         Transformer/
           Attention/           # the FlashAttention core (this file's focus)
-          MultiHeadAttention/   # QKV/output projections + full MHA composition
+          MultiHeadAttention/   # QKV/output linear maps + full MHA composition
           Softmax/              # standalone softmax kernels (design-space exploration)
         LLM/                   # legacy llm.c-style prototypes; currently empty after cleanup
         Benchmarks/            # AttentionIOBenchmark executable
@@ -170,15 +170,15 @@ standalone build if done carelessly (see gotcha below).
 - **Row-major GEMM via cuBLASLt's column-major-only API**: `cuBLASLt`
   computes `D = A·B` column-major, full stop. To get row-major
   `Out(m,n) = X(m,k)·W(k,n)` without any physical transpose, both
-  `qkv_projection.h` and `output_projection.h` use the identity
+  `qkv_linear_maps.h` and `output_linear_map.h` use the identity
   `Out^⊤ = W^⊤X^⊤`, and the fact that a row-major `(r,c)` buffer read as
   column-major `(c,r)` **is** that matrix's transpose (same bytes, no copy).
   So the GEMM is called with operands swapped: `A := W`, `B := X`,
   `M_cublas = n`, `K_cublas = k`, `N_cublas = m`. Full derivation in
-  `qkv_projection.h`'s header comment. This is verified against a
+  `qkv_linear_maps.h`'s header comment. This is verified against a
   from-scratch CPU reference in the tests, not just trusted from the
   derivation — if you touch this, re-verify the same way.
-- **Fused QKV projection** (one GEMM against
+- **Fused QKV linear maps** (one GEMM against
   `W_qkv = [W^Q | W^K | W^V]`, each further split into per-head blocks
   `[W^Q_0 | ... | W^Q_{NH-1}]`) instead of `3·NH` separate narrow GEMMs —
   better arithmetic intensity, matches llm.c's own convention. See
@@ -202,8 +202,8 @@ standalone build if done carelessly (see gotcha below).
 - [x] FlashAttention forward, both execution mappings, causal + non-causal
 - [x] FlashAttention backward (single-head; see gap below)
 - [x] Batch/head parallelism via `gridDim.y`, all forward kernels
-- [x] Fused QKV projection (cuBLASLt GEMM + permute kernel)
-- [x] Output projection (merge-heads kernel + cuBLASLt GEMM)
+- [x] Fused QKV linear maps (cuBLASLt GEMM + permute kernel)
+- [x] Output linear map (merge-heads kernel + cuBLASLt GEMM)
 - [x] Full `multi_head_attention()` composition, end-to-end tested against an
       independent CPU MHA reference (causal + non-causal)
 - [x] IO-complexity benchmark (`AttentionIOBenchmark`)
@@ -232,15 +232,15 @@ Roughly in the order a next session would want to tackle them:
    exists and is tested (including batched-slice independence — see
    `flash_attention_backward_tests.cu`'s `BatchedMatchesPerSlice`), but
    there is no `multi_head_attention_backward()` tying it to
-   `MultiHeadAttention/`'s projections (i.e., no `dW^Q`, `dW^K`, `dW^V`,
-   `dW^O` — gradients w.r.t. the *projection weights*, not just Q/K/V).
-   This needs: (a) backward through the two projection GEMMs (another
+   `MultiHeadAttention/`'s linear-map weight matrices (i.e., no `dW^Q`,
+   `dW^K`, `dW^V`, `dW^O` — gradients w.r.t. the learned weights, not just
+   Q/K/V). This needs: (a) backward through the two linear-map GEMMs (another
    cuBLASLt call per weight matrix, transposed appropriately — reuse the
    row-major trick above), (b) `merge_heads`/`split_qkv_heads`'s adjoints
    (these are pure permutations, so their adjoints are just the *inverse*
    permutation applied to the gradient — should be near-trivial given
    `merge_heads` is already `split_qkv_heads`'s documented inverse).
-2. **cuBLASLt-projection vs. hand-written-GEMM benchmark never happened.**
+2. **cuBLASLt linear-map GEMM vs. hand-written GEMM benchmark never happened.**
    The original ask that led to `MultiHeadAttention/` was "should we use
    cuBLASLt or write our own GEMM, or benchmark both" — only the cuBLASLt
    path got built. A tiled shared-memory GEMM reference implementation (the

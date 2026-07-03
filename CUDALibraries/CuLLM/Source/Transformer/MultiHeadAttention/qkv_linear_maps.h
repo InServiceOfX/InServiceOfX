@@ -1,5 +1,5 @@
-#ifndef TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_PROJECTION_H
-#define TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_PROJECTION_H
+#ifndef TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_LINEAR_MAPS_H
+#define TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_LINEAR_MAPS_H
 
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtMatrixMultiplication.h"
@@ -13,14 +13,19 @@ namespace MultiHeadAttention
 {
 
 //------------------------------------------------------------------------------
-/// Computes Q, K, V for every head via one fused GEMM (a genuine linear map
-/// into a lower-dimensional space — d_k < d_model — not a projection in the
-/// algebraic P² = P sense; see the remark on "projected" and "learned" in
-/// the section on Setup: Sequences as Matrix Rows in FlashAttention.tex)
-/// plus the per-head gather of split_qkv_heads.
+/// Applies the learned Q/K/V right-multiplication linear maps for every head
+/// via one fused GEMM, then gathers the result into per-head-contiguous
+/// tensors with split_qkv_heads.
 ///
-/// Computes qkv := X W_qkv, row-major (B·T)×(3·d_model), then splits it into
-/// per-head-contiguous queries, keys, values (see split_qkv_heads.h).
+/// In the notation of the Multi-Head Attention definition in
+/// FlashAttention.tex, this computes
+///
+///   qkv := X W_qkv,   W_qkv := [ W^Q | W^K | W^V ],
+///
+/// where each block W^Q_l, W^K_l, W^V_l defines the R-linear map
+/// R_W : X -> XW by right multiplication. This is not an algebraic
+/// idempotent P with P^2 = P; see the terminology remark in the section on
+/// Setup: Sequences as Matrix Rows.
 ///
 /// Row-major GEMM via cuBLASLt's column-major API:
 /// cuBLASLt's cublasLtMatmul computes D = A·B with all matrices *column*-
@@ -40,20 +45,20 @@ namespace MultiHeadAttention
 ///   K_cublas = k = contraction dimension (here d_model),
 ///   N_cublas = m = row count (here num_tokens = B·T).
 ///
-/// input is row-major (B·T, d_model) — tokens of all batch elements
-/// stacked, i.e. X of Definition~(Scaled Dot-Product Attention) applied
-/// per-head after the split below.
-/// qkv_weights is row-major (d_model, 3·d_model): see split_qkv_heads.h for
-/// the exact column layout ([W^Q | W^K | W^V], each further split by head).
+/// input is row-major (B·T, d_model) — the sequence matrix X/y with tokens
+/// of all batch elements stacked as rows.
+/// qkv_weight_matrix is row-major (d_model, 3·d_model): see
+/// split_qkv_heads.h for the exact column layout ([W^Q | W^K | W^V], each
+/// further split by head).
 /// qkv_workspace is caller-allocated row-major (B·T, 3·d_model) scratch for
-/// the GEMM output, consumed and discarded by the split.
+/// X W_qkv, consumed and discarded by the split.
 /// queries, keys, values are each row-major (B·NH, T, kHeadDim), ready for
 /// flash_attention (or flash_attention_warp_cooperative).
 ///
 /// kHeadDim is a compile-time constant, matching every Attention/ kernel.
 //------------------------------------------------------------------------------
 template <typename T, int kHeadDim>
-bool qkv_projection(
+bool qkv_linear_maps(
   cuBLASWrappers::LibraryContextHandle& handle,
   StreamManagement::Stream& stream,
   T* queries,
@@ -61,7 +66,7 @@ bool qkv_projection(
   T* values,
   T* qkv_workspace,
   const T* input,
-  const T* qkv_weights,
+  const T* qkv_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int sequence_length)
@@ -84,7 +89,7 @@ bool qkv_projection(
     setup.heuristic_,
     stream,
     setup.workspace_,
-    qkv_weights,
+    qkv_weight_matrix,
     input,
     nullptr,
     qkv_workspace))
@@ -114,4 +119,4 @@ bool qkv_projection(
 } // namespace MultiHeadAttention
 } // namespace Transformer
 
-#endif // TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_PROJECTION_H
+#endif // TRANSFORMER_MULTI_HEAD_ATTENTION_QKV_LINEAR_MAPS_H

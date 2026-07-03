@@ -1,5 +1,5 @@
-#ifndef TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_PROJECTION_H
-#define TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_PROJECTION_H
+#ifndef TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_LINEAR_MAP_H
+#define TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_LINEAR_MAP_H
 
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "cuBLASWrappers/MatrixMultiplication/LtMatrixMultiplication.h"
@@ -13,16 +13,17 @@ namespace MultiHeadAttention
 {
 
 //------------------------------------------------------------------------------
-/// Computes the output projection of multi-head attention (see the section
-/// on Multi-Head Attention in FlashAttention.tex):
+/// Applies the learned output right-multiplication linear map of multi-head
+/// attention (see the section on Multi-Head Attention in FlashAttention.tex):
 ///
 ///   MHA(y) := [head_1 | ... | head_h] W^O,
 ///
-/// i.e. merge_heads (the concatenation) followed by one GEMM against
-/// W^O ∈ R^{d_model × d_model}.
+/// i.e. merge_heads (column-wise concatenation) followed by one GEMM against
+/// the learned weight matrix W^O ∈ R^{d_model × d_model}. This is the
+/// R-linear map R_{W^O}: H -> H W^O, not an idempotent map.
 ///
 /// Row-major GEMM via cuBLASLt's column-major API: same relabelling as
-/// qkv_projection.h (see that file's header comment for the derivation),
+/// qkv_linear_maps.h (see that file's header comment for the derivation),
 /// with M_cublas = n = d_model, K_cublas = k = d_model,
 /// N_cublas = m = num_tokens = B·T.
 ///
@@ -30,19 +31,19 @@ namespace MultiHeadAttention
 /// flash_attention writes.
 /// concat_workspace is caller-allocated row-major (B·T, d_model) scratch
 /// for merge_heads' output, consumed and discarded by the GEMM.
-/// output_weights is row-major (d_model, d_model), W^O.
+/// output_weight_matrix is row-major (d_model, d_model), W^O.
 /// output is row-major (B·T, d_model), the final MHA(y).
 ///
 /// kHeadDim is a compile-time constant, matching every Attention/ kernel.
 //------------------------------------------------------------------------------
 template <typename T, int kHeadDim>
-bool output_projection(
+bool output_linear_map(
   cuBLASWrappers::LibraryContextHandle& handle,
   StreamManagement::Stream& stream,
   T* output,
   T* concat_workspace,
   const T* per_head_attention_output,
-  const T* output_weights,
+  const T* output_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int sequence_length)
@@ -79,7 +80,7 @@ bool output_projection(
     setup.heuristic_,
     stream,
     setup.workspace_,
-    output_weights,
+    output_weight_matrix,
     concat_workspace,
     nullptr,
     output);
@@ -88,4 +89,4 @@ bool output_projection(
 } // namespace MultiHeadAttention
 } // namespace Transformer
 
-#endif // TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_PROJECTION_H
+#endif // TRANSFORMER_MULTI_HEAD_ATTENTION_OUTPUT_LINEAR_MAP_H

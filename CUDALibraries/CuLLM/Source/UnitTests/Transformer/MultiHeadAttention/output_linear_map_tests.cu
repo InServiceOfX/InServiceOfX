@@ -1,7 +1,7 @@
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "DataStructures/Array.h"
 #include "StreamManagement/Stream.h"
-#include "Transformer/MultiHeadAttention/output_projection.h"
+#include "Transformer/MultiHeadAttention/output_linear_map.h"
 #include "gtest/gtest.h"
 
 #include <vector>
@@ -10,7 +10,7 @@ using cuBLASWrappers::LibraryContextHandle;
 using DataStructures::Array;
 using StreamManagement::Stream;
 using std::vector;
-using Transformer::MultiHeadAttention::output_projection;
+using Transformer::MultiHeadAttention::output_linear_map;
 
 namespace GoogleUnitTests
 {
@@ -22,7 +22,7 @@ namespace MultiHeadAttention
 //------------------------------------------------------------------------------
 // Deterministic pseudo-random values in roughly [-1, 1].
 //------------------------------------------------------------------------------
-vector<float> make_output_projection_inputs(const int count, const int seed)
+vector<float> make_output_linear_map_inputs(const int count, const int seed)
 {
   vector<float> result(count);
   for (int i {0}; i < count; ++i)
@@ -36,11 +36,11 @@ vector<float> make_output_projection_inputs(const int count, const int seed)
 //------------------------------------------------------------------------------
 // CPU reference: merge_heads (concatenate columns per token), then
 // Out = Concat @ W^O (row-major, double-precision accumulation) — the
-// MHA(y) := [head_1|...|head_h] W^O output projection.
+// MHA(y) := [head_1|...|head_h] W^O output linear map.
 //------------------------------------------------------------------------------
-vector<float> output_projection_cpu(
+vector<float> output_linear_map_cpu(
   const vector<float>& per_head_output,
-  const vector<float>& output_weights,
+  const vector<float>& output_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int head_dim,
@@ -78,7 +78,7 @@ vector<float> output_projection_cpu(
       for (int k {0}; k < d_model; ++k)
       {
         accumulated += concatenated[static_cast<size_t>(row) * d_model + k] *
-          static_cast<double>(output_weights[k * d_model + col]);
+          static_cast<double>(output_weight_matrix[k * d_model + col]);
       }
       output[static_cast<size_t>(row) * d_model + col] =
         static_cast<float>(accumulated);
@@ -90,7 +90,7 @@ vector<float> output_projection_cpu(
 //------------------------------------------------------------------------------
 // Full merge + GEMM against the CPU reference.
 //------------------------------------------------------------------------------
-TEST(OutputProjectionTests, MatchesCpuReference)
+TEST(OutputLinearMapTests, MatchesCpuReference)
 {
   constexpr int kHD {16};
   constexpr int batch_size {2};
@@ -100,10 +100,10 @@ TEST(OutputProjectionTests, MatchesCpuReference)
   const int num_tokens {batch_size * sequence_length};
 
   const vector<float> per_head_output {
-    make_output_projection_inputs(
+    make_output_linear_map_inputs(
       batch_size * num_heads * sequence_length * kHD, 7)};
-  const vector<float> output_weights {
-    make_output_projection_inputs(d_model * d_model, 11)};
+  const vector<float> output_weight_matrix {
+    make_output_linear_map_inputs(d_model * d_model, 11)};
 
   Array<float> d_per_head_output(
     batch_size * num_heads * sequence_length * kHD);
@@ -111,12 +111,12 @@ TEST(OutputProjectionTests, MatchesCpuReference)
   Array<float> d_workspace(num_tokens * d_model);
   Array<float> d_output(num_tokens * d_model);
   d_per_head_output.copy_host_input_to_device(per_head_output);
-  d_weights.copy_host_input_to_device(output_weights);
+  d_weights.copy_host_input_to_device(output_weight_matrix);
 
   LibraryContextHandle handle {};
   Stream stream {};
 
-  ASSERT_TRUE((output_projection<float, kHD>(
+  ASSERT_TRUE((output_linear_map<float, kHD>(
     handle,
     stream,
     d_output.elements_,
@@ -131,8 +131,8 @@ TEST(OutputProjectionTests, MatchesCpuReference)
   vector<float> output(d_output.number_of_elements_);
   d_output.copy_device_output_to_host(output);
 
-  const vector<float> expected {output_projection_cpu(
-    per_head_output, output_weights, batch_size, num_heads, kHD,
+  const vector<float> expected {output_linear_map_cpu(
+    per_head_output, output_weight_matrix, batch_size, num_heads, kHD,
     sequence_length)};
 
   ASSERT_EQ(output.size(), expected.size());

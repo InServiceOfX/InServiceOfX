@@ -1,7 +1,7 @@
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "DataStructures/Array.h"
 #include "StreamManagement/Stream.h"
-#include "Transformer/MultiHeadAttention/qkv_projection.h"
+#include "Transformer/MultiHeadAttention/qkv_linear_maps.h"
 #include "gtest/gtest.h"
 
 #include <vector>
@@ -10,7 +10,7 @@ using cuBLASWrappers::LibraryContextHandle;
 using DataStructures::Array;
 using StreamManagement::Stream;
 using std::vector;
-using Transformer::MultiHeadAttention::qkv_projection;
+using Transformer::MultiHeadAttention::qkv_linear_maps;
 
 namespace GoogleUnitTests
 {
@@ -22,7 +22,7 @@ namespace MultiHeadAttention
 //------------------------------------------------------------------------------
 // Deterministic pseudo-random values in roughly [-1, 1].
 //------------------------------------------------------------------------------
-vector<float> make_projection_inputs(const int count, const int seed)
+vector<float> make_linear_map_inputs(const int count, const int seed)
 {
   vector<float> result(count);
   for (int i {0}; i < count; ++i)
@@ -37,12 +37,12 @@ vector<float> make_projection_inputs(const int count, const int seed)
 // CPU reference: qkv = X @ W_qkv (row-major, double-precision accumulation),
 // then the exact split_qkv_heads gather.
 //------------------------------------------------------------------------------
-void qkv_projection_cpu(
+void qkv_linear_maps_cpu(
   vector<float>& queries,
   vector<float>& keys,
   vector<float>& values,
   const vector<float>& input,
-  const vector<float>& qkv_weights,
+  const vector<float>& qkv_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int head_dim,
@@ -60,7 +60,7 @@ void qkv_projection_cpu(
       for (int k {0}; k < d_model; ++k)
       {
         accumulated += static_cast<double>(input[row * d_model + k]) *
-          static_cast<double>(qkv_weights[k * 3 * d_model + col]);
+          static_cast<double>(qkv_weight_matrix[k * 3 * d_model + col]);
       }
       qkv[static_cast<size_t>(row) * 3 * d_model + col] = accumulated;
     }
@@ -103,7 +103,7 @@ void qkv_projection_cpu(
 // num_tokens, and 3*d_model are all non-trivial (exercises real cuBLASLt
 // tiling, not a toy single-tile case).
 //------------------------------------------------------------------------------
-TEST(QkvProjectionTests, MatchesCpuReference)
+TEST(QkvLinearMapsTests, MatchesCpuReference)
 {
   constexpr int kHD {16};
   constexpr int batch_size {2};
@@ -113,9 +113,9 @@ TEST(QkvProjectionTests, MatchesCpuReference)
   const int num_tokens {batch_size * sequence_length};
 
   const vector<float> input {
-    make_projection_inputs(num_tokens * d_model, 3)};
-  const vector<float> qkv_weights {
-    make_projection_inputs(d_model * 3 * d_model, 5)};
+    make_linear_map_inputs(num_tokens * d_model, 3)};
+  const vector<float> qkv_weight_matrix {
+    make_linear_map_inputs(d_model * 3 * d_model, 5)};
 
   Array<float> d_input(num_tokens * d_model);
   Array<float> d_weights(d_model * 3 * d_model);
@@ -124,12 +124,12 @@ TEST(QkvProjectionTests, MatchesCpuReference)
   Array<float> d_k(batch_size * num_heads * sequence_length * kHD);
   Array<float> d_v(batch_size * num_heads * sequence_length * kHD);
   d_input.copy_host_input_to_device(input);
-  d_weights.copy_host_input_to_device(qkv_weights);
+  d_weights.copy_host_input_to_device(qkv_weight_matrix);
 
   LibraryContextHandle handle {};
   Stream stream {};
 
-  ASSERT_TRUE((qkv_projection<float, kHD>(
+  ASSERT_TRUE((qkv_linear_maps<float, kHD>(
     handle,
     stream,
     d_q.elements_,
@@ -153,9 +153,9 @@ TEST(QkvProjectionTests, MatchesCpuReference)
   vector<float> expected_q;
   vector<float> expected_k;
   vector<float> expected_v;
-  qkv_projection_cpu(
+  qkv_linear_maps_cpu(
     expected_q, expected_k, expected_v,
-    input, qkv_weights, batch_size, num_heads, kHD, sequence_length);
+    input, qkv_weight_matrix, batch_size, num_heads, kHD, sequence_length);
 
   ASSERT_EQ(q.size(), expected_q.size());
   for (size_t i {0}; i < q.size(); ++i)

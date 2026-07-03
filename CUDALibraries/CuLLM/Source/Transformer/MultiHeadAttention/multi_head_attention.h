@@ -4,8 +4,8 @@
 #include "cuBLASWrappers/LibraryContextHandle.h"
 #include "StreamManagement/Stream.h"
 #include "Transformer/Attention/flash_attention_warp_cooperative.h"
-#include "Transformer/MultiHeadAttention/output_projection.h"
-#include "Transformer/MultiHeadAttention/qkv_projection.h"
+#include "Transformer/MultiHeadAttention/output_linear_map.h"
+#include "Transformer/MultiHeadAttention/qkv_linear_maps.h"
 
 namespace Transformer
 {
@@ -22,15 +22,17 @@ namespace MultiHeadAttention
 /// realised as three stages, each already independently defined and tested
 /// elsewhere in this library:
 ///
-///   1. qkv_projection  — one fused cuBLASLt GEMM computes every head's
-///      Q_ℓ, K_ℓ, V_ℓ at once (y W_qkv), then split_qkv_heads gathers the
-///      result into per-head-contiguous tensors.
+///   1. qkv_linear_maps — one fused cuBLASLt GEMM applies the learned
+///      right-multiplication linear maps for every head at once
+///      (y W_qkv), then split_qkv_heads gathers the result into
+///      per-head-contiguous tensors.
 ///   2. flash_attention_warp_cooperative — the attention core, run once per
 ///      (batch, head) slice via its existing blockIdx.y batching (see the
 ///      section on The FlashAttention Algorithm); this is exactly the
 ///      independence multihead_flash_attention_tests.cu verifies.
-///   3. output_projection — merge_heads concatenates the per-head outputs
-///      back to (B·T, d_model), then one cuBLASLt GEMM applies W^O.
+///   3. output_linear_map — merge_heads concatenates the per-head outputs
+///      back to (B·T, d_model), then one cuBLASLt GEMM applies the learned
+///      right-multiplication linear map defined by W^O.
 ///
 /// All workspace buffers are caller-allocated (this library's convention
 /// throughout — see e.g. scaled_dot_product_attention.h's scores/weights
@@ -44,8 +46,8 @@ namespace MultiHeadAttention
 ///   output              — (B·T, d_model), the final MHA(y)
 ///
 /// input is (B·T, d_model), y of the definition above, tokens of all batch
-/// elements stacked as rows. qkv_weights is (d_model, 3·d_model) and
-/// output_weights is (d_model, d_model); see qkv_projection.h and
+/// elements stacked as rows. qkv_weight_matrix is (d_model, 3·d_model) and
+/// output_weight_matrix is (d_model, d_model); see qkv_linear_maps.h and
 /// split_qkv_heads.h for the exact per-head column layout within each.
 ///
 /// kWarpsPerBlock is flash_attention_warp_cooperative's tile parameter (one
@@ -64,13 +66,13 @@ bool multi_head_attention(
   T* attention_output,
   T* concat_workspace,
   const T* input,
-  const T* qkv_weights,
-  const T* output_weights,
+  const T* qkv_weight_matrix,
+  const T* output_weight_matrix,
   const int batch_size,
   const int num_heads,
   const int sequence_length)
 {
-  if (!qkv_projection<T, kHeadDim>(
+  if (!qkv_linear_maps<T, kHeadDim>(
     handle,
     stream,
     queries,
@@ -78,7 +80,7 @@ bool multi_head_attention(
     values,
     qkv_workspace,
     input,
-    qkv_weights,
+    qkv_weight_matrix,
     batch_size,
     num_heads,
     sequence_length))
@@ -96,13 +98,13 @@ bool multi_head_attention(
     sequence_length,
     batch_size * num_heads);
 
-  return output_projection<T, kHeadDim>(
+  return output_linear_map<T, kHeadDim>(
     handle,
     stream,
     output,
     concat_workspace,
     attention_output,
-    output_weights,
+    output_weight_matrix,
     batch_size,
     num_heads,
     sequence_length);
