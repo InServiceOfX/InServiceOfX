@@ -226,6 +226,59 @@ Table below is written for **Option A** (the full sequence); if you go with
 Option B, cut it into two videos at the marked seam — no rewriting needed,
 the rows don't change.
 
+### Teleprompter — read this straight down, nothing else
+
+Narration only, no table, no equations, no tex references — just the words,
+in order. The `⸻ split here for Option B ⸻` marker is where Part 1 ends
+and Part 2's *second* hook begins, if you're doing the two-video version.
+
+> "What does 'Attention Is All You Need' actually say, if you read it the
+> way an abstract algebraist would? Six definitions. One hidden symmetry
+> theorem."
+>
+> "A sequence is just a matrix — one row per token. Query, key, value are
+> that matrix, linearly mapped by learned weights. 'Projected' here just
+> means multiplied."
+>
+> "Before attention even enters: softmax's level sets are cosets of the
+> line R-one. It's a diffeomorphism from that quotient onto the open
+> simplex."
+>
+> "The score matrix: entry i,j is exactly the dot product of query i with
+> key j — a row of Q times a column of K-transpose, which is just row j
+> of K."
+>
+> "Softmax each row, multiply by V: the output is a weighted average of
+> the values — a soft nearest-neighbor lookup."
+>
+> "Why divide by root d-k? Raw dot-product variance grows with dimension.
+> Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill
+> the gradient."
+>
+> **⸻ split here for Option B ⸻**
+>
+> "Here's the theorem: for every permutation π in the symmetric group
+> S-n, Att is S_n-equivariant. Permute the input rows, the output permutes
+> identically — attention sees a set, not a sequence."
+>
+> "So order has to be injected from outside: a fixed sine-cosine encoding,
+> added before attention runs."
+>
+> "And it's not arbitrary. Shifting position by k acts as an SO(2)
+> rotation on each frequency pair — position isn't just encoded, it's
+> represented, as a genuine group action."
+>
+> "I've described one attention head. There's never just one. Next time:
+> multi-head attention — a genuinely different question."
+
+If you go with Option B, Part 2 needs its *own* hook line in place of a
+cold open at the split — use: *"...now read the same paper like an
+advanced mathematician with a background in abstract algebra would."* (a
+short callback line, not a full re-hook, since Part 1 already did the
+setup work).
+
+### Full table (context: on-screen cues + tex refs, for reference while producing — not for reading aloud)
+
 | # | Tex | ON SCREEN | NARRATION (say this, no more) |
 |---|---|---|---|
 | Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it the way an abstract algebraist would? Six definitions. One hidden symmetry theorem." |
