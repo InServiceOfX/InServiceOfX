@@ -64,23 +64,23 @@ below.
 **Hook** — no equation, title card only.
 
 **Beat 1 (§4):**
-$$X \in \R^{n\times d_{\mathrm{model}}}, \qquad Q = XW^Q$$
+$$X \in \mathbb{R}^{n\times d_{\mathrm{model}}}, \qquad Q = XW^Q$$
 
 **Beat 2 (§5):**
-$$\softmax(x)_i = \frac{e^{x_i}}{\sum_j e^{x_j}}, \qquad \softmax(x)=\softmax(y) \iff x-y\in\R\mathbf{1}$$
+$$\operatorname{softmax}(x)_i = \frac{e^{x_i}}{\sum_j e^{x_j}}, \qquad \operatorname{softmax}(x)=\operatorname{softmax}(y) \iff x-y\in\mathbb{R}\mathbf{1}$$
 
 **Beat 3 (§6):**
 $$S = \frac{QK^\top}{\sqrt{d_k}}, \qquad S_{ij} = \frac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$$
 
 **Beat 4 (§6):**
-$$P_i = \softmax(S_i), \qquad O = PV$$
+$$P_i = \operatorname{softmax}(S_i), \qquad O = PV$$
 
 **Beat 5 (§7):**
 $$\mathrm{Var}[\langle q,k\rangle] = d_k$$
 
 **Beat 6 (§8) — Proposition 8.3, verbatim:**
-$$\forall\,\pi\in S_n,\ \forall\,Q,K,V:\qquad \Att(\pi\cdot Q,\ \pi\cdot K,\ \pi\cdot V) \;=\; \pi\cdot\Att(Q,K,V)$$
-$$\Att \text{ is } S_n\text{-equivariant.}$$
+$$\forall\,\pi\in S_n,\ \forall\,Q,K,V:\qquad \operatorname{Att}(\pi\cdot Q,\ \pi\cdot K,\ \pi\cdot V) \;=\; \pi\cdot\operatorname{Att}(Q,K,V)$$
+$$\operatorname{Att} \text{ is } S_n\text{-equivariant.}$$
 
 **Beat 7 (§9):**
 $$\mathrm{PE}_{\mathrm{pos},2i} = \sin\!\left(\frac{\mathrm{pos}}{10000^{2i/d}}\right), \qquad \mathrm{PE}_{\mathrm{pos},2i+1} = \cos\!\left(\frac{\mathrm{pos}}{10000^{2i/d}}\right)$$
@@ -101,26 +101,26 @@ Renumbered to match tex section order exactly, since that's what you asked
 to preserve.
 
 **1. (§4) A sequence is a matrix, and $Q,K,V$ are it, linearly mapped.**
-$n$ tokens stacked as rows: $X \in \R^{n\times d_{\mathrm{model}}}$. The
+$n$ tokens stacked as rows: $X \in \mathbb{R}^{n\times d_{\mathrm{model}}}$. The
 tex's own example of "projected/learned" is $Q = XW^Q$ — a genuinely loose
 use of "projection" (a real linear-algebra projection satisfies $P^2=P$;
 these learned $W$'s don't have to). $K$ and $V$ follow the same pattern,
 formalized properly in §6 (next).
 
 **2. (§5) The softmax map, briefly — and its one truly algebraic fact.**
-$\softmax(x)_i = e^{x_i}/\sum_j e^{x_j}$, landing in the open simplex
+$\operatorname{softmax}(x)_i = e^{x_i}/\sum_j e^{x_j}$, landing in the open simplex
 $\operatorname{int}(\Delta^{n-1})$. The fact worth carrying: its fibers are
-exactly the cosets of the line $\R\mathbf{1}\subset\R^n$ — $\softmax(x) =
-\softmax(y) \iff x - y \in \R\mathbf{1}$. Since $(\R^n,+)$ is a group and
-$\R\mathbf{1}$ is a subgroup (a 1-dimensional subspace, closed under
+exactly the cosets of the line $\mathbb{R}\mathbf{1}\subset\mathbb{R}^n$ — $\operatorname{softmax}(x) =
+\operatorname{softmax}(y) \iff x - y \in \mathbb{R}\mathbf{1}$. Since $(\mathbb{R}^n,+)$ is a group and
+$\mathbb{R}\mathbf{1}$ is a subgroup (a 1-dimensional subspace, closed under
 addition), this says softmax literally factors through the quotient group
-$\R^n/\R\mathbf{1}$, and descends there to a diffeomorphism onto
+$\mathbb{R}^n/\mathbb{R}\mathbf{1}$, and descends there to a diffeomorphism onto
 $\operatorname{int}(\Delta^{n-1})$. This is genuinely a quotient-by-a-subgroup
 statement, not just "shift-invariance" dressed up — it's the first place the
 abstract-algebra lens pays off.
 
 **3. (§6, Def 6.1–6.2) The score matrix, entrywise.** Formally now:
-$Q,K\in\R^{n\times d_k}$, $V\in\R^{n\times d_v}$. Score matrix
+$Q,K\in\mathbb{R}^{n\times d_k}$, $V\in\mathbb{R}^{n\times d_v}$. Score matrix
 $S = QK^\top/\sqrt{d_k}$. **The clarification that made this click**, now
 also in the tex: entrywise, $S_{ij} = \langle q_i, k_j\rangle/\sqrt{d_k}$ —
 column $j$ of $K^\top$ *is* row $j$ of $K$, so the $(i,j)$ entry of the
@@ -128,7 +128,7 @@ matrix product $QK^\top$ is exactly the dot product of row $i$ of $Q$ with
 row $j$ of $K$. Matrix multiplication and "a table of pairwise dot products"
 are the same statement here, not two different things to reconcile.
 
-**4. (§6, Remark 6.3) Output = weighted average.** $P_i = \softmax(S_i)$,
+**4. (§6, Remark 6.3) Output = weighted average.** $P_i = \operatorname{softmax}(S_i)$,
 $O = PV$. Row $i$: $O_i = \sum_j P_{ij}v_j$, a convex combination of the
 value vectors — a soft nearest-neighbor lookup.
 
@@ -139,9 +139,9 @@ Large scores push softmax toward a simplex vertex, where the gradient is
 nearly zero. Dividing by $\sqrt{d_k}$ pins the variance back to 1 regardless
 of $d_k$.
 
-**6. (§8) The theorem, stated precisely: $\Att$ is $S_n$-equivariant.**
+**6. (§8) The theorem, stated precisely: $\operatorname{Att}$ is $S_n$-equivariant.**
 For every $\pi \in S_n$ and every $Q,K,V$:
-$$\Att(\pi\cdot Q,\ \pi\cdot K,\ \pi\cdot V) \;=\; \pi\cdot\Att(Q,K,V).$$
+$$\operatorname{Att}(\pi\cdot Q,\ \pi\cdot K,\ \pi\cdot V) \;=\; \pi\cdot\operatorname{Att}(Q,K,V).$$
 Proof sketch: $S$ transforms by conjugation with the permutation matrix
 ($S' = P_\pi S P_\pi^\top$), row-wise softmax commutes with row permutation,
 and the rest follows. **Corollary (set-valued):** attention treats its input
@@ -153,7 +153,7 @@ episode: it's the reason positional encoding must exist at all, not a
 design choice someone made.
 
 **7. (§9, Def 9.1) Positional encoding, defined.** Add a fixed
-$\mathrm{PE}\in\R^{n\times d_{\mathrm{model}}}$ to the embeddings before any
+$\mathrm{PE}\in\mathbb{R}^{n\times d_{\mathrm{model}}}$ to the embeddings before any
 attention layer runs: $\mathrm{PE}_{\mathrm{pos},2i} =
 \sin(\mathrm{pos}/10000^{2i/d})$, $\mathrm{PE}_{\mathrm{pos},2i+1} =
 \cos(\mathrm{pos}/10000^{2i/d})$ — $d/2$ sine/cosine pairs at geometrically
@@ -229,12 +229,12 @@ the rows don't change.
 | # | Tex | ON SCREEN | NARRATION (say this, no more) |
 |---|---|---|---|
 | Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it the way an abstract algebraist would? Six definitions. One hidden symmetry theorem." |
-| 1 | §4 | $X\in\R^{n\times d_{\mathrm{model}}}$; $Q=XW^Q$ | "A sequence is just a matrix — one row per token. Query, key, value are that matrix, linearly mapped by learned weights. 'Projected' here just means multiplied." |
-| 2 | §5 | $\softmax(x)_i=\frac{e^{x_i}}{\sum_j e^{x_j}}$; $\softmax(x)=\softmax(y)\iff x-y\in\R\mathbf 1$ | "Before attention even enters: softmax's level sets are cosets of the line R-one. It's a diffeomorphism from that quotient onto the open simplex." |
+| 1 | §4 | $X\in\mathbb{R}^{n\times d_{\mathrm{model}}}$; $Q=XW^Q$ | "A sequence is just a matrix — one row per token. Query, key, value are that matrix, linearly mapped by learned weights. 'Projected' here just means multiplied." |
+| 2 | §5 | $\operatorname{softmax}(x)_i=\frac{e^{x_i}}{\sum_j e^{x_j}}$; $\operatorname{softmax}(x)=\operatorname{softmax}(y)\iff x-y\in\mathbb{R}\mathbf 1$ | "Before attention even enters: softmax's level sets are cosets of the line R-one. It's a diffeomorphism from that quotient onto the open simplex." |
 | 3 | §6 | $S=\dfrac{QK^\top}{\sqrt{d_k}}$; $S_{ij}=\dfrac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$ | "The score matrix: entry i,j is exactly the dot product of query i with key j — a row of Q times a column of K-transpose, which is just row j of K." |
-| 4 | §6 | $P_i=\softmax(S_i)$; $O=PV$ | "Softmax each row, multiply by V: the output is a weighted average of the values — a soft nearest-neighbor lookup." |
+| 4 | §6 | $P_i=\operatorname{softmax}(S_i)$; $O=PV$ | "Softmax each row, multiply by V: the output is a weighted average of the values — a soft nearest-neighbor lookup." |
 | 5 | §7 | $\mathrm{Var}[\langle q,k\rangle]=d_k$ | "Why divide by root d-k? Raw dot-product variance grows with dimension. Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill the gradient." |
-| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \Att(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\Att(Q,K,V)$. $\Att$ is $S_n$-equivariant. | "Here's the theorem: for every permutation π in the symmetric group S-n, Att is S_n-equivariant. Permute the input rows, the output permutes identically — attention sees a set, not a sequence." |
+| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \operatorname{Att}(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\operatorname{Att}(Q,K,V)$. $\operatorname{Att}$ is $S_n$-equivariant. | "Here's the theorem: for every permutation π in the symmetric group S-n, Att is S_n-equivariant. Permute the input rows, the output permutes identically — attention sees a set, not a sequence." |
 | 7 | §9 | $\mathrm{PE}_{\mathrm{pos},2i}=\sin(\cdot),\ \mathrm{PE}_{\mathrm{pos},2i+1}=\cos(\cdot)$ | "So order has to be injected from outside: a fixed sine-cosine encoding, added before attention runs." |
 | 8 | §9 | Prop 9.2 rotation equation, $R(\omega_i k)\in SO(2)$ | "And it's not arbitrary. Shifting position by k acts as an SO(2) rotation on each frequency pair — position isn't just encoded, it's represented, as a genuine group action." |
 | Bridge | — | "Next: there's never just one Q, K, V." | "I've described one attention head. There's never just one. Next time: multi-head attention — a genuinely different question." |
@@ -243,8 +243,8 @@ the rows don't change.
 
 - Don't call $W^Q,W^K,W^V$ "projections" without the aside that it's the
   paper's loose usage, not the idempotent linear-algebra definition.
-- Beat 2's "cosets" claim is precise, not loose: $\R\mathbf{1}$ really is a
-  subgroup of $(\R^n,+)$, and softmax's fibers really are its cosets — say
+- Beat 2's "cosets" claim is precise, not loose: $\mathbb{R}\mathbf{1}$ really is a
+  subgroup of $(\mathbb{R}^n,+)$, and softmax's fibers really are its cosets — say
   it that way, not "softmax is shift-invariant" (true but weaker, and
   misses the algebra).
 - Beat 3's dot-product remark is an identity, not an approximation — "is
