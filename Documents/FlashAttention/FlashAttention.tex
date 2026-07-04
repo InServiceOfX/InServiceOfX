@@ -577,28 +577,40 @@ $d_k \neq d_{\mathrm{model}}$.  The paper uses ``projection'' to mean
 optimised during training, not a fixed geometric object}.
 \end{remark}
 
-\begin{remark}[From $X$ to the query matrix]
+\begin{remark}[From $X$ to the query, key, and value matrices]
 \label{rem:query-matrix}
 Spelling out the previous remark's example one step further: the linear
-map $X \mapsto XW^Q$ applied to our sequence produces
+maps $X \mapsto XW^Q$, $X \mapsto XW^K$, $X \mapsto XW^V$ applied to our
+sequence produce
 \[
-    Q \;:=\; XW^Q \;\in\; \Mat{n}{d_k},
+    Q \;:=\; XW^Q \;\in\; \Mat{n}{d_k}, \qquad
+    K \;:=\; XW^K \;\in\; \Mat{n}{d_k}, \qquad
+    V \;:=\; XW^V \;\in\; \Mat{n}{d_v},
 \]
-the \emph{query matrix} -- the same object named alongside $K$ and $V$ in
-Definition~\ref{def:attention-inputs} (\S\ref{sec:sdp-attention}). Recording
-the dimensions once more: $X \in \Mat{n}{d_{\mathrm{model}}}$,
-$W^Q \in \Mat{d_{\mathrm{model}}}{d_k}$, so right-multiplication by $W^Q$
-sends each $d_{\mathrm{model}}$-dimensional row of $X$ to a
-$d_k$-dimensional row of $Q$.
+the \emph{query}, \emph{key}, and \emph{value} matrices -- the same
+objects formally named in Definition~\ref{def:attention-inputs}
+(\S\ref{sec:sdp-attention}). Recording the dimensions once more:
+$X \in \Mat{n}{d_{\mathrm{model}}}$, and
+\[
+    W^Q \in \Mat{d_{\mathrm{model}}}{d_k}, \qquad
+    W^K \in \Mat{d_{\mathrm{model}}}{d_k}, \qquad
+    W^V \in \Mat{d_{\mathrm{model}}}{d_v},
+\]
+so right-multiplication by each sends every $d_{\mathrm{model}}$-dimensional
+row of $X$ to a $d_k$- (resp.\ $d_v$-) dimensional row of $Q$ (resp.\ $K$,
+$V$). Each of $W^Q, W^K, W^V$ is a \emph{separate} learned parameter --
+nothing above forces any relationship between them; that independence is
+exactly what lets $Q$ and $K$ end up living in geometrically different
+``views'' of the same token, so the score $q_i \cdot k_j$
+(\S\ref{sec:sdp-attention}) measures something more than $X$ compared
+against itself.
 
 $d_k$ is the \emph{query/key dimension} -- Definition~\ref{def:attention-inputs}
 uses exactly this name, because it is shared: queries and keys must live in
 the same space $\R^{d_k}$ for the score $q_i \cdot k_j$
-(\S\ref{sec:sdp-attention}) to be defined at all. $K := XW^K \in \Mat{n}{d_k}$
-is built the same way, with $W^K \in \Mat{d_{\mathrm{model}}}{d_k}$; likewise
-$V := XW^V \in \Mat{n}{d_v}$, with $W^V \in \Mat{d_{\mathrm{model}}}{d_v}$.
-Nothing above forces $d_v = d_k$, though in practice they are usually equal
-(see the table below).
+(\S\ref{sec:sdp-attention}) to be defined at all. Nothing above forces
+$d_v = d_k$, though in practice they are usually equal (see the table
+below).
 \end{remark}
 
 \begin{remark}[Typical dimensions in practice]
@@ -725,9 +737,14 @@ output.  This is exploited in the online softmax algorithm (Paper~II).
 \begin{definition}[Attention inputs]
 \label{def:attention-inputs}
 Fix sequence length $n$, key/query dimension $d_k$, value dimension $d_v$.
-The \emph{query}, \emph{key}, and \emph{value} matrices are
+Given a sequence $X \in \Mat{n}{d_{\mathrm{model}}}$ and learned weight
+matrices $W^Q, W^K \in \Mat{d_{\mathrm{model}}}{d_k}$,
+$W^V \in \Mat{d_{\mathrm{model}}}{d_v}$ (Remark~\ref{rem:query-matrix}),
+the \emph{query}, \emph{key}, and \emph{value} matrices are
 \[
-    Q \in \Mat{n}{d_k}, \quad K \in \Mat{n}{d_k}, \quad V \in \Mat{n}{d_v}.
+    Q \;:=\; XW^Q \in \Mat{n}{d_k}, \quad
+    K \;:=\; XW^K \in \Mat{n}{d_k}, \quad
+    V \;:=\; XW^V \in \Mat{n}{d_v}.
 \]
 Row $i$ of $Q$ is the query vector for position $i$; row $j$ of $K$ (resp.\ $V$)
 is the key (resp.\ value) vector for position $j$.

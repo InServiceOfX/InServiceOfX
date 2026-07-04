@@ -72,26 +72,36 @@ outside the cropped region so it never appears in the recording.
 
 # Episode 1: What Attention Actually Computes
 
-Tex source, **in tex order** (line numbers current as of 2026-07-03, after
-§4 gained two new remarks — see below):
-§4 Setup (line 549) → §5 The Softmax Map (640) → §6 Scaled Dot-Product
-Attention (722) → §7 The Scaling Factor (878) → §8 Permutation Equivariance
-(905) → §9 Positional Encoding (995). Stops before §10 Multi-Head Attention
-(1056) — **this stopping point is confirmed correct, don't change it.**
+Tex source, **in tex order** (line numbers current as of 2026-07-04, after
+§4 gained two new remarks and §4/§6 both gained explicit Q/K/V construction
+formulas — see below):
+§4 Setup (line 549) → §5 The Softmax Map (652) → §6 Scaled Dot-Product
+Attention (734) → §7 The Scaling Factor (895) → §8 Permutation Equivariance
+(922) → §9 Positional Encoding (1012). Stops before §10 Multi-Head Attention
+(1073) — **this stopping point is confirmed correct, don't change it.**
 
-The tex itself has two additions now, both directly requested:
+The tex itself has three additions now, all directly requested:
 - §6, right after the score-matrix definition: one sentence making explicit
   what clicked for the user — $QK^\top$ is a matrix product, but entrywise
   it's a dot product — $S_{ij} = \langle q_i, k_j\rangle/\sqrt{d_k}$,
   because column $j$ of $K^\top$ *is* row $j$ of $K$.
 - §4, right after the "Projected and learned" remark: two new remarks,
-  **"From $X$ to the query matrix"** (spells out $Q:=XW^Q$ explicitly,
-  states the dimensions crisply, and reminds the reader that $d_k$ is
-  the *query/key* dimension — shared, because $q_i\cdot k_j$ needs both
-  in the same space) and **"Typical dimensions in practice"** (a small
-  table of real $(n, d_{\mathrm{model}}, h, d_k)$ values from Vaswani et
-  al. 2017, BERT, GPT-2, GPT-3, and LLaMA, each cited). Both are now the
-  source of truth Beat 1 below quotes from.
+  **"From $X$ to the query, key, and value matrices"** (spells out
+  $Q:=XW^Q$, $K:=XW^K$, $V:=XW^V$ explicitly and with equal display
+  prominence — not just $Q$ with $K,V$ mentioned in passing — states the
+  dimensions crisply, notes $W^Q,W^K,W^V$ are three *separate* learned
+  parameters, and reminds the reader that $d_k$ is the *query/key*
+  dimension — shared, because $q_i\cdot k_j$ needs both in the same
+  space) and **"Typical dimensions in practice"** (a small table of real
+  $(n, d_{\mathrm{model}}, h, d_k)$ values from Vaswani et al. 2017,
+  BERT, GPT-2, GPT-3, and LLaMA, each cited).
+- §6's Definition 6.1 ("Attention inputs") now states the construction
+  formulas directly too ($Q:=XW^Q$, $K:=XW^K$, $V:=XW^V$, with a forward
+  reference to the §4 remark above) instead of only giving shapes —
+  so the formal definition and the intuition-building remark both show
+  the same explicit construction, not just one of them.
+
+All three are now the source of truth Beat 1 below quotes from.
 
 ## Video visuals: screenshot *this doc's* rendered preview, not the PDF
 
@@ -110,13 +120,14 @@ is already isolated.
 
 If you do want to cross-check a beat against the formal source (e.g. to
 confirm Proposition 8.3's wording exactly), the page map (recompiled
-2026-07-03, after §4 gained the query-matrix/typical-dimensions material —
-everything after §4 shifted down one page) is: §4 Setup (incl. the new
-"From X to the query matrix" and "Typical dimensions" remarks) on p.7,
-§5 Softmax Map on p.8, §6 Scaled Dot-Product Attention (with the
-dot-product sentence) on p.9, §7 Scaling on p.10, §8 Equivariance on p.11,
-§9 Positional Encoding on p.12 — but that's a verification step, not a
-screenshot source.
+2026-07-04, after Definition 6.1 grew to state the Q/K/V construction
+formulas directly — §7 shifted down one more page as a result) is: §4
+Setup (incl. "From $X$ to the query, key, and value matrices" and
+"Typical dimensions" remarks) on p.7, §5 Softmax Map on p.8, §6 Scaled
+Dot-Product Attention (Definition 6.1 now explicit about $Q,K,V$'s
+construction, plus the dot-product sentence) on p.9, §7 Scaling on p.11,
+§8 Equivariance also p.11, §9 Positional Encoding on p.12 — but that's a
+verification step, not a screenshot source.
 
 ## Screenshot-ready equations (large format, one per beat)
 
@@ -185,9 +196,19 @@ d_k}$ — right-multiplication, i.e. the linear map $X\mapsto XW^Q$. Same
 remark flags that "projection" here is the paper's loose usage: a real
 (linear-algebra) projection satisfies $P^2=P$, and these learned $W$'s
 don't have to (squaring isn't even defined once $d_k\neq
-d_{\mathrm{model}}$). $K$ and $V$ follow the identical construction
-(replace $W^Q$ with $W^K,W^V$) but aren't formally named as a triple with
-shapes until §6's Definition 6.1 ("Attention inputs") — that's next.
+d_{\mathrm{model}}$).
+
+**And $K,V$?** As of 2026-07-04, no longer "follow the same pattern, left
+implicit" — the very next remark (`rem:query-matrix`, retitled "From $X$
+to the query, key, and value matrices") spells out $K:=XW^K$ and
+$V:=XW^V$ with the *same* display prominence as $Q$, not mentioned only
+in passing, and notes explicitly that $W^Q,W^K,W^V$ are three *separate*
+learned parameters — nothing ties them together, which is exactly what
+lets $Q$ and $K$ end up in geometrically different "views" of the same
+token. §6's Definition 6.1 ("Attention inputs") — that's next — now
+*also* states $Q:=XW^Q,K:=XW^K,V:=XW^V$ directly instead of only giving
+their shapes, cross-referencing back to this remark for the fuller
+derivation.
 
 **2. (§5) The softmax map, briefly — what the $x_i$'s are, and the reading
 straight from the tex's own remark.** $\operatorname{softmax}(x)_i =
@@ -408,10 +429,15 @@ already did the setup work.)
   x-i," not "energy x-i."
 - Beat 1's $Q=XW^Q$ is real, cited content (§4, Remark "Projected and
   learned," citing §3.2 of the original paper) — not an invented bridge
-  from setup to attention. $K,V$ follow the identical construction but
-  aren't formally named as a triple until §6; don't imply §4 already
-  defines all three. Beat 1 deliberately does *not* mention K, V by name —
-  that's intentional per the 2026-07-04 rewrite, not an omission.
+  from setup to attention. As of 2026-07-04, $K:=XW^K$ and $V:=XW^V$ are
+  *also* explicit in §4 (the very next remark, with equal display
+  prominence to $Q$) — §6's Definition 6.1 is no longer the first place
+  their construction appears, only the first place they're given their
+  formal name as "the query, key, and value matrices" as a triple. Beat 1
+  deliberately still doesn't say K, V out loud in the narration — that's
+  a script-economy choice (one beat, one construction, shown once,
+  generalizes visibly on screen without needing three sentences of
+  narration to say so), not a claim that §4 leaves them undefined.
 - Beat 2's array $x=(x_1,\ldots,x_n)$ is still fully generic at this point
   in the tex — don't let "soon it'll be attention scores" slip into the
   spoken line itself; that binding happens in §6, one beat later.
