@@ -55,6 +55,19 @@ Optional, your call: a 3–5s face-cam hook before cutting to screen content
 is common for STEM shorts (personal connection before the math starts) —
 adds camera/lighting complexity not otherwise needed for this format.
 
+**Update (2026-07-04): the "optional upgrade" above already happened** —
+OBS is now set up on the MacBook Pro itself (the best-mic device), so
+Episode 1 is being recorded as a single live take: video + narration
+together, no audio/visual device split. Setup: the local slide deck
+(`Data/Public/Generated/AttentionSeries/Episode1/slides.html`) opened in a
+normal browser window, captured via OBS's macOS Screen Capture source,
+cropped to just the slide frame via a Crop/Pad filter (the deck computes
+and displays the exact crop numbers live, self-correcting for whatever
+window size is actually available — no manual pixel math), then scaled to
+1080×1920 via Edit Transform's Bounding Box. The narration/teleprompter
+text stays visible on-screen next to the frame for reading, but sits
+outside the cropped region so it never appears in the recording.
+
 ---
 
 # Episode 1: What Attention Actually Computes
@@ -273,6 +286,21 @@ No format constraint is pushing back on this — TikTok/Shorts/Reels all
 support much longer "short-form" uploads now — so length isn't a reason to
 trim; trim only if something reads as genuinely unnecessary on a dry read.
 
+**Revision (2026-07-04), verbatim pass for live recording:** the user
+rewrote the script beat-by-beat for a live single-take OBS recording
+(video + mic together, MacBook Pro's mic — no more decoupled audio/visual
+split for this episode). Two structural changes: (1) a new **Cold Open**
+beat now precedes the Hook — a screenshot of the actual paper's title page
+with a two-line intro (paper name, 2017, "defines the Transformer
+architecture underlying generative AI... ChatGPT, and beyond") before the
+"read like an abstract algebraist" framing; (2) the Bridge now names the
+actual head count. New length: **418 words, ~208s (~3:28)** at the same
+pace — still no format constraint pushing back on this. The live
+production deck (screenshot-ready frames + this teleprompter, kept in
+sync) lives outside this repo at
+`Data/Public/Generated/AttentionSeries/Episode1/slides.html` — this repo
+stays code/tex/docs only; produced video assets don't belong here.
+
 The Beat 5|6 seam is still marked in the teleprompter below, in case a
 *content* reason to split ever comes up later (e.g. the video runs long
 in a dry read for pacing reasons, not format reasons) — but it's no longer
@@ -296,37 +324,43 @@ in order, read straight through as one video. The `⸻ split here ⸻` marker
 is left in as a reference point only (see the note above) — ignore it
 unless a real content reason to split comes up later.
 
-> "What does 'Attention Is All You Need' actually say, if you read it from
-> the perspective of a pure mathematician — in particular, someone with a
-> background in abstract algebra? We'll walk through the paper's
-> definitions, building to one hidden symmetry theorem."
+> "'Attention Is All You Need' came out in 2017. It's the landmark paper
+> that defines the Transformer architecture underlying generative AI
+> today — ChatGPT, and beyond."
 >
-> "A sequence of length n in R-d is just a matrix X in R to the n-by-d —
-> row i is element i. Here, d is d-model: the embedding dimension. Operate
-> on X by right-multiplying by learned weights W-Q to get the query
-> matrix, Q in R to the n-by-d-k."
+> "But as I read it, I tried to understand it from the perspective of a
+> pure mathematician — in particular, someone with a background in
+> abstract algebra. We'll walk through the paper's definitions, and show
+> one hidden symmetry theorem underlying the Transformer architecture."
+>
+> "Define a sequence of length n in R-d as a matrix X in R to the n-by-d,
+> where the ith row is the ith element in that sequence of length n. Here,
+> d is d-model: the embedding dimension. Operate on X by right-multiplying
+> by learned weights W-Q to get the query matrix, Q in R to the n-by-d-k."
 >
 > "Consider a general array of numbers, x-1 through x-n. Define a
 > partition function Z, just like a Gibbs distribution — the sum of e to
 > the x-j. Then softmax of x, at i, is simply e to the x-i, over Z."
 >
-> "The score matrix: entry i,j is exactly the dot product of query i with
-> key j — a row of Q times a column of K-transpose, which is just row j
+> "Define the score matrix S to be Q times K-transpose, over the square
+> root of d-k — the key dimension. So entry S-i-j is exactly the dot
+> product of row i of Q with column j of K-transpose, which is just row j
 > of K."
 >
-> "Softmax each row, multiply by V: the output is a weighted average of
-> the values — a soft nearest-neighbor lookup."
+> "Softmax each row to get P sub i, and right-multiply by V — the output
+> is then a weighted average of the values."
 >
-> "Why divide by root d-k? Raw dot-product variance grows with dimension.
-> Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill
-> the gradient."
+> "Why did we divide by the square root of d-k in the score matrix S? Raw
+> dot-product variance grows with dimension. Rescaling pins it to 1, so
+> softmax doesn't collapse to a vertex and kill the gradient."
 >
 > **⸻ (reference marker only — read straight through, don't actually pause here) ⸻**
 >
-> "You can prove a genuine theorem here, using the symmetric group S-n:
-> for every permutation π in S-n, Att is S_n-equivariant — permute the
-> input rows, and the output permutes identically. Attention sees a set,
-> not a sequence."
+> "It can be shown that, using the symmetric group S-n: for every
+> permutation π in S-n, and every Q, K, V — where Att of Q, K, V is just
+> the whole computation we've built, from score matrix through softmax to
+> the output — Att is S_n-equivariant. Permute the input rows, and the
+> output permutes identically."
 >
 > "So, because of that S_n-equivariance, order has to be injected from
 > outside — a fixed sine-cosine encoding, added before attention ever
@@ -336,8 +370,9 @@ unless a real content reason to split comes up later.
 > rotation on each frequency pair — position isn't just encoded, it's
 > represented, as a genuine group action."
 >
-> "I've described one attention head. There's never just one. Next time:
-> multi-head attention — a genuinely different question."
+> "I've described only one attention head. In the paper, the authors used
+> h equals 8, and called this multi-head attention, which I'll describe
+> in the next video. Check the comments or my bio for the paper and code."
 
 (Kept for reference only: if a split ever becomes useful later, Part 2
 would need its *own* hook line in place of a cold open — *"...now read the
@@ -349,16 +384,17 @@ already did the setup work.)
 
 | # | Tex | ON SCREEN | NARRATION (say this, no more) |
 |---|---|---|---|
-| Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it from the perspective of a pure mathematician — in particular, someone with a background in abstract algebra? We'll walk through the paper's definitions, building to one hidden symmetry theorem." |
-| 1 | §4 | $X\in\mathbb{R}^{n\times d}$, row $i$ = element $i$; $d=d_{\mathrm{model}}$; $Q=XW^Q\in\mathbb{R}^{n\times d_k}$ *(§3.2, original paper)* | "A sequence of length n in R-d is just a matrix X in R to the n-by-d — row i is element i. Here, d is d-model: the embedding dimension. Operate on X by right-multiplying by learned weights W-Q to get the query matrix, Q in R to the n-by-d-k." |
+| Cold Open | — | screenshot of the paper's actual title page | "'Attention Is All You Need' came out in 2017. It's the landmark paper that defines the Transformer architecture underlying generative AI today — ChatGPT, and beyond." |
+| Hook | — | title card | "But as I read it, I tried to understand it from the perspective of a pure mathematician — in particular, someone with a background in abstract algebra. We'll walk through the paper's definitions, and show one hidden symmetry theorem underlying the Transformer architecture." |
+| 1 | §4 | $X\in\mathbb{R}^{n\times d}$, row $i$ = element $i$; $d=d_{\mathrm{model}}$; $Q=XW^Q\in\mathbb{R}^{n\times d_k}$ *(§3.2, original paper)* | "Define a sequence of length n in R-d as a matrix X in R to the n-by-d, where the ith row is the ith element in that sequence of length n. Here, d is d-model: the embedding dimension. Operate on X by right-multiplying by learned weights W-Q to get the query matrix, Q in R to the n-by-d-k." |
 | 2 | §5 | $x=(x_1,\ldots,x_n)\in\mathbb{R}^n$; $Z:=\sum_j e^{x_j}$ (partition function, à la Gibbs); $\operatorname{softmax}(x)_i:=e^{x_i}/Z$ | "Consider a general array of numbers, x-1 through x-n. Define a partition function Z, just like a Gibbs distribution — the sum of e to the x-j. Then softmax of x, at i, is simply e to the x-i, over Z." |
-| 3 | §6 | $S=\dfrac{QK^\top}{\sqrt{d_k}}$; $S_{ij}=\dfrac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$ | "The score matrix: entry i,j is exactly the dot product of query i with key j — a row of Q times a column of K-transpose, which is just row j of K." |
-| 4 | §6 | $P_i=\operatorname{softmax}(S_i)$; $O=PV$ | "Softmax each row, multiply by V: the output is a weighted average of the values — a soft nearest-neighbor lookup." |
-| 5 | §7 | $\mathrm{Var}[\langle q,k\rangle]=d_k$ | "Why divide by root d-k? Raw dot-product variance grows with dimension. Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill the gradient." |
-| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \operatorname{Att}(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\operatorname{Att}(Q,K,V)$. $\operatorname{Att}$ is $S_n$-equivariant. | "You can prove a genuine theorem here, using the symmetric group S-n: for every permutation π in S-n, Att is S_n-equivariant — permute the input rows, and the output permutes identically. Attention sees a set, not a sequence." |
+| 3 | §6 | $S=\dfrac{QK^\top}{\sqrt{d_k}}$; $S_{ij}=\dfrac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$ | "Define the score matrix S to be Q times K-transpose, over the square root of d-k — the key dimension. So entry S-i-j is exactly the dot product of row i of Q with column j of K-transpose, which is just row j of K." |
+| 4 | §6 | $P_i=\operatorname{softmax}(S_i)$; $O=PV$ | "Softmax each row to get P sub i, and right-multiply by V — the output is then a weighted average of the values." |
+| 5 | §7 | $\mathrm{Var}[\langle q,k\rangle]=d_k$ | "Why did we divide by the square root of d-k in the score matrix S? Raw dot-product variance grows with dimension. Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill the gradient." |
+| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \operatorname{Att}(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\operatorname{Att}(Q,K,V)$. $\operatorname{Att}$ is $S_n$-equivariant. | "It can be shown that, using the symmetric group S-n: for every permutation π in S-n, and every Q, K, V — where Att of Q, K, V is just the whole computation we've built, from score matrix through softmax to the output — Att is S_n-equivariant. Permute the input rows, and the output permutes identically." |
 | 7 | §9 | $\mathrm{PE}_{\mathrm{pos},2i}=\sin(\cdot),\ \mathrm{PE}_{\mathrm{pos},2i+1}=\cos(\cdot)$ | "So, because of that S_n-equivariance, order has to be injected from outside — a fixed sine-cosine encoding, added before attention ever runs." |
 | 8 | §9 | Prop 9.2 rotation equation, $R(\omega_i k)\in SO(2)$ | "And it's not arbitrary. Shifting position by k acts as an SO(2) rotation on each frequency pair — position isn't just encoded, it's represented, as a genuine group action." |
-| Bridge | — | "Next: there's never just one Q, K, V." | "I've described one attention head. There's never just one. Next time: multi-head attention — a genuinely different question." |
+| Bridge | — | "Next: there's never just one Q, K, V." | "I've described only one attention head. In the paper, the authors used h equals 8, and called this multi-head attention, which I'll describe in the next video. Check the comments or my bio for the paper and code." |
 
 ## Honesty guardrails
 
@@ -391,6 +427,15 @@ already did the setup work.)
   exactly," not "can be thought of as."
 - Beat 6 is quoted **verbatim** from Proposition 8.3 — don't paraphrase the
   on-screen text into something looser than what's proven.
+- Beat 6's narration (2026-07-04 revision) now defines Att inline ("the
+  whole computation we've built, from score matrix through softmax to the
+  output") instead of leaving it unstated, and drops the closing "Attention
+  sees a set, not a sequence" line — Beat 7's own "because of that
+  S_n-equivariance" callback still carries the causal link without it.
+- Bridge's head count is **h=8**, not "N=6" — in the original paper, N=6
+  is the number of stacked encoder/decoder *layers*, a different parameter
+  from the number of attention heads. Don't conflate the two if either
+  comes up again.
 - The scaling explanation (Beat 5) is a **variance** argument — say
   "variance" or "grows with dimension," not "gets too big."
 - Beat 8's rotation fact holds **per frequency pair**, not globally — it's
