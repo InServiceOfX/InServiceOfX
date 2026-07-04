@@ -384,7 +384,10 @@ Remaining (new) backlog — all DONE as of 2026-07-03:
 The engine ladder (scalar → WMMA → CuTe) and the JAX/XLA/cuDNN benchmark
 are considered feature-complete for now. **Active work has shifted to
 presentation and video** — see `Documents/AttentionBenchmarkReport.md`
-(technical write-up), `Documents/AttentionBenchmarkShortForm.md` (video
+(technical write-up), `Documents/CUDAvsJAXAttention.md` (general-audience
+conclusions: when JAX vs. hand-written CUDA, benchmarking pitfalls —
+written to stand alone for any reader, no interview/application context),
+`Documents/AttentionBenchmarkShortForm.md` (video
 beat sheet), and, if applicable outside this repo,
 `Data/Private/applications/<current-application>/DemoOnePager.md` for
 interview-specific framing. Do not pick up new kernel work from this file
