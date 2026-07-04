@@ -46,7 +46,7 @@ the visual content) and don't use AI TTS (undercuts the "I derived this
 myself" personal-brand framing this series and the CHAOS interview prep
 share). Small auto-captions of the speech itself are still worth keeping.
 
-Optional upgrade: a cheap USB mic (~$30–50, e.g. Fifine/Samson Q2U) on the
+Optional upgrade: a cheap USB mic (roughly 30–50 USD, e.g. Fifine/Samson Q2U) on the
 desktop would let future episodes go back to a single live narrated
 screen-record pass, removing the audio/visual device split entirely —
 worth it only if this series keeps going past a couple more episodes.
