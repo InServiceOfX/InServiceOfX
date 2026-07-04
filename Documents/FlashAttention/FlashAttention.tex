@@ -680,6 +680,9 @@ The \emph{score matrix} is
     S \;:=\; \frac{Q K^\top}{\sqrt{d_k}} \;\in\; \Mat{n}{n}.
 \]
 Row $i$ of $S$ is $S_i = \frac{1}{\sqrt{d_k}} K q_i^\top \in \R^n$, where $q_i \in \R^{d_k}$ is row $i$ of $Q$.
+Entrywise, $S_{ij} = \inner{q_i}{k_j}/\sqrt{d_k}$: column $j$ of $K^\top$
+\emph{is} row $j$ of $K$, so the $(i,j)$ entry of the matrix product
+$QK^\top$ is exactly the dot product of row $i$ of $Q$ with row $j$ of $K$.
 
 The \emph{attention weight matrix} is $P \in \Mat{n}{n}$ with
 \[
