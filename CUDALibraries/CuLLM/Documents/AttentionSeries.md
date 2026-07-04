@@ -64,10 +64,10 @@ below.
 **Hook** — no equation, title card only.
 
 **Beat 1 (§4):**
-$$X \in \mathbb{R}^{n\times d_{\mathrm{model}}}, \qquad Q = XW^Q$$
+$$X \in \mathbb{R}^{n\times d}, \quad \text{row } i = \text{element } i, \qquad d = d_{\mathrm{model}}, \qquad Q = XW^Q$$
 
 **Beat 2 (§5):**
-$$\operatorname{softmax}(x)_i = \frac{e^{x_i}}{\sum_j e^{x_j}}, \qquad \operatorname{softmax}(x)=\operatorname{softmax}(y) \iff x-y\in\mathbb{R}\mathbf{1}$$
+$$Z := \sum_j e^{x_j} \ \text{(partition function)}, \qquad \operatorname{softmax}(x)_i = \frac{e^{x_i}}{Z}$$
 
 **Beat 3 (§6):**
 $$S = \frac{QK^\top}{\sqrt{d_k}}, \qquad S_{ij} = \frac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$$
@@ -100,24 +100,45 @@ $$
 Renumbered to match tex section order exactly, since that's what you asked
 to preserve.
 
-**1. (§4) A sequence is a matrix, and $Q,K,V$ are it, linearly mapped.**
-$n$ tokens stacked as rows: $X \in \mathbb{R}^{n\times d_{\mathrm{model}}}$. The
-tex's own example of "projected/learned" is $Q = XW^Q$ — a genuinely loose
-use of "projection" (a real linear-algebra projection satisfies $P^2=P$;
-these learned $W$'s don't have to). $K$ and $V$ follow the same pattern,
-formalized properly in §6 (next).
+**1. (§4) A sequence is a matrix — tex Definition (Sequence), verbatim in
+spirit.** "A sequence of length $n$ in $\mathbb{R}^d$ is an element of
+$\mathbb{R}^{n\times d}$" — a matrix whose $i$-th row is the $i$-th element
+of the sequence. **What is $d$ here?** In this general definition $d$ is
+just a placeholder; the moment we apply it to attention's input, $d =
+d_{\mathrm{model}}$, the *embedding dimension* — how many numbers represent
+one token before anything else happens to it. So: $X \in
+\mathbb{R}^{n\times d_{\mathrm{model}}}$.
 
-**2. (§5) The softmax map, briefly — and its one truly algebraic fact.**
-$\operatorname{softmax}(x)_i = e^{x_i}/\sum_j e^{x_j}$, landing in the open simplex
-$\operatorname{int}(\Delta^{n-1})$. The fact worth carrying: its fibers are
-exactly the cosets of the line $\mathbb{R}\mathbf{1}\subset\mathbb{R}^n$ — $\operatorname{softmax}(x) =
-\operatorname{softmax}(y) \iff x - y \in \mathbb{R}\mathbf{1}$. Since $(\mathbb{R}^n,+)$ is a group and
-$\mathbb{R}\mathbf{1}$ is a subgroup (a 1-dimensional subspace, closed under
-addition), this says softmax literally factors through the quotient group
-$\mathbb{R}^n/\mathbb{R}\mathbf{1}$, and descends there to a diffeomorphism onto
-$\operatorname{int}(\Delta^{n-1})$. This is genuinely a quotient-by-a-subgroup
-statement, not just "shift-invariance" dressed up — it's the first place the
-abstract-algebra lens pays off.
+**Where does $Q = XW^Q$ come from, and is it really in Paper I?** Yes —
+same section (§4), immediately after the sequence definition, in the
+Remark "Projected and learned" (`rem:projection`). It's not our tex's
+invention: that remark explicitly cites **§3.2 of the original "Attention
+Is All You Need"** as the source — the paper's own words are "projected by
+learned weight matrices," and it calls $W^Q,W^K,W^V$ "projection
+matrices." Our tex uses $Q=XW^Q$ as the illustrative example of what that
+means concretely: $X\in\mathbb{R}^{n\times d_{\mathrm{model}}}$,
+$W^Q\in\mathbb{R}^{d_{\mathrm{model}}\times d_k}$, so $Q\in\mathbb{R}^{n\times
+d_k}$ — right-multiplication, i.e. the linear map $X\mapsto XW^Q$. Same
+remark flags that "projection" here is the paper's loose usage: a real
+(linear-algebra) projection satisfies $P^2=P$, and these learned $W$'s
+don't have to (squaring isn't even defined once $d_k\neq
+d_{\mathrm{model}}$). $K$ and $V$ follow the identical construction
+(replace $W^Q$ with $W^K,W^V$) but aren't formally named as a triple with
+shapes until §6's Definition 6.1 ("Attention inputs") — that's next.
+
+**2. (§5) The softmax map, briefly — what the $x_i$'s are, and the reading
+straight from the tex's own remark.** $\operatorname{softmax}(x)_i =
+e^{x_i}/\sum_j e^{x_j}$ for $i=1,\ldots,n$. At this point in the tex, $x$
+is fully generic — just $n$ real numbers, nothing to do with attention
+yet (that binding happens in §6: $x$ becomes one row of the score matrix,
+$x_i$ = how well one query matches key $i$). Write $Z := \sum_j e^{x_j}$.
+The tex's own remark says exactly this: $Z$ (its log is called the
+log-sum-exp, or log-partition function) is the partition function of the
+**Gibbs measure** on outcomes $\{1,\ldots,n\}$ with energy $-x_i$, and
+$\operatorname{softmax}(x)_i = e^{x_i}/Z$ is precisely the Gibbs (Boltzmann)
+probability of outcome $i$ under that measure. That's the whole beat — no
+diffeomorphism, no fibers, no cosets needed to use softmax; those are real
+facts in the tex (Prop. 5.5) but not ones this episode needs.
 
 **3. (§6, Def 6.1–6.2) The score matrix, entrywise.** Formally now:
 $Q,K\in\mathbb{R}^{n\times d_k}$, $V\in\mathbb{R}^{n\times d_v}$. Score matrix
@@ -192,27 +213,27 @@ paragraph here. **(Confirmed: stopping here is the right cut point.)**
 
 ## Part B — the short-form script
 
-**Honest heads-up on length:** adding the softmax properties, the full
-equivariance statement, and the dot-product clarification (all requested)
-pushed the narration to **~248 words**. At a deliberate technical pace
-(~2 words/sec — slower than casual speech, since viewers are also reading
-equations) that's **~120–125 seconds**, not the 60–90s of a typical short.
-Two honest options; my recommendation is B:
+**Honest heads-up on length (recomputed from the actual final teleprompter
+text, not estimated):** the full sequence is **276 words**. At a
+deliberate technical pace (~2 words/sec — slower than casual speech,
+since viewers are also reading equations) that's **~135–140 seconds**,
+not the 60–90s of a typical short. Two honest options; my recommendation
+is B:
 
 - **Option A — one video, ~2 min.** Everything below, straight through.
   Simpler to produce, one hook, one upload.
 - **Option B (recommended) — split at the natural seam, Beat 5 | Beat 6.**
   - *Part 1, "What does attention actually compute?"* — Hook (plain
     mechanism framing) + Beats 1–5 (setup, softmax basics, score matrix,
-    output, scaling). ~124 words, ~60s. This is the "standard explainer"
+    output, scaling). **182 words, ~90s.** This is the "standard explainer"
     content — clean, fast, sets up notation for everything downstream.
   - *Part 2, "...now read it like an abstract algebraist."* — a *second*,
     sharper hook, paid off immediately: Beats 6–8 (the $S_n$-equivariance
     theorem, positional encoding, the rotation/representation fact) +
-    bridge. ~124 words, ~60s. This is where the abstract-algebra framing
-    actually earns its keep — cosets, a stated theorem, a representation —
-    so the hook lands with zero delay instead of 60 seconds into a longer
-    video.
+    bridge. **94 words, ~47s.** This is where the abstract-algebra framing
+    actually earns its keep — a stated theorem and a representation, not
+    just a formula — so the hook lands with zero delay instead of 60
+    seconds into a longer video.
 
   Reasoning for the split: the hook you want ("an advanced mathematician
   with an abstract-algebra background reads this paper") is a promise that
@@ -236,13 +257,14 @@ and Part 2's *second* hook begins, if you're doing the two-video version.
 > way an abstract algebraist would? Six definitions. One hidden symmetry
 > theorem."
 >
-> "A sequence is just a matrix — one row per token. Query, key, value are
-> that matrix, linearly mapped by learned weights. 'Projected' here just
-> means multiplied."
+> "A sequence of length n in R-d is just a matrix — row i is element i.
+> Here, d is d-model: the embedding dimension. Query, key, value are that
+> matrix, linearly mapped by learned weights — 'projected' just means
+> multiplied."
 >
-> "Before attention even enters: softmax's level sets are cosets of the
-> line R-one. It's a diffeomorphism from that quotient onto the open
-> simplex."
+> "Each x-i is just a real number — soon, one query's score against key i.
+> Z, the sum of e to the x-j, is a partition function — softmax is exactly
+> the Gibbs distribution built from it."
 >
 > "The score matrix: entry i,j is exactly the dot product of query i with
 > key j — a row of Q times a column of K-transpose, which is just row j
@@ -282,8 +304,8 @@ setup work).
 | # | Tex | ON SCREEN | NARRATION (say this, no more) |
 |---|---|---|---|
 | Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it the way an abstract algebraist would? Six definitions. One hidden symmetry theorem." |
-| 1 | §4 | $X\in\mathbb{R}^{n\times d_{\mathrm{model}}}$; $Q=XW^Q$ | "A sequence is just a matrix — one row per token. Query, key, value are that matrix, linearly mapped by learned weights. 'Projected' here just means multiplied." |
-| 2 | §5 | $\operatorname{softmax}(x)_i=\frac{e^{x_i}}{\sum_j e^{x_j}}$; $\operatorname{softmax}(x)=\operatorname{softmax}(y)\iff x-y\in\mathbb{R}\mathbf 1$ | "Before attention even enters: softmax's level sets are cosets of the line R-one. It's a diffeomorphism from that quotient onto the open simplex." |
+| 1 | §4 | $X\in\mathbb{R}^{n\times d}$, row $i$ = element $i$; then $d=d_{\mathrm{model}}$, and $Q=XW^Q$ *(§3.2, original paper)* | "A sequence of length n in R-d is just a matrix — row i is element i. Here, d is d-model: the embedding dimension. Query, key, value are that matrix, linearly mapped by learned weights — 'projected' just means multiplied." |
+| 2 | §5 | $Z:=\sum_j e^{x_j}$ (partition function); $\operatorname{softmax}(x)_i=e^{x_i}/Z$ | "Each x-i is just a real number — soon, one query's score against key i. Z, the sum of e to the x-j, is a partition function — softmax is exactly the Gibbs distribution built from it." |
 | 3 | §6 | $S=\dfrac{QK^\top}{\sqrt{d_k}}$; $S_{ij}=\dfrac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$ | "The score matrix: entry i,j is exactly the dot product of query i with key j — a row of Q times a column of K-transpose, which is just row j of K." |
 | 4 | §6 | $P_i=\operatorname{softmax}(S_i)$; $O=PV$ | "Softmax each row, multiply by V: the output is a weighted average of the values — a soft nearest-neighbor lookup." |
 | 5 | §7 | $\mathrm{Var}[\langle q,k\rangle]=d_k$ | "Why divide by root d-k? Raw dot-product variance grows with dimension. Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill the gradient." |
@@ -296,10 +318,17 @@ setup work).
 
 - Don't call $W^Q,W^K,W^V$ "projections" without the aside that it's the
   paper's loose usage, not the idempotent linear-algebra definition.
-- Beat 2's "cosets" claim is precise, not loose: $\mathbb{R}\mathbf{1}$ really is a
-  subgroup of $(\mathbb{R}^n,+)$, and softmax's fibers really are its cosets — say
-  it that way, not "softmax is shift-invariant" (true but weaker, and
-  misses the algebra).
+- Beat 2's Gibbs-measure claim is precise, not decorative: the tex's own
+  remark states the energy as $-x_i$ (so $e^{x_i} = e^{-(-x_i)}$), matching
+  the usual Boltzmann-factor sign convention. The spoken line skips the
+  sign for brevity ("softmax is the Gibbs distribution built from Z") —
+  that's fine for the video, but if asked to elaborate, say "energy minus
+  x-i," not "energy x-i."
+- Beat 1's $Q=XW^Q$ is real, cited content (§4, Remark "Projected and
+  learned," citing §3.2 of the original paper) — not an invented bridge
+  from setup to attention. $K,V$ follow the identical construction but
+  aren't formally named as a triple until §6; don't imply §4 already
+  defines all three.
 - Beat 3's dot-product remark is an identity, not an approximation — "is
   exactly," not "can be thought of as."
 - Beat 6 is quoted **verbatim** from Proposition 8.3 — don't paraphrase the
