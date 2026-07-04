@@ -75,10 +75,10 @@ below.
 **Hook** — no equation, title card only.
 
 **Beat 1 (§4):**
-$$X \in \mathbb{R}^{n\times d}, \quad \text{row } i = \text{element } i, \qquad d = d_{\mathrm{model}}, \qquad Q = XW^Q$$
+$$X \in \mathbb{R}^{n\times d}, \quad \text{row } i = \text{element } i; \qquad d = d_{\mathrm{model}}; \qquad Q = XW^Q \in \mathbb{R}^{n\times d_k}$$
 
 **Beat 2 (§5):**
-$$Z := \sum_j e^{x_j} \ \text{(partition function)}, \qquad \operatorname{softmax}(x)_i = \frac{e^{x_i}}{Z}$$
+$$x=(x_1,\ldots,x_n)\in\mathbb{R}^n; \qquad Z := \sum_j e^{x_j} \ \text{(partition function, à la Gibbs)}; \qquad \operatorname{softmax}(x)_i := \frac{e^{x_i}}{Z}$$
 
 **Beat 3 (§6):**
 $$S = \frac{QK^\top}{\sqrt{d_k}}, \qquad S_{ij} = \frac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$$
@@ -225,17 +225,30 @@ paragraph here. **(Confirmed: stopping here is the right cut point.)**
 ## Part B — the short-form script
 
 **Decision (2026-07-03): Option A, one video.** Length (recomputed from the
-actual final teleprompter text): **276 words, ~135–140s** at a deliberate
-technical pace. Earlier drafts of this doc worried that was too long for
-"short-form" and recommended splitting in two — that worry doesn't apply:
-TikTok (and Shorts/Reels generally) now support much longer "short-form"
-uploads, so there's no format constraint pushing toward a split. Take the
-full sequence in one take.
+actual final teleprompter text, **including Beat 4** — see the note on
+Beat 4 below): **331 words, ~165s** at a deliberate technical pace. That's
+grown from an earlier ~140s estimate as Beats 1, 2, 6, and 7 picked up
+more explicit framing (the query-matrix construction, the Gibbs-measure
+setup, the theorem statement, the causal link to positional encoding).
+No format constraint is pushing back on this — TikTok/Shorts/Reels all
+support much longer "short-form" uploads now — so length isn't a reason to
+trim; trim only if something reads as genuinely unnecessary on a dry read.
 
 The Beat 5|6 seam is still marked in the teleprompter below, in case a
 *content* reason to split ever comes up later (e.g. the video runs long
 in a dry read for pacing reasons, not format reasons) — but it's no longer
 the plan, just a reference point.
+
+**Open decision: Beat 4 ("the output is a weighted average").** Question
+raised 2026-07-04: is this actually shown in the tex, or just asserted?
+Checked — it's real, cited content: **Remark 6.3 ("Interpretation")**,
+right after the score/output definitions, states verbatim "a convex
+combination of the value vectors." The one-line "why," if it's worth
+saying out loud: softmax's outputs are non-negative and sum to 1 (that's
+its codomain, the simplex), so $O_i=\sum_j P_{ij}v_j$ is a convex
+combination *by definition*, not by a separate argument. It currently
+stays in the script as-is (unchanged below) — cut it if it still feels
+like dead weight on a read-through, but it isn't an invented claim.
 
 ### Teleprompter — read this straight down, nothing else
 
@@ -244,18 +257,19 @@ in order, read straight through as one video. The `⸻ split here ⸻` marker
 is left in as a reference point only (see the note above) — ignore it
 unless a real content reason to split comes up later.
 
-> "What does 'Attention Is All You Need' actually say, if you read it the
-> way an abstract algebraist would? Six definitions. One hidden symmetry
-> theorem."
+> "What does 'Attention Is All You Need' actually say, if you read it from
+> the perspective of a pure mathematician — in particular, someone with a
+> background in abstract algebra? We'll walk through the paper's
+> definitions, building to one hidden symmetry theorem."
 >
-> "A sequence of length n in R-d is just a matrix — row i is element i.
-> Here, d is d-model: the embedding dimension. Query, key, value are that
-> matrix, linearly mapped by learned weights — 'projected' just means
-> multiplied."
+> "A sequence of length n in R-d is just a matrix X in R to the n-by-d —
+> row i is element i. Here, d is d-model: the embedding dimension. Operate
+> on X by right-multiplying by learned weights W-Q to get the query
+> matrix, Q in R to the n-by-d-k."
 >
-> "Each x-i is just a real number — soon, one query's score against key i.
-> Z, the sum of e to the x-j, is a partition function — softmax is exactly
-> the Gibbs distribution built from it."
+> "Consider a general array of numbers, x-1 through x-n. Define a
+> partition function Z, just like a Gibbs distribution — the sum of e to
+> the x-j. Then softmax of x, at i, is simply e to the x-i, over Z."
 >
 > "The score matrix: entry i,j is exactly the dot product of query i with
 > key j — a row of Q times a column of K-transpose, which is just row j
@@ -270,12 +284,14 @@ unless a real content reason to split comes up later.
 >
 > **⸻ (reference marker only — read straight through, don't actually pause here) ⸻**
 >
-> "Here's the theorem: for every permutation π in the symmetric group
-> S-n, Att is S_n-equivariant. Permute the input rows, the output permutes
-> identically — attention sees a set, not a sequence."
+> "You can prove a genuine theorem here, using the symmetric group S-n:
+> for every permutation π in S-n, Att is S_n-equivariant — permute the
+> input rows, and the output permutes identically. Attention sees a set,
+> not a sequence."
 >
-> "So order has to be injected from outside: a fixed sine-cosine encoding,
-> added before attention runs."
+> "So, because of that S_n-equivariance, order has to be injected from
+> outside — a fixed sine-cosine encoding, added before attention ever
+> runs."
 >
 > "And it's not arbitrary. Shifting position by k acts as an SO(2)
 > rotation on each frequency pair — position isn't just encoded, it's
@@ -294,14 +310,14 @@ already did the setup work.)
 
 | # | Tex | ON SCREEN | NARRATION (say this, no more) |
 |---|---|---|---|
-| Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it the way an abstract algebraist would? Six definitions. One hidden symmetry theorem." |
-| 1 | §4 | $X\in\mathbb{R}^{n\times d}$, row $i$ = element $i$; then $d=d_{\mathrm{model}}$, and $Q=XW^Q$ *(§3.2, original paper)* | "A sequence of length n in R-d is just a matrix — row i is element i. Here, d is d-model: the embedding dimension. Query, key, value are that matrix, linearly mapped by learned weights — 'projected' just means multiplied." |
-| 2 | §5 | $Z:=\sum_j e^{x_j}$ (partition function); $\operatorname{softmax}(x)_i=e^{x_i}/Z$ | "Each x-i is just a real number — soon, one query's score against key i. Z, the sum of e to the x-j, is a partition function — softmax is exactly the Gibbs distribution built from it." |
+| Hook | — | title card | "What does 'Attention Is All You Need' actually say, if you read it from the perspective of a pure mathematician — in particular, someone with a background in abstract algebra? We'll walk through the paper's definitions, building to one hidden symmetry theorem." |
+| 1 | §4 | $X\in\mathbb{R}^{n\times d}$, row $i$ = element $i$; $d=d_{\mathrm{model}}$; $Q=XW^Q\in\mathbb{R}^{n\times d_k}$ *(§3.2, original paper)* | "A sequence of length n in R-d is just a matrix X in R to the n-by-d — row i is element i. Here, d is d-model: the embedding dimension. Operate on X by right-multiplying by learned weights W-Q to get the query matrix, Q in R to the n-by-d-k." |
+| 2 | §5 | $x=(x_1,\ldots,x_n)\in\mathbb{R}^n$; $Z:=\sum_j e^{x_j}$ (partition function, à la Gibbs); $\operatorname{softmax}(x)_i:=e^{x_i}/Z$ | "Consider a general array of numbers, x-1 through x-n. Define a partition function Z, just like a Gibbs distribution — the sum of e to the x-j. Then softmax of x, at i, is simply e to the x-i, over Z." |
 | 3 | §6 | $S=\dfrac{QK^\top}{\sqrt{d_k}}$; $S_{ij}=\dfrac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$ | "The score matrix: entry i,j is exactly the dot product of query i with key j — a row of Q times a column of K-transpose, which is just row j of K." |
 | 4 | §6 | $P_i=\operatorname{softmax}(S_i)$; $O=PV$ | "Softmax each row, multiply by V: the output is a weighted average of the values — a soft nearest-neighbor lookup." |
 | 5 | §7 | $\mathrm{Var}[\langle q,k\rangle]=d_k$ | "Why divide by root d-k? Raw dot-product variance grows with dimension. Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill the gradient." |
-| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \operatorname{Att}(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\operatorname{Att}(Q,K,V)$. $\operatorname{Att}$ is $S_n$-equivariant. | "Here's the theorem: for every permutation π in the symmetric group S-n, Att is S_n-equivariant. Permute the input rows, the output permutes identically — attention sees a set, not a sequence." |
-| 7 | §9 | $\mathrm{PE}_{\mathrm{pos},2i}=\sin(\cdot),\ \mathrm{PE}_{\mathrm{pos},2i+1}=\cos(\cdot)$ | "So order has to be injected from outside: a fixed sine-cosine encoding, added before attention runs." |
+| 6 | §8 | **Prop 8.3, verbatim:** $\forall\pi\in S_n,\,Q,K,V:\ \operatorname{Att}(\pi{\cdot}Q,\pi{\cdot}K,\pi{\cdot}V)=\pi{\cdot}\operatorname{Att}(Q,K,V)$. $\operatorname{Att}$ is $S_n$-equivariant. | "You can prove a genuine theorem here, using the symmetric group S-n: for every permutation π in S-n, Att is S_n-equivariant — permute the input rows, and the output permutes identically. Attention sees a set, not a sequence." |
+| 7 | §9 | $\mathrm{PE}_{\mathrm{pos},2i}=\sin(\cdot),\ \mathrm{PE}_{\mathrm{pos},2i+1}=\cos(\cdot)$ | "So, because of that S_n-equivariance, order has to be injected from outside — a fixed sine-cosine encoding, added before attention ever runs." |
 | 8 | §9 | Prop 9.2 rotation equation, $R(\omega_i k)\in SO(2)$ | "And it's not arbitrary. Shifting position by k acts as an SO(2) rotation on each frequency pair — position isn't just encoded, it's represented, as a genuine group action." |
 | Bridge | — | "Next: there's never just one Q, K, V." | "I've described one attention head. There's never just one. Next time: multi-head attention — a genuinely different question." |
 
@@ -319,7 +335,19 @@ already did the setup work.)
   learned," citing §3.2 of the original paper) — not an invented bridge
   from setup to attention. $K,V$ follow the identical construction but
   aren't formally named as a triple until §6; don't imply §4 already
-  defines all three.
+  defines all three. Beat 1 deliberately does *not* mention K, V by name —
+  that's intentional per the 2026-07-04 rewrite, not an omission.
+- Beat 2's array $x=(x_1,\ldots,x_n)$ is still fully generic at this point
+  in the tex — don't let "soon it'll be attention scores" slip into the
+  spoken line itself; that binding happens in §6, one beat later.
+- Beat 6's opening ("you can prove a genuine theorem") is doing real
+  work, not just rhetorical flourish — say it before the theorem
+  statement, not after, so the viewer knows a proof-grade claim is coming.
+- Beat 7's "because of that S_n-equivariance" is a genuine callback, not
+  a rhetorical connective — the tex's own text says almost exactly this
+  ("This is the mathematical reason positional encodings must be added,"
+  directly after the equivariance corollary in §8). Keep the causal
+  wording; don't soften it to "so" or "now."
 - Beat 3's dot-product remark is an identity, not an approximation — "is
   exactly," not "can be thought of as."
 - Beat 6 is quoted **verbatim** from Proposition 8.3 — don't paraphrase the
