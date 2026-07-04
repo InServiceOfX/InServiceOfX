@@ -208,3 +208,29 @@ lanes.
   CuLLM fp32 accumulators around scalar math).
 - Single GPU (RTX 3060, device-isolated in the container); no other GPU
   load during runs.
+
+## 8. Status and what's next
+
+As of 2026-07-03, this benchmark and the ladder it documents (scalar →
+WMMA → CuTe) are considered **feature-complete**. Further kernel
+implementation is paused; active work has shifted to turning this report
+into presentation material — see `AttentionBenchmarkShortForm.md` for the
+video/talk treatment.
+
+Two follow-on engineering items are identified but deliberately **not**
+scheduled unless a specific need arises:
+
+- **bf16 in the WMMA/CuTe kernels.** Both are `__half`-only today; the MHA
+  pipeline supports bf16 end-to-end but only through the scalar
+  warp-cooperative kernel, so bf16 never reaches tensor-core speed. The
+  change is mechanical (swap the fragment/copy element type; CUTLASS ships
+  an `F32BF16BF16F32` SM80 atom for exactly this), so the expected result is
+  near-identical timings to the `__half` kernels — the interesting delta
+  would be numerical (bf16's exponent range vs `__half`'s mantissa
+  precision), not speed.
+- **A tensor-core backward pass.** The backward kernels (single-head and
+  the GQA/MQA group-reduction variant) are scalar throughout — the forward
+  ladder's engine work was never applied there. This is substantially more
+  involved than the forward changes (recomputing P tiles via MMA, then a
+  second MMA pass for dS·K and dS^⊤·Q against a transposed operand layout)
+  and would need its own scoping pass before starting.

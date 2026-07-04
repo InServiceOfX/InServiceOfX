@@ -8,6 +8,13 @@ context to continue without re-deriving anything.
 If the user says "continue the FlashAttention work" or "what's next for
 CuLLM" or similar, start here.
 
+**Status as of 2026-07-03: implementation is paused; active work is
+presentation and video** (benchmark report, short-form video script, and
+interview prep material) — see the "Implementation is PAUSED" section
+below before writing any kernel code. Two items are explicitly deferred,
+not abandoned: bf16 in the WMMA/CuTe kernels, and a tensor-core backward
+pass. Don't start either without the user asking.
+
 ## What this is, in one paragraph
 
 An implementation of FlashAttention (forward + backward, causal masking,
@@ -348,7 +355,7 @@ measurements). What they became:
    type for every T; COMPUTE_16F/64F need CUDA_R_16F/64F or the heuristic
    returns zero algorithms.
 
-Remaining (new) backlog:
+Remaining (new) backlog — all DONE as of 2026-07-03:
 
 1. ~~GQA/MQA backward~~ DONE 2026-07-02:
    `grouped_query_attention_backward.h`. The backward gradient kernels take
@@ -363,10 +370,50 @@ Remaining (new) backlog:
    COMPUTE_32F with *float* alpha/beta, hence `ComputeParameters::scale_type_`
    and `host_scale_type_t<T>` in the cuBLASWrappers. bf16 math intrinsics
    are guarded `__CUDA_ARCH__ >= 800`; conversions work on all archs.
-3. **AttentionAccumulator::merge is not exercised by the production
-   kernels** (the warp-cooperative kernel distributes the accumulator
-   across lanes instead). It now uses `get_approximate_exponential`; if a
-   sequential-tile kernel is ever built on it, benchmark that choice.
+3. ~~AttentionAccumulator::merge unexercised by production kernels~~ DONE
+   2026-07-03: `flash_attention_forward.h` now builds each tile's
+   accumulator explicitly and folds it in with `merge()` — the left fold
+   written literally — instead of hand-fusing the algebra inline (measured
+   cost: within noise). The distributed kernels (warp-cooperative, WMMA,
+   CuTe) still can't use it directly — their accumulators are sharded
+   across lanes/shared memory/registers, which a single `merge()` call
+   cannot reach into.
+
+## Implementation is PAUSED as of 2026-07-03 (see below for why)
+
+The engine ladder (scalar → WMMA → CuTe) and the JAX/XLA/cuDNN benchmark
+are considered feature-complete for now. **Active work has shifted to
+presentation and video** — see `Documents/AttentionBenchmarkReport.md`
+(technical write-up), `Documents/AttentionBenchmarkShortForm.md` (video
+beat sheet), and, if applicable outside this repo,
+`Data/Private/applications/<current-application>/DemoOnePager.md` for
+interview-specific framing. Do not pick up new kernel work from this file
+without the user explicitly asking — check with them first if a session
+seems headed that way.
+
+Two items are deliberately deferred, not forgotten, and should NOT be
+started without the user asking:
+
+1. **bf16 in the fast kernels.** `flash_attention_tensor_core.h` (WMMA) and
+   `flash_attention_cute.h` (CUTLASS) are `__half`-only today. The MHA
+   *pipeline* supports bf16 end-to-end (item 2 above), but only via the
+   *scalar* `flash_attention_warp_cooperative` kernel — bf16 never gets
+   tensor-core speed. WMMA: swap the fragment element type
+   (`__half` → `__nv_bfloat16`, sm_80+ has a native bf16 MMA op, no
+   accuracy trick needed). CuTe: swap `half_t` → `bfloat16_t` in the
+   fragment/copy types; the `SM80_16x8x16_F32BF16BF16F32_TN` atom exists in
+   the vendored CUTLASS for this. Expect near-identical timings to the
+   `__half` kernels (same tensor-core throughput class) — the interesting
+   result would be numerics (bf16's wider exponent vs `__half`'s wider
+   mantissa) rather than speed.
+2. **Backward pass at tensor-core speed.** `flash_attention_backward.h`
+   (both single-head and the GQA/MQA reduction) is scalar-only — dS
+   recomputation, dQ/dK/dV accumulation, all on CUDA cores. The forward
+   ladder's WMMA/CuTe treatment has never been applied to the backward
+   kernels. This is real, multi-day engineering (recomputing P_ij tiles via
+   MMA, then a *second* MMA pass for dS·K and dS^⊤·Q with a transposed
+   operand layout) — scope it properly before starting, don't treat it as
+   a quick follow-on to the forward work.
 
 ## Known gotchas
 
