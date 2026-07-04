@@ -16,6 +16,45 @@ Full math source: `Documents/FlashAttention/FlashAttention.tex`. Finale
    IO-awareness argument (Paper III) → tensor cores → **finale**: CUDA vs.
    JAX/XLA/cuDNN (`AttentionBenchmarkShortForm.md`, already done).
 
+## Recording & editing logistics (series-wide, decided 2026-07-04)
+
+Gear: gaming tower (weak Bluetooth/mic), MacBook Pro (best mic), ASUS
+Zephyrus (has OBS). **Decision: decouple audio from visuals — don't make
+one device do both.**
+
+1. **Visuals**: for equation-slide content like this, don't screen-record
+   live (no typing/scrolling on camera). Take one clean static screenshot
+   per beat from this doc's own rendered preview (see "Screenshot-ready
+   equations" in each episode) — any machine, no mic or OBS needed for
+   this step.
+2. **Audio**: record narration separately on the MacBook (best mic),
+   reading straight down each episode's Teleprompter section. QuickTime's
+   "New Audio Recording" or Voice Memos is enough — no face-on-camera in
+   this format, so no eye-line/lighting concerns, just redo a line if
+   needed.
+3. **Edit**: combine images + audio track in **CapCut** (free,
+   vertical-native, auto-captions from the narration — solves muted-viewer
+   discovery for free). Skip iMovie for this series: it's landscape-first
+   and vertical editing is workable but clunky, with no auto-captions.
+   DaVinci Resolve (free tier) is the "grow into it" option if this
+   becomes a long-running series and more control is worth the steeper
+   learning curve.
+
+Narrate in your own voice — don't add heavy on-screen caption text
+alongside the equations (redundant-channel overload; the equations *are*
+the visual content) and don't use AI TTS (undercuts the "I derived this
+myself" personal-brand framing this series and the CHAOS interview prep
+share). Small auto-captions of the speech itself are still worth keeping.
+
+Optional upgrade: a cheap USB mic (~$30–50, e.g. Fifine/Samson Q2U) on the
+desktop would let future episodes go back to a single live narrated
+screen-record pass, removing the audio/visual device split entirely —
+worth it only if this series keeps going past a couple more episodes.
+
+Optional, your call: a 3–5s face-cam hook before cutting to screen content
+is common for STEM shorts (personal connection before the math starts) —
+adds camera/lighting complexity not otherwise needed for this format.
+
 ---
 
 # Episode 1: What Attention Actually Computes
