@@ -20,18 +20,26 @@ Full math source: `Documents/FlashAttention/FlashAttention.tex`. Finale
 
 # Episode 1: What Attention Actually Computes
 
-Tex source, **in tex order** (confirmed against the compiled PDF, 2026-07-03):
-§4 Setup (line 549) → §5 The Softmax Map (581) → §6 Scaled Dot-Product
-Attention (663) → §7 The Scaling Factor (815) → §8 Permutation Equivariance
-(842) → §9 Positional Encoding (932). Stops before §10 Multi-Head Attention
-(993) — **this stopping point is confirmed correct, don't change it.**
+Tex source, **in tex order** (line numbers current as of 2026-07-03, after
+§4 gained two new remarks — see below):
+§4 Setup (line 549) → §5 The Softmax Map (640) → §6 Scaled Dot-Product
+Attention (722) → §7 The Scaling Factor (878) → §8 Permutation Equivariance
+(905) → §9 Positional Encoding (995). Stops before §10 Multi-Head Attention
+(1056) — **this stopping point is confirmed correct, don't change it.**
 
-The tex itself now has one added sentence (§6, right after the score-matrix
-definition) making explicit what clicked for the user: $QK^\top$ is a matrix
-product, but entrywise it's a dot product — $S_{ij} = \langle q_i,
-k_j\rangle/\sqrt{d_k}$, because column $j$ of $K^\top$ *is* row $j$ of $K$.
-One line, no proof needed, and it's now the source of truth both documents
-below quote from.
+The tex itself has two additions now, both directly requested:
+- §6, right after the score-matrix definition: one sentence making explicit
+  what clicked for the user — $QK^\top$ is a matrix product, but entrywise
+  it's a dot product — $S_{ij} = \langle q_i, k_j\rangle/\sqrt{d_k}$,
+  because column $j$ of $K^\top$ *is* row $j$ of $K$.
+- §4, right after the "Projected and learned" remark: two new remarks,
+  **"From $X$ to the query matrix"** (spells out $Q:=XW^Q$ explicitly,
+  states the dimensions crisply, and reminds the reader that $d_k$ is
+  the *query/key* dimension — shared, because $q_i\cdot k_j$ needs both
+  in the same space) and **"Typical dimensions in practice"** (a small
+  table of real $(n, d_{\mathrm{model}}, h, d_k)$ values from Vaswani et
+  al. 2017, BERT, GPT-2, GPT-3, and LLaMA, each cited). Both are now the
+  source of truth Beat 1 below quotes from.
 
 ## Video visuals: screenshot *this doc's* rendered preview, not the PDF
 
@@ -42,17 +50,20 @@ SCREEN column of the Part B table below, or the isolated large-format
 blocks in the next section. **`FlashAttention.pdf` is reading/reference
 material only** — it's what backs Part A and lets you verify a beat's
 equation is stated exactly right, but it was never meant to double as
-video-presentable content, and it shouldn't have to: it's a 37-page paper
+video-presentable content, and it shouldn't have to: it's a 38-page paper
 with full proofs and surrounding context, not a set of cropped visuals.
 Screenshotting it would mean cropping dense paragraphs down to one
 equation each time; screenshotting this doc's preview means the equation
 is already isolated.
 
 If you do want to cross-check a beat against the formal source (e.g. to
-confirm Proposition 8.3's wording exactly), the page map is: §4 Setup +
-§5 Softmax Map on p.7, §6 Scaled Dot-Product Attention (with the new
-dot-product sentence) on p.8, §7 Scaling + §8 Equivariance on p.10, §9
-Positional Encoding on p.11 — but that's a verification step, not a
+confirm Proposition 8.3's wording exactly), the page map (recompiled
+2026-07-03, after §4 gained the query-matrix/typical-dimensions material —
+everything after §4 shifted down one page) is: §4 Setup (incl. the new
+"From X to the query matrix" and "Typical dimensions" remarks) on p.7,
+§5 Softmax Map on p.8, §6 Scaled Dot-Product Attention (with the
+dot-product sentence) on p.9, §7 Scaling on p.10, §8 Equivariance on p.11,
+§9 Positional Encoding on p.12 — but that's a verification step, not a
 screenshot source.
 
 ## Screenshot-ready equations (large format, one per beat)
@@ -213,45 +224,25 @@ paragraph here. **(Confirmed: stopping here is the right cut point.)**
 
 ## Part B — the short-form script
 
-**Honest heads-up on length (recomputed from the actual final teleprompter
-text, not estimated):** the full sequence is **276 words**. At a
-deliberate technical pace (~2 words/sec — slower than casual speech,
-since viewers are also reading equations) that's **~135–140 seconds**,
-not the 60–90s of a typical short. Two honest options; my recommendation
-is B:
+**Decision (2026-07-03): Option A, one video.** Length (recomputed from the
+actual final teleprompter text): **276 words, ~135–140s** at a deliberate
+technical pace. Earlier drafts of this doc worried that was too long for
+"short-form" and recommended splitting in two — that worry doesn't apply:
+TikTok (and Shorts/Reels generally) now support much longer "short-form"
+uploads, so there's no format constraint pushing toward a split. Take the
+full sequence in one take.
 
-- **Option A — one video, ~2 min.** Everything below, straight through.
-  Simpler to produce, one hook, one upload.
-- **Option B (recommended) — split at the natural seam, Beat 5 | Beat 6.**
-  - *Part 1, "What does attention actually compute?"* — Hook (plain
-    mechanism framing) + Beats 1–5 (setup, softmax basics, score matrix,
-    output, scaling). **182 words, ~90s.** This is the "standard explainer"
-    content — clean, fast, sets up notation for everything downstream.
-  - *Part 2, "...now read it like an abstract algebraist."* — a *second*,
-    sharper hook, paid off immediately: Beats 6–8 (the $S_n$-equivariance
-    theorem, positional encoding, the rotation/representation fact) +
-    bridge. **94 words, ~47s.** This is where the abstract-algebra framing
-    actually earns its keep — a stated theorem and a representation, not
-    just a formula — so the hook lands with zero delay instead of 60
-    seconds into a longer video.
-
-  Reasoning for the split: the hook you want ("an advanced mathematician
-  with an abstract-algebra background reads this paper") is a promise that
-  pays off hardest exactly at Beats 6–8. Beats 1–5 are excellent, correct,
-  necessary setup — but they're the content *any* attention explainer
-  covers. Splitting lets the sharp hook open the video where the payoff
-  actually is, instead of asking viewers to sit through five beats of
-  standard material first.
-
-Table below is written for **Option A** (the full sequence); if you go with
-Option B, cut it into two videos at the marked seam — no rewriting needed,
-the rows don't change.
+The Beat 5|6 seam is still marked in the teleprompter below, in case a
+*content* reason to split ever comes up later (e.g. the video runs long
+in a dry read for pacing reasons, not format reasons) — but it's no longer
+the plan, just a reference point.
 
 ### Teleprompter — read this straight down, nothing else
 
 Narration only, no table, no equations, no tex references — just the words,
-in order. The `⸻ split here for Option B ⸻` marker is where Part 1 ends
-and Part 2's *second* hook begins, if you're doing the two-video version.
+in order, read straight through as one video. The `⸻ split here ⸻` marker
+is left in as a reference point only (see the note above) — ignore it
+unless a real content reason to split comes up later.
 
 > "What does 'Attention Is All You Need' actually say, if you read it the
 > way an abstract algebraist would? Six definitions. One hidden symmetry
@@ -277,7 +268,7 @@ and Part 2's *second* hook begins, if you're doing the two-video version.
 > Rescaling pins it to 1, so softmax doesn't collapse to a vertex and kill
 > the gradient."
 >
-> **⸻ split here for Option B ⸻**
+> **⸻ (reference marker only — read straight through, don't actually pause here) ⸻**
 >
 > "Here's the theorem: for every permutation π in the symmetric group
 > S-n, Att is S_n-equivariant. Permute the input rows, the output permutes
@@ -293,11 +284,11 @@ and Part 2's *second* hook begins, if you're doing the two-video version.
 > "I've described one attention head. There's never just one. Next time:
 > multi-head attention — a genuinely different question."
 
-If you go with Option B, Part 2 needs its *own* hook line in place of a
-cold open at the split — use: *"...now read the same paper like an
-advanced mathematician with a background in abstract algebra would."* (a
-short callback line, not a full re-hook, since Part 1 already did the
-setup work).
+(Kept for reference only: if a split ever becomes useful later, Part 2
+would need its *own* hook line in place of a cold open — *"...now read the
+same paper like an advanced mathematician with a background in abstract
+algebra would."* — a short callback, not a full re-hook, since Part 1
+already did the setup work.)
 
 ### Full table (context: on-screen cues + tex refs, for reference while producing — not for reading aloud)
 

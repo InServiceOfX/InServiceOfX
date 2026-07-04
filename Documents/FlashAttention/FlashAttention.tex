@@ -577,6 +577,65 @@ $d_k \neq d_{\mathrm{model}}$.  The paper uses ``projection'' to mean
 optimised during training, not a fixed geometric object}.
 \end{remark}
 
+\begin{remark}[From $X$ to the query matrix]
+\label{rem:query-matrix}
+Spelling out the previous remark's example one step further: the linear
+map $X \mapsto XW^Q$ applied to our sequence produces
+\[
+    Q \;:=\; XW^Q \;\in\; \Mat{n}{d_k},
+\]
+the \emph{query matrix} -- the same object named alongside $K$ and $V$ in
+Definition~\ref{def:attention-inputs} (\S\ref{sec:sdp-attention}). Recording
+the dimensions once more: $X \in \Mat{n}{d_{\mathrm{model}}}$,
+$W^Q \in \Mat{d_{\mathrm{model}}}{d_k}$, so right-multiplication by $W^Q$
+sends each $d_{\mathrm{model}}$-dimensional row of $X$ to a
+$d_k$-dimensional row of $Q$.
+
+$d_k$ is the \emph{query/key dimension} -- Definition~\ref{def:attention-inputs}
+uses exactly this name, because it is shared: queries and keys must live in
+the same space $\R^{d_k}$ for the score $q_i \cdot k_j$
+(\S\ref{sec:sdp-attention}) to be defined at all. $K := XW^K \in \Mat{n}{d_k}$
+is built the same way, with $W^K \in \Mat{d_{\mathrm{model}}}{d_k}$; likewise
+$V := XW^V \in \Mat{n}{d_v}$, with $W^V \in \Mat{d_{\mathrm{model}}}{d_v}$.
+Nothing above forces $d_v = d_k$, though in practice they are usually equal
+(see the table below).
+\end{remark}
+
+\begin{remark}[Typical dimensions in practice]
+\label{rem:typical-dims}
+Orders of magnitude actually used, for calibration ($h$ = number of
+attention heads; $d_k = d_v = d_{\mathrm{model}}/h$ in every model below --
+see \S\ref{sec:mha} on multi-head attention for why $d_{\mathrm{model}}$
+divides evenly across heads):
+
+\begin{center}
+\begin{tabular}{lccccc}
+\hline
+Model & $n$ (context) & $d_{\mathrm{model}}$ & $h$ & $d_k$ \\
+\hline
+Transformer-base \cite{Vaswani2017} & variable\footnotemark & 512 & 8 & 64 \\
+Transformer-big \cite{Vaswani2017} & variable\footnotemark[\value{footnote}] & 1024 & 16 & 64 \\
+BERT-base \cite{Devlin2018} & 512 & 768 & 12 & 64 \\
+BERT-large \cite{Devlin2018} & 512 & 1024 & 16 & 64 \\
+GPT-2 (small--XL) \cite{Radford2019} & 1024 & 768--1600 & 12--25 & 64 \\
+GPT-3 175B \cite{Brown2020} & 2048 & 12288 & 96 & 128 \\
+LLaMA-7B \cite{Touvron2023} & 2048 & 4096 & 32 & 128 \\
+LLaMA-65B \cite{Touvron2023} & 2048 & 8192 & 64 & 128 \\
+\hline
+\end{tabular}
+\end{center}
+\footnotetext{The original Transformer was trained on variable-length
+sentence pairs batched by approximate token count, not a single fixed
+context-length hyperparameter; BERT and every later model in this table
+fix $n$ as an explicit maximum sequence length instead.}
+
+A striking regularity: $d_k$ lands at exactly $64$ or exactly $128$ in
+every row, regardless of model scale -- larger models add more heads (and
+more layers), rather than growing $d_k$ per head much further. $n$ and
+$d_{\mathrm{model}}$, by contrast, grow by roughly two orders of magnitude
+across this table.
+\end{remark}
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{The Softmax Map}
 \label{sec:softmax}
@@ -664,6 +723,7 @@ output.  This is exploited in the online softmax algorithm (Paper~II).
 \label{sec:sdp-attention}
 
 \begin{definition}[Attention inputs]
+\label{def:attention-inputs}
 Fix sequence length $n$, key/query dimension $d_k$, value dimension $d_v$.
 The \emph{query}, \emph{key}, and \emph{value} matrices are
 \[
@@ -3392,6 +3452,37 @@ Federico Lebr\'{o}n, and Sumit Sanghai.
   multi-head checkpoints.
 \newblock 2023.
 \newblock \href{https://arxiv.org/abs/2305.13245}{arXiv:2305.13245}.
+
+\bibitem{Devlin2018}
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova.
+\newblock {BERT}: Pre-training of deep bidirectional transformers for
+  language understanding.
+\newblock 2018.
+\newblock \href{https://arxiv.org/abs/1810.04805}{arXiv:1810.04805}.
+
+\bibitem{Radford2019}
+Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, and Ilya
+Sutskever.
+\newblock Language models are unsupervised multitask learners.
+\newblock 2019.
+\newblock \href{https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf}{OpenAI technical report}.
+
+\bibitem{Brown2020}
+Tom B.\ Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan,
+Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+Askell, et al.
+\newblock Language models are few-shot learners.
+\newblock In \emph{Advances in Neural Information Processing Systems 33},
+  2020.
+\newblock \href{https://arxiv.org/abs/2005.14165}{arXiv:2005.14165}.
+
+\bibitem{Touvron2023}
+Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne
+Lachaux, Timoth\'{e}e Lacroix, Baptiste Rozi\`{e}re, Naman Goyal, Eric
+Hambro, Faisal Azhar, et al.
+\newblock {LLaMA}: Open and efficient foundation language models.
+\newblock 2023.
+\newblock \href{https://arxiv.org/abs/2302.13971}{arXiv:2302.13971}.
 
 \end{thebibliography}
 
