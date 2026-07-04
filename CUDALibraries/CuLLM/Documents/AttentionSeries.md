@@ -33,23 +33,67 @@ k_j\rangle/\sqrt{d_k}$, because column $j$ of $K^\top$ *is* row $j$ of $K$.
 One line, no proof needed, and it's now the source of truth both documents
 below quote from.
 
-## Screenshot plan for on-screen visuals
+## Video visuals: screenshot *this doc's* rendered preview, not the PDF
 
-Rather than typesetting a second, minimal LaTeX file: **screenshot the real
-compiled PDF.** It's the actual derivation, it's already typeset, and it
-reads as more credible to a math audience than a recreated overlay. Exact
-pages (`Documents/FlashAttention/FlashAttention.pdf`, recompiled
-2026-07-03, 37 pages total):
+Correction from an earlier draft of this file: the video screenshots come
+from **this markdown file's rendered preview** (Cursor, VS Code, GitHub —
+anything that renders KaTeX/MathJax in markdown), specifically the ON
+SCREEN column of the Part B table below, or the isolated large-format
+blocks in the next section. **`FlashAttention.pdf` is reading/reference
+material only** — it's what backs Part A and lets you verify a beat's
+equation is stated exactly right, but it was never meant to double as
+video-presentable content, and it shouldn't have to: it's a 37-page paper
+with full proofs and surrounding context, not a set of cropped visuals.
+Screenshotting it would mean cropping dense paragraphs down to one
+equation each time; screenshotting this doc's preview means the equation
+is already isolated.
 
-| Page | Use for | Contents |
-|---|---|---|
-| 7 | Beat 1 | §4 Setup: Definition (Sequence) + the "projected/learned" remark |
-| 7 (bottom) – 8 (top) | Beat 2 | §5 Softmax Map: Def 5.1, Prop 5.5 (diffeomorphism/fiber fact) |
-| 8 | Beats 3–4 | §6 Def 6.1 (Attention inputs) + Def 6.2 (score matrix, **now with the dot-product sentence**) + Remark 6.3 (interpretation) |
-| — | *(skip)* | Page 9 is the Jacobian/gradient material (Remark 6.4, Prop 6.5) — deliberately excluded, belongs to a later backward-pass episode |
-| 10 | Beat 5 | §7 Prop 7.1 (variance) + Cor 7.2 (scaling) |
-| 10 (bottom) – 11 | Beat 6 | §8 **Proposition 8.3 (Equivariance)** — screenshot this one exactly, it's quoted verbatim in the script |
-| 11 | Beats 7–8 | §9 Def 9.1 (sinusoidal PE) + **Proposition 9.2 (relative encoding via rotation)** |
+If you do want to cross-check a beat against the formal source (e.g. to
+confirm Proposition 8.3's wording exactly), the page map is: §4 Setup +
+§5 Softmax Map on p.7, §6 Scaled Dot-Product Attention (with the new
+dot-product sentence) on p.8, §7 Scaling + §8 Equivariance on p.10, §9
+Positional Encoding on p.11 — but that's a verification step, not a
+screenshot source.
+
+## Screenshot-ready equations (large format, one per beat)
+
+Isolated so each renders as a clean, full-width block in preview — no
+table-cell cropping needed. Same order and labels as the Part B script
+below.
+
+**Hook** — no equation, title card only.
+
+**Beat 1 (§4):**
+$$X \in \R^{n\times d_{\mathrm{model}}}, \qquad Q = XW^Q$$
+
+**Beat 2 (§5):**
+$$\softmax(x)_i = \frac{e^{x_i}}{\sum_j e^{x_j}}, \qquad \softmax(x)=\softmax(y) \iff x-y\in\R\mathbf{1}$$
+
+**Beat 3 (§6):**
+$$S = \frac{QK^\top}{\sqrt{d_k}}, \qquad S_{ij} = \frac{\langle q_i,k_j\rangle}{\sqrt{d_k}}$$
+
+**Beat 4 (§6):**
+$$P_i = \softmax(S_i), \qquad O = PV$$
+
+**Beat 5 (§7):**
+$$\mathrm{Var}[\langle q,k\rangle] = d_k$$
+
+**Beat 6 (§8) — Proposition 8.3, verbatim:**
+$$\forall\,\pi\in S_n,\ \forall\,Q,K,V:\qquad \Att(\pi\cdot Q,\ \pi\cdot K,\ \pi\cdot V) \;=\; \pi\cdot\Att(Q,K,V)$$
+$$\Att \text{ is } S_n\text{-equivariant.}$$
+
+**Beat 7 (§9):**
+$$\mathrm{PE}_{\mathrm{pos},2i} = \sin\!\left(\frac{\mathrm{pos}}{10000^{2i/d}}\right), \qquad \mathrm{PE}_{\mathrm{pos},2i+1} = \cos\!\left(\frac{\mathrm{pos}}{10000^{2i/d}}\right)$$
+
+**Beat 8 (§9) — Proposition 9.2:**
+$$
+\begin{pmatrix}\mathrm{PE}_{\mathrm{pos}+k,2i}\\\mathrm{PE}_{\mathrm{pos}+k,2i+1}\end{pmatrix}
+= R(\omega_i k)
+\begin{pmatrix}\mathrm{PE}_{\mathrm{pos},2i}\\\mathrm{PE}_{\mathrm{pos},2i+1}\end{pmatrix},
+\qquad R(\theta)\in SO(2)
+$$
+
+**Bridge** — no equation, title card only.
 
 ## Part A — understand it first (for you, not the camera)
 
@@ -218,9 +262,9 @@ the rows don't change.
 
 ## Production notes
 
-- Screenshot the real PDF (page map above) — don't build a second,
-  minimal LaTeX file. It's the actual derivation and reads as more
-  credible than a recreated overlay.
+- Visuals come from this doc's own rendered preview (see "Video visuals"
+  section above) — not from `FlashAttention.pdf`, which is reading
+  material only and was never meant to be video-presentable.
 - Real duration will likely be dominated by how long each equation is held
   on screen for a math-literate viewer to actually parse it, not by
   narration speed — budget 3–5s of hold time per dense equation
