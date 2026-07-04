@@ -483,3 +483,104 @@ already did the setup work.)
 - This episode deliberately excludes the Jacobian/gradient material from
   §6 (Remark 6.4, Prop 6.5, page 9 of the PDF) — that's backward-pass
   content for a later gradients episode, not the "what is attention" intro.
+
+---
+
+# Episode 2: Why One Attention Head Isn't Enough
+
+Started 2026-07-04, directly requested (Episode 1's stated confusion: how
+does single-head attention relate to MHA). Tex source: §10 Multi-Head
+Attention only (line 1073, pages 12–13) — Definition 10.1, Remark 10.2
+(column-wise concatenation, with a fully worked $n{=}2,h{=}2,d_v{=}2$
+numerical example), Remark 10.3 (dimension bookkeeping), Remark 10.4
+(subspace decomposition — **this is the remark that answers the stated
+confusion directly**). Stops before §11 (Feed-Forward/LayerNorm) — same
+"stop at a clean section boundary" pattern as Episode 1.
+
+## Part A — understand it first
+
+**1. The setup: $h$ heads, each with its *own* three weight matrices.**
+This is the one fact that resolves the confusion before anything else
+does: multi-head attention is **not** "run the same $\operatorname{Att}$ twice" and
+it's **not** "make $d_k$ bigger." For each head $\ell = 1,\ldots,h$, fix
+*separate* learned matrices $W^Q_\ell, W^K_\ell \in
+\mathbb{R}^{d_{\mathrm{model}}\times d_k}$, $W^V_\ell \in
+\mathbb{R}^{d_{\mathrm{model}}\times d_v}$ — $3h$ independent parameters
+total, none of them shared across heads. So head $\ell$ doesn't just
+re-run attention on the same $Q,K,V$ from Episode 1 — it builds its
+*own* $Q_\ell := X W^Q_\ell$, $K_\ell := XW^K_\ell$, $V_\ell := XW^V_\ell$
+first (the exact §4 construction from Episode 1, now run $h$ times with
+$h$ different weight matrices).
+
+**2. Each head is just Episode 1's $\operatorname{Att}$, unchanged.** $\mathrm{head}_\ell
+:= \operatorname{Att}(XW^Q_\ell, XW^K_\ell, XW^V_\ell) \in \mathbb{R}^{n\times d_v}$ —
+literally the same map from §6, called $h$ times with $h$ different
+inputs. Nothing about $\operatorname{Att}$ itself changes; MHA is a composition
+*around* it, not a modification *of* it.
+
+**3. Concatenate the heads — side by side, not stacked.** $[\mathrm{head}_1
+\| \cdots \| \mathrm{head}_h] \in \mathbb{R}^{n \times hd_v}$: **column-wise**
+means wider, not taller — $n$ rows stay $n$ rows, the column count grows
+from $d_v$ to $hd_v$. The tex's own worked example makes this concrete
+rather than notation-only: with $n=2, h=2, d_v=2$,
+$$\mathrm{head}_1 = \begin{pmatrix}a_{11}&a_{12}\\a_{21}&a_{22}\end{pmatrix},\ \
+\mathrm{head}_2 = \begin{pmatrix}b_{11}&b_{12}\\b_{21}&b_{22}\end{pmatrix}
+\ \Rightarrow\ 
+[\mathrm{head}_1\|\mathrm{head}_2] = \left(\begin{array}{cc|cc}a_{11}&a_{12}&b_{11}&b_{12}\\a_{21}&a_{22}&b_{21}&b_{22}\end{array}\right).$$
+Row $i$ of the concatenation is the *horizontal join* of row $i$ from
+every head, in order — entrywise, $C_{i,(\ell-1)d_v+j} :=
+(\mathrm{head}_\ell)_{ij}$.
+
+**4. One more linear map merges the heads back down.**
+$\operatorname{MHA}(Q,K,V) := [\mathrm{head}_1\|\cdots\|\mathrm{head}_h]\,W^O \in
+\mathbb{R}^{n\times d_{\mathrm{model}}}$, with $W^O \in
+\mathbb{R}^{hd_v\times d_{\mathrm{model}}}$ — the *only* place information
+from different heads gets combined into one representation again.
+Everything before this point kept the $h$ heads' computations completely
+independent.
+
+**5. Real numbers, and a FLOP-neutrality fact worth having ready.** The
+original paper: $d_{\mathrm{model}}=512$, $h=8$, $d_k=d_v=64$ (matches
+Episode 1's "Typical dimensions" table exactly — this *is* the
+Transformer-base row). Note $h\cdot d_v = 8\cdot 64 = 512 = d_{\mathrm{model}}$
+— the concatenated output lands back at the *same* width the input
+started at, so $W^O\in\mathbb{R}^{512\times 512}$ is square. A fact worth
+having ready for a technical follow-up question: the tex's own Remark 10.3
+notes the total FLOPs of 8-head attention at $d_k=64$ equal a *single*
+head running at $d_k=d_{\mathrm{model}}=512$ — multi-head attention isn't
+"8× the compute of one head," it's the *same* compute, split $h$ ways.
+
+**6. The payoff — why one (bigger) head can't do this.** Remark 10.4,
+almost verbatim: a single head, whatever its width, produces **one**
+convex combination per row — one weighted average, one notion of
+"what matched what." Multiple independent relationships between the
+*same* pair of positions (e.g. "these two tokens are the same part of
+speech" *and*, separately, "these two tokens are 3 positions apart") would
+have to be blended into that single average, and averaging destroys the
+distinction between them. $h$ heads means $h$ *independent* attention
+computations running in parallel, each in its own learned subspace (the
+image of $W^Q_\ell$), each free to discover a *different* relationship —
+then $W^O$ combines the results, rather than having to average them
+together from the start. That's the entire argument, and it's the one to
+have ready if this comes up: **multi-head isn't about attending "more,"
+it's about attending to several *different things* at once, which a
+single softmax-weighted average structurally cannot represent.**
+
+**Bridge to what's next:** every head above still computes the *full*
+$n\times n$ score matrix $S_\ell = Q_\ell K_\ell^\top/\sqrt{d_k}$ and
+writes it to memory before softmax ever runs — for long sequences, that
+matrix gets enormous, and there are now $h$ of them per layer. That's
+where the series goes next: Paper II/III's actual subject, computing
+$\operatorname{Att}$ without ever materializing that matrix — which is the direct road
+to the CUDA-vs-JAX finale.
+
+## Part B — the short-form script
+
+**Not yet written.** Given the interview timeline, Part A above is
+complete and ready whenever there's time to distill it into a teleprompter
+script (following the exact template used for Episode 1: hook → numbered
+beats → bridge, each beat an ON SCREEN equation + one narration line, a
+teleprompter blockquote, a full table, honesty guardrails, production
+notes). Do this the same way Episode 1 was built — iteratively, beat by
+beat, with the user reviewing each — rather than generating a finished
+script in one pass; that's what made Episode 1's script actually correct.
