@@ -80,6 +80,20 @@ N² buffers) — arguably a harder wall than the CUDA side's runtime
 `cudaMalloc` failure. cuDNN's flash kernel plans TEMP equal to about one
 copy of its inputs — linear in N, exactly the flash signature.
 
+One asymmetry worth stating plainly: the JAX reference has *two*
+tiled implementations — FA-1 (eager, per-tile normalization) and FA-2
+(delayed, normalize-once) — while every CUDA kernel in this repo
+(scalar, warp-cooperative, WMMA, CuTe) is FA-2-style only; there is no
+CUDA FA-1 variant. That gap is deliberate, not an oversight: FA-1 and
+FA-2 differ solely in *when* you divide by the softmax denominator and
+how many times you write the output tile to HBM, never in what you
+allocate — both need exactly Q, K, V, O. The JAX numbers confirm it
+directly (FA-1 and FA-2 TEMP sit within a few MiB of each other, both
+flat across N), so a CUDA FA-1 kernel would report the identical HBM
+number already measured for FA-2 above. Building one would spend
+engineering time — and risk touching tested production kernels — to
+reconfirm a fact that follows from the algorithm's structure.
+
 ## The central lesson
 
 > GPU performance is two independent games: the **algorithm** decides how

@@ -164,7 +164,12 @@ point. Where two terminals are named, use a side-by-side split.
    FA-1/FA-2 lax temps flat at ~7–9 MiB across all N, and the N=4096
    standard path failing at *compile* time. Two independent measurement
    methods agreeing on the same law is the strongest single memory claim
-   in the whole project.
+   in the whole project. Note printed by `AttentionMemoryReport` itself:
+   there is no separate FA-1 kernel on the CUDA side (every rung is
+   FA-2-style, delayed normalization) — and none is needed, since FA-1
+   vs FA-2 differ only in *when* you normalize and write O, never in
+   what you allocate; the JAX TEMP numbers for FA-1 and FA-2 above
+   confirm they're within noise of each other.
 8. **The second test suite.** MoreCUDA `./Check` tail: `[ PASSED ] 123
    tests.` Optional but cheap — 212 total tests across the two suites is
    a better sentence than 89.

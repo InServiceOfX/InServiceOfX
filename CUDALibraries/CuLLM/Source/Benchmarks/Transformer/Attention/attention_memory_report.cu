@@ -172,6 +172,17 @@ int main()
       to_gib(n_squared));
   }
 
+  std::printf(
+    "Note: every flash kernel in this ladder (thread-per-row, "
+    "warp-cooperative,\nWMMA, CuTe) writes its epilogue O = o~/l exactly "
+    "once, after the loop --\nFA-2-style delayed normalization. There is "
+    "no separate FA-1 (eager,\nper-tile renormalization) kernel here, "
+    "and none is needed for this table:\nFA-1 vs FA-2 differ only in "
+    "*when* you divide by l and how many times you\nwrite O to HBM, "
+    "never in what you allocate -- both need exactly Q, K, V, O.\n"
+    "The JAX-side report confirms this directly (FA-1 and FA-2 TEMP "
+    "sizes are\nwithin a few MiB of each other, both flat across N).\n\n");
+
   //----------------------------------------------------------------------------
   std::printf(
     "== 2. On-chip memory per kernel (where the ladder rungs actually "
