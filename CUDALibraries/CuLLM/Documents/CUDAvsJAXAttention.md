@@ -51,6 +51,22 @@ Three headline numbers:
 - **18× → 2.3×**: how far behind cuDNN my scalar kernel started, and where
   the CUTLASS version ended (1.14× — essentially tied — at N = 1024).
 
+The memory claims above are **measured, not computed**
+(`AttentionMemoryReport`, cudaMemGetInfo around real allocations): at
+N = 4096 the flash working set measures 0.375 GiB while the standard
+path's allocation fails live at 12.375 GiB requested on the 11.6 GiB
+card. The same tool reports each kernel's on-chip budget — which is where
+the ladder rungs *do* differ, since their HBM footprints are identical by
+design: the scalar thread-per-row kernel's 254 registers/thread cap it at
+192 resident threads/SM (the occupancy number behind its slowness); WMMA
+spends 47.9 KB shared memory/block (2 blocks/SM) staging its opaque
+fragments; CuTe halves that to 23.3 KB by keeping the accumulator in
+registers (120 regs/thread, 4 blocks/SM) — the WMMA→CuTe upgrade,
+expressed in hardware units instead of milliseconds. And a nuance worth
+noticing: CuTe wins despite *lower* occupancy than the scalar
+warp-cooperative kernel (512 vs. 640 threads/SM) — occupancy is a means,
+not the metric.
+
 ## The central lesson
 
 > GPU performance is two independent games: the **algorithm** decides how

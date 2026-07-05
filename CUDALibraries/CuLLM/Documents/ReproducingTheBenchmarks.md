@@ -19,6 +19,7 @@ CUDA side — all in `CuLLM/BuildGcc/` (host) and `CuLLM/BuildDocker/`
 | `AttentionIOBenchmark` | standard vs. flash (thread) vs. flash (warp) vs. causal sweep, with a max-diff exactness column | the IO/algorithm story + bit-level honesty column |
 | `LinearMapGemmBenchmark` | hand-written tiled GEMM vs. cuBLASLt at linear-map shapes, correctness delta gated before timing | "measure before deciding" — cuBLASLt won 10–12×, so we kept it |
 | `AttentionReferenceDump` | dumps kernel output for deterministic inputs (consumed by the Python comparison) | the cross-language accuracy bridge |
+| `AttentionMemoryReport` | (1) HBM working set measured via cudaMemGetInfo around real cudaMallocs — flash Q/K/V/O vs. the standard baseline's two B·H·N² workspaces, with the N=4096 allocation *failing live* on the 12 GB card; (2) per-kernel on-chip resources (cudaFuncGetAttributes): smem/block, regs/thread, occupancy | memory measured, not asserted — and the on-chip table is where the ladder rungs actually differ (HBM is identical across rungs by design) |
 
 MoreCUDA side — `MoreCUDA/BuildGcc/Check`: 123 more unit tests (math
 functions, cuBLASLt wrappers, memory utilities the kernels build on).
@@ -46,6 +47,7 @@ cmake ../Source && cmake --build . --target Check WarpAttentionBenchmark \
 ./WarpAttentionBenchmark     # the ladder CSV (~2 min: N=4096 rows dominate)
 ./AttentionIOBenchmark       # standard-vs-flash sweep (~1-2 min)
 ./LinearMapGemmBenchmark     # tiled GEMM vs cuBLASLt (~1 min)
+./AttentionMemoryReport      # memory: measured HBM working sets + live OOM at N=4096 + on-chip/occupancy table (seconds)
 
 cd ../../MoreCUDA/BuildGcc && cmake ../Source && cmake --build . --target Check -j$(nproc)
 ./Check                      # 123 tests
@@ -143,10 +145,19 @@ point. Where two terminals are named, use a side-by-side split.
    the ~10–12× column. The claim: library-vs-hand-written was a
    *measured* decision, both directions (kept cuBLASLt for GEMMs, wrote
    kernels where fusion required it).
-7. **The second test suite.** MoreCUDA `./Check` tail: `[ PASSED ] 123
+7. **Memory, measured — two claims in one frame.** `./AttentionMemoryReport`
+   output: the N=4096 block where flash shows `0.375 GiB` measured while
+   the standard path prints `cudaMalloc FAILED (out of memory)` — the
+   memory wall demonstrated, not computed. Scroll to the on-chip table in
+   the same shot if it fits: thread-per-row's 254 regs/thread → 192
+   threads/SM (why it was slow, in one number), WMMA's 47,872 B
+   smem/block → 2 blocks/SM vs. CuTe's 23,296 B + register-resident
+   accumulator → 4 blocks/SM (the WMMA→CuTe design choice, visible in
+   hardware terms). For a GPU-engineering audience this shot rivals shot 1.
+8. **The second test suite.** MoreCUDA `./Check` tail: `[ PASSED ] 123
    tests.` Optional but cheap — 212 total tests across the two suites is
    a better sentence than 89.
-8. **pytest, 5 passed.** The JAX reference implementations are tested
+9. **pytest, 5 passed.** The JAX reference implementations are tested
    too — one small shot inside the container. Optional; include if the
    audience is Python-fluent.
 

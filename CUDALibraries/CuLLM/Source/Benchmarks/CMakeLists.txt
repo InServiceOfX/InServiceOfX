@@ -63,3 +63,18 @@ SET_TARGET_PROPERTIES(WarpAttentionBenchmark
 SET_TARGET_PROPERTIES(WarpAttentionBenchmark
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
+
+ADD_EXECUTABLE(AttentionMemoryReport
+  Transformer/Attention/attention_memory_report.cu
+  )
+
+TARGET_LINK_LIBRARIES(AttentionMemoryReport
+  MoreCUDAUtilities
+  )
+
+SET_TARGET_PROPERTIES(AttentionMemoryReport
+  PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+SET_TARGET_PROPERTIES(AttentionMemoryReport
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
