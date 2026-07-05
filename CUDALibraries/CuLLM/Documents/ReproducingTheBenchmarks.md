@@ -15,7 +15,7 @@ CUDA side — all in `CuLLM/BuildGcc/` (host) and `CuLLM/BuildDocker/`
 | Executable | What it does | What it proves |
 |---|---|---|
 | `Check` | 89 gtest unit tests, every kernel vs. independent CPU references, gradient checks, device guard | correctness discipline — the kernels are *tested*, not just fast |
-| `WarpAttentionBenchmark` | the ladder: scalar fp32/fp16, WMMA, CuTe rows at B·H=96, d=64, N=256–4096, causal both (CSV lines) | the 18×→2.3× engine story, one screen |
+| `WarpAttentionBenchmark` | the ladder: scalar fp32/fp16, WMMA, CuTe rows at B·H=96, d=64, N=256–4096, causal both (CSV lines plus readable speedup tables) | the 18×→2.3× engine story, one screen |
 | `AttentionIOBenchmark` | standard vs. flash (thread) vs. flash (warp) vs. causal sweep, with a max-diff exactness column | the IO/algorithm story + bit-level honesty column |
 | `LinearMapGemmBenchmark` | hand-written tiled GEMM vs. cuBLASLt at linear-map shapes, correctness delta gated before timing | "measure before deciding" — cuBLASLt won 10–12×, so we kept it |
 | `AttentionReferenceDump` | dumps kernel output for deterministic inputs (consumed by the Python comparison) | the cross-language accuracy bridge |
@@ -72,6 +72,38 @@ Notes: the XLA-standard rows deliberately skip N=4096 (the N² score
 buffer would be 6.4 GB — that skip *is* a result, not a gap). JAX
 timings include dispatch overhead; read N=256 rows with that in mind.
 
+### WarpAttentionBenchmark flags
+
+`WarpAttentionBenchmark` keeps the stable `CSV dtype,n,batch_heads,causal,ms`
+lines consumed by `benchmark_report.py`, then prints two presentation-ready
+tables: the non-causal fp16 engine ladder (scalar fp16 → WMMA → CuTe) and
+causal tile-skipping speedups.
+
+Useful variants:
+
+```bash
+./WarpAttentionBenchmark --csv-only
+./WarpAttentionBenchmark --repeats 5 --warmups 2
+./WarpAttentionBenchmark --batch-heads 192 --repeats 5
+./WarpAttentionBenchmark --stress
+```
+
+What is configurable here: `batch*heads`, warmups/repeats, and the optional
+stress sweep that adds `N=8192`. What is deliberately fixed by the compiled
+kernels: `d=64` and `warps/block=4`. Here `d` is the per-head query/key/value
+dimension, not model width; `d=64` is both a common transformer value and the
+current CuTe kernel's supported shape. `warps/block=4` is the CuTe copy and
+tiling shape. To benchmark `d=128` honestly, add a separate templated
+benchmark instantiation and accept that the current CuTe row will drop out
+until that kernel supports the wider head dimension.
+
+In these tables `N` is the context length / sequence length. The stress run is
+for the video caveat: doubling `N` from 4096 to 8192 makes exact dense
+attention do about 4x the dot-product work, even though FlashAttention avoids
+the quadratic score-matrix allocation. The benchmark prints this explicitly as
+a `Stress note:` line; include that line if the screenshot is meant to teach
+"linear memory, still quadratic compute."
+
 ## The shot list (prioritized; each shot = one claim made visible)
 
 Composition rules for all shots: dark terminal, font large enough to read
@@ -81,8 +113,12 @@ point. Where two terminals are named, use a side-by-side split.
 
 1. **The ladder, live.** `./WarpAttentionBenchmark` full output — the
    `Device: NVIDIA GeForce RTX 3060` header line **must be in frame**
-   with the `float32 / float16 / wmma16 / cute` CSV rows below it. This
-   single frame is the 18×→2.3× story with hardware provenance.
+   with either the `float32 / float16 / wmma16 / cute` CSV rows or the
+   readable "Non-causal fp16 engine ladder" summary below it. This single
+   frame is the scalar → WMMA → CuTe story with hardware provenance.
+   For the `--stress` version, include the `Stress note:` line if possible:
+   it makes the 4096→8192, 4x-runtime caveat explicit without requiring the
+   viewer to compare rows manually.
 2. **Tests, not vibes.** `./Check` tail: `[ PASSED ] 89 tests.` — and a
    second shot (or the same scrollback) catching
    `Running on CUDA device 0: NVIDIA GeForce RTX 3060 (sm_86)` from the
