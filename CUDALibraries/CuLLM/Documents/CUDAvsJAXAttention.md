@@ -148,6 +148,8 @@ transposed-operand MMA pass for the weight gradients).
 ## Where everything lives
 
 - Full benchmark report + methodology: `AttentionBenchmarkReport.md`
+- Rerun everything yourself (exact commands, all six executables):
+  `ReproducingTheBenchmarks.md`
 - Kernels: `../Source/Transformer/Attention/` (scalar:
   `flash_attention_warp_cooperative.h`; WMMA:
   `flash_attention_tensor_core.h`; CUTLASS: `flash_attention_cute.h`)

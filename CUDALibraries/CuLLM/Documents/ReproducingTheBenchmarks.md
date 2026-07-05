@@ -1,0 +1,132 @@
+# Reproducing the CUDA-vs-JAX benchmarks (and the screenshot shot list)
+
+Two purposes, one document: (1) anyone can rerun every number in
+`CUDAvsJAXAttention.md` / `AttentionBenchmarkReport.md` from scratch;
+(2) a prioritized shot list for capturing presentation evidence on the
+benchmark machine (RTX 3060 desktop). Screenshots of *live terminal
+output* are the credibility currency here — a rendered markdown table
+says "trust me," a terminal with the device name in frame says "watch."
+
+## The executables (what exists, where, what each proves)
+
+CUDA side — all in `CuLLM/BuildGcc/` (host) and `CuLLM/BuildDocker/`
+(container); same CMake tree builds both:
+
+| Executable | What it does | What it proves |
+|---|---|---|
+| `Check` | 89 gtest unit tests, every kernel vs. independent CPU references, gradient checks, device guard | correctness discipline — the kernels are *tested*, not just fast |
+| `WarpAttentionBenchmark` | the ladder: scalar fp32/fp16, WMMA, CuTe rows at B·H=96, d=64, N=256–4096, causal both (CSV lines) | the 18×→2.3× engine story, one screen |
+| `AttentionIOBenchmark` | standard vs. flash (thread) vs. flash (warp) vs. causal sweep, with a max-diff exactness column | the IO/algorithm story + bit-level honesty column |
+| `LinearMapGemmBenchmark` | hand-written tiled GEMM vs. cuBLASLt at linear-map shapes, correctness delta gated before timing | "measure before deciding" — cuBLASLt won 10–12×, so we kept it |
+| `AttentionReferenceDump` | dumps kernel output for deterministic inputs (consumed by the Python comparison) | the cross-language accuracy bridge |
+
+MoreCUDA side — `MoreCUDA/BuildGcc/Check`: 123 more unit tests (math
+functions, cuBLASLt wrappers, memory utilities the kernels build on).
+
+JAX side — `CuLLM/Python/`, run inside the `propulsion-with-cuda:26.02-py3`
+container (it has JAX 0.10.2 + cuDNN; the repo mounts in, no image
+changes needed):
+
+| Script | What it does |
+|---|---|
+| `test_jax_attention_reference.py` | pytest, 5 tests: online softmax, tiling, causal, multi-head layout, built-in wrapper |
+| `benchmark_report.py` | the full comparison: JAX/XLA standard, built-in, FA-2 lax-loop, cuDNN — plus CuLLM CSV ingestion and the CuLLM-vs-JAX accuracy table; emits the report tables as markdown |
+| `compare_cullm_jax_attention.py` | smaller accuracy + timing comparison (superseded by `benchmark_report.py` for the full matrix) |
+
+## Rerunning everything
+
+### Host (CUDA side; device 0 *is* the RTX 3060 — CUDA orders fastest-first)
+
+```bash
+cd <repo>/CUDALibraries/CuLLM/BuildGcc
+cmake ../Source && cmake --build . --target Check WarpAttentionBenchmark \
+    AttentionIOBenchmark LinearMapGemmBenchmark -j$(nproc)
+
+./Check                      # 89 tests; first FlashAttentionTensorCore test prints the GPU name
+./WarpAttentionBenchmark     # the ladder CSV (~2 min: N=4096 rows dominate)
+./AttentionIOBenchmark       # standard-vs-flash sweep (~1-2 min)
+./LinearMapGemmBenchmark     # tiled GEMM vs cuBLASLt (~1 min)
+
+cd ../../MoreCUDA/BuildGcc && cmake ../Source && cmake --build . --target Check -j$(nproc)
+./Check                      # 123 tests
+```
+
+### Container (JAX side + the combined report; GPU 1 in nvidia-smi order = the 3060)
+
+```bash
+docker run --rm --gpus '"device=1"' \
+  -v <repo-absolute-path>:/InServiceOfX propulsion-with-cuda:26.02-py3 bash
+
+# inside the container:
+cd /InServiceOfX/CUDALibraries/CuLLM/BuildDocker
+cmake ../Source && make WarpAttentionBenchmark AttentionReferenceDump -j$(nproc)
+
+cd /InServiceOfX
+python3 -m pytest CUDALibraries/CuLLM/Python/test_jax_attention_reference.py -q   # "5 passed"
+PYTHONPATH=CUDALibraries/CuLLM/Python python3 \
+  CUDALibraries/CuLLM/Python/benchmark_report.py \
+  --build-dir CUDALibraries/CuLLM/BuildDocker    # several minutes: jit compiles + full sweep
+```
+
+Notes: the XLA-standard rows deliberately skip N=4096 (the N² score
+buffer would be 6.4 GB — that skip *is* a result, not a gap). JAX
+timings include dispatch overhead; read N=256 rows with that in mind.
+
+## The shot list (prioritized; each shot = one claim made visible)
+
+Composition rules for all shots: dark terminal, font large enough to read
+in a slide/phone screenshot, and **include the command line you typed at
+the top of the frame** — output with its provenance visible is the whole
+point. Where two terminals are named, use a side-by-side split.
+
+1. **The ladder, live.** `./WarpAttentionBenchmark` full output — the
+   `Device: NVIDIA GeForce RTX 3060` header line **must be in frame**
+   with the `float32 / float16 / wmma16 / cute` CSV rows below it. This
+   single frame is the 18×→2.3× story with hardware provenance.
+2. **Tests, not vibes.** `./Check` tail: `[ PASSED ] 89 tests.` — and a
+   second shot (or the same scrollback) catching
+   `Running on CUDA device 0: NVIDIA GeForce RTX 3060 (sm_86)` from the
+   tensor-core suite's device guard. For a hiring audience this shot
+   outranks every benchmark: it says the numbers sit on tested code.
+3. **The JAX side is real, same machine.** `benchmark_report.py` output
+   inside the container: the `JAX 0.10.2, devices [CudaDevice(id=0)]`
+   header plus the float32 comparison table, and the accuracy table
+   (`max |CuLLM−JAX|` ~1e-4/1e-5 rows) in a second shot. This is the
+   direct evidence the comparison isn't two disconnected experiments.
+4. **GPU actually working.** A second terminal running
+   `watch -n 0.5 nvidia-smi` while `WarpAttentionBenchmark` runs —
+   utilization pegged, the RTX 3060 row visible. Cheap shot, disarms
+   "did this really run" instantly, and looks good in motion if you
+   screen-record instead of screenshot.
+5. **The exactness column.** `./AttentionIOBenchmark` output — the sweep
+   with its `max |diff|` column (~1e-8) against the standard-attention
+   baseline. The claim it makes visible: flash attention here is *exact*,
+   not an approximation.
+6. **Measure before deciding.** `./LinearMapGemmBenchmark` output — the
+   tiled-GEMM-vs-cuBLASLt table with its `max|dt|` correctness gate and
+   the ~10–12× column. The claim: library-vs-hand-written was a
+   *measured* decision, both directions (kept cuBLASLt for GEMMs, wrote
+   kernels where fusion required it).
+7. **The second test suite.** MoreCUDA `./Check` tail: `[ PASSED ] 123
+   tests.` Optional but cheap — 212 total tests across the two suites is
+   a better sentence than 89.
+8. **pytest, 5 passed.** The JAX reference implementations are tested
+   too — one small shot inside the container. Optional; include if the
+   audience is Python-fluent.
+
+For the polished slide/thumbnail version of the result table, use the
+rendered markdown table from `CUDAvsJAXAttention.md` — but pair it with
+shot 1 somewhere nearby: rendered table for legibility, terminal for
+proof.
+
+## What a GPU-engineering employer is looking for in these shots
+
+Not the speedup itself — evidence of *practice*: tests passing before
+benchmarks (shots 2, 7, 8), the device name and utilization in frame
+(shots 1, 4), an exactness column sitting next to every performance claim
+(shots 3, 5, 6), and honest methodology notes (the N=4096 skip, dispatch
+overhead, TF32 defaults — all documented in the report rather than
+hidden). The shot list is ordered so that if only three screenshots
+survive into a presentation, shots 1–3 carry the full argument:
+performance ladder with provenance, tested code, and a same-machine
+cross-framework comparison.
