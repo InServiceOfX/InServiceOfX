@@ -33,6 +33,7 @@ changes needed):
 | `test_jax_attention_reference.py` | pytest, 5 tests: online softmax, tiling, causal, multi-head layout, built-in wrapper |
 | `benchmark_report.py` | the full comparison: JAX/XLA standard, built-in, FA-2 lax-loop, cuDNN — plus CuLLM CSV ingestion and the CuLLM-vs-JAX accuracy table; emits the report tables as markdown |
 | `compare_cullm_jax_attention.py` | smaller accuracy + timing comparison (superseded by `benchmark_report.py` for the full matrix) |
+| `jax_memory_report.py` | XLA's own memory accounting (`compiled.memory_analysis()`) for standard / FA-1 / FA-2 / built-in / cuDNN, plus live execution outcome; handles the preallocation gotcha for you | the JAX-side mirror of `AttentionMemoryReport` — same memory law from an independent measurement |
 
 ## Rerunning everything
 
@@ -68,6 +69,9 @@ python3 -m pytest CUDALibraries/CuLLM/Python/test_jax_attention_reference.py -q 
 PYTHONPATH=CUDALibraries/CuLLM/Python python3 \
   CUDALibraries/CuLLM/Python/benchmark_report.py \
   --build-dir CUDALibraries/CuLLM/BuildDocker    # several minutes: jit compiles + full sweep
+
+PYTHONPATH=CUDALibraries/CuLLM/Python python3 \
+  CUDALibraries/CuLLM/Python/jax_memory_report.py   # JAX-side memory (~2 min)
 ```
 
 Notes: the XLA-standard rows deliberately skip N=4096 (the N² score
@@ -154,6 +158,13 @@ point. Where two terminals are named, use a side-by-side split.
    smem/block → 2 blocks/SM vs. CuTe's 23,296 B + register-resident
    accumulator → 4 blocks/SM (the WMMA→CuTe design choice, visible in
    hardware terms). For a GPU-engineering audience this shot rivals shot 1.
+   **Companion frame (container): `jax_memory_report.py`** — XLA's own
+   plan showing standard attention's TEMP at exactly 2·B·H·N² (3.000 GiB
+   at N=2048, matching the CUDA-side measured workspaces to the digit),
+   FA-1/FA-2 lax temps flat at ~7–9 MiB across all N, and the N=4096
+   standard path failing at *compile* time. Two independent measurement
+   methods agreeing on the same law is the strongest single memory claim
+   in the whole project.
 8. **The second test suite.** MoreCUDA `./Check` tail: `[ PASSED ] 123
    tests.` Optional but cheap — 212 total tests across the two suites is
    a better sentence than 89.

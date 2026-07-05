@@ -67,6 +67,19 @@ noticing: CuTe wins despite *lower* occupancy than the scalar
 warp-cooperative kernel (512 vs. 640 threads/SM) — occupancy is a means,
 not the metric.
 
+The JAX side has its own measured mirror (`jax_memory_report.py`, using
+XLA's `compiled.memory_analysis()` — the compiler's own static plan for
+temp buffers): standard attention's TEMP comes out at exactly
+2·B·H·N²·4 bytes (3.000 GiB at N = 2048 — matching the CUDA-side
+measured workspaces to the digit; two independent methods, same law),
+while the FA-1 and FA-2 `lax`-loop versions hold flat at ~7–9 **MiB** of
+temp from N = 1024 through 4096 — the tiled algorithm's linear-memory
+claim, confirmed in XLA's own accounting. At N = 4096 the standard path
+fails on this card at *compile* time (XLA's autotuner cannot stage the
+N² buffers) — arguably a harder wall than the CUDA side's runtime
+`cudaMalloc` failure. cuDNN's flash kernel plans TEMP equal to about one
+copy of its inputs — linear in N, exactly the flash signature.
+
 ## The central lesson
 
 > GPU performance is two independent games: the **algorithm** decides how
@@ -127,6 +140,14 @@ with a measurement before committing to kernel work.
   quietly tensor-core vs. scalar unless you set
   `jax.default_matmul_precision('highest')`. Decide which comparison you
   mean, and say so.
+- **JAX preallocates 75% of GPU memory at startup by default** — every
+  external memory measurement (nvidia-smi, cudaMemGetInfo) reads as
+  "GPU nearly full" regardless of the actual working set. Either set
+  `XLA_PYTHON_CLIENT_PREALLOCATE=false` (+ the `platform` allocator)
+  before importing jax, or skip runtime measurement entirely and read
+  `jax.jit(f).lower(...).compile().memory_analysis()` — XLA's own
+  deterministic per-computation plan (args/output/temp bytes), which is
+  what my memory comparison uses.
 - **JAX dispatch is asynchronous** — Python returns before the GPU
   finishes. Timing without `block_until_ready()` measures dispatch, not
   compute. (CUDA-side equivalent: cudaEvent timing around the launches.)
