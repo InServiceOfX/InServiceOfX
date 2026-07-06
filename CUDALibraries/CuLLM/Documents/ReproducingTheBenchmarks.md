@@ -150,7 +150,8 @@ point. Where two terminals are named, use a side-by-side split.
    *measured* decision, both directions (kept cuBLASLt for GEMMs, wrote
    kernels where fusion required it).
 7. **Memory, measured — two claims in one frame.** `./AttentionMemoryReport`
-   output: the N=4096 block where flash shows `0.375 GiB` measured while
+   output (captured: `2026-07-05_20-31AttentionMemoryReport.png`): the
+   N=4096 block where flash shows `0.375 GiB` measured while
    the standard path prints `cudaMalloc FAILED (out of memory)` — the
    memory wall demonstrated, not computed. Scroll to the on-chip table in
    the same shot if it fits: thread-per-row's 254 regs/thread → 192
@@ -158,13 +159,19 @@ point. Where two terminals are named, use a side-by-side split.
    smem/block → 2 blocks/SM vs. CuTe's 23,296 B + register-resident
    accumulator → 4 blocks/SM (the WMMA→CuTe design choice, visible in
    hardware terms). For a GPU-engineering audience this shot rivals shot 1.
-   **Companion frame (container): `jax_memory_report.py`** — XLA's own
+   **Companion frame (container): `jax_memory_report.py`**
+   (captured: `2026-07-05_21-05jax_memory_report.png`) — XLA's own
    plan showing standard attention's TEMP at exactly 2·B·H·N² (3.000 GiB
    at N=2048, matching the CUDA-side measured workspaces to the digit),
-   FA-1/FA-2 lax temps flat at ~7–9 MiB across all N, and the N=4096
-   standard path failing at *compile* time. Two independent measurement
-   methods agreeing on the same law is the strongest single memory claim
-   in the whole project. Note printed by `AttentionMemoryReport` itself:
+   FA-1/FA-2 lax temps flat at ~7–9 MiB across all N, and both
+   `standard attention` and `built-in attention, xla` failing at
+   *compile* time at N=4096 (confirmed together in this run — a harder
+   wall than the CUDA side's runtime `cudaMalloc` failure). Two
+   independent measurement methods agreeing on the same law is the
+   strongest single memory claim in the whole project. (The script sets
+   `TF_CPP_MIN_LOG_LEVEL=3` before importing jax — without it, the N=4096
+   failures print several minutes of autotuner retry spam first; confirmed
+   2026-07-05, not a hypothetical.) Note printed by `AttentionMemoryReport` itself:
    there is no separate FA-1 kernel on the CUDA side (every rung is
    FA-2-style, delayed normalization) — and none is needed, since FA-1
    vs FA-2 differ only in *when* you normalize and write O, never in
