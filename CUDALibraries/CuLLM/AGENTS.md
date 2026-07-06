@@ -383,16 +383,81 @@ Remaining (new) backlog — all DONE as of 2026-07-03:
 
 The engine ladder (scalar → WMMA → CuTe) and the JAX/XLA/cuDNN benchmark
 are considered feature-complete for now. **Active work has shifted to
-presentation and video** — see `Documents/AttentionBenchmarkReport.md`
-(technical write-up), `Documents/CUDAvsJAXAttention.md` (general-audience
-conclusions: when JAX vs. hand-written CUDA, benchmarking pitfalls —
-written to stand alone for any reader, no interview/application context),
-`Documents/AttentionBenchmarkShortForm.md` (video
-beat sheet), and, if applicable outside this repo,
-`Data/Private/applications/<current-application>/DemoOnePager.md` for
-interview-specific framing. Do not pick up new kernel work from this file
-without the user explicitly asking — check with them first if a session
-seems headed that way.
+presentation and video**, across two separate, parallel tracks. Do not
+pick up new kernel work from this file without the user explicitly asking
+— check with them first if a session seems headed that way.
+
+### Track 1: the "Attention" YouTube/social series (from-first-principles)
+
+- **Episode 1** ("read like an abstract algebraist"): script finalized
+  verbatim in `Documents/AttentionSeries.md` (teleprompter + honesty
+  guardrails), **recorded and approved by the user** as a single OBS take
+  on 2026-07-04. Distribution copy (LinkedIn, X thread, YouTube Shorts,
+  TikTok) was drafted in conversation but isn't checked into any repo —
+  ask the user if you need it.
+- **Episode 2** (multi-head attention): only "Part A walkthrough" started
+  (`docs: start Episode 2` commit, 2026-07-04) — narration/teleprompter
+  not yet written. Pick up here if asked to continue the series.
+- The reusable *production* pipeline (HTML slide deck + OBS single-take
+  recording + Playwright verification) that both episodes use is
+  documented generically at
+  `Monoclaw/Projects/short-form-video-pipeline/WORKFLOW.md` — read that
+  before re-deriving any OBS/crop/canvas issue from scratch.
+
+### Track 2: the CUDA-vs-JAX presentation (general-audience, company-agnostic)
+
+Separate from the series above — explicitly written to stand alone for
+any technical audience, not interview- or company-specific. **Status as of
+2026-07-05: content complete, not yet recorded.**
+
+- `Documents/AttentionBenchmarkReport.md` — full technical write-up/data.
+- `Documents/CUDAvsJAXAttention.md` — the general-audience conclusions
+  (result table, the algorithm-vs-engine lesson, JAX pitfalls, honest
+  scope). Treat as the source-of-truth first draft; don't rewrite it when
+  iterating the presentation cut below — extend that instead.
+- `Documents/AttentionBenchmarkPresentation.md` — the **prioritized,
+  timed** cut actually meant for presenting: one ~8–10 min long-form talk
+  + 2 shorts (≤2 min, ≤3 comparisons each), each citing which real
+  screenshot to show. This is the current script; read it before touching
+  wording.
+- `Documents/AttentionBenchmarkScreenshotsTranscript.md` — exact
+  transcribed text of the 7 benchmark screenshots (`AttentionIOBenchmark`,
+  `LinearMapGemmBenchmark`, the WMMA/CuTe ladder, etc.), so captions can be
+  copy-pasted without re-reading an image.
+- `Documents/CUDAvsJAXInfographicSlides.html` — **5 self-contained,
+  widescreen (16:9) infographic slides**, checked into the repo
+  deliberately (unlike video assets — this is small, text-based, and
+  actively revised, not a heavy binary export). Open directly in a
+  browser, no server needed. Current slides: (1) the engine ladder, (2)
+  the full JAX/cuDNN comparison — both my engine tiers vs. all 4 JAX
+  variants + cuDNN, (3) the hand-written-FlashAttention-2-only comparison
+  (CUTLASS/CuTe, WMMA, scalar CUDA C++, hand-written JAX — cuDNN and JAX's
+  built-ins excluded on purpose, different reasons for each, see the
+  slide's own subtitle), (4) arithmetic intensity (real FLOPs/bytes
+  arithmetic: ~103 GFLOP either way, 1.61 GB vs. 0.20 GB, 64 vs. 512
+  FLOP/byte), (5) throughput + the actual answer to "CUDA C++ or JAX for a
+  hand-written kernel" (the algorithm win travels languages, the engine
+  win doesn't). Verified rendering with Playwright (`tools/playwright-runner/`
+  on the machine that built it) before every change — no layout bugs
+  known as of this writing.
+
+**What's NOT portable across machines** — everything above is in git and
+follows you anywhere. These are not, because they're produced artifacts
+kept out of the repo on purpose (`Data/Public/Generated/` convention):
+Episode 1's recorded `.mov`, the drafted social-media distribution copy,
+and the raw benchmark screenshots this presentation's numbers were
+transcribed from. If you're picking this up on a different machine, you
+have the scripts, the doc, and the infographic — not the video file, the
+screenshots, or the draft social copy. Ask the user if you need any of
+those specifically.
+
+**Next step, whichever machine you're on**: content iteration on Track 2
+(tighten numbers/wording in `AttentionBenchmarkPresentation.md` and
+`CUDAvsJAXInfographicSlides.html`) can happen anywhere. The actual OBS
+recording of Track 2 is planned for the user's MacBook Pro (where OBS is
+already configured — see the Monoclaw workflow doc above for the exact
+scene/crop/canvas setup) — don't set up a parallel OBS configuration on
+another machine for this unless the user asks.
 
 Two items are deliberately deferred, not forgotten, and should NOT be
 started without the user asking:

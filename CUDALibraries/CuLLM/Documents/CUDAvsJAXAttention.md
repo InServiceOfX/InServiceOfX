@@ -157,6 +157,9 @@ transposed-operand MMA pass for the weight gradients).
 - The math the kernels were derived from:
   `../../../Documents/FlashAttention/FlashAttention.tex` (compiled PDF
   alongside it)
-- Video treatments of this material: `AttentionBenchmarkShortForm.md`
-  (this comparison) and `AttentionSeries.md` (the from-first-principles
-  series building up to it)
+- Video treatments of this material: `AttentionBenchmarkPresentation.md`
+  (economized, current cut: one ~8-10 min long-form talk + two ≤2 min
+  shorts, timed and paired with actual benchmark screenshots),
+  `AttentionBenchmarkShortForm.md` and `AttentionShortFormVisualStoryboard.md`
+  (earlier drafts, superseded but kept for reference), and
+  `AttentionSeries.md` (the from-first-principles series building up to it)

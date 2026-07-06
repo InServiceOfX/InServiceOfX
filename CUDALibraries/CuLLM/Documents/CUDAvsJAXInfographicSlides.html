@@ -1,0 +1,437 @@
+<title>CUDA vs JAX — Infographic Slides</title>
+<style>
+  :root{
+    --page:#f9f9f7;
+    --surface:#fcfcfb;
+    --ink:#0b0b0b;
+    --ink-secondary:#52514e;
+    --ink-muted:#898781;
+    --grid:#e1e0d9;
+    --baseline:#c3c2b7;
+    --accent:#2a78d6;
+    --bar-muted:#898781;
+  }
+  :root[data-theme="dark"]{
+    --page:#0d0d0d;
+    --surface:#1a1a19;
+    --ink:#ffffff;
+    --ink-secondary:#c3c2b7;
+    --ink-muted:#898781;
+    --grid:#2c2c2a;
+    --baseline:#383835;
+    --accent:#3987e5;
+    --bar-muted:#898781;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#0d0d0d;
+      --surface:#1a1a19;
+      --ink:#ffffff;
+      --ink-secondary:#c3c2b7;
+      --ink-muted:#898781;
+      --grid:#2c2c2a;
+      --baseline:#383835;
+      --accent:#3987e5;
+      --bar-muted:#898781;
+    }
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--page);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:1rem;
+    padding:2.5rem 1rem 2rem;
+  }
+
+  .topline{
+    width:min(94vw,1180px);
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .topline .counter{ font-variant-numeric:tabular-nums; color:var(--accent); }
+
+  .stage-wrap{
+    width:min(94vw,1180px);
+    aspect-ratio:16/9;
+    position:relative;
+  }
+  .stage{
+    position:absolute;
+    inset:0;
+    background:var(--surface);
+    border:1px solid var(--grid);
+    border-radius:10px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.12);
+    padding:5.5% 5% 5%;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .slide{ display:none; flex-direction:column; height:100%; }
+  .slide.active{ display:flex; }
+
+  h1.title{
+    font-size:clamp(1.3rem,2.6vw,2.1rem);
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 0.25rem;
+    text-wrap:balance;
+  }
+  p.subtitle{
+    font-size:clamp(0.82rem,1.3vw,1rem);
+    color:var(--ink-secondary);
+    margin:0 0 1.6rem;
+    max-width:60ch;
+  }
+
+  .chart{ display:flex; flex-direction:column; gap:2px; flex:1; justify-content:center; }
+  .bar-row{ display:flex; align-items:center; gap:1.1rem; }
+  .cat-label{
+    width:168px;
+    flex-shrink:0;
+    text-align:right;
+    font-size:clamp(0.78rem,1.1vw,0.95rem);
+    color:var(--ink-secondary);
+  }
+  .bar-track{ flex:1; position:relative; height:24px; }
+  .bar-fill{
+    height:24px;
+    border-radius:0 4px 4px 0;
+    display:flex;
+    align-items:center;
+    transition:width 0.2s ease;
+  }
+  .bar-fill.accent{ background:var(--accent); }
+  .bar-fill.muted{ background:var(--bar-muted); }
+  .bar-value{
+    margin-left:0.6rem;
+    font-size:clamp(0.85rem,1.2vw,1.05rem);
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .bar-value.strong{ font-weight:700; }
+
+  .delta-note{
+    margin:0.15rem 0 0.15rem 165px;
+    font-size:0.72rem;
+    color:var(--ink-muted);
+  }
+
+  .footer-note{
+    margin-top:auto;
+    padding-top:0.75rem;
+    font-size:0.68rem;
+    color:var(--ink-muted);
+    border-top:1px solid var(--grid);
+  }
+
+  .stat-row{ display:flex; gap:1.2rem; margin-top:1.4rem; }
+  .stat-tile{
+    flex:1;
+    background:var(--page);
+    border:1px solid var(--grid);
+    border-radius:8px;
+    padding:0.9rem 1rem;
+  }
+  .stat-tile .label{
+    font-size:0.68rem;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+    margin-bottom:0.35rem;
+  }
+  .stat-tile .value{
+    font-size:clamp(1.3rem,2.4vw,1.8rem);
+    font-weight:700;
+  }
+  .stat-tile.accent .value{ color:var(--accent); }
+  .stat-tile .value.muted{ color:var(--ink-secondary); }
+
+  .lesson-row{ display:flex; gap:1.5rem; flex:1; align-items:stretch; }
+  .lesson-card{
+    flex:1;
+    border:1px solid var(--grid);
+    border-radius:10px;
+    padding:1.4rem 1.3rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.55rem;
+  }
+  .lesson-card .kicker{
+    font-size:0.72rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:700;
+  }
+  .lesson-card h3{ margin:0; font-size:clamp(1.05rem,1.9vw,1.4rem); }
+  .lesson-card p{ margin:0; color:var(--ink-secondary); font-size:clamp(0.82rem,1.2vw,0.98rem); }
+  .lesson-card .winner{
+    margin-top:auto;
+    font-size:0.82rem;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .lesson-join{
+    text-align:center;
+    font-size:clamp(0.85rem,1.3vw,1.02rem);
+    color:var(--ink-secondary);
+    margin-top:1rem;
+  }
+  .eq-block{
+    display:flex;
+    flex-direction:column;
+    gap:0.4rem;
+    margin:0.5rem 0 0.2rem;
+    padding-top:0.5rem;
+    border-top:1px solid var(--grid);
+  }
+  .eq-line{
+    font-size:clamp(0.76rem,1.1vw,0.88rem);
+    color:var(--ink-secondary);
+    line-height:1.45;
+  }
+  .eq-line b{
+    color:var(--ink);
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .eq-line .term{ color:var(--accent); font-weight:600; }
+  .lesson-join b{ color:var(--ink); }
+
+  .nav{ display:flex; gap:0.75rem; }
+  .nav button{
+    font-family:inherit;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:var(--surface);
+    color:var(--ink);
+    border:1px solid var(--grid);
+    border-radius:4px;
+    padding:0.55em 1.1em;
+    cursor:pointer;
+  }
+  .nav button:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  .nav button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .nav button:disabled{ opacity:0.3; cursor:default; }
+
+  .hint{
+    font-size:0.68rem;
+    color:var(--ink-muted);
+    text-align:center;
+    max-width:38rem;
+  }
+</style>
+
+<div class="topline">
+  <span id="eyebrow">SLIDE 1 · THE ENGINE LADDER</span>
+  <span class="counter" id="counter">01 / 05</span>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage">
+
+    <div class="slide active" data-eyebrow="SLIDE 1 · THE ENGINE LADDER">
+      <h1 class="title">Same algorithm, three engines</h1>
+      <p class="subtitle">N = 2048 tokens · same hardware, same inputs, same shapes. Only the inner-product engine changes.</p>
+      <div class="chart">
+        <div class="bar-row">
+          <span class="cat-label">Scalar CUDA</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:100%" title="Scalar CUDA: 151.0 ms"></div></div>
+          <span class="bar-value">151.0 ms</span>
+        </div>
+        <div class="delta-note">↓ 2.9× (WMMA moves the matmuls onto tensor cores)</div>
+        <div class="bar-row">
+          <span class="cat-label">WMMA tensor core</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:34.5%" title="WMMA: 52.1 ms"></div></div>
+          <span class="bar-value">52.1 ms</span>
+        </div>
+        <div class="delta-note">↓ 2.7× (CuTe keeps the accumulator in registers)</div>
+        <div class="bar-row">
+          <span class="cat-label">CUTLASS / CuTe</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:12.7%" title="CuTe: 19.1 ms"></div></div>
+          <span class="bar-value strong">19.1 ms</span>
+        </div>
+      </div>
+      <div class="footer-note">7.9× faster than scalar, 2.7× faster than WMMA — same math throughout. Source: WarpAttentionBenchmark, RTX 3060.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 2 · IS HAND-WRITTEN CUDA EVEN WORTH IT?">
+      <h1 class="title">Is hand-written CUDA even worth it?</h1>
+      <p class="subtitle">Both my engine tiers against four ways of expressing this in JAX/XLA, plus NVIDIA's production cuDNN library. Not all JAX is equal.</p>
+      <div class="chart">
+        <div class="bar-row">
+          <span class="cat-label">cuDNN flash (fp16)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:11.3%" title="cuDNN: 8.4 ms"></div></div>
+          <span class="bar-value">8.4 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">Mine: CuTe (fp16)</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:25.5%" title="CuTe: 19.0 ms"></div></div>
+          <span class="bar-value strong">19.0 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">JAX/XLA fused (fp32)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:27.8%" title="JAX/XLA fused: 20.7 ms"></div></div>
+          <span class="bar-value">20.7 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">Mine: WMMA (fp16)</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:70.0%" title="WMMA tensor-core: 52.1 ms"></div></div>
+          <span class="bar-value">52.1 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">JAX built-in (xla)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:88.8%" title="JAX built-in attention op: 66.1 ms"></div></div>
+          <span class="bar-value">66.1 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">JAX FA-2 (lax loops)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:100%" title="My algorithm re-expressed as JAX lax loops: 74.4 ms"></div></div>
+          <span class="bar-value">74.4 ms</span>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-tile">
+          <div class="label">Standard algorithm needs (N=4096) — JAX/XLA fused, JAX built-in</div>
+          <div class="value muted">6.44 GB</div>
+        </div>
+        <div class="stat-tile accent">
+          <div class="label">FlashAttention needs (N=4096) — mine, and JAX FA-2</div>
+          <div class="value">0.40 GB</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">This GPU's capacity</div>
+          <div class="value muted">12 GB</div>
+        </div>
+      </div>
+      <div class="footer-note">JAX's own built-in op and a direct lax-loop port both lag the fused-kernel path by 3-3.6× — the compiler helps only if you hit its fusion patterns. And the real argument for hand-writing CUDA isn't the 2.3× speed gap to cuDNN — it's that standard attention's score matrix doesn't fit at all past a certain context length. Flash kernels never build it.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 3 · WHEN THERE'S NO BUILT-IN">
+      <h1 class="title">When there's no built-in: the hand-written comparison</h1>
+      <p class="subtitle">Same algorithm throughout — FlashAttention-2 — in every bar below. Only cuDNN, JAX's built-in op, and JAX's standard (non-flash) path drop out: those are either a library call or a different algorithm, not something you'd hand-write here.</p>
+      <div class="chart">
+        <div class="bar-row">
+          <span class="cat-label">CUTLASS/CuTe (C++)</span>
+          <div class="bar-track"><div class="bar-fill accent" style="width:12.6%" title="CUTLASS/CuTe: 19.0 ms"></div></div>
+          <span class="bar-value strong">19.0 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">WMMA (C++)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:34.5%" title="WMMA tensor-core: 52.1 ms"></div></div>
+          <span class="bar-value">52.1 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">JAX, hand-written</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:49.2%" title="Hand-written JAX, lax loops: 74.4 ms"></div></div>
+          <span class="bar-value">74.4 ms</span>
+        </div>
+        <div class="bar-row">
+          <span class="cat-label">Scalar CUDA (C++)</span>
+          <div class="bar-track"><div class="bar-fill muted" style="width:100%" title="Scalar warp-cooperative CUDA: 151.1 ms"></div></div>
+          <span class="bar-value">151.1 ms</span>
+        </div>
+      </div>
+      <div class="footer-note">WMMA is hand-written too — CUDA's tensor-core intrinsics, not a library call. But it's not just a bigger tile: WMMA's fragments are opaque, so the running accumulator can't be rescaled in registers and has to round-trip through shared memory every tile. CUTLASS/CuTe's coordinate tensors remove exactly that cost, worth ~2.7× on their own. CUTLASS/CuTe itself isn't attention-specific — it's NVIDIA's general-purpose library for hand-building GEMM-class kernels, useful any time an application needs a custom kernel and no vendor library covers it.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 4 · ARITHMETIC INTENSITY">
+      <h1 class="title">Same FLOPs, different bytes</h1>
+      <p class="subtitle">N = 2048, batch·heads = 96, d = 64 — the exact shape used throughout this deck.</p>
+      <div class="lesson-row">
+        <div class="lesson-card">
+          <div class="kicker">FLOPs — the arithmetic itself</div>
+          <h3>Identical either way</h3>
+          <div class="eq-block">
+            <div class="eq-line">FLOPs = 4 · (batch·heads) · N² · d</div>
+            <div class="eq-line">= 4 · 96 · 2048² · 64 ≈ <b>103 GFLOP</b></div>
+            <div class="eq-line">Same QKᵀ and PV multiply-adds — standard and Flash tile the <i>same</i> math differently. This number doesn't change.</div>
+          </div>
+        </div>
+        <div class="lesson-card">
+          <div class="kicker">Bytes — what has to move</div>
+          <h3>Standard vs. Flash, ~8× apart</h3>
+          <div class="eq-block">
+            <div class="eq-line">Standard: writes the full N×N score matrix → <b>1.61 GB</b></div>
+            <div class="eq-line">Flash: never builds it → just Q/K/V/O → <b>0.20 GB</b></div>
+            <div class="eq-line">Same FLOPs, <span class="term">8×</span> less memory traffic.</div>
+          </div>
+        </div>
+      </div>
+      <div class="lesson-join"><span class="term">Arithmetic Intensity</span> = FLOPs ÷ bytes moved — how much compute you get per byte loaded. Standard: 103 GFLOP ÷ 1.61 GB ≈ <b>64 FLOP/byte</b>. Flash: 103 GFLOP ÷ 0.20 GB ≈ <b>512 FLOP/byte</b>. The Roofline Model says achievable speed ≤ min(peak compute, Arithmetic Intensity × memory bandwidth) — higher intensity pushes you toward the compute ceiling instead of the memory one. At N=4096 this isn't just slower, it's why the 6.44 GB score matrix doesn't fit on a 12 GB card at all: bytes, not FLOPs, decide whether it runs.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 5 · THROUGHPUT AND THE REAL ANSWER">
+      <h1 class="title">Same algorithm, different instruction</h1>
+      <p class="subtitle">Arithmetic intensity explains the memory story. This is the compute story — and the actual CUDA-vs-JAX answer.</p>
+      <div class="lesson-row">
+        <div class="lesson-card">
+          <div class="kicker">FLOP/s — throughput, not a hardware constant</div>
+          <h3>What one instruction actually does</h3>
+          <div class="eq-block">
+            <div class="eq-line">FLOP/s = FLOPs ÷ time — measured, not a spec-sheet number.</div>
+            <div class="eq-line">One scalar CUDA-core FMA: <b>2 FLOPs</b>, one lane, one cycle.</div>
+            <div class="eq-line">One 16×16×16 tensor-core MMA: 16·16·16·2 = <b>8,192 FLOPs</b>, one warp, one instruction.</div>
+          </div>
+        </div>
+        <div class="lesson-card">
+          <div class="kicker">CUDA C++ vs. JAX, hand-written</div>
+          <h3>The engine win doesn't travel languages</h3>
+          <div class="eq-block">
+            <div class="eq-line">JAX FA-2 (lax loops): same tiling, same 512 FLOP/byte win as CUDA — <b>74.4 ms</b>.</div>
+            <div class="eq-line">CUDA CUTLASS/CuTe: same algorithm, tensor-core instructions issued directly — <b>19.0 ms</b>.</div>
+            <div class="eq-line">Identical arithmetic intensity; <span class="term">3.9×</span> apart on engine access alone.</div>
+          </div>
+        </div>
+      </div>
+      <div class="lesson-join">The algorithm win — streaming tiles instead of materializing N² — is <b>yours in either language</b>; JAX's FA-2 gets the same 8× arithmetic intensity CUDA does. The engine win — issuing tensor-core instructions directly instead of through a compiler's dispatch — is why hand-written CUDA still leads hand-written JAX for the <i>identical</i> algorithm. That's the real answer to "CUDA C++ or JAX for a custom kernel": both get you the memory win; only one gets you the rest of the way to the hardware.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev">&lsaquo; Prev</button>
+  <button id="next">Next &rsaquo;</button>
+</div>
+
+<div class="hint">Widescreen (16:9), 3 slides. Arrow keys or buttons to navigate — screenshot each slide directly, or screen-share this page live.</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const eyebrow = document.getElementById('eyebrow');
+  const counter = document.getElementById('counter');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  let idx = 0;
+  function render(){
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    eyebrow.textContent = slides[idx].dataset.eyebrow;
+    counter.textContent = String(idx+1).padStart(2,'0') + ' / ' + String(slides.length).padStart(2,'0');
+    prevBtn.disabled = idx===0;
+    nextBtn.disabled = idx===slides.length-1;
+  }
+  prevBtn.addEventListener('click', ()=>{ if(idx>0){ idx--; render(); } });
+  nextBtn.addEventListener('click', ()=>{ if(idx<slides.length-1){ idx++; render(); } });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') nextBtn.click();
+    if(e.key==='ArrowLeft') prevBtn.click();
+  });
+  render();
+</script>

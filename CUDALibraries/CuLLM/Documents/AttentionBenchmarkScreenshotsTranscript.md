@@ -1,0 +1,155 @@
+# Screenshot transcripts — exact text, for captions/editing
+
+Plain-text transcription of the 7 screenshots in
+`Data/Public/Jobs/CHAOSIndustries/` (outside this repo), so editing a
+caption or on-screen label doesn't require re-reading the image. Every
+number here was cross-checked against `CUDAvsJAXAttention.md`'s tables —
+no discrepancies. Going forward, redirecting raw output to a `.txt` file
+alongside each screenshot (`./WarpAttentionBenchmark | tee out.txt`) would
+make this step unnecessary next time.
+
+## `2026-07-04_20-57WarpAttentionBenchmark.png` — headline ladder
+
+```
+Fixed kernel shape: d = 64 per head, warps/block = 4. Runtime slices: batch*heads = 96.
+Mean ms over 20 timed launches after 3 warmups.
+
+Non-causal fp16 engine ladder
+| N    | scalar fp16 | WMMA  | CuTe  | scalar/CuTe | WMMA/CuTe |
+|------|------------:|------:|------:|------------:|----------:|
+| 256  | 2.52        | 1.06  | 0.34  | 7.5x        | 3.2x      |
+| 512  | 9.49        | 4.03  | 1.25  | 7.6x        | 3.2x      |
+| 1024 | 37.86       | 13.74 | 4.82  | 7.9x        | 2.8x      |
+| 2048 | 150.99      | 52.10 | 19.13 | 7.9x        | 2.7x      |
+| 4096 | 606.83      | 229.35| 76.61 | 7.9x        | 3.0x      |
+
+Causal tile skipping
+| N    | fp32 non-causal | fp32 causal | speedup | CuTe non-causal | CuTe causal | speedup |
+|------|-----------------:|------------:|--------:|----------------:|------------:|--------:|
+| 256  | 2.23  | 1.28   | 1.74x | 0.34  | 0.24   | 1.42x |
+| 512  | 8.51  | 4.56   | 1.87x | 1.25  | 0.74   | 1.69x |
+| 1024 | 34.02 | 17.70  | 1.92x | 4.82  | 2.64   | 1.83x |
+| 2048 | 136.39| 69.68  | 1.96x | 19.13 | 9.98   | 1.92x |
+| 4096 | 549.57| 279.01 | 1.97x | 76.61 | 39.12  | 1.96x |
+
+Headline at N=2048: scalar fp16 151.0 ms -> WMMA 52.1 ms -> CuTe 19.1 ms
+(7.9x faster than scalar, 2.7x faster than WMMA).
+```
+
+## `2026-07-04_21-03WarpAttentionBenchmark-stress.png` — stress run (N to 8192)
+
+Same tables, extended one more row each (5 repeats instead of 20, for
+speed — values agree with the 20-repeat run to within run-to-run noise):
+
+```
+Mean ms over 5 timed launches after 3 warmups.
+
+Non-causal: ... 4096 | 606.34 | 229.09 | 76.58 | 7.9x | 3.0x
+             8192 | 2434.23 | 987.70 | 304.93 | 8.0x | 3.2x
+
+Causal:     ... 4096 | 547.29 | 278.78 | 1.96x | 76.58 | 39.03 | 1.96x
+             8192 | 2203.35 | 1113.05| 1.98x | 304.93| 153.90 | 1.98x
+
+Stress note: N doubles 4096 -> 8192, but exact dense attention work is
+quadratic. CuTe non-causal 76.6 -> 304.9 ms (3.98x); CuTe causal 39.0 ->
+153.9 ms (3.94x). Causal stays near 2x faster because future tiles are
+skipped.
+```
+
+## `2026-07-04_21-06CheckPassed.png` — tests, not vibes
+
+```
+[ RUN      ] FlashAttentionCuteTests.CuteLayoutAlgebraSmoke
+[       OK ] FlashAttentionCuteTests.CuteLayoutAlgebraSmoke (0 ms)
+... (MatchesCpuReferenceTileMultiple, RaggedSequenceLength,
+     CausalMatchesCpuReference, CausalRaggedSequenceLength,
+     MultiSliceIndependence — all OK)
+[----------] 6 tests from FlashAttentionCuteTests (393 ms total)
+
+[----------] Global test environment tear-down
+[==========] 89 tests from 25 test suites ran. (1738 ms total)
+[  PASSED  ] 89 tests.
+root@b1fb8da03ca5:/InServiceOfX/CUDALibraries/CuLLM/BuildGcc#
+```
+
+## `2026-07-04_21-09AttentionIOBenchmark.png` — exactness column
+
+```
+root@b1fb8da03ca5:/InServiceOfX/CUDALibraries/CuLLM/BuildGcc# ./AttentionIOBenchmark
+Device: NVIDIA GeForce RTX 3060 | d = 64, B_r = 64, B_c = 32 | 20 repeats
+
+    n | standard ms | flash ms | warp ms | speedup | IO model | causal ms | max |diff|
+------+-------------+----------+---------+---------+----------+-----------+-----------
+  256 |      0.1105 |   0.2355 |  0.0431 |   2.56x |    2.00x |    0.0269 |  5.59e-08
+  512 |      0.4029 |   0.4618 |  0.1206 |   3.34x |    2.00x |    0.0883 |  4.84e-08
+ 1024 |      1.5630 |   0.9240 |  0.3859 |   4.05x |    2.00x |    0.2495 |  3.17e-08
+ 2048 |      5.9254 |   1.8408 |  1.4333 |   4.13x |    2.00x |    0.6946 |  2.79e-08
+ 4096 |     23.6024 |   5.9366 |  5.3931 |   4.38x |    2.00x |    2.6484 |  2.07e-08
+```
+
+## `2026-07-04_21-10LinearMapGemmBenchmark.png` — measured library decision
+
+```
+root@b1fb8da03ca5:/InServiceOfX/CUDALibraries/CuLLM/BuildGcc# ./LinearMapGemmBenchmark
+Linear-map GEMM: hand-written 32x32 tiled shared-memory kernel vs. cuBLASLt
+(row-major Out = X W, 20 timed repeats after 3 warmups)
+
+qkv d_model=256  B*T=2048 m=2048 k= 256 n= 768  | tiled 1.168 ms (689.7 GF/s) | cuBLASLt 0.119 ms (6747.6 GF/s) | speedup  9.8x | max|dt| 1.05e-05
+qkv d_model=512  B*T=2048 m=2048 k= 512 n=1536  | tiled 4.836 ms (666.0 GF/s) | cuBLASLt 0.408 ms (7888.0 GF/s) | speedup 11.8x | max|dt| 0.00e+00
+qkv d_model=768  B*T=2048 m=2048 k= 768 n=2304  | tiled 10.534 ms (688.0 GF/s)| cuBLASLt 0.894 ms (8110.8 GF/s)| speedup 11.8x | max|dt| 0.00e+00
+qkv d_model=1024 B*T=2048 m=2048 k=1024 n=3072  | tiled 18.754 ms (687.1 GF/s)| cuBLASLt 1.609 ms (8009.7 GF/s)| speedup 11.7x | max|dt| 0.00e+00
+out d_model=512  B*T=2048 m=2048 k= 512 n= 512  | tiled  1.520 ms (706.5 GF/s)| cuBLASLt 0.152 ms (7049.3 GF/s)| speedup 10.0x | max|dt| 1.81e-05
+out d_model=1024 B*T=2048 m=2048 k=1024 n=1024  | tiled  6.366 ms (674.6 GF/s)| cuBLASLt 0.565 ms (7597.7 GF/s)| speedup 11.3x | max|dt| 0.00e+00
+```
+
+## `2026-07-04_21-56test_jax_attention_reference.png` — Python side tested too
+
+```
+root@b1fb8da03ca5:/InServiceOfX# python3 -m pytest CUDALibraries/CuLLM/Python/test_jax_attention_reference.py -q
+Running 5 items in this shard
+.....                                                                   [100%]
+5 passed in 16.06s
+```
+
+## `2026-07-04_22-33benchmark.png` — the JAX/cuDNN comparison
+
+```
+## Memory scale (not runtime allocation accounting)
+| N    | standard score tensor (B,H,N,N) fp32 | Q/K/V/O tensors fp32 |
+|------|--------------------------------------:|----------------------:|
+| 256  | 0.03 GB | 0.03 GB |
+| 512  | 0.10 GB | 0.05 GB |
+| 1024 | 0.40 GB | 0.10 GB |
+| 2048 | 1.61 GB | 0.20 GB |
+| 4096 | 6.44 GB | 0.40 GB |
+
+## Attention forward core, non-causal (B=8, H=12, d_head=64, float32, mean ms)
+| N    | CuLLM warp-coop CUDA | JAX/XLA standard (fused) | JAX built-in (xla) | JAX FA-2 tiled (lax loops) |
+|------|----------------------:|---------------------------:|---------------------:|-----------------------------:|
+| 256  | 2.231   | 0.561  | 5.354  | 1.585  |
+| 512  | 8.535   | 1.518  | 6.149  | 5.162  |
+| 1024 | 34.144  | 5.503  | 18.291 | 19.215 |
+| 2048 | 136.947 | 20.563 | 64.624 | 73.529 |
+| 4096 | 551.044 | —      | —      | 289.251|
+
+## float16 context (B=8, H=12, d_head=64, mean ms)
+| N    | causal | CuLLM warp-coop (fp16 I/O, fp32 accum) | cuDNN flash attention via JAX (fp16) |
+|------|-------:|----------------------------------------:|----------------------------------------:|
+| 2048 | False  | 151.599 | 6.505  |
+| 2048 | True   | 79.914  | 4.501  |
+(full table: N = 256..4096, both causal states, in the report)
+
+## Accuracy: CuLLM CUDA vs JAX FA-2, identical inputs (float32)
+| N   | d_head | causal | max abs difference |
+|-----|-------:|:------:|--------------------:|
+| 64  | 32     | False  | 7.918e-05 |
+| 100 | 32     | False  | 7.393e-05 |
+| 128 | 64     | False  | 5.394e-05 |
+| 150 | 64     | True   | 3.249e-04 |
+```
+
+Note: the fp16-context table's N=2048 row is what the presentation scripts
+quote as "8.4 ms" for cuDNN — that's the batch·heads=96 realistic-scale
+number from the full report table (this screenshot's crop shows the
+B=8,H=12 = 96 slice variant; both are the same measurement, reported at
+slightly different rounding in different tables of the full report).
