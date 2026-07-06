@@ -33,6 +33,13 @@ import os
 # Must be set before jax import; see module docstring.
 os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 os.environ.setdefault("XLA_PYTHON_CLIENT_ALLOCATOR", "platform")
+# At N=4096 the standard/built-in paths' autotuner retries several GEMM
+# configs against the OOM before giving up -- each retry logs a C++
+# WARNING/ERROR block (bfc_allocator, config_assigner). That's expected,
+# not a bug, but it drowns the one line that matters (the final
+# "lowering/compile failed") in noise. Silence it here; the try/except in
+# analyze() still reports the failure.
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 
 from functools import partial
 
