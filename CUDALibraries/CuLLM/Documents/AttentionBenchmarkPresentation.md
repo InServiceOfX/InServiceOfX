@@ -21,7 +21,13 @@ Filenames as of 2026-07-04:
 - **Shot 2 (tests)**: `2026-07-04_21-06CheckPassed.png` (89 C++ tests)
 - **Shot 2b (tests, bonus)**: `2026-07-04_21-56test_jax_attention_reference.png`
   (5 Python pytest tests — mention "both sides tested" if time)
-- **Shot 3 (JAX comparison)**: `2026-07-04_22-33benchmark.png`
+- **Shot 3 (JAX comparison)**: `2026-07-05_20-22benchmark.png` (superseding
+  `2026-07-04_21-51benchmark.png` / `2026-07-04_22-33benchmark.png` — those
+  two showed cuDNN at N=2048 non-causal as 6.5-7.1 ms, an unreproducible
+  one-off; 4 independent reruns since, 3 back-to-back same-container plus
+  this fresh screenshot, all land at 8.4-8.7 ms, matching the number this
+  deck and script actually quote. Retired originals kept on disk but not
+  to be used as presentation evidence.)
 - Bonus/B-roll: `2026-07-04_21-09AttentionIOBenchmark.png` (exactness,
   max|diff| ~1e-8), `2026-07-04_21-10LinearMapGemmBenchmark.png`
   (cuBLASLt-vs-tiled-GEMM, measured library decision)

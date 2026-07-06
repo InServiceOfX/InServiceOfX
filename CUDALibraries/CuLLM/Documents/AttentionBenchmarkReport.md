@@ -197,6 +197,15 @@ lanes.
 
 ## 7. Methodology fine print
 
+- **cuDNN's 8.43 ms figure (N=2048 non-causal, fp16) was independently
+  reverified 2026-07-05**, after two screenshots dated 2026-07-04 turned
+  up showing 6.505 / 7.097 ms instead — a 20%+ gap too large to be normal
+  run-to-run noise. Four fresh readings the next day (3 back-to-back
+  reruns plus a new screenshot) all landed at 8.4-8.7 ms, matching this
+  section's original number and none reproducing the 07-04 anomaly. Take
+  the 07-04 screenshots as an unreproduced one-off (likely a cuDNN
+  algorithm-selection quirk in that container session), not evidence this
+  figure needs revising.
 - 20 timed launches after 3 warmups, mean reported. CUDA: cudaEvent around
   the launch loop. JAX: `time.perf_counter` around `block_until_ready`
   (jit compile excluded by warmups; dispatch overhead included).

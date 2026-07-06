@@ -111,7 +111,7 @@ Running 5 items in this shard
 5 passed in 16.06s
 ```
 
-## `2026-07-04_22-33benchmark.png` — the JAX/cuDNN comparison
+## `2026-07-05_20-22benchmark.png` — the JAX/cuDNN comparison (current)
 
 ```
 ## Memory scale (not runtime allocation accounting)
@@ -126,30 +126,30 @@ Running 5 items in this shard
 ## Attention forward core, non-causal (B=8, H=12, d_head=64, float32, mean ms)
 | N    | CuLLM warp-coop CUDA | JAX/XLA standard (fused) | JAX built-in (xla) | JAX FA-2 tiled (lax loops) |
 |------|----------------------:|---------------------------:|---------------------:|-----------------------------:|
-| 256  | 2.231   | 0.561  | 5.354  | 1.585  |
-| 512  | 8.535   | 1.518  | 6.149  | 5.162  |
-| 1024 | 34.144  | 5.503  | 18.291 | 19.215 |
-| 2048 | 136.947 | 20.563 | 64.624 | 73.529 |
-| 4096 | 551.044 | —      | —      | 289.251|
+| 256  | 2.230   | 0.673  | 5.384  | 1.655  |
+| 512  | 8.508   | 1.672  | 6.704  | 5.155  |
+| 1024 | 33.975  | 5.530  | 19.602 | 19.111 |
+| 2048 | 136.277 | 20.602 | 65.291 | 73.640 |
+| 4096 | 549.294 | —      | —      | 288.516|
 
 ## float16 context (B=8, H=12, d_head=64, mean ms)
 | N    | causal | CuLLM warp-coop (fp16 I/O, fp32 accum) | cuDNN flash attention via JAX (fp16) |
 |------|-------:|----------------------------------------:|----------------------------------------:|
-| 2048 | False  | 151.599 | 6.505  |
-| 2048 | True   | 79.914  | 4.501  |
-(full table: N = 256..4096, both causal states, in the report)
-
-## Accuracy: CuLLM CUDA vs JAX FA-2, identical inputs (float32)
-| N   | d_head | causal | max abs difference |
-|-----|-------:|:------:|--------------------:|
-| 64  | 32     | False  | 7.918e-05 |
-| 100 | 32     | False  | 7.393e-05 |
-| 128 | 64     | False  | 5.394e-05 |
-| 150 | 64     | True   | 3.249e-04 |
+| 2048 | False  | 150.981 | 8.585  |
+| 2048 | True   | 79.573  | 4.591  |
+(full table: N = 256..4096, both causal states, in the report; this
+screenshot's frame ends at the float16-context table, no accuracy table
+in view this time)
 ```
 
-Note: the fp16-context table's N=2048 row is what the presentation scripts
-quote as "8.4 ms" for cuDNN — that's the batch·heads=96 realistic-scale
-number from the full report table (this screenshot's crop shows the
-B=8,H=12 = 96 slice variant; both are the same measurement, reported at
-slightly different rounding in different tables of the full report).
+**Provenance note (2026-07-05): this screenshot supersedes
+`2026-07-04_21-51benchmark.png` and `2026-07-04_22-33benchmark.png`.**
+Those two showed cuDNN at N=2048 non-causal as 6.505 / 7.097 ms — an
+unreproducible one-off. Re-verified same day: 3 back-to-back reruns in
+the same container session gave 8.712 / 8.650 / 8.676 ms, then this
+fresh screenshot gave 8.585 ms — four independent readings within
+8.4-8.7 ms, consistent with `AttentionBenchmarkReport.md`'s figure
+(8.43 ms, measured 2026-07-03) that this deck and script have quoted
+throughout as "8.4 ms." The two 07-04 screenshots stay on disk but are
+retired from presentation use — most likely a one-off cuDNN
+algorithm-selection quirk in that container session.
