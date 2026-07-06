@@ -408,7 +408,8 @@ pick up new kernel work from this file without the user explicitly asking
 
 Separate from the series above — explicitly written to stand alone for
 any technical audience, not interview- or company-specific. **Status as of
-2026-07-05: content complete, not yet recorded.**
+2026-07-05: content complete (memory-wall slide added same day), not yet
+recorded.**
 
 - `Documents/AttentionBenchmarkReport.md` — full technical write-up/data.
 - `Documents/CUDAvsJAXAttention.md` — the general-audience conclusions
@@ -421,25 +422,33 @@ any technical audience, not interview- or company-specific. **Status as of
   screenshot to show. This is the current script; read it before touching
   wording.
 - `Documents/AttentionBenchmarkScreenshotsTranscript.md` — exact
-  transcribed text of the 7 benchmark screenshots (`AttentionIOBenchmark`,
-  `LinearMapGemmBenchmark`, the WMMA/CuTe ladder, etc.), so captions can be
-  copy-pasted without re-reading an image.
-- `Documents/CUDAvsJAXInfographicSlides.html` — **5 self-contained,
+  transcribed text of the 9 benchmark screenshots (`AttentionIOBenchmark`,
+  `LinearMapGemmBenchmark`, the WMMA/CuTe ladder, `AttentionMemoryReport`,
+  `jax_memory_report.py`, etc.), so captions can be copy-pasted without
+  re-reading an image.
+- `Documents/CUDAvsJAXInfographicSlides.html` — **6 self-contained,
   widescreen (16:9) infographic slides**, checked into the repo
   deliberately (unlike video assets — this is small, text-based, and
   actively revised, not a heavy binary export). Open directly in a
   browser, no server needed. Current slides: (1) the engine ladder, (2)
   the full JAX/cuDNN comparison — both my engine tiers vs. all 4 JAX
-  variants + cuDNN, (3) the hand-written-FlashAttention-2-only comparison
-  (CUTLASS/CuTe, WMMA, scalar CUDA C++, hand-written JAX — cuDNN and JAX's
-  built-ins excluded on purpose, different reasons for each, see the
-  slide's own subtitle), (4) arithmetic intensity (real FLOPs/bytes
-  arithmetic: ~103 GFLOP either way, 1.61 GB vs. 0.20 GB, 64 vs. 512
-  FLOP/byte), (5) throughput + the actual answer to "CUDA C++ or JAX for a
-  hand-written kernel" (the algorithm win travels languages, the engine
-  win doesn't). Verified rendering with Playwright (`tools/playwright-runner/`
-  on the machine that built it) before every change — no layout bugs
-  known as of this writing.
+  variants + cuDNN, (3) the memory wall, measured live — a real
+  `cudaMalloc` failure at N=4096 cross-validated against XLA's
+  independent compile-time memory plan (both land on 3.000 GiB at N=2048
+  for standard attention), plus the WMMA-vs-CuTe on-chip occupancy table
+  (added 2026-07-05, after the CUDA and JAX measurements were
+  independently reverified — see `ReproducingTheBenchmarks.md`), (4) the
+  hand-written-FlashAttention-2-only comparison (CUTLASS/CuTe, WMMA,
+  scalar CUDA C++, hand-written JAX — cuDNN and JAX's built-ins excluded
+  on purpose, different reasons for each, see the slide's own subtitle),
+  (5) arithmetic intensity (real FLOPs/bytes arithmetic: ~103 GFLOP
+  either way, 1.61 GB vs. 0.20 GB, 64 vs. 512 FLOP/byte), (6) throughput +
+  the actual answer to "CUDA C++ or JAX for a hand-written kernel" (the
+  algorithm win travels languages, the engine win doesn't). No Playwright
+  runner available on this machine as of 2026-07-05 — slide 3 was
+  hand-verified by rendering it via `Artifact` instead (structural check:
+  6 slide divs, matching CSS classes to slides 4/5) rather than the
+  Playwright process the earlier 5 slides used.
 
 **What's NOT portable across machines** — everything above is in git and
 follows you anywhere. These are not, because they're produced artifacts

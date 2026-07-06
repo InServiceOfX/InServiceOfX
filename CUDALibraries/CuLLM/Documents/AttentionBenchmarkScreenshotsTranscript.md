@@ -1,6 +1,6 @@
 # Screenshot transcripts — exact text, for captions/editing
 
-Plain-text transcription of the 7 screenshots in
+Plain-text transcription of the 9 screenshots in
 `Data/Public/Jobs/CHAOSIndustries/` (outside this repo), so editing a
 caption or on-screen label doesn't require re-reading the image. Every
 number here was cross-checked against `CUDAvsJAXAttention.md`'s tables —
@@ -110,6 +110,48 @@ Running 5 items in this shard
 .....                                                                   [100%]
 5 passed in 16.06s
 ```
+
+## `2026-07-05_20-31AttentionMemoryReport.png` — the memory wall, live (CUDA side)
+
+```
+root@3cc9c2db4cac:/InServiceOfX/CUDALibraries/CuLLM/BuildGcc# ./AttentionMemoryReport
+Device: NVIDIA GeForce RTX 3060 (sm_86) | VRAM 11.63 GiB total, 11.45 GiB free | B*H = 96, d = 64, fp32 element = 4 B
+
+== 1. HBM working set, measured ==
+N = 4096:
+  flash (any rung): Q,K,V,O          requested   0.375 GiB -> measured device-memory delta   0.375 GiB (free: 11.452 -> 11.077 GiB)
+  standard: Q,K,V,O + S + P          requested  12.375 GiB -> cudaMalloc FAILED (out of memory) after 6.375 GiB of it — this failure is the memory wall, measured
+
+== 2. On-chip memory per kernel (where the ladder rungs actually differ) ==
+  flash thread-per-row (fp32)               33024 B smem/block   254 regs/thread  block= 64  ->  3 blocks/SM ( 192 threads/SM)
+  flash warp-cooperative (fp32)             17536 B smem/block    40 regs/thread  block=128  ->  5 blocks/SM ( 640 threads/SM)
+  WMMA tensor-core (fp16)                   47872 B smem/block    41 regs/thread  block=128  ->  2 blocks/SM ( 256 threads/SM)
+  CuTe/CUTLASS (fp16)                       23296 B smem/block   120 regs/thread  block=128  ->  4 blocks/SM ( 512 threads/SM)
+  standard: attention_scores (fp32)           256 B smem/block    80 regs/thread  block=128  ->  6 blocks/SM ( 768 threads/SM)
+```
+(full output also includes N=1024/2048 HBM rows and the flash warp-cooperative fp16 on-chip row — omitted here, same story, see the PNG)
+
+## `2026-07-05_21-05jax_memory_report.png` — the memory wall, live (JAX side, cross-validation)
+
+```
+root@3cc9c2db4cac:/InServiceOfX# PYTHONPATH=CUDALibraries/CuLLM/Python python3 CUDALibraries/CuLLM/Python/jax_memory_report.py
+JAX 0.10.2 | device: NVIDIA GeForce RTX 3060 | B*H = 96, d = 64 | preallocate=false, allocator=platform
+
+N = 2048 (fp32 args = 0.141 GiB):
+  standard attention (fp32)          XLA plan: args  0.141  out  0.047  TEMP   3.000 GiB  ->  ran OK
+  FlashAttention-1, lax tiles (fp32) XLA plan: args  0.141  out  0.047  TEMP   0.007 GiB  ->  ran OK
+  FlashAttention-2, lax tiles (fp32) XLA plan: args  0.141  out  0.047  TEMP   0.009 GiB  ->  ran OK
+  built-in attention, xla (fp32)     XLA plan: args  0.141  out  0.047  TEMP   3.000 GiB  ->  ran OK
+  built-in attention, cudnn (fp16)   XLA plan: args  0.070  out  0.023  TEMP   0.070 GiB  ->  ran OK
+
+N = 4096 (fp32 args = 0.281 GiB):
+  standard attention (fp32)          lowering/compile failed: JaxRuntimeError: INTERNAL: Failed to get configs for: 2 out of 2 instructions. See logs for all failures. E
+  FlashAttention-1, lax tiles (fp32) XLA plan: args  0.281  out  0.094  TEMP   0.007 GiB  ->  ran OK
+  FlashAttention-2, lax tiles (fp32) XLA plan: args  0.281  out  0.094  TEMP   0.009 GiB  ->  ran OK
+  built-in attention, xla (fp32)     lowering/compile failed: JaxRuntimeError: INTERNAL: Failed to get configs for: 2 out of 2 instructions. See logs for all failures. E
+  built-in attention, cudnn (fp16)   XLA plan: args  0.141  out  0.047  TEMP   0.141 GiB  ->  ran OK
+```
+(full output also includes the N=1024 row, all consistent with the same law; captured clean after the `TF_CPP_MIN_LOG_LEVEL=3` fix — an earlier run without it buried the two N=4096 failures under several minutes of autotuner retry warnings)
 
 ## `2026-07-05_20-22benchmark.png` — the JAX/cuDNN comparison (current)
 

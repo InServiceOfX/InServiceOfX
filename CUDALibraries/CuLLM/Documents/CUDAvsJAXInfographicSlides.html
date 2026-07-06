@@ -240,7 +240,7 @@
 
 <div class="topline">
   <span id="eyebrow">SLIDE 1 · THE ENGINE LADDER</span>
-  <span class="counter" id="counter">01 / 05</span>
+  <span class="counter" id="counter">01 / 06</span>
 </div>
 
 <div class="stage-wrap">
@@ -323,7 +323,33 @@
       <div class="footer-note">JAX's own built-in op and a direct lax-loop port both lag the fused-kernel path by 3-3.6× — the compiler helps only if you hit its fusion patterns. And the real argument for hand-writing CUDA isn't the 2.3× speed gap to cuDNN — it's that standard attention's score matrix doesn't fit at all past a certain context length. Flash kernels never build it.</div>
     </div>
 
-    <div class="slide" data-eyebrow="SLIDE 3 · WHEN THERE'S NO BUILT-IN">
+    <div class="slide" data-eyebrow="SLIDE 3 · THE MEMORY WALL, MEASURED">
+      <h1 class="title">Not computed. Measured, twice.</h1>
+      <p class="subtitle">N = 4096, batch·heads = 96, d = 64 — same shape as every slide before this one.</p>
+      <div class="lesson-row">
+        <div class="lesson-card">
+          <div class="kicker">HBM footprint — live, not asserted</div>
+          <h3>Flash never notices. Standard can't run.</h3>
+          <div class="eq-block">
+            <div class="eq-line">Flash (every engine tier): <b>0.375 GiB</b> measured (cudaMemGetInfo around a real cudaMalloc) — Q, K, V, O only.</div>
+            <div class="eq-line">Standard: <b>cudaMalloc FAILED</b> after 6.375 GiB of a 12.375 GiB request — <span class="term">the memory wall, caught live</span>, not computed from a formula.</div>
+            <div class="eq-line">JAX/XLA agrees independently: its own compile-time TEMP plan for standard attention is exactly 2·B·H·N² — <b>3.000 GiB</b> at N=2048, matching CUDA's measured delta to the digit.</div>
+          </div>
+        </div>
+        <div class="lesson-card">
+          <div class="kicker">On-chip budget — where the ladder rungs differ</div>
+          <h3>HBM is identical across rungs. Shared memory and registers are not.</h3>
+          <div class="eq-block">
+            <div class="eq-line">WMMA: 47,872 B shared memory/block (opaque fragments force a round trip) → <b>2 blocks/SM</b>.</div>
+            <div class="eq-line">CuTe: 23,296 B + a register-resident accumulator (coordinate tensors expose the layout) → <b>4 blocks/SM</b>.</div>
+            <div class="eq-line">CuTe still wins with <span class="term">lower</span> occupancy than scalar warp-cooperative (512 vs. 640 threads/SM) — occupancy is a means, not the metric.</div>
+          </div>
+        </div>
+      </div>
+      <div class="lesson-join">Two independent measurement methods — <b>cudaMemGetInfo</b> around real allocations, and <b>XLA's own compile-time memory plan</b> — agree to the digit. FlashAttention's founding claim isn't a back-of-envelope number here; it's been measured twice, on both sides of the CUDA-vs-JAX comparison.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 4 · WHEN THERE'S NO BUILT-IN">
       <h1 class="title">When there's no built-in: the hand-written comparison</h1>
       <p class="subtitle">Same algorithm throughout — FlashAttention-2 — in every bar below. Only cuDNN, JAX's built-in op, and JAX's standard (non-flash) path drop out: those are either a library call or a different algorithm, not something you'd hand-write here.</p>
       <div class="chart">
@@ -351,7 +377,7 @@
       <div class="footer-note">WMMA is hand-written too — CUDA's tensor-core intrinsics, not a library call. But it's not just a bigger tile: WMMA's fragments are opaque, so the running accumulator can't be rescaled in registers and has to round-trip through shared memory every tile. CUTLASS/CuTe's coordinate tensors remove exactly that cost, worth ~2.7× on their own. CUTLASS/CuTe itself isn't attention-specific — it's NVIDIA's general-purpose library for hand-building GEMM-class kernels, useful any time an application needs a custom kernel and no vendor library covers it.</div>
     </div>
 
-    <div class="slide" data-eyebrow="SLIDE 4 · ARITHMETIC INTENSITY">
+    <div class="slide" data-eyebrow="SLIDE 5 · ARITHMETIC INTENSITY">
       <h1 class="title">Same FLOPs, different bytes</h1>
       <p class="subtitle">N = 2048, batch·heads = 96, d = 64 — the exact shape used throughout this deck.</p>
       <div class="lesson-row">
@@ -377,7 +403,7 @@
       <div class="lesson-join"><span class="term">Arithmetic Intensity</span> = FLOPs ÷ bytes moved — how much compute you get per byte loaded. Standard: 103 GFLOP ÷ 1.61 GB ≈ <b>64 FLOP/byte</b>. Flash: 103 GFLOP ÷ 0.20 GB ≈ <b>512 FLOP/byte</b>. The Roofline Model says achievable speed ≤ min(peak compute, Arithmetic Intensity × memory bandwidth) — higher intensity pushes you toward the compute ceiling instead of the memory one. At N=4096 this isn't just slower, it's why the 6.44 GB score matrix doesn't fit on a 12 GB card at all: bytes, not FLOPs, decide whether it runs.</div>
     </div>
 
-    <div class="slide" data-eyebrow="SLIDE 5 · THROUGHPUT AND THE REAL ANSWER">
+    <div class="slide" data-eyebrow="SLIDE 6 · THROUGHPUT AND THE REAL ANSWER">
       <h1 class="title">Same algorithm, different instruction</h1>
       <p class="subtitle">Arithmetic intensity explains the memory story. This is the compute story — and the actual CUDA-vs-JAX answer.</p>
       <div class="lesson-row">
@@ -411,7 +437,7 @@
   <button id="next">Next &rsaquo;</button>
 </div>
 
-<div class="hint">Widescreen (16:9), 3 slides. Arrow keys or buttons to navigate — screenshot each slide directly, or screen-share this page live.</div>
+<div class="hint">Widescreen (16:9), 6 slides. Arrow keys or buttons to navigate — screenshot each slide directly, or screen-share this page live.</div>
 
 <script>
   const slides = Array.from(document.querySelectorAll('.slide'));

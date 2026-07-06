@@ -28,6 +28,10 @@ Filenames as of 2026-07-04:
   this fresh screenshot, all land at 8.4-8.7 ms, matching the number this
   deck and script actually quote. Retired originals kept on disk but not
   to be used as presentation evidence.)
+- **Shot 4 (memory wall, CUDA side)**: `2026-07-05_20-31AttentionMemoryReport.png`
+  (live `cudaMalloc` failure at N=4096, plus the on-chip WMMA-vs-CuTe table)
+- **Shot 4b (memory wall, JAX side)**: `2026-07-05_21-05jax_memory_report.png`
+  (XLA's own compile-time memory plan — the independent cross-validation)
 - Bonus/B-roll: `2026-07-04_21-09AttentionIOBenchmark.png` (exactness,
   max|diff| ~1e-8), `2026-07-04_21-10LinearMapGemmBenchmark.png`
   (cuBLASLt-vs-tiled-GEMM, measured library decision)
@@ -35,19 +39,23 @@ Filenames as of 2026-07-04:
 Exact on-screen text for every shot above (for captions/on-screen labels):
 `AttentionBenchmarkScreenshotsTranscript.md`, same directory.
 
-**5 widescreen infographic slides** (bar charts + real arithmetic, not
+**6 widescreen infographic slides** (bar charts + real arithmetic, not
 terminal screenshots): `CUDAvsJAXInfographicSlides.html`, same directory —
 unlike the video production assets (which stay in `Data/Public/Generated/`,
 produced artifact not code), this one is checked into the repo
 deliberately: it's small, text-based, hand-edited, and actively revised
 across sessions/machines, not a heavy binary export. Open it directly in a
 browser (works from a bare `file://` path, fully self-contained) or via
-`Artifact` in a Claude Code session. Slides: the engine ladder, the full
-JAX/cuDNN comparison (all 5 implementations benchmarked), the
+`Artifact` in a Claude Code session. Slides: (1) the engine ladder, (2) the
+full JAX/cuDNN comparison (all 5 implementations benchmarked), (3) the
+memory wall, measured live — cudaMalloc failing at N=4096 plus XLA's
+independent cross-validation and the WMMA-vs-CuTe on-chip table, (4) the
 hand-written-FA-2-only comparison (CUTLASS/CuTe vs. WMMA vs. scalar CUDA
-C++ vs. hand-written JAX), arithmetic intensity (real FLOPs/bytes
-calculations), and throughput + the actual CUDA-vs-JAX answer. **Status as
-of 2026-07-05: content complete, not yet recorded** — see the handoff note
+C++ vs. hand-written JAX), (5) arithmetic intensity (real FLOPs/bytes
+calculations), and (6) throughput + the actual CUDA-vs-JAX answer. **Status
+as of 2026-07-05: content complete (memory-wall slide added same day,
+after independently reverifying both the CUDA and JAX measurements — see
+`ReproducingTheBenchmarks.md`), not yet recorded** — see the handoff note
 in `../AGENTS.md` for what's left and what's machine-local vs. portable.
 
 ---
@@ -89,14 +97,30 @@ than my 12 GB card can hold next to the model. My kernel streams tiles
 and never notices. That's FlashAttention's actual argument: memory, not
 raw speed."
 
-**4:20-5:00 — The central lesson.** "GPU performance is two separate
+**4:20-5:10 — The memory wall, measured live.** Show Shot 4. "That 6.4
+gigabyte number isn't off a spec sheet — I measured it. At N=4096, my
+flash kernels allocate 0.375 gigabytes, and it doesn't matter which
+engine tier: scalar, WMMA, or CuTe all need exactly Q, K, V, and the
+output, nothing else. The standard baseline's allocation call fails,
+live, right here — six gigabytes short on a twelve gigabyte card. Now
+show Shot 4b: on the JAX side, XLA's own compiler — completely
+independently — computes standard attention's memory plan as exactly
+twice batch-heads-times-N-squared. Three gigabytes at N=2048, matching
+my measurement to the digit. Two different tools, two different
+languages, the same number. And this same report is where the engine
+tiers actually differ, not in HBM but on-chip: WMMA spends 48 kilobytes
+of shared memory per block because its tensor-core fragments are
+opaque; CuTe halves that by keeping the accumulator in registers
+instead. That's the WMMA-to-CuTe upgrade, in hardware units."
+
+**5:10-5:50 — The central lesson.** "GPU performance is two separate
 games. The algorithm decides how many bytes you move. The hardware
 engine decides how fast you crunch what's left. FlashAttention wins the
 first game. Tensor cores win the second. cuDNN wins both in one kernel —
 which is exactly why it's still ahead, and exactly what this project
 measured the size of."
 
-**5:00-6:30 — What this says about JAX.** "Prototype in JAX, always —
+**5:50-7:20 — What this says about JAX.** "Prototype in JAX, always —
 if your computation fits XLA's fusion patterns, you get tensor-core-class
 performance for free, in Python, with autodiff included. Hand-write CUDA
 only when you can name the specific thing XLA can't do for your case.
@@ -107,7 +131,7 @@ path masks after computing, so it can't; and the last multiples — cuDNN's
 remaining 2.3x lead decomposes into named, measurable techniques, not
 magic."
 
-**6:30-7:30 — Honest caveats.** "Three things that would have faked these
+**7:20-8:20 — Honest caveats.** "Three things that would have faked these
 numbers, or oversold them, if I'd missed them. JAX's 'fp32' matmuls run
 at TF32 precision by default on this hardware — an unqualified 'fp32 JAX
 vs fp32 CUDA' comparison is quietly tensor-core-vs-scalar unless you
@@ -122,7 +146,7 @@ of computing and discarding them." (Optional: also show Shot 5/6 as
 quick proof frames — exactness column, the measured
 cuBLASLt-vs-hand-written-GEMM decision.)
 
-**7:15-8:00 — Scope + close.** "This is a forward-pass, fp16,
+**8:20-9:05 — Scope + close.** "This is a forward-pass, fp16,
 fixed-head-dim comparison on one consumer GPU — not a production claim.
 What's next: bf16 in the tensor-core kernels, and a tensor-core backward
 pass. Full derivation, all the code, and the complete report are linked
