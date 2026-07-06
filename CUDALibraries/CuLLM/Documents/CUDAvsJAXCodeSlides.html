@@ -1,0 +1,359 @@
+<title>CUDA vs JAX — Code Walkthrough (Interview Cut)</title>
+<style>
+  :root{
+    --page:#f9f9f7;
+    --surface:#fcfcfb;
+    --ink:#0b0b0b;
+    --ink-secondary:#52514e;
+    --ink-muted:#898781;
+    --grid:#e1e0d9;
+    --accent:#2a78d6;
+    --code-bg:#f2f1ec;
+    --code-border:#e1e0d9;
+  }
+  :root[data-theme="dark"]{
+    --page:#0d0d0d;
+    --surface:#1a1a19;
+    --ink:#ffffff;
+    --ink-secondary:#c3c2b7;
+    --ink-muted:#898781;
+    --grid:#2c2c2a;
+    --accent:#3987e5;
+    --code-bg:#141413;
+    --code-border:#2c2c2a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#0d0d0d;
+      --surface:#1a1a19;
+      --ink:#ffffff;
+      --ink-secondary:#c3c2b7;
+      --ink-muted:#898781;
+      --grid:#2c2c2a;
+      --accent:#3987e5;
+      --code-bg:#141413;
+      --code-border:#2c2c2a;
+    }
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--page);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:1rem;
+    padding:2rem 1rem 1.5rem;
+  }
+
+  .topline{
+    width:min(94vw,1180px);
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .topline .counter{ font-variant-numeric:tabular-nums; color:var(--accent); }
+
+  .stage-wrap{
+    width:min(94vw,1180px);
+    aspect-ratio:16/9;
+    position:relative;
+  }
+  .stage{
+    position:absolute;
+    inset:0;
+    background:var(--surface);
+    border:1px solid var(--grid);
+    border-radius:10px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.12);
+    padding:4.5% 4.5% 4%;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .slide{ display:none; flex-direction:column; height:100%; }
+  .slide.active{ display:flex; }
+  .slide.title-slide{ align-items:center; justify-content:center; text-align:center; }
+
+  h1.title{
+    font-size:clamp(1.25rem,2.4vw,2rem);
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 0.2rem;
+    text-wrap:balance;
+  }
+  .title-slide h1.title{ font-size:clamp(1.8rem,4vw,3rem); margin-bottom:0.6rem; }
+  p.subtitle{
+    font-size:clamp(0.78rem,1.2vw,0.95rem);
+    color:var(--ink-secondary);
+    margin:0 0 1rem;
+    max-width:68ch;
+  }
+  .title-slide p.subtitle{ font-size:clamp(0.95rem,1.6vw,1.15rem); max-width:48ch; margin:0 auto; }
+  .title-slide .kicker{
+    font-size:0.78rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:700;
+    margin-bottom:0.8rem;
+  }
+
+  .impl-list{ display:flex; flex-direction:column; gap:0.55rem; flex:1; justify-content:center; min-height:0; }
+  .impl-row{ display:flex; align-items:center; gap:1rem; }
+  .impl-meta{ width:168px; flex-shrink:0; }
+  .impl-name{ font-size:clamp(0.8rem,1.15vw,0.95rem); font-weight:600; color:var(--ink); line-height:1.25; }
+  .impl-ms{ font-size:clamp(0.95rem,1.5vw,1.2rem); font-weight:700; font-variant-numeric:tabular-nums; }
+  .impl-ms.accent{ color:var(--accent); }
+  .impl-ms.muted{ color:var(--ink-secondary); }
+  .impl-tag{ font-size:0.66rem; color:var(--ink-muted); margin-top:0.1rem; }
+
+  .code-block{
+    flex:1;
+    min-width:0;
+    background:var(--code-bg);
+    border:1px solid var(--code-border);
+    border-radius:6px;
+    padding:0.45rem 0.7rem;
+  }
+  .code-caption{
+    font-size:0.62rem;
+    color:var(--ink-muted);
+    margin-bottom:0.15rem;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  .code-line{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size:clamp(0.68rem,1vw,0.82rem);
+    line-height:1.45;
+    color:var(--ink);
+    white-space:pre;
+    overflow-x:auto;
+  }
+  .code-line .tok-str{ color:var(--accent); font-weight:700; }
+  .code-line .tok-dim{ color:var(--ink-muted); }
+
+  .pair-callout{
+    text-align:center;
+    font-size:clamp(0.75rem,1.15vw,0.9rem);
+    color:var(--ink-secondary);
+    margin:0.3rem 0 0.1rem;
+  }
+  .pair-callout b{ color:var(--accent); }
+
+  .results-list{ display:flex; flex-direction:column; gap:0.3rem; flex:1; justify-content:center; }
+  .results-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding:0.35rem 0.1rem;
+    border-bottom:1px solid var(--grid);
+    font-size:clamp(0.8rem,1.2vw,0.95rem);
+  }
+  .results-row:last-child{ border-bottom:none; }
+  .results-row .rname{ color:var(--ink); }
+  .results-row .rname .rtag{ color:var(--ink-muted); font-size:0.75em; margin-left:0.4em; }
+  .results-row .rms{ font-variant-numeric:tabular-nums; font-weight:700; }
+  .results-row.accent .rname, .results-row.accent .rms{ color:var(--accent); }
+
+  .closing-note{
+    text-align:center;
+    font-size:clamp(0.78rem,1.2vw,0.92rem);
+    color:var(--ink-secondary);
+    margin-top:0.8rem;
+    padding-top:0.6rem;
+    border-top:1px solid var(--grid);
+  }
+  .closing-note b{ color:var(--ink); }
+
+  .nav{ display:flex; gap:0.75rem; }
+  .nav button{
+    font-family:inherit;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:var(--surface);
+    color:var(--ink);
+    border:1px solid var(--grid);
+    border-radius:4px;
+    padding:0.55em 1.1em;
+    cursor:pointer;
+  }
+  .nav button:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  .nav button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .nav button:disabled{ opacity:0.3; cursor:default; }
+
+  .hint{
+    font-size:0.68rem;
+    color:var(--ink-muted);
+    text-align:center;
+    max-width:40rem;
+  }
+</style>
+
+<div class="topline">
+  <span id="eyebrow">SLIDE 1 · TITLE</span>
+  <span class="counter" id="counter">01 / 04</span>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage">
+
+    <div class="slide active title-slide" data-eyebrow="SLIDE 1 · TITLE">
+      <div class="kicker">Interview cut · ≤2 min</div>
+      <h1 class="title">Hand-Written CUDA vs. JAX</h1>
+      <p class="subtitle">8 implementations of the same attention math — same RTX 3060, same shapes. Real code, real numbers, both sides measured.</p>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 2 · CUDA C++ — BASELINE TO THREE ENGINES">
+      <h1 class="title">CUDA C++: baseline, then three engines</h1>
+      <p class="subtitle">Same FlashAttention-2 tiling in all three engine rows below — only the inner product changes.</p>
+      <div class="impl-list">
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Standard (not Flash)</div>
+            <div class="impl-tag">materializes S in HBM</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">attention_scores.h</div>
+            <div class="code-line">scores[query_index * sequence_length + j] = dot * scale;</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Scalar (FA-2)</div>
+            <div class="impl-ms muted">151.1 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">flash_attention_warp_cooperative.h — one FMA per lane</div>
+            <div class="code-line">dot += shared_queries[warp_rank][d] * shared_keys[lane][d];</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">WMMA (FA-2)</div>
+            <div class="impl-ms muted">52.1 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">flash_attention_tensor_core.h — tensor-core fragment matmul</div>
+            <div class="code-line">wmma::mma_sync(score_fragment, query_fragment, key_fragment, score_fragment);</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">CUTLASS/CuTe (FA-2)</div>
+            <div class="impl-ms accent">19.0 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">flash_attention_cute.h — coordinate tensor, register-resident accumulator</div>
+            <div class="code-line">gemm(tiled_mma, q_fragment, k_fragment, score_fragment);</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 3 · JAX — FOUR WAYS, SAME MATH">
+      <h1 class="title">JAX: four ways to write the same thing</h1>
+      <p class="subtitle">Same hardware, same shapes — the difference is entirely in how the Python is written.</p>
+      <div class="impl-list">
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Hand-written, standard</div>
+            <div class="impl-ms muted">20.7 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">standard_attention() — no tiling, XLA fuses it</div>
+            <div class="code-line">scores = jnp.einsum("bhid,bhjd->bhij", q, k) * scale</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Hand-written, FA-2 loops</div>
+            <div class="impl-ms muted">74.4 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">flash_attention2() — my tiling, in lax.fori_loop</div>
+            <div class="code-line">tile_output = jnp.einsum("bhij,bhjd->bhid", weights, v_j)</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Built-in, XLA backend</div>
+            <div class="impl-ms muted">66.1 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">jax_builtin_attention() — one call, no tiling knowledge</div>
+            <div class="code-line">jax.nn.dot_product_attention(q, k, v, implementation=<span class="tok-str">"xla"</span>)</div>
+          </div>
+        </div>
+        <div class="impl-row">
+          <div class="impl-meta">
+            <div class="impl-name">Built-in, cuDNN backend</div>
+            <div class="impl-ms accent">8.4 ms</div>
+          </div>
+          <div class="code-block">
+            <div class="code-caption">same function — one argument changes</div>
+            <div class="code-line">jax.nn.dot_product_attention(q, k, v, implementation=<span class="tok-str">"cudnn"</span>)</div>
+          </div>
+        </div>
+      </div>
+      <div class="pair-callout">Last two rows: <b>identical call</b>, one string different — 8× faster, because now it's NVIDIA's own hand-written CUDA underneath.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 4 · RESULTS AND THE ANSWER">
+      <h1 class="title">All eight, fastest to slowest</h1>
+      <p class="subtitle">N = 2048, batch·heads = 96, d = 64 — same shape throughout. <span style="color:var(--accent); font-weight:600;">Blue</span> = my hand-written CUDA C++.</p>
+      <div class="results-list">
+        <div class="results-row"><span class="rname">cuDNN <span class="rtag">vendor library, via JAX</span></span><span class="rms">8.4 ms</span></div>
+        <div class="results-row accent"><span class="rname">CUTLASS/CuTe <span class="rtag">CUDA C++</span></span><span class="rms">19.0 ms</span></div>
+        <div class="results-row"><span class="rname">JAX/XLA fused <span class="rtag">JAX, hand-written</span></span><span class="rms">20.7 ms</span></div>
+        <div class="results-row accent"><span class="rname">WMMA <span class="rtag">CUDA C++</span></span><span class="rms">52.1 ms</span></div>
+        <div class="results-row"><span class="rname">JAX built-in (xla) <span class="rtag">JAX</span></span><span class="rms">66.1 ms</span></div>
+        <div class="results-row"><span class="rname">JAX FA-2 loops <span class="rtag">JAX, hand-written</span></span><span class="rms">74.4 ms</span></div>
+        <div class="results-row accent"><span class="rname">Scalar CUDA <span class="rtag">CUDA C++</span></span><span class="rms">151.1 ms</span></div>
+      </div>
+      <div class="closing-note">Standard attention (either language) needs the full N² matrix — <b>measured</b> to fail outright past a context length. Every Flash implementation, any engine, either language, needs just Q/K/V/O. The algorithm win travels between languages; the engine win doesn't — that's why hand-written CUDA still leads hand-written JAX on the identical algorithm.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev">&lsaquo; Prev</button>
+  <button id="next">Next &rsaquo;</button>
+</div>
+
+<div class="hint">Widescreen (16:9), 4 slides, ≤2 min narrated. Arrow keys or buttons to navigate.</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const eyebrow = document.getElementById('eyebrow');
+  const counter = document.getElementById('counter');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  let idx = 0;
+  function render(){
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    eyebrow.textContent = slides[idx].dataset.eyebrow;
+    counter.textContent = String(idx+1).padStart(2,'0') + ' / ' + String(slides.length).padStart(2,'0');
+    prevBtn.disabled = idx===0;
+    nextBtn.disabled = idx===slides.length-1;
+  }
+  prevBtn.addEventListener('click', ()=>{ if(idx>0){ idx--; render(); } });
+  nextBtn.addEventListener('click', ()=>{ if(idx<slides.length-1){ idx++; render(); } });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') nextBtn.click();
+    if(e.key==='ArrowLeft') prevBtn.click();
+  });
+  render();
+</script>
