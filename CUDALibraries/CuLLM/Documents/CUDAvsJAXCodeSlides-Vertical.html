@@ -68,7 +68,7 @@
   }
 
   .topline{
-    width:min(86vw,460px);
+    width:min(92vw,560px);
     display:flex;
     justify-content:space-between;
     align-items:baseline;
@@ -79,7 +79,7 @@
   }
   .topline .counter{ font-variant-numeric:tabular-nums; color:var(--accent); }
 
-  .frame-wrap{ width:min(86vw,460px); aspect-ratio:9/16; position:relative; }
+  .frame-wrap{ width:min(92vw,560px); aspect-ratio:9/16; position:relative; }
   .frame{
     position:absolute;
     inset:0;
@@ -94,7 +94,7 @@
     overflow:hidden;
   }
 
-  .slide{ display:none; flex-direction:column; align-items:center; width:100%; gap:1.1em; text-align:center; }
+  .slide{ display:none; flex-direction:column; align-items:center; width:100%; gap:0.85em; text-align:center; }
   .slide.active{ display:flex; }
   .slide.title-slide{ justify-content:center; height:100%; }
 
@@ -163,12 +163,12 @@
     text-align:left;
   }
   .results-row:last-child{ border-bottom:none; }
-  .results-row .rtag{ color:var(--ink-muted); font-size:0.72em; display:block; }
+  .results-row .rtag{ color:var(--ink-muted); font-size:0.72em; margin-left:0.5em; white-space:nowrap; }
   .results-row .rms{ font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap; margin-left:0.6em; }
   .results-row.accent .rname, .results-row.accent .rms{ color:var(--accent); }
 
   .narration{
-    width:min(86vw,460px);
+    width:min(92vw,560px);
     font-size:0.76rem;
     line-height:1.5;
     color:var(--ink-secondary);
@@ -204,7 +204,7 @@
   .hint{ font-size:0.66rem; color:var(--ink-muted); text-align:center; max-width:26rem; line-height:1.5; }
 
   .crop-readout{
-    width:min(86vw,460px);
+    width:min(92vw,560px);
     background:rgba(0,0,0,0.55);
     color:var(--ink-secondary);
     font-size:0.62rem;
@@ -315,7 +315,7 @@
         <div class="code-caption">same function — one argument changes</div>
         <div class="code-line">jax.nn.dot_product_attention(q, k, v, implementation=<span class="tok-str">"cudnn"</span>)</div>
       </div>
-      <div class="pair-callout">Identical call, one string different — <b>8× faster</b>, because now it's NVIDIA's own hand-written CUDA underneath.</div>
+      <div class="pair-callout">Identical call, one string different — <b>8× faster</b>: NVIDIA's own CUDA underneath.</div>
     </div>
 
     <div class="slide" data-eyebrow="SLIDE 10 · RESULTS" data-note="Blue = my CUDA. Close on algorithm vs. engine, not the ranking — that split is the actual thesis.">
