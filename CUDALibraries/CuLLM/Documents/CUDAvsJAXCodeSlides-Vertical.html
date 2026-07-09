@@ -1,0 +1,420 @@
+<title>CUDA vs JAX — Code Walkthrough (Vertical)</title>
+<style>
+  :root{
+    --page:#f9f9f7;
+    --surface:#fcfcfb;
+    --ink:#0b0b0b;
+    --ink-secondary:#52514e;
+    --ink-muted:#898781;
+    --grid:#e1e0d9;
+    --accent:#2a78d6;
+    --code-bg:#f2f1ec;
+    --code-border:#e1e0d9;
+  }
+  :root[data-theme="dark"]{
+    --page:#0d0d0d;
+    --surface:#1a1a19;
+    --ink:#ffffff;
+    --ink-secondary:#c3c2b7;
+    --ink-muted:#898781;
+    --grid:#2c2c2a;
+    --accent:#3987e5;
+    --code-bg:#141413;
+    --code-border:#2c2c2a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#0d0d0d;
+      --surface:#1a1a19;
+      --ink:#ffffff;
+      --ink-secondary:#c3c2b7;
+      --ink-muted:#898781;
+      --grid:#2c2c2a;
+      --accent:#3987e5;
+      --code-bg:#141413;
+      --code-border:#2c2c2a;
+    }
+  }
+  html{overflow-y:scroll;}
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--page);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:1.1rem;
+    padding:3rem 1rem 2.5rem;
+  }
+
+  .masthead{ text-align:center; max-width:32rem; }
+  .masthead h1{
+    font-size:clamp(1rem,2.6vw,1.3rem);
+    font-weight:700;
+    margin:0 0 0.3rem;
+    text-wrap:balance;
+  }
+  .masthead p{
+    margin:0;
+    font-size:0.68rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+
+  .topline{
+    width:min(86vw,460px);
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:0.66rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .topline .counter{ font-variant-numeric:tabular-nums; color:var(--accent); }
+
+  .frame-wrap{ width:min(86vw,460px); aspect-ratio:9/16; position:relative; }
+  .frame{
+    position:absolute;
+    inset:0;
+    background:var(--surface);
+    border:1px solid var(--grid);
+    border-radius:10px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:9% 7%;
+    overflow:hidden;
+  }
+
+  .slide{ display:none; flex-direction:column; align-items:center; width:100%; gap:1.1em; text-align:center; }
+  .slide.active{ display:flex; }
+  .slide.title-slide{ justify-content:center; height:100%; }
+
+  .kicker{
+    font-size:0.66rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:700;
+  }
+  h2.title{
+    font-size:clamp(1.15rem,5vw,1.55rem);
+    font-weight:700;
+    margin:0;
+    text-wrap:balance;
+    line-height:1.25;
+  }
+  .title-slide h2.title{ font-size:clamp(1.5rem,7vw,2.1rem); }
+  .subtitle{
+    font-size:clamp(0.72rem,3vw,0.85rem);
+    color:var(--ink-secondary);
+    max-width:90%;
+    line-height:1.4;
+  }
+
+  .ms-value{ font-size:clamp(1.6rem,8vw,2.4rem); font-weight:800; font-variant-numeric:tabular-nums; }
+  .ms-value.accent{ color:var(--accent); }
+  .ms-value.muted{ color:var(--ink-secondary); }
+  .ms-tag{ font-size:0.68rem; color:var(--ink-muted); margin-top:-0.6em; }
+
+  .code-block{
+    width:100%;
+    background:var(--code-bg);
+    border:1px solid var(--code-border);
+    border-radius:8px;
+    padding:0.7em 0.8em;
+    text-align:left;
+  }
+  .code-caption{
+    font-size:0.6rem;
+    color:var(--ink-muted);
+    margin-bottom:0.35em;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  .code-line{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size:clamp(0.72rem,3.1vw,0.86rem);
+    line-height:1.5;
+    color:var(--ink);
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .code-line .tok-str{ color:var(--accent); font-weight:700; }
+
+  .pair-callout{ font-size:clamp(0.72rem,3vw,0.85rem); color:var(--ink-secondary); }
+  .pair-callout b{ color:var(--accent); }
+
+  .results-list{ display:flex; flex-direction:column; gap:0.32em; width:100%; }
+  .results-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding:0.3em 0.1em;
+    border-bottom:1px solid var(--grid);
+    font-size:clamp(0.74rem,3.1vw,0.88rem);
+    text-align:left;
+  }
+  .results-row:last-child{ border-bottom:none; }
+  .results-row .rtag{ color:var(--ink-muted); font-size:0.72em; display:block; }
+  .results-row .rms{ font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap; margin-left:0.6em; }
+  .results-row.accent .rname, .results-row.accent .rms{ color:var(--accent); }
+
+  .narration{
+    width:min(86vw,460px);
+    font-size:0.76rem;
+    line-height:1.5;
+    color:var(--ink-secondary);
+    text-align:center;
+    min-height:3.2em;
+  }
+  .narration .label{
+    display:block;
+    font-size:0.62rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+    margin-bottom:0.4em;
+  }
+
+  .nav{ display:flex; gap:0.75rem; }
+  .nav button{
+    font-family:inherit;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:var(--surface);
+    color:var(--ink);
+    border:1px solid var(--grid);
+    border-radius:4px;
+    padding:0.55em 1.1em;
+    cursor:pointer;
+  }
+  .nav button:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+  .nav button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .nav button:disabled{ opacity:0.3; cursor:default; }
+
+  .hint{ font-size:0.66rem; color:var(--ink-muted); text-align:center; max-width:26rem; line-height:1.5; }
+
+  .crop-readout{
+    width:min(86vw,460px);
+    background:rgba(0,0,0,0.55);
+    color:var(--ink-secondary);
+    font-size:0.62rem;
+    line-height:1.6;
+    padding:0.6em 0.8em;
+    border:1px solid var(--grid);
+    border-radius:4px;
+    text-align:left;
+    font-variant-numeric:tabular-nums;
+  }
+  .crop-readout b{ color:var(--accent); font-weight:600; }
+</style>
+
+<div class="masthead">
+  <h1>Hand-Written CUDA vs. JAX</h1>
+  <p>Vertical cut &middot; iPhone-format screenshot deck</p>
+</div>
+
+<div class="topline">
+  <span id="eyebrow">SLIDE 1 · TITLE</span>
+  <span class="counter" id="counter">01 / 10</span>
+</div>
+
+<div class="frame-wrap">
+  <div class="frame">
+
+    <div class="slide active title-slide" data-eyebrow="SLIDE 1 · TITLE" data-note="Same math, 8 implementations, same card — real code, real numbers, both sides measured.">
+      <div class="kicker">Real code · real numbers</div>
+      <h2 class="title">Hand-Written CUDA vs. JAX</h2>
+      <p class="subtitle">8 implementations of the same attention math on one RTX 3060.</p>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 2 · CUDA · STANDARD" data-note="Point at the line — this writes the full N² matrix to HBM. This is exactly what Flash exists to avoid.">
+      <div class="kicker">CUDA C++ &middot; not Flash</div>
+      <h2 class="title">Standard attention</h2>
+      <div class="ms-tag">materializes S in HBM</div>
+      <div class="code-block">
+        <div class="code-caption">attention_scores.h</div>
+        <div class="code-line">scores[query_index * sequence_length + j] = dot * scale;</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 3 · CUDA · SCALAR" data-note="One FMA per lane. Same tiling as every row after this — only the instruction changes from here down.">
+      <div class="kicker">CUDA C++ &middot; FlashAttention-2</div>
+      <h2 class="title">Scalar engine</h2>
+      <div class="ms-value muted">151.1 ms</div>
+      <div class="code-block">
+        <div class="code-caption">flash_attention_warp_cooperative.h — one FMA per lane</div>
+        <div class="code-line">dot += shared_queries[warp_rank][d] * shared_keys[lane][d];</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 4 · CUDA · WMMA" data-note="Opaque fragments — a lane can't address its own row, forces a shared-memory round trip every tile.">
+      <div class="kicker">CUDA C++ &middot; FlashAttention-2</div>
+      <h2 class="title">WMMA tensor core</h2>
+      <div class="ms-value muted">52.1 ms</div>
+      <div class="code-block">
+        <div class="code-caption">flash_attention_tensor_core.h — tensor-core fragment matmul</div>
+        <div class="code-line">wmma::mma_sync(score_fragment, query_fragment, key_fragment, score_fragment);</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 5 · CUDA · CUTLASS/CUTE" data-note="Coordinate tensor fixes exactly that — accumulator stays in registers across tiles.">
+      <div class="kicker">CUDA C++ &middot; FlashAttention-2</div>
+      <h2 class="title">CUTLASS / CuTe</h2>
+      <div class="ms-value accent">19.0 ms</div>
+      <div class="code-block">
+        <div class="code-caption">flash_attention_cute.h — coordinate tensor, register-resident accumulator</div>
+        <div class="code-line">gemm(tiled_mma, q_fragment, k_fragment, score_fragment);</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 6 · JAX · HAND-WRITTEN STANDARD" data-note="No tiling at all — three lines, XLA just fuses this well.">
+      <div class="kicker">JAX &middot; hand-written</div>
+      <h2 class="title">Standard attention</h2>
+      <div class="ms-value muted">20.7 ms</div>
+      <div class="code-block">
+        <div class="code-caption">standard_attention() — no tiling, XLA fuses it</div>
+        <div class="code-line">scores = jnp.einsum("bhid,bhjd->bhij", q, k) * scale</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 7 · JAX · FA-2 LOOPS" data-note="My tiling, by hand, in lax.fori_loop. Say the caching line here: compiles once per shape, caches, we warm up before timing.">
+      <div class="kicker">JAX &middot; hand-written</div>
+      <h2 class="title">FlashAttention-2, in lax.fori_loop</h2>
+      <div class="ms-value muted">74.4 ms</div>
+      <div class="code-block">
+        <div class="code-caption">flash_attention2() — my tiling, in lax.fori_loop</div>
+        <div class="code-line">tile_output = jnp.einsum("bhij,bhjd->bhid", weights, v_j)</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 8 · JAX · BUILT-IN, XLA" data-note="One call, no tiling knowledge — this is the library's own generic path, not cuDNN yet.">
+      <div class="kicker">JAX &middot; built-in</div>
+      <h2 class="title">dot_product_attention, XLA backend</h2>
+      <div class="ms-value muted">66.1 ms</div>
+      <div class="code-block">
+        <div class="code-caption">jax_builtin_attention() — one call, no tiling knowledge</div>
+        <div class="code-line">jax.nn.dot_product_attention(q, k, v, implementation=<span class="tok-str">"xla"</span>)</div>
+      </div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 9 · JAX · BUILT-IN, CUDNN" data-note="Same call as the previous slide — one string changed. Let that land before saying the number.">
+      <div class="kicker">JAX &middot; built-in</div>
+      <h2 class="title">dot_product_attention, cuDNN backend</h2>
+      <div class="ms-value accent">8.4 ms</div>
+      <div class="code-block">
+        <div class="code-caption">same function — one argument changes</div>
+        <div class="code-line">jax.nn.dot_product_attention(q, k, v, implementation=<span class="tok-str">"cudnn"</span>)</div>
+      </div>
+      <div class="pair-callout">Identical call, one string different — <b>8× faster</b>, because now it's NVIDIA's own hand-written CUDA underneath.</div>
+    </div>
+
+    <div class="slide" data-eyebrow="SLIDE 10 · RESULTS" data-note="Blue = my CUDA. Close on algorithm vs. engine, not the ranking — that split is the actual thesis.">
+      <div class="kicker">All eight, fastest to slowest</div>
+      <h2 class="title">Results</h2>
+      <div class="results-list">
+        <div class="results-row"><span class="rname">cuDNN<span class="rtag">vendor library, via JAX</span></span><span class="rms">8.4 ms</span></div>
+        <div class="results-row accent"><span class="rname">CUTLASS/CuTe<span class="rtag">CUDA C++</span></span><span class="rms">19.0 ms</span></div>
+        <div class="results-row"><span class="rname">JAX/XLA fused<span class="rtag">JAX, hand-written</span></span><span class="rms">20.7 ms</span></div>
+        <div class="results-row accent"><span class="rname">WMMA<span class="rtag">CUDA C++</span></span><span class="rms">52.1 ms</span></div>
+        <div class="results-row"><span class="rname">JAX built-in (xla)<span class="rtag">JAX</span></span><span class="rms">66.1 ms</span></div>
+        <div class="results-row"><span class="rname">JAX FA-2 loops<span class="rtag">JAX, hand-written</span></span><span class="rms">74.4 ms</span></div>
+        <div class="results-row accent"><span class="rname">Scalar CUDA<span class="rtag">CUDA C++</span></span><span class="rms">151.1 ms</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="narration">
+  <span class="label">Reminder (for you — not part of the frame)</span>
+  <span id="narration-text"></span>
+</div>
+
+<div class="nav">
+  <button id="prev">&lsaquo; Prev</button>
+  <button id="next">Next &rsaquo;</button>
+</div>
+
+<div class="hint">Vertical (9:16), 10 slides. For OBS: macOS Screen Capture this window, add a Crop/Pad filter using the numbers below — that crops the recording to just the frame, so the reminder line stays visible to you but never appears in the take.</div>
+
+<div class="crop-readout" id="cropReadout">OBS crop &mdash; calculating&hellip;</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const eyebrow = document.getElementById('eyebrow');
+  const counter = document.getElementById('counter');
+  const narrationText = document.getElementById('narration-text');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  let idx = 0;
+
+  function render(){
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    eyebrow.textContent = slides[idx].dataset.eyebrow;
+    counter.textContent = String(idx+1).padStart(2,'0') + ' / ' + slides.length;
+    narrationText.textContent = slides[idx].dataset.note;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === slides.length - 1;
+  }
+  prevBtn.addEventListener('click', ()=>{ if(idx>0){ idx--; render(); } });
+  nextBtn.addEventListener('click', ()=>{ if(idx<slides.length-1){ idx++; render(); } });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowRight') nextBtn.click();
+    if(e.key === 'ArrowLeft') prevBtn.click();
+  });
+  render();
+
+  const frameWrapEl = document.querySelector('.frame-wrap');
+  const frameEl = document.querySelector('.frame');
+  const cropReadout = document.getElementById('cropReadout');
+
+  function fitFrame(){
+    frameWrapEl.style.width = '';
+    updateCropReadout();
+    shrinkToFit(4);
+  }
+  function shrinkToFit(attemptsLeft){
+    requestAnimationFrame(() => {
+      const overflow = document.documentElement.scrollHeight - window.innerHeight;
+      if (overflow > 4 && attemptsLeft > 0) {
+        const currentWidth = frameWrapEl.getBoundingClientRect().width;
+        const newWidth = Math.max(200, currentWidth - overflow * 9 / 16);
+        frameWrapEl.style.width = newWidth + 'px';
+        shrinkToFit(attemptsLeft - 1);
+      } else {
+        updateCropReadout();
+      }
+    });
+  }
+
+  function updateCropReadout(){
+    const r = frameEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const logical = {
+      l: Math.round(r.left), t: Math.round(r.top),
+      r: Math.round(vw - r.right), b: Math.round(vh - r.bottom)
+    };
+    const physical = {
+      l: Math.round(r.left*dpr), t: Math.round(r.top*dpr),
+      r: Math.round((vw-r.right)*dpr), b: Math.round((vh-r.bottom)*dpr)
+    };
+    cropReadout.innerHTML =
+      'OBS crop, Window Capture &rarr; Crop/Pad filter<br>' +
+      '<b>if 1x/logical:</b> L:' + logical.l + ' T:' + logical.t + ' R:' + logical.r + ' B:' + logical.b + '<br>' +
+      '<b>if Retina/' + dpr + 'x:</b> L:' + physical.l + ' T:' + physical.t + ' R:' + physical.r + ' B:' + physical.b + '<br>' +
+      'try one, check OBS\'s preview, use whichever isn\'t cut off. Don\'t resize this window after setting up OBS.';
+  }
+  fitFrame();
+  window.addEventListener('resize', fitFrame);
+</script>

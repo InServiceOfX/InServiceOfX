@@ -38,6 +38,7 @@
 
   *{box-sizing:border-box;}
   html,body{height:100%;}
+  html{overflow-y:scroll;}
   body{
     margin:0;
     min-height:100vh;
@@ -199,6 +200,20 @@
     text-align:center;
     max-width:40rem;
   }
+
+  .crop-readout{
+    width:min(94vw,1180px);
+    background:rgba(0,0,0,0.55);
+    color:var(--ink-secondary);
+    font-size:0.62rem;
+    line-height:1.6;
+    padding:0.6em 0.8em;
+    border:1px solid var(--grid);
+    border-radius:4px;
+    text-align:left;
+    font-variant-numeric:tabular-nums;
+  }
+  .crop-readout b{ color:var(--accent); font-weight:600; }
 </style>
 
 <div class="topline">
@@ -333,7 +348,9 @@
   <button id="next">Next &rsaquo;</button>
 </div>
 
-<div class="hint">Widescreen (16:9), 4 slides, ≤2 min narrated. Arrow keys or buttons to navigate.</div>
+<div class="hint">Widescreen (16:9), 4 slides, ≤2 min narrated. For OBS: Window Capture this browser window, add a Crop/Pad filter using the numbers below.</div>
+
+<div class="crop-readout" id="cropReadout">OBS crop &mdash; calculating&hellip;</div>
 
 <script>
   const slides = Array.from(document.querySelectorAll('.slide'));
@@ -356,4 +373,48 @@
     if(e.key==='ArrowLeft') prevBtn.click();
   });
   render();
+
+  const stageWrapEl = document.querySelector('.stage-wrap');
+  const stageEl = document.querySelector('.stage');
+  const cropReadout = document.getElementById('cropReadout');
+
+  function fitStage(){
+    stageWrapEl.style.width = '';
+    updateCropReadout();
+    shrinkToFit(4);
+  }
+  function shrinkToFit(attemptsLeft){
+    requestAnimationFrame(() => {
+      const overflow = document.documentElement.scrollHeight - window.innerHeight;
+      if (overflow > 4 && attemptsLeft > 0) {
+        const currentWidth = stageWrapEl.getBoundingClientRect().width;
+        const newWidth = Math.max(320, currentWidth - overflow * 16 / 9);
+        stageWrapEl.style.width = newWidth + 'px';
+        shrinkToFit(attemptsLeft - 1);
+      } else {
+        updateCropReadout();
+      }
+    });
+  }
+
+  function updateCropReadout(){
+    const r = stageEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const logical = {
+      l: Math.round(r.left), t: Math.round(r.top),
+      r: Math.round(vw - r.right), b: Math.round(vh - r.bottom)
+    };
+    const physical = {
+      l: Math.round(r.left*dpr), t: Math.round(r.top*dpr),
+      r: Math.round((vw-r.right)*dpr), b: Math.round((vh-r.bottom)*dpr)
+    };
+    cropReadout.innerHTML =
+      'OBS crop, Window Capture &rarr; Crop/Pad filter<br>' +
+      '<b>if 1x/logical:</b> L:' + logical.l + ' T:' + logical.t + ' R:' + logical.r + ' B:' + logical.b + '<br>' +
+      '<b>if Retina/' + dpr + 'x:</b> L:' + physical.l + ' T:' + physical.t + ' R:' + physical.r + ' B:' + physical.b + '<br>' +
+      'try one, check OBS\'s preview, use whichever isn\'t cut off. Don\'t resize this window after setting up OBS.';
+  }
+  fitStage();
+  window.addEventListener('resize', fitStage);
 </script>
