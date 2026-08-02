@@ -36,19 +36,29 @@ class TerminalUI:
     def clear_screen(self):
         clear()
     
+    @staticmethod
+    def _styled(tag: str, message: str) -> HTML:
+        """Style user text for prompt_toolkit, escaping XML-special characters.
+
+        HTML() parses via minidom, so prompts/paths containing &, <, or >
+        (e.g. "R&B" in a prompt) must be escaped or printing crashes.
+        """
+        return HTML(f"<{tag}>{escape(message)}</{tag}>")
+
     def print_header(self, text: str):
         separator = '─' * 60
-        print_formatted_text(HTML(f"\n<header>  {text}  </header>"))
-        print_formatted_text(HTML(f"<separator>{separator}</separator>\n"))
+        print_formatted_text(HTML(f"\n<header>  {escape(text)}  </header>"))
+        print_formatted_text(self._styled("separator", separator))
+        print_formatted_text(HTML(""))
     
     def print_info(self, message: str):
-        print_formatted_text(HTML(f"<info>ℹ {message}</info>"))
+        print_formatted_text(HTML(f"<info>ℹ {escape(message)}</info>"))
     
     def print_success(self, message: str):
-        print_formatted_text(HTML(f"<success>✓ {message}</success>"))
+        print_formatted_text(HTML(f"<success>✓ {escape(message)}</success>"))
     
     def print_error(self, message: str):
-        print_formatted_text(HTML(f"<error>✗ {message}</error>"))
+        print_formatted_text(HTML(f"<error>✗ {escape(message)}</error>"))
     
     def print_warning(self, message: str):
         """
@@ -57,22 +67,25 @@ class TerminalUI:
         Args:
             message: The warning message to display
         """
-        print_formatted_text(HTML(f"<warning>⚠ {message}</warning>"))
+        print_formatted_text(HTML(f"<warning>⚠ {escape(message)}</warning>"))
     
     def print_processing(self, message: str):
-        print_formatted_text(HTML(f"<processing>⟳ {message}</processing>"))
+        print_formatted_text(
+            HTML(f"<processing>⟳ {escape(message)}</processing>"))
     
     def print_goodbye(self):
-        print_formatted_text(HTML("\n<goodbye>👋 Goodbye! Thanks for using CLIImage!</goodbye>\n"))
+        print_formatted_text(HTML(
+            "\n<goodbye>👋 Goodbye! Thanks for using CLIImage!</goodbye>\n"))
 
     def print_help(self, help_text: str):
         print_formatted_text(HTML(f"\n<help>📖 Help:</help>"))
-        print_formatted_text(HTML(f"<help>{help_text}</help>\n"))
+        print_formatted_text(self._styled("help", help_text))
+        print_formatted_text(HTML(""))
     
     def print_separator(self):
         """Print a visual separator line."""
         separator = '─' * 60
-        print_formatted_text(HTML(f"<separator>{separator}</separator>"))
+        print_formatted_text(self._styled("separator", separator))
     
     def print_quick_commands(self):
         """Print a cheatsheet of the most-used commands shown once on startup."""
@@ -85,8 +98,7 @@ class TerminalUI:
         ]
         print_formatted_text(HTML("\n<help>Quick commands:</help>"))
         for line in lines:
-            escaped = escape(line)
-            print_formatted_text(HTML(f"<help>{escaped}</help>"))
+            print_formatted_text(self._styled("help", line))
         print_formatted_text(HTML(""))
 
     def create_prompt_style(self):
